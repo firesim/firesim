@@ -24,20 +24,21 @@ The below sections outline what you need to install to run FireSim on each
 machine type in a FireSim cluster. Note that the below three machine types
 can all map to a single machine in your setup; in this case, you should follow
 all the installation instructions on your single machine, without duplication
-(if a step is required on multiple machine types).
+(i.e., don't re-run a step on the same machine if it is required on multiple
+machine types).
 
 **We highly recommend using Ubuntu 20.04 LTS as the host operating system for
 all machine types in an on-premises setup, as this is the OS recommended by
 Xilinx.**
 
 
-Fix default .bashrc
+1. Fix default .bashrc
 ^^^^^^^^^^^^^^^^^^^^^^^
 
-Machines: Manager Machine, Run Farm Machines, Build Farm Machines.
+**Machines:** Manager Machine, Run Farm Machines, Build Farm Machines.
 
-Edit your ``.bashrc`` file so that the following section is no longer
-present:
+We need various parts of the ``~/.bashrc`` file to execute even in non-interactive mode.
+To do so, edit your ``~/.bashrc`` file so that the following section is removed:
 
 .. code-block:: bash
 
@@ -47,10 +48,10 @@ present:
    esac
 
 
-Password-less sudo
-^^^^^^^^^^^^^^^^^^^^^^^^^
+2. Enable password-less sudo
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-Machines: Manager Machine and Run Farm Machines.
+**Machines:** Manager Machine and Run Farm Machines.
 
 Enable passwordless sudo by running ``sudo visudo``, then adding
 the following line at the end of the file:
@@ -60,7 +61,7 @@ the following line at the end of the file:
    YOUR_USERNAME_HERE ALL=(ALL) NOPASSWD:ALL
 
 
-Once you have done so, reboot the Manager Machines and Run Farm Machines
+Once you have done so, reboot the machines
 and confirm that you are able to run ``sudo true`` without being
 prompted for a password.
 
@@ -68,9 +69,9 @@ prompted for a password.
 Install Vivado Lab and Cable Drivers
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-Machines: Run Farm Machines.
+**Machines:** Run Farm Machines.
 
-Go to the `Xilinx Downloads Website <https://www.xilinx.com/support/download.html>`_ and download "Vivado 2023.1: Lab Edition - Linux".
+Go to the `Xilinx Downloads Website <https://www.xilinx.com/support/download.html>`_ and download ``Vivado 2023.1: Lab Edition - Linux``.
 
 Extract the downloaded ``.tar.gz`` file, then:
 
@@ -82,14 +83,14 @@ Extract the downloaded ``.tar.gz`` file, then:
 
 This will have installed Vivado Lab to ``/tools/Xilinx/Vivado_Lab/2023.1/``.
 
-For ease of use, add the following to the end of your ``.bashrc``:
+For ease of use, add the following to the end of your ``~/.bashrc``:
 
 .. code-block:: bash
 
    source /tools/Xilinx/Vivado_Lab/2023.1/settings64.sh
 
 
-Then, open a new terminal or source your ``.bashrc``.
+Then, open a new terminal or source your ``~/.bashrc``.
 
 Next, install the cable drivers like so:
 
@@ -102,9 +103,9 @@ Next, install the cable drivers like so:
 Install the Xilinx XDMA and XVSEC drivers
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-Machines: Run Farm Machines.
+**Machines:** Run Farm Machines.
 
-Next, run the following:
+First, run the following to install the XDMA kernel module:
 
 .. code-block:: bash
 
@@ -131,7 +132,7 @@ repository due to kernel version incompatibility:
 
 .. code-block:: bash
 
-   cd ~/
+   cd ~/   # or any directory you would like to work from
    git clone https://github.com/paulmnt/dma_ip_drivers dma_ip_drivers_xvsec
    cd dma_ip_drivers_xvsec
    git checkout 302856a
@@ -161,15 +162,15 @@ Also, make sure you get output for the following (usually, ``/usr/local/sbin/xvs
 Install your FPGA(s)
 ^^^^^^^^^^^^^^^^^^^^^
 
-Machines: Run Farm Machines.
+**Machines:** Run Farm Machines.
 
-Now, let's attach your FPGAs to your Run Farm Machines:
+Now, let's attach your |fpga_name|_ FPGA(s) to your Run Farm Machines:
 
 1. Poweroff your machine.
 
-2. Insert your FPGA into an open PCIe slot in the machine.
+2. Insert your |fpga_name|_ FPGA into an open PCIe slot in the machine.
 
-3. Attach any additional power cables between the FPGA and the host machine.
+3. Attach any additional power cables between the FPGA and the host machine. |fpga_power_info|
 
 4. Attach the USB cable between the FPGA and the host machine for JTAG.
 
@@ -182,36 +183,38 @@ Now, let's attach your FPGAs to your Run Farm Machines:
    bitstream.
 
 7. Extract the ``.tar.gz`` file to a known location. Inside, you will find
-   three files; the one we are currently interested will be called
+   three files; the one we are currently interested in will be called
    ``firesim.mcs``. Note the full path of this ``firesim.mcs`` file for the
    next step.
 
 8. Open Vivado Lab and click "Open Hardware Manager". Then click "Open Target" and "Auto connect".
 
-9. Right-click on your FPGA board and click "Add configuration device". Choose |fpga_spi_part_number|
-   as the part.
+9. Right-click on your FPGA board and click "Add configuration device". For a |fpga_name|_, choose |fpga_spi_part_number|
+   as the SPI flash part.
 
 10. For configuration file, choose the ``firesim.mcs`` file from step 7.
 
 11. Uncheck "verify" and click OK.
 
-12. When flashing is completed, power off your machine fully.
+12. When flashing is completed, power off your machine fully (i.e., the FPGA should completely lose power).
 
-13. Cold-boot the machine (i.e., the FPGA should have completely lost power). A cold boot is required for the FPGA to be successfully re-programmed from the attached flash.
+13. Cold-boot the machine. A cold boot is required for the FPGA to be successfully re-programmed from its flash.
 
-14. Once the machine has rebooted, run the following to ensure that your FPGA is set up properly:
+14. Once the machine has booted, run the following to ensure that your FPGA is set up properly:
 
 .. code-block:: bash
 
    lspci -vvv -d 10ee:903f
 
-If successful, this should show an entry with Xilinx as the manufacturer and two memory regions, one 32M wide and one 64K wide.
+If successful, this should show an entry with Xilinx as the manufacturer and
+two memory regions. There should be one entry
+for each FPGA you've added to the Run Farm Machine.
 
 
 Install sshd
 ^^^^^^^^^^^^^^^
 
-Machines: Manager Machine, Run Farm Machines, and Build Farm Machines
+**Machines:** Manager Machine, Run Farm Machines, and Build Farm Machines
 
 On Ubuntu, install ``openssh-server`` like so:
 
@@ -223,7 +226,7 @@ On Ubuntu, install ``openssh-server`` like so:
 Set up SSH Keys
 ^^^^^^^^^^^^^^^^^^^^^
 
-Machines: Manager Machine.
+**Machines:** Manager Machine.
 
 On the manager machine, generate a keypair that you will use to ssh from the
 manager machine into the manager machine (ssh localhost), run farm machines,
@@ -256,31 +259,18 @@ Returning to the Manager Machine, let's set up an ``ssh-agent``:
    ssh-add firesim.pem
 
 
-If you reboot your machine (or otherwise kill the ``ssh-agent``, you
+If you reboot your machine (or otherwise kill the ``ssh-agent``), you
 will need to re-run the above four commands before using FireSim.
-If you only open a new terminal (and ``ssh-agent`` is already running),
-you can simply re-run ``source ~/.ssh/AGENT_VARS``.
+If you open a new terminal (and ``ssh-agent`` is already running),
+you can simply run ``source ~/.ssh/AGENT_VARS``.
 
 Finally, confirm that you can now ``ssh localhost`` and ssh into your Run Farm
 and Build Farm Machines without being prompted for a passphrase.
 
-
-TODO: Verify your environment
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-
-Machines: Manager Machine, Run Farm Machines, and Build Farm Machines
-
-Finally, ensure that the |tool_type| tools are sourced in your shell setup (i.e. ``.bashrc`` and or ``.bash_profile``) so that any shell can use the corresponding programs.
-The environment variables should be visible to any non-interactive shells that are spawned.
-You can check this by ensuring that the output of the following command shows that the |tool_type| tools are present in the environment variables (i.e. "|example_var|"):
-
-.. code-block:: bash
-
-    ssh localhost printenv
-
-
-Install Guestmount
+TODO: Install Guestmount
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+**Machines:** Manager Machine and Run Farm Machines
 
 Finally, you should also install the ``guestmount`` program and ensure it runs properly.
 This is needed by a variety of FireSim steps that mount disk images in order to copy in/out results of simulations out of the images.
@@ -294,7 +284,7 @@ Most likely you will need to follow the instructions `here <https://askubuntu.co
 Check Hard File Limit
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-Machine: Manager Machine
+**Machine:** Manager Machine
 
 Check the output of the following command:
 
@@ -311,10 +301,38 @@ If the result is greater than or equal to 16384, you can continue on to "Setting
 Then, reboot your machine.
 
 
+Verify Run Farm Machine environment
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+**Machines:** Manager Machine and Run Farm Machines
+
+Finally, let's ensure that the |tool_type_lab| tools are properly sourced in
+your shell setup (i.e. ``.bashrc``) so that any shell on your Run Farm Machines
+can use the corresponding programs.  The environment variables should be
+visible to any non-interactive shells that are spawned.  
+
+You can check this by running the following on the Manager Machine,
+replacing ``RUN_FARM_IP`` with ``localhost`` if your Run Farm machine
+and Manager machine are the same machine, or replacing it with the Run Farm 
+machine's IP address if they are different machines. 
+
+.. code-block:: bash
+
+    ssh RUN_FARM_IP printenv
+
+
+Ensure that the output of the command shows that the |tool_type_lab| tools are
+present in the printed environment variables (i.e., |example_var|).
+
+If you have multiple Run Farm machines, you should repeat this process for
+each Run Farm machine, replacing ``RUN_FARM_IP`` with a different Run Farm Machine's
+IP address.
+
+
 Setting up the FireSim Repo
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-Machine: Manager Machine
+**Machine:** Manager Machine
 
 We're finally ready to fetch FireSim's sources. This should be done on your Manager Machine. Run:
 
@@ -446,16 +464,15 @@ sections.
 
 Hit Next to continue with the guide.
 
-FPGA Board Setup
-------------------------
 
-FPGA Setup
+
+
+
+
+
+
+TODO: OLD FPGA Setup
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-
-.. warning:: Currently, FireSim only supports a single type of FPGA (i.e only |fpga_name| FPGAs) installed on a machine.
-   This includes not mixing the use of Xilinx Vitis/XRT-enabled FPGAs on the system.
-
-.. Warning:: Power-users can skip this setup and just create the database file listed below by hand if you want to target specific fpgas.
 
 We need to flash the |fpga_name| FPGA(s) SPI flash with a dummy XDMA-enabled design and determine the PCI-e ID (or BDF) associated with the serial number of the FPGA.
 First, we need to flash the FPGA's SPI flash with the dummy XDMA-enabled design so that the PCI-e subsystem can be initially configured.
@@ -467,8 +484,8 @@ Below find the HWDB entry called |hwdb_entry_name|.
 
 .. literalinclude:: /../deploy/sample-backup-configs/sample_config_hwdb.yaml
    :language: yaml
-   :start-after: DOCREF START: Xilinx Alveo HWDB Entries
-   :end-before: DOCREF END: Xilinx Alveo HWDB Entries
+   :start-after: DOCREF START: |fpga_name| HWDB Entries
+   :end-before: DOCREF END: |fpga_name| HWDB Entries
 
 Look for the ``bitstream_tar: <URL>`` line within |hwdb_entry_name| and keep note of the URL.
 We will replace the ``BITSTREAM_TAR`` bash variable below with that URL.
