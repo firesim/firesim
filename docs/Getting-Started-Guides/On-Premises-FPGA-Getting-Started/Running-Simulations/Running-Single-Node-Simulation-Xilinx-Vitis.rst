@@ -4,12 +4,12 @@
 .. |runner| replace:: Xilinx XRT/Vitis
 .. |hwdb_entry_name| replace:: vitis_firesim_rocket_singlecore_no_nic
 
-.. warning:: **We highly recommend using the standard, XDMA-based U250 flow instead of this
-   Vitis-based U250 flow. You can find the standard, XDMA-based flow here:** :ref:`u250-standard-flow`.
-
-.. warning:: The Vitis flow does not support FireSim simulations with bridges that use the PCIe DMA interface (i.e. TracerV, NIC, Dromajo, Printfs).
-	This will be added in a future FireSim release. For now, you should use the XDMA-based U250 support, which supports all of the aforementioned
-        FireSim features. The XDMA-based U250 support is described here: :ref:`u250-standard-flow`.
+.. warning:: ⚠️  **We highly recommend using the XDMA-based U250 flow instead of this
+   Vitis-based flow. You can find the XDMA-based flow here:** :ref:`u250-standard-flow`.
+   The Vitis-based flow does not support DMA-based FireSim bridges (e.g.,
+   TracerV, Synthesizable Printfs, etc.), while the XDMA-based flows support
+   all FireSim features. If you're unsure, use the XDMA-based U250 flow
+   instead: :ref:`u250-standard-flow`
 
 .. include:: Running-Single-Node-Simulation-Vitis-Template.rst
 

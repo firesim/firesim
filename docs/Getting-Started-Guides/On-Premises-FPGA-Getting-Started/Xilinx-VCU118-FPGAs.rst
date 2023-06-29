@@ -1,4 +1,4 @@
-.. |fpga_name| replace:: Xilinx VCU118
+.. |fpga_name| replace:: Xilinx VCU118 XDMA-based
 .. _fpga_name: https://www.xilinx.com/products/boards-and-kits/vcu118.html
 .. |bit_type| replace:: ``bitstream_tar``
 .. |build_type| replace:: Xilinx Vivado

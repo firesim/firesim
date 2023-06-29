@@ -1,4 +1,4 @@
-.. |fpga_name| replace:: RHS Research Nitefury II
+.. |fpga_name| replace:: RHS Research Nitefury II XDMA-based
 .. _fpga_name: https://rhsresearch.com/collections/rhs-public/products/nitefury-xilinx-artix-fpga-kit-in-nvme-ssd-form-factor-2280-key-m
 .. |bit_type| replace:: ``bitstream_tar``
 .. |build_type| replace:: Xilinx Vivado

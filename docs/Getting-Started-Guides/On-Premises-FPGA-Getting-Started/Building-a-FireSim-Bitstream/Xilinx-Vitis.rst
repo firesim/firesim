@@ -5,7 +5,11 @@
 .. |builder_name| replace:: Xilinx Vitis
 .. |bit_builder_path| replace:: ``bit-builder-recipes/vitis.yaml``
 
-.. warning:: **We highly recommend using the standard U250 flow instead of this
-   Vitis-based flow. You can find the standard flow here:** :ref:`u250-standard-flow`.
+.. warning:: ⚠️  **We highly recommend using the XDMA-based U250 flow instead of this
+   Vitis-based flow. You can find the XDMA-based flow here:** :ref:`u250-standard-flow`.
+   The Vitis-based flow does not support DMA-based FireSim bridges (e.g.,
+   TracerV, Synthesizable Printfs, etc.), while the XDMA-based flows support
+   all FireSim features. If you're unsure, use the XDMA-based U250 flow
+   instead: :ref:`u250-standard-flow`
 
 .. include:: Xilinx-Bitstream-Template.rst

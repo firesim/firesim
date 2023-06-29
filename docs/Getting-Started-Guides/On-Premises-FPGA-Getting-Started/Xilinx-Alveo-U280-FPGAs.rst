@@ -1,4 +1,4 @@
-.. |fpga_name| replace:: Xilinx Alveo U280
+.. |fpga_name| replace:: Xilinx Alveo U280 XDMA-based
 .. _fpga_name: https://www.xilinx.com/products/boards-and-kits/alveo/u280.html
 .. |bit_type| replace:: ``bitstream_tar``
 .. |build_type| replace:: Xilinx Vivado
