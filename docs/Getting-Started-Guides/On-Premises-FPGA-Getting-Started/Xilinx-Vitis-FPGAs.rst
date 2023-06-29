@@ -1,4 +1,5 @@
 .. |fpga_name| replace:: Xilinx Vitis-enabled U250
+.. _fpga_name: https://www.xilinx.com/products/boards-and-kits/alveo/u250.html
 .. |bit_type| replace:: ``xclbin``
 .. |build_type| replace:: Xilinx Vitis
 
