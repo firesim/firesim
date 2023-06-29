@@ -32,20 +32,20 @@ on the simulated RISC-V system (*target*-software) or on a host x86 machine (*ho
 Machines used to build and run FireSim simulations are broadly classified into
 three groups:
 
-**Manager |mach_or_inst| **
+|manager_machine|
   This is the main host machine (e.g., |mach_details|) that you will "do work"
   on. This is where you'll clone your copy of FireSim and use the FireSim
   Manager to deploy builds/simulations from.
 
-**Build Farm |mach_or_inst| s **
-  These are a collection of |mach_or_inst2| s ("build farm |mach_or_inst_l| s")
+|build_farm_machine|
+  These are a collection of |mach_or_inst2| ("build farm |mach_or_inst_l|")
   that are used by the FireSim manager to run FPGA bitstream builds. The
   manager will automatically ship all sources necessary to run builds to these
   |mach_or_inst_l| and will run the Verilog to FPGA bitstream build process on
   them.
 
-**Run Farm |mach_or_inst| s **
-  These are a collection of |mach_or_inst2| s ("run farm |mach_or_inst_l| s")
+|run_farm_machine|
+  These are a collection of |mach_or_inst2| ("run farm |mach_or_inst_l|")
   with FPGAs attached that the manager manages and deploys simulations onto.
   You can use multiple Run Farms in parallel to run multiple separate
   simulations in parallel.
