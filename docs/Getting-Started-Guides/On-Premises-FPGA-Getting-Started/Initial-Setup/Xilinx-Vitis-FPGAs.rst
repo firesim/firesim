@@ -9,6 +9,12 @@
 .. |build_farm_machine| replace:: **Build Farm Machines**
 .. |run_farm_machine| replace:: **Run Farm Machines**
 
+Initial Setup/Installation
+==============================
+
+Background/Terminology
+--------------------------
+
 .. |mach_or_inst| replace:: Machine
 .. |mach_or_inst_l| replace:: machines
 .. |mach_details| replace:: your local desktop or server
@@ -18,10 +24,10 @@
 .. include:: ../../Terminology-Template.rst
 
 FPGA and Tool Setup
-===================
+------------------------------
 
 Requirements and Installations
-------------------------------
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 We require a base machine that is able to support a |fpga_name| and running Xilinx Vitis.
 For the purposes of this guide, we assume you are running with a |fpga_name|.
@@ -41,7 +47,7 @@ We require the following programs/packages installed from the Xilinx website in 
   * Ensure you complete the "Installing the Deployment Software" and "Card Bring-Up and Validation" sections in the following link: https://docs.xilinx.com/r/en-US/ug1301-getting-started-guide-alveo-accelerator-cards/Installing-the-Deployment-Software
 
 Setup Validation
-----------------
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 After installing the |fpga_name| using the Xilinx instructions and installing the specific versions of Vitis/XRT, let's verify that the |fpga_name| can be used for emulations.
 Ensure that you can run the following XRT commands without errors:
@@ -61,7 +67,7 @@ Now you're ready to continue with other FireSim setup!
 
 
 Setting up your On-Premises Machine
-===================================
+--------------------------------------
 
 This guide will walk you through setting up a single node cluster (i.e. running FPGA bitstream builds and simulations on a single machine) for FireSim use.
 This single machine will serve as the "Manager Machine" that acts as a "head" node that all work will be completed on.
@@ -75,7 +81,7 @@ You can check this by ensuring that the output of the following command shows th
     ssh localhost printenv
 
 Other Miscellaneous Setup
--------------------------
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 Additionally, you should be able to run ``ssh localhost`` without needing a password.
 The FireSim manager program runs all commands by ``ssh``-ing into a BuildFarm/RunFarm machine given an IP address then running the command.
@@ -113,7 +119,7 @@ Most likely you will need to follow the instructions `here <https://askubuntu.co
    does not reside on an NFS mount.
 
 Setting up the FireSim Repo
----------------------------
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 We're finally ready to fetch FireSim's sources. Run:
 
@@ -202,7 +208,7 @@ path. Sourcing this the first time will take some time -- however each time afte
 your FireSim directory and source this file again with the argument given.**
 
 Final Environment Check
------------------------
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 Finally, let's verify that the environment variables are correctly set up for the rest of this guide. Run:
 
@@ -230,7 +236,7 @@ Inspect that both the ``PATH`` and ``LD_LIBRARY_PATH`` are setup similarly to ru
 locally (without ``ssh localhost``).
 
 Completing Setup Using the Manager
-----------------------------------
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 The FireSim manager contains a command that will finish the rest of the FireSim setup process.
 To run it, do the following:
