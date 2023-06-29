@@ -9,5 +9,6 @@
    :maxdepth: 3
 
    Initial-Setup/Xilinx-VCU118
-   Running-Simulations/Running-Single-Node-Simulation-Xilinx-Alveo-U250
-   Building-a-FireSim-Bitstream/Xilinx-Alveo-U250
+   Repo-Setup/Xilinx-VCU118
+   Running-Simulations/Running-Single-Node-Simulation-Xilinx-VCU118
+   Building-a-FireSim-Bitstream/Xilinx-VCU118

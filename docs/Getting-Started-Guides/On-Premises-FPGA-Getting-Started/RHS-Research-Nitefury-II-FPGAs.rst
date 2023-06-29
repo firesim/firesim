@@ -9,5 +9,6 @@
    :maxdepth: 3
 
    Initial-Setup/RHS-Research-Nitefury-II
-   Running-Simulations/Running-Single-Node-Simulation-Xilinx-Alveo-U250
-   Building-a-FireSim-Bitstream/Xilinx-Alveo-U250
+   Repo-Setup/RHS-Research-Nitefury-II
+   Running-Simulations/Running-Single-Node-Simulation-RHS-Research-Nitefury-II
+   Building-a-FireSim-Bitstream/RHS-Research-Nitefury-II

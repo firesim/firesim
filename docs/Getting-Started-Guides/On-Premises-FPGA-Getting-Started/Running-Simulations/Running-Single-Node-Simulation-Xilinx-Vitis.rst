@@ -2,8 +2,7 @@
 .. |deploy_manager| replace:: VitisInstanceDeployManager
 .. |deploy_manager_code| replace:: ``VitisInstanceDeployManager``
 .. |runner| replace:: Xilinx XRT/Vitis
-.. |hwdb_entry| replace:: vitis_firesim_rocket_singlecore_no_nic
-.. |quintuplet| replace:: vitis-firesim-FireSim-FireSimRocketConfig-BaseVitisConfig
+.. |hwdb_entry_name| replace:: vitis_firesim_rocket_singlecore_no_nic
 
 .. include:: Running-Single-Node-Simulation-Template.rst
 

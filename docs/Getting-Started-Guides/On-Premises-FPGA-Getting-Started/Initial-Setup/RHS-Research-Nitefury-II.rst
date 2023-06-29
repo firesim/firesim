@@ -9,7 +9,7 @@
 .. |example_var| replace:: ``XILINX_VIVADO``
 .. |deploy_manager_code| replace:: ``RHSResearchNitefuryIIInstanceDeployManager``
 .. |fpga_spi_part_number| replace:: ``s25fl256xxxxxx0-spi-x1_x2_x4``
-.. |fpga_attach_prereq| replace:: into either an open M.2. slot on your machine or into an M.2. to Thunderbolt enclosure(then attach the enclosure to your system via a Thunderbolt cable). We have successfully used this enclosure: https://www.amazon.com/ORICO-Enclosure-Compatible-Thunderbolt-Type-C-M2V01/dp/B08R9DMFFT. Before permanently installing your Nitefury into your M.2. slot or enclosure, ensure that you have attached the ribbon cable that will be used for JTAG to the underside of the board (see step 4 below).
+.. |fpga_attach_prereq| replace:: into either an open M.2. slot on your machine or into an M.2. to Thunderbolt enclosure (then attach the enclosure to your system via a Thunderbolt cable). We have successfully used this enclosure: https://www.amazon.com/ORICO-Enclosure-Compatible-Thunderbolt-Type-C-M2V01/dp/B08R9DMFFT. Before permanently installing your Nitefury into your M.2. slot or enclosure, ensure that you have attached the ribbon cable that will be used for JTAG to the underside of the board (see step 4 below).
 .. |jtag_help| replace:: JTAG. For the Nitefury, this requires attaching the 14-pin JTAG adapter included with the board to the board using the included ribbon cable, then attaching a USB to JTAG adapter such as the Digilent HS2: https://digilent.com/shop/jtag-hs2-programming-cable/.
 
 .. include:: Xilinx-XDMA-Template.rst
