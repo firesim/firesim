@@ -3,6 +3,10 @@
 .. |bit_type| replace:: ``xclbin``
 .. |build_type| replace:: Xilinx Vitis
 
+.. warning:: **We highly recommend using the standard U250 flow instead of this
+   Vitis-based flow. You can find the standard flow here: :ref:`u250-standard-flow`.**
+
+
 .. include:: Intro-Template.rst
 
 #. **FPGA Setup**: Installing the FPGA board and relevant software.

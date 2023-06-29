@@ -3,6 +3,8 @@
 .. |bit_type| replace:: ``bitstream_tar``
 .. |build_type| replace:: Xilinx Vivado
 
+.. _u250-standard-flow:
+
 .. include:: Intro-Template.rst
 
 .. toctree::
