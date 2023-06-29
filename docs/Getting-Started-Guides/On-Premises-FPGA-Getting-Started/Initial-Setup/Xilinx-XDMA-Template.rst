@@ -54,7 +54,8 @@ To do so, edit your ``~/.bashrc`` file so that the following section is removed:
 **Machines:** Manager Machine and Run Farm Machines.
 
 Enable passwordless sudo by running ``sudo visudo``, then adding
-the following line at the end of the file:
+the following line at the end of the file, replacing ``YOUR_USERNAME_HERE``
+with your actual username on the machine:
 
 .. code-block:: bash
 
@@ -177,9 +178,7 @@ Now, let's attach your |fpga_name|_ FPGA(s) to your Run Farm Machines:
 5. Boot the machine.
 
 6. Obtain an existing bitstream tar file for your FPGA by opening the ``bitstream_tar`` URL listed
-   under |hwdb_entry_name| in the `FireSim Sample HWDB File
-   <https://github.com/firesim/firesim/blob/main/deploy/sample-backup-configs/sample_config_hwdb.yaml>`_.
-
+   under |hwdb_entry_name| in the following file: :gh-file-ref:`deploy/sample-backup-configs/sample_config_hwdb.yaml`.
 7. Extract the ``.tar.gz`` file to a known location. Inside, you will find
    three files; the one we are currently interested in will be called
    ``firesim.mcs``. Note the full path of this ``firesim.mcs`` file for the
