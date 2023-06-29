@@ -108,16 +108,22 @@ Next, install the cable drivers like so:
 
 **Machines:** Run Farm Machines.
 
-First, run the following to install the XDMA kernel module:
+First, run the following to clone the XDMA kernel module source:
 
 .. code-block:: bash
 
    cd ~/   # or any directory you would like to work from
    git clone https://github.com/Xilinx/dma_ip_drivers
+   cd dma_ip_drivers
    git checkout 0e8d321
-
    cd XDMA/linux-kernel/xdma
+
+|nitefury_patch_xdma|
+
+.. code-block:: bash
+
    sudo make install
+
 
 Now, test that the module can be inserted:
 
@@ -321,7 +327,7 @@ machine's IP address if they are different machines.
 
 
 Ensure that the output of the command shows that the |tool_type_lab| tools are
-present in the printed environment variables (i.e., |example_var|).
+present in the printed environment variables (i.e., ``PATH``).
 
 If you have multiple Run Farm machines, you should repeat this process for
 each Run Farm machine, replacing ``RUN_FARM_IP`` with a different Run Farm Machine's

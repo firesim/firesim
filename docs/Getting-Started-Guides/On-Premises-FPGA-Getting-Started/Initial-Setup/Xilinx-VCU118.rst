@@ -11,5 +11,6 @@
 .. |fpga_spi_part_number| replace:: ``mt25qu01g-spi-x1_x2_x4``
 .. |fpga_attach_prereq| replace:: into an open PCIe slot in the machine. Also, ensure that the SW16 switches on the FPGA are set to ``0101`` to enable QSPI flashing over JTAG (i.e., ``position 1 = 0``, ``position 2 = 1``, ``position 3 = 0``, and ``position 4 = 1``. Having the switch set to the side of the position label indicates 0.)
 .. |jtag_help| replace:: JTAG. 
+.. |nitefury_patch_xdma| replace:: The directory you are now in contains the XDMA kernel module. Now, let's build and install it:
 
 .. include:: Xilinx-XDMA-Template.rst

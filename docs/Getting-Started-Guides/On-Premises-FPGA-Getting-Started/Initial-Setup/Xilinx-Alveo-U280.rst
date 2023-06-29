@@ -11,5 +11,6 @@
 .. |fpga_spi_part_number| replace:: ``mt25qu01g-spi-x1_x2_x4``
 .. |fpga_attach_prereq| replace:: into an open PCIe slot in the machine.
 .. |jtag_help| replace:: JTAG. 
+.. |nitefury_patch_xdma| replace:: The directory you are now in contains the XDMA kernel module. Now, let's build and install it:
 
 .. include:: Xilinx-XDMA-Template.rst
