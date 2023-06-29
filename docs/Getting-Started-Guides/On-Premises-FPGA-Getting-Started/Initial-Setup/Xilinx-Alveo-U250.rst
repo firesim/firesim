@@ -5,5 +5,6 @@
 .. |tool_type| replace:: Xilinx Vivado
 .. |example_var| replace:: XILINX_VIVADO
 .. |deploy_manager_code| replace:: ``XilinxAlveoU250InstanceDeployManager``
+.. |fpga_spi_part_number| replace:: ``mt25qu01g-spi-x1_x2_x4``
 
 .. include:: Xilinx-XDMA-Template.rst

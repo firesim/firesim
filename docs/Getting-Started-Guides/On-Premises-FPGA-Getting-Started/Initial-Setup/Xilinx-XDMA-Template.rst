@@ -17,106 +17,258 @@ Background/Terminology
 .. include:: ../../Terminology-Template.rst
 
 
-FPGA Software Setup
----------------------------
-
 System requirements and Setup
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+----------------------------------
 
 The below sections outline what you need to install to run FireSim on each
 machine type in a FireSim cluster. Note that the below three machine types
 can all map to a single machine in your setup; in this case, you should follow
-all the installation instructions on your single machine.
+all the installation instructions on your single machine, without duplication
+(if a step is required on multiple machine types).
 
-We highly recommend using Ubuntu 20.04 LTS as the host operating system for
+**We highly recommend using Ubuntu 20.04 LTS as the host operating system for
 all machine types in an on-premises setup, as this is the OS recommended by
-Xilinx. 
+Xilinx.**
 
 
-Manager Machine
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+Fix default .bashrc
+^^^^^^^^^^^^^^^^^^^^^^^
 
-The manager machine requires no special setup at this stage. We will clone
-the FireSim repo and set up dependencies for the manager in a later step.
+Machines: Manager Machine, Run Farm Machines, Build Farm Machines.
 
-Run Farm Machine(s)
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-
-To set up your Run Farm Machines, please do the following:
-
-First, please refer to the 
-`minimum system requirements on the Xilinx website <https://docs.xilinx.com/r/en-US/ug1301-getting-started-guide-alveo-accelerator-cards/Minimum-System-Requirements>`_
-to ensure that your intended Run Farm machine is sufficient for hosting a |fpga_name|.
-
-
-
-
-
-
-Build Farm Machines(s)
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-
-If you are not planning to run bitstream builds, you can skip this section
-for now and return later.
-
-
-
-
-Next, install the U250 FPGA as indicated: https://docs.xilinx.com/r/en-US/ug1301-getting-started-guide-alveo-accelerator-cards/Card-Installation-Procedures
-
-We require the following programs/packages installed from the Xilinx website in addition to a physical U250 installation:
-
-* Vivado 2021.1 or 2022.2
-
-* U250 board package (corresponding with Vivado 2021.1 or 2022.2)
-
-  * Ensure you complete the "Installing the Deployment Software" and "Card Bring-Up and Validation" sections in the following link: https://docs.xilinx.com/r/en-US/ug1301-getting-started-guide-alveo-accelerator-cards/Installing-the-Deployment-Software
-
-  * Ensure that the board package is installed to a Vivado accessible location: https://support.xilinx.com/s/article/The-board-file-location-with-the-latest-Vivado-tools?language=en_US
-
-Importantly, using this FPGA with FireSim requires that you have ``sudo`` **passwordless** access to the machine with the FPGA.
-This is needed to flash the FPGA bitstream onto the FPGA.
-
-XDMA Setup
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-
-To communicate with the FPGA over PCI-e, we need to install the Xilinx XDMA kernel module.
-First, lets install the XDMA kernel module into a FireSim-known location:
+Edit your ``.bashrc`` file so that the following section is no longer
+present:
 
 .. code-block:: bash
 
-   cd /tmp # or any location you prefer
+   # IF not running interactively, don't do anything
+   case
+   ...
+   esac
+
+
+Password-less sudo
+^^^^^^^^^^^^^^^^^^^^^^^^^
+
+Machines: Manager Machine and Run Farm Machines.
+
+Enable passwordless sudo by running ``sudo visudo``, then adding
+the following line at the end of the file:
+
+.. code-block:: bash
+
+   YOUR_USERNAME_HERE ALL=(ALL) NOPASSWD:ALL
+
+
+Once you have done so, reboot the Manager Machines and Run Farm Machines
+and confirm that you are able to run ``sudo true`` without being
+prompted for a password.
+
+
+Install Vivado Lab and Cable Drivers
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+Machines: Run Farm Machines.
+
+Go to the `Xilinx Downloads Website <https://www.xilinx.com/support/download.html>`_ and download "Vivado 2023.1: Lab Edition - Linux".
+
+Extract the downloaded ``.tar.gz`` file, then:
+
+.. code-block:: bash
+
+   cd [EXTRACTED VIVADO LAB DIRECTORY]
+   sudo ./installLibs.sh
+   sudo ./xsetup --batch Install --agree XilinxEULA,3rdPartyEULA --edition "Vivado Lab Edition (Standalone)"
+
+This will have installed Vivado Lab to ``/tools/Xilinx/Vivado_Lab/2023.1/``.
+
+For ease of use, add the following to the end of your ``.bashrc``:
+
+.. code-block:: bash
+
+   source /tools/Xilinx/Vivado_Lab/2023.1/settings64.sh
+
+
+Then, open a new terminal or source your ``.bashrc``.
+
+Next, install the cable drivers like so:
+
+.. code-block:: bash
+
+   cd /tools/Xilinx/Vivado_Lab/2023.1/data/xicom/cable_drivers/lin64/install_script/install_drivers/
+   sudo ./install_drivers
+
+
+Install the Xilinx XDMA and XVSEC drivers
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+Machines: Run Farm Machines.
+
+Next, run the following:
+
+.. code-block:: bash
+
+   cd ~/   # or any directory you would like to work from
    git clone https://github.com/Xilinx/dma_ip_drivers
-   cd dma_ip_drivers
-   git checkout 2022.1.5
+   git checkout 0e8d321
+
    cd XDMA/linux-kernel/xdma
-   sudo make clean && sudo make && sudo make install
+   sudo make install
 
-Next, lets add the kernel module:
+Now, test that the module can be inserted:
 
 .. code-block:: bash
 
-   # the module should be installed in the following location
-   # by the `make install` previously run
    sudo insmod /lib/modules/$(uname -r)/extra/xdma.ko poll_mode=1
-
-By default, FireSim will refer to this location to check if the XDMA driver is loaded.
-Verify that you can see the XDMA module with:
-
-.. code-block:: bash
-
    lsmod | grep -i xdma
 
-.. warning:: After the machine is rebooted, you may need to re-insert the XDMA kernel module.
 
-Now you're ready to continue with other FireSim setup!
+The second command above should have produced output indicating that the XDMA
+driver is loaded.
+
+Next, we will do the same for the XVSEC driver, which is pulled from a separate
+repository due to kernel version incompatibility:
+
+.. code-block:: bash
+
+   cd ~/
+   git clone https://github.com/paulmnt/dma_ip_drivers dma_ip_drivers_xvsec
+   cd dma_ip_drivers_xvsec
+   git checkout 302856a
+   cd XVSEC/linux-kernel/
+
+   make clean all
+   sudo make install
+
+Now, test that the module can be inserted:
+
+.. code-block:: bash
+
+   sudo modprobe xvsec
+   lsmod | grep -i xvsec
 
 
-Setting up your On-Premises Machine
---------------------------------------
+The second command above should have produced output indicating that the XVSEC
+driver is loaded. 
 
-This guide is setting up a single node cluster (i.e. running FPGA bitstream builds and simulations on a single machine) for FireSim use.
-This single machine will serve as the "Manager Machine" that acts as a "head" node that all work will be completed on.
+Also, make sure you get output for the following (usually, ``/usr/local/sbin/xvsecctl``):
+
+.. code-block:: bash
+
+   which xvsecctl
+
+
+Install your FPGA(s)
+^^^^^^^^^^^^^^^^^^^^^
+
+Machines: Run Farm Machines.
+
+Now, let's attach your FPGAs to your Run Farm Machines:
+
+1. Poweroff your machine.
+
+2. Insert your FPGA into an open PCIe slot in the machine.
+
+3. Attach any additional power cables between the FPGA and the host machine.
+
+4. Attach the USB cable between the FPGA and the host machine for JTAG.
+
+5. Boot the machine.
+
+6. Download a bitstream tar file for your FPGA using one of the links from this
+   file: `FireSim Sample HWDB
+   <https://github.com/firesim/firesim/blob/main/deploy/sample-backup-configs/sample_config_hwdb.yaml>`_.
+   If there are multiple bitstreams listed for your FPGA, you can choose any
+   bitstream.
+
+7. Extract the ``.tar.gz`` file to a known location. Inside, you will find
+   three files; the one we are currently interested will be called
+   ``firesim.mcs``. Note the full path of this ``firesim.mcs`` file for the
+   next step.
+
+8. Open Vivado Lab and click "Open Hardware Manager". Then click "Open Target" and "Auto connect".
+
+9. Right-click on your FPGA board and click "Add configuration device". Choose |fpga_spi_part_number|
+   as the part.
+
+10. For configuration file, choose the ``firesim.mcs`` file from step 7.
+
+11. Uncheck "verify" and click OK.
+
+12. When flashing is completed, power off your machine fully.
+
+13. Cold-boot the machine (i.e., the FPGA should have completely lost power). A cold boot is required for the FPGA to be successfully re-programmed from the attached flash.
+
+14. Once the machine has rebooted, run the following to ensure that your FPGA is set up properly:
+
+.. code-block:: bash
+
+   lspci -vvv -d 10ee:903f
+
+If successful, this should show an entry with Xilinx as the manufacturer and two memory regions, one 32M wide and one 64K wide.
+
+
+Install sshd
+^^^^^^^^^^^^^^^
+
+Machines: Manager Machine, Run Farm Machines, and Build Farm Machines
+
+On Ubuntu, install ``openssh-server`` like so:
+
+.. code-block:: bash
+
+   sudo apt install openssh-server
+
+
+Set up SSH Keys
+^^^^^^^^^^^^^^^^^^^^^
+
+Machines: Manager Machine.
+
+On the manager machine, generate a keypair that you will use to ssh from the
+manager machine into the manager machine (ssh localhost), run farm machines,
+and build farm machines:
+
+.. code-block:: bash
+
+   cd ~/.ssh
+   ssh-keygen -t ed25519 -C "firesim" -f firesim.pem
+   [create passphrase]
+
+Next, add this key to the ``authorized_keys`` file on the manager machine:
+
+.. code-block:: bash
+
+   cd ~/.ssh
+   cat firesim.pem.pub >> authorized_keys
+   chmod 0600 authorized_keys
+
+You should also copy this public key into the ``~/.ssh/authorized_keys`` files
+on all of your Run Farm and Build Farm Machines.
+
+Returning to the Manager Machine, let's set up an ``ssh-agent``:
+
+.. code-block:: bash
+
+   cd ~/.ssh
+   ssh-agent -s > AGENT_VARS
+   source AGENT_VARS
+   ssh-add firesim.pem
+
+
+If you reboot your machine (or otherwise kill the ``ssh-agent``, you
+will need to re-run the above four commands before using FireSim.
+If you only open a new terminal (and ``ssh-agent`` is already running),
+you can simply re-run ``source ~/.ssh/AGENT_VARS``.
+
+Finally, confirm that you can now ``ssh localhost`` and ssh into your Run Farm
+and Build Farm Machines without being prompted for a passphrase.
+
+
+TODO: Verify your environment
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+Machines: Manager Machine, Run Farm Machines, and Build Farm Machines
 
 Finally, ensure that the |tool_type| tools are sourced in your shell setup (i.e. ``.bashrc`` and or ``.bash_profile``) so that any shell can use the corresponding programs.
 The environment variables should be visible to any non-interactive shells that are spawned.
@@ -126,35 +278,9 @@ You can check this by ensuring that the output of the following command shows th
 
     ssh localhost printenv
 
-Other Miscellaneous Setup
+
+Install Guestmount
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-
-Additionally, you should be able to run ``ssh localhost`` without needing a password.
-The FireSim manager program runs all commands by ``ssh``-ing into a BuildFarm/RunFarm machine given an IP address then running the command.
-To do so non-interactively, it needs passwordless access to the machines (in our case, ``localhost``) to build/run on.
-To safely enable passwordless access, you can first create a unique SSH key and add it to the ``~/.ssh/authorized_keys`` file.
-For example, the following instructions will create a SSH key called ``id_rsa_local`` and add it to the authorized keys:
-
-.. code-block:: bash
-
-   cd ~/.ssh
-
-   # create the new key with name `id_rsa_local` and a comment
-   # you can use a different name (and modify the comment)
-   ssh-keygen -f id_rsa_local -C "@localhost"
-
-   # add the key to the `authorized_keys` file
-   cat id_rsa_local.pub >> authorized_keys
-   chmod 600 authorized_keys
-
-Next, you should use that key to for ``localhost`` logins by modifying your ``~/.ssh/config`` file so that the SSH agent can use that SSH key.
-For example:
-
-.. code-block:: text
-
-   # add the following lines
-   Host localhost
-      IdentityFile ~/.ssh/id_rsa_local
 
 Finally, you should also install the ``guestmount`` program and ensure it runs properly.
 This is needed by a variety of FireSim steps that mount disk images in order to copy in/out results of simulations out of the images.
@@ -164,10 +290,33 @@ Most likely you will need to follow the instructions `here <https://askubuntu.co
    Due to prior issues with ``guestmount`` internally, ensure that your FireSim repository (and all temporary directories)
    does not reside on an NFS mount.
 
+
+Check Hard File Limit
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+Machine: Manager Machine
+
+Check the output of the following command:
+
+.. code-block:: bash
+
+   ulimit -Hn
+
+If the result is greater than or equal to 16384, you can continue on to "Setting up the FireSim Repo". Otherwise, run:
+
+.. code-block:: bash
+
+   echo "* hard nofile 16384" | sudo tee --append /etc/security/limits.conf
+
+Then, reboot your machine.
+
+
 Setting up the FireSim Repo
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-We're finally ready to fetch FireSim's sources. Run:
+Machine: Manager Machine
+
+We're finally ready to fetch FireSim's sources. This should be done on your Manager Machine. Run:
 
 .. code-block:: bash
    :substitutions:
@@ -396,3 +545,24 @@ Then, run the following command to generate a mapping from a PCI-E BDF to FPGA U
 This will generate a database file in ``/opt/firesim-db.json`` that has this mapping.
 
 Now you're ready to continue with other FireSim setup!
+
+
+
+
+
+TODO
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+Next, install the U250 FPGA as indicated: https://docs.xilinx.com/r/en-US/ug1301-getting-started-guide-alveo-accelerator-cards/Card-Installation-Procedures
+
+We require the following programs/packages installed from the Xilinx website in addition to a physical U250 installation:
+
+* Vivado 2021.1 or 2022.2
+
+* U250 board package (corresponding with Vivado 2021.1 or 2022.2)
+
+  * Ensure you complete the "Installing the Deployment Software" and "Card Bring-Up and Validation" sections in the following link: https://docs.xilinx.com/r/en-US/ug1301-getting-started-guide-alveo-accelerator-cards/Installing-the-Deployment-Software
+
+  * Ensure that the board package is installed to a Vivado accessible location: https://support.xilinx.com/s/article/The-board-file-location-with-the-latest-Vivado-tools?language=en_US
+
+
