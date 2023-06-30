@@ -56,8 +56,8 @@ three groups:
 One final piece of terminology will also be referenced throughout these
 docs:
 
-**Golden Gate (MIDAS II)**
-  The FIRRTL compiler used by FireSim to convert target RTL into a decoupled
+**Golden Gate**
+  The FIRRTL compiler in FireSim that converts target RTL into a decoupled
   simulator. Formerly named MIDAS.
 
 
