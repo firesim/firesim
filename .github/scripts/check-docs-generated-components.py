@@ -11,7 +11,7 @@ def run_docs_generated_components_check():
     with cd(manager_fsim_dir), prefix('source sourceme-manager.sh'):
         with prefix("cd deploy"):
             run("cat config_runtime.yaml")
-            path = 'docs/Getting-Started-Guides/AWS-EC2-F1-Tutorial/Running-Simulations-Tutorial/DOCS_EXAMPLE_config_runtime.yaml'
+            path = 'docs/Getting-Started-Guides/AWS-EC2-F1-Getting-Started/Running-Simulations/DOCS_EXAMPLE_config_runtime.yaml'
             run(f"cat ../{path}")
             run(f"diff config_runtime.yaml ../{path}")
             run("firesim --help")
