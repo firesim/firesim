@@ -34,8 +34,8 @@ We're finally ready to fetch FireSim's sources. This should be done on your Mana
 
 Next, we will bootstrap the machine by installing Miniforge Conda, our software package manager, and set up a default software environment using Conda.
 
-You should select a location where you want conda to be installed. This can be an existing Miniforge Conda
-install, or a directory (that does not exist) where you would like conda to be installed.
+You should select a location where you want Conda to be installed. This can be an existing Miniforge Conda
+install, or a directory (that does not exist) where you would like Conda to be installed.
 
 Replace ``REPLACE_ME_USER_CONDA_LOCATION`` in the command below with your chosen path and run it:
 
@@ -46,7 +46,7 @@ Replace ``REPLACE_ME_USER_CONDA_LOCATION`` in the command below with your chosen
 
 Among other setup steps, the script will install Miniforge Conda (https://github.com/conda-forge/miniforge) and create a default environment called ``firesim``.
 
-When prompted, you should allow the Conda installer to modify your ``~/.bashrc`` to automatically place you in the conda environment when opening a new shell.
+When prompted, you should allow the Conda installer to modify your ``~/.bashrc`` to automatically place you in the Conda environment when opening a new shell.
 
 .. warning::
     **Once the** ``machine-launch-script.sh`` **completes, ensure that you log out of the 

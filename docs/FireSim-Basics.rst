@@ -16,24 +16,24 @@ over 40 papers using FireSim in many areas, including computer architecture,
 systems, networking, security, scientific computing, circuits, design
 automation, and more (see the `Publications page <https://fires.im/publications>`__ on
 the FireSim website to learn more). FireSim
-has also been used in the development of shipping commercial silicon. FireSim
+has also been used in the development of commercially-available silicon. FireSim
 was originally developed in the Electrical Engineering and Computer Sciences
 Department at the University of California, Berkeley, but
 now has industrial and academic contributors from all over the world.
 
-This documentation will walk you through getting started with using FireSim and
-serves as a reference for more advanced FireSim features. For higher-level
+This documentation will walk you through getting started with using FireSim on
+your platform and also serves as a reference for more advanced FireSim features. For higher-level
 technical discussion about FireSim, see the `FireSim website <https://fires.im>`__.
 
 
-Three common FireSim usage models
+Common FireSim usage models
 ---------------------------------------
 
 Below are three common usage models for FireSim. The first two are the most common, while the
 third model is primarily for those interested in warehouse-scale computer research. The getting
 started guides on this documentation site will cover all three models.
 
-Single-Node Simulations Using One or More On-Premises FPGAs
+1. Single-Node Simulations Using One or More On-Premises FPGAs
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 In this usage model, FireSim allows for simulation of targets consisting of
@@ -44,14 +44,14 @@ like on the cloud, the FireSim manager can automatically distribute and manage
 jobs on one or more on-premises FPGAs, including running complex workloads like
 SPECInt2017 with full reference inputs.
 
-Single-Node Simulations Using Cloud FPGAs
+2. Single-Node Simulations Using Cloud FPGAs
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 This usage model is similar to the previous on-premises case, but instead
 deploys simulations on FPGAs attached to cloud instances, rather than requiring
 users to obtain and set-up on-premises FPGAs. This allows for dynamically
 scaling the number of FPGAs in-use to match workload requirements. For example,
-it is just as cost effective to run the 10 workloads in SPECInt2017 in parallel
+on AWS EC2 F1, it is just as cost effective to run the 10 workloads in SPECInt2017 in parallel
 on 10 cloud FPGAs vs. running them serially on one cloud FPGA.
 
 All automation in FireSim works in both the on-premises and cloud
@@ -59,8 +59,8 @@ usage models, which enables a **hybrid usage model** where early development hap
 on one (or a small cluster of) on-premises FPGA(s), while bursting to a large
 number of cloud FPGAs when a high-degree of parallelism is necessary.
 
-Datacenter/Cluster Simulations on On-Premises or Cloud FPGAs
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+3. Datacenter/Cluster Simulations on On-Premises or Cloud FPGAs
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 In this mode, FireSim also models a cycle-accurate network with
 parameterizeable bandwidth, link latency, and configurable
@@ -76,7 +76,6 @@ Other Use Cases
 
 If you have other use-cases that we haven't covered or don't fit into the above
 buckets, feel free to contact us!
-
 
 Choose your platform to get started
 --------------------------------------

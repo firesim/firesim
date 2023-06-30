@@ -62,7 +62,7 @@ To launch a manager instance, follow these steps:
       .. include:: /../scripts/machine-launch-script.sh
          :code: bash
 
-   When your instance boots, this will install a compatible set of all the dependencies needed to run FireSim on your instance using conda.
+   When your instance boots, this will install a compatible set of all the dependencies needed to run FireSim on your instance using Conda.
 
 #. Double check your configuration. The most common misconfigurations that may require repeating this process include:
 

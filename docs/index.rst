@@ -1,7 +1,7 @@
 Welcome to FireSim's documentation (version "|version|")!
 ===========================================================
 
-New to FireSim? Jump to the :ref:`firesim-basics` page for more info.
+New to FireSim? Jump to the :doc:`/FireSim-Basics` page for more info.
 
 
 .. toctree::

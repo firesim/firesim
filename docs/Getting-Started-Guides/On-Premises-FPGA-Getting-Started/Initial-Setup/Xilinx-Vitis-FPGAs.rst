@@ -224,7 +224,7 @@ Finally, let's verify that the environment variables are correctly set up for th
    echo $PATH
 
 You should see that both the |tool_type| tools are located in the ``PATH`` are are **after**
-the conda environment path. Next run:
+the Conda environment path. Next run:
 
 .. code-block:: bash
 
