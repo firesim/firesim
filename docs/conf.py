@@ -199,7 +199,7 @@ latex_elements = {
 #  author, documentclass [howto, manual, or own class]).
 latex_documents = [
     (master_doc, 'FireSim.tex', u'FireSim Documentation',
-     u'Sagar Karandikar, Howard Mao, \\\\ Donggyu Kim, David Biancolin, \\\\ Alon Amid,  \\\\ Berkeley Architecture Research', 'manual'),
+     u'Sagar Karandikar, David Biancolin, \\\\ Abraham Gonzalez, Howard Mao, \\\\ Donggyu Kim, Alon Amid, \\\\ Berkeley Architecture Research', 'manual'),
 ]
 
 
