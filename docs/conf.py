@@ -10,6 +10,7 @@ import shutil
 import os
 import subprocess
 import sys
+import time
 
 from sphinx.util import logging
 logger = logging.getLogger(__name__)
@@ -27,8 +28,11 @@ logger = logging.getLogger(__name__)
 # -- Project information -----------------------------------------------------
 
 project = u'FireSim'
-copyright = u'2018, Sagar Karandikar, Howard Mao, Donggyu Kim, David Biancolin, Alon Amid, and Berkeley Architecture Research'
-author = u'Sagar Karandikar, Howard Mao, Donggyu Kim, David Biancolin, Alon Amid, and Berkeley Architecture Research'
+
+this_year = time.strftime("%Y")
+
+copyright = u'2018-' + this_year + ' Sagar Karandikar, David Biancolin, Abraham Gonzalez, Howard Mao, Donggyu Kim, Alon Amid, and Berkeley Architecture Research'
+author = u'Sagar Karandikar, David Biancolin, Abraham Gonzalez, Howard Mao, Donggyu Kim, Alon Amid, and Berkeley Architecture Research'
 
 on_rtd = os.environ.get("READTHEDOCS") == "True"
 on_gha = os.environ.get("GITHUB_ACTIONS") == "true"
