@@ -38,7 +38,9 @@ You'll probably want to start out with the following request, depending on your 
     New limit value:           64
 
 
-This limit of 64 vCPUs for F instances allows you to run one node on the ``f1.2xlarge`` or eight nodes on the
+This limit of 64 vCPUs for F instances allows you to run both examples in this
+getting started guide, a single-node target design simulation on an
+``f1.2xlarge`` and an eight-node target design simulation on an
 ``f1.16xlarge``.
 
 For the "Use Case Description", you should describe your project and write
@@ -47,9 +49,5 @@ you're using can be found at: https://fires.im
 
 This process has a human in the loop, so you should submit it ASAP. At
 this point, you should wait for the response to this request.
-
-If you're at Berkeley/UCB-BAR, you also need to wait until your account has
-been added to the RISE billing pool, otherwise your personal CC will be charged
-for AWS usage.
 
 Hit Next below to continue.
