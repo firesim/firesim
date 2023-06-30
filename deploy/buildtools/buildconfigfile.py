@@ -85,7 +85,7 @@ class BuildConfigFile:
 
         self.hwdb = RuntimeHWDB(args.hwdbconfigfile)
 
-        self.builds_list = list(build_recipes.values())
+        self.builds_list = list(map(lambda x: build_recipes[x], builds_to_run_list))
         self.build_ip_set = set()
 
         # retrieve the build host section
