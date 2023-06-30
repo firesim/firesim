@@ -45,11 +45,9 @@ To complete this guide, you need to have the following limits:
     * This is sufficient for one ``c5.4xlarge`` manager instance and one ``z1d.2xlarge`` build farm instance.
 
 If you have insufficient limits, request a limit increase by following these steps:
-
 https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/ec2-resource-limits.html#request-increase
 
 In your request, enter the vCPU limits for the two instance classes shown above.
-
 This process sometimes has a human in the loop, so you should submit it ASAP. At
 this point, you should wait for the response to this request.
 

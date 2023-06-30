@@ -41,7 +41,7 @@ To launch a manager instance, follow these steps:
    * **Do not** use `FPGA Developer AMI` from the *AWS Marketplace AMIs* tab, as you will likely get an incorrect version of the AMI.
 
 #. In the *Instance Type* drop-down, select the instance type of
-   your choosing. A good choice is a ``c5.4xlarge`` (16 cores, 32 GiB) or a ``z1d.2xlarge`` (8 cores, 64 GiB).
+   your choosing. A good choice is a ``c5.4xlarge`` (16 cores, 32 GiB DRAM) or a ``z1d.2xlarge`` (8 cores, 64 GiB DRAM).
 #. In the *Key pair (login)* drop-down, select the ``firesim`` key pair we set up earlier.
 #. In the *Network settings* drop-down click *edit* and modify the following settings:
 
@@ -177,10 +177,11 @@ through the rest of the FireSim setup process. To run it, do the following:
     firesim managerinit --platform f1
 
 This will first prompt you to setup AWS credentials on the instance, which allows
-the manager to automatically manage build/simulation nodes. See
-https://docs.aws.amazon.com/cli/latest/userguide/tutorial-ec2-ubuntu.html#configure-cli-launch-ec2
-for more about these credentials. When prompted, you should specify the same
-region that you chose above and set the default output format to ``json``.
+the manager to automatically manage build/simulation nodes. You can use the same
+AWS access key you created when running setup commands on the ``t2.nano``
+instance earlier (in :ref:`run-scripts-t2`). When prompted, you should specify the same
+region that you've been selecting thus far (one of ``us-east-1``, ``us-west-2``, or
+``eu-west-1``) and set the default output format to ``json``.
 
 Next, it will prompt you for an email address, which is used to
 send email notifications upon FPGA build completion and optionally for

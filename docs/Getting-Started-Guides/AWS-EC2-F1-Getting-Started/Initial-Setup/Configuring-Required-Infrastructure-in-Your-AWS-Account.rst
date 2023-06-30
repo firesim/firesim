@@ -85,6 +85,8 @@ Launch a ``t2.nano`` by following these instructions:
    settings)
 6. Click on the instance ID and note the instance's public IP address.
 
+.. _run-scripts-t2:
+
 Run scripts from the t2.nano
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
@@ -119,7 +121,7 @@ On this machine, run the following:
 
 Within the prompt, you should specify the same region that you chose
 above (one of ``us-east-1``, ``us-west-2``, ``eu-west-1``) and set the default
-output format to ``json``. You will need to generate an AWS access key in the "Security Credentials" menu of your AWS settings (as instructed in https://docs.aws.amazon.com/IAM/latest/UserGuide/id_credentials_access-keys.html#Using_CreateAccessKey ). You can also learn more about the ``aws configure`` command on the following page: https://docs.aws.amazon.com/cli/latest/reference/configure/index.html
+output format to ``json``. You will need to generate an AWS access key in the "Security Credentials" menu of your AWS settings (as instructed in https://docs.aws.amazon.com/IAM/latest/UserGuide/id_credentials_access-keys.html#Using_CreateAccessKey ). You should keep the AWS access key information in a safe place, so that you can refer to it again when setting up the manager instance. You can learn more about the ``aws configure`` command on the following page: https://docs.aws.amazon.com/cli/latest/reference/configure/index.html
 
 Again on the ``t2.nano`` instance, do the following:
 

@@ -51,37 +51,28 @@ you have not modified it):
 .. include:: DOCS_EXAMPLE_config_runtime.yaml
    :code: yaml
 
-We'll need to modify a couple of these lines.
+We won't have to modify any of the defaults for this single-node simulation guide,
+but let's walk through several of the key parts of the file.
 
-First, let's tell the manager to use the correct numbers and types of instances.
-You'll notice that in the ``run_farm`` mapping, the manager is configured to
-launch a Run Farm named ``mainrunfarm`` (given by the ``run_farm_tag``. Notice that under ``run_farm_hosts_to_use`` no ``f1.16xlarge``\ s,
-``m4.16xlarge``\ s, ``f1.4xlarge``\ s, or ``f1.2xlarge``\ s are used. The tag specified here allows the
-manager to differentiate amongst many parallel run farms (each running
-a workload) that you may be operating -- but more on that later.
+First, let's see how the correct numbers and types of instances are specified to the manager:
 
-Since we only want to simulate a single node, let's switch to using one
-``f1.2xlarge``. To do so, change the ``run_farm_hosts_to_use`` sequence to the following:
+* You'll notice first that in the ``run_farm`` mapping, the manager is
+  configured to launch a Run Farm named ``mainrunfarm`` (given by the
+  ``run_farm_tag``). The tag specified here allows the manager to differentiate
+  amongst many parallel run farms (each running some workload on some target design) that you may be
+  operating. In this case, the default is fine since we're only running
+  a single run farm.
+* Notice that under ``run_farm_hosts_to_use``, the only non-zero value is for ``f1.2xlarge``,
+  which should be set to ``1``. This is exactly what we'll need for this guide.
+* You'll see other parameters in the ``run_farm`` mapping, like
+  ``run_instance_market``, ``spot_interruption_behavior``, and
+  ``spot_max_price``. If you're an experienced AWS user, you can see what these
+  do by looking at the :ref:`manager-configuration-files` section. Otherwise,
+  don't change them.
 
-.. code-block:: yaml
-
-    run_farm_hosts_to_use:
-        - f1.16xlarge: 0
-        - f1.4xlarge: 0
-        - f1.2xlarge: 1
-        - m4.16xlarge: 0
-        - z1d.3xlarge: 0
-        - z1d.6xlarge: 0
-        - z1d.12xlarge: 0
-
-You'll see other parameters in the ``run_farm`` mapping, like ``run_instance_market``,
-``spot_interruption_behavior``, and ``spot_max_price``. If you're an experienced
-AWS user, you can see what these do by looking at the
-:ref:`manager-configuration-files` section. Otherwise, don't change them.
-
-Now, let's verify that the ``target_config`` mapping will model the correct target design.
-By default, it is set to model a single-node with no network.
-It should look like the following:
+Next, let's look at how the target design is specified to the manager. This is located
+in the ``target_config`` section of ``firesim/deploy/config_runtime.yaml``, shown below
+(with comments removed):
 
 .. code-block:: yaml
 
@@ -93,65 +84,45 @@ It should look like the following:
         net_bandwidth: 200
         profile_interval: -1
 
-        # This references a section from config_hwdb.yaml
-        # In homogeneous configurations, use this to set the hardware config deployed
-        # for all simulators
         default_hw_config: firesim_rocket_quadcore_no_nic_l2_llc4mb_ddr3
 
+        plusarg_passthrough: ""
 
-Note ``topology`` is set to
-``no_net_config``, indicating that we do not want a network. Then,
-``no_net_num_nodes`` is set to ``1``, indicating that we only want to simulate
-one node. Lastly, the ``default_hw_config`` is
-``firesim_rocket_quadcore_no_nic_l2_llc4mb_ddr3``. This uses a hardware configuration that does not
-have a NIC. This hardware configuration models a Quad-core Rocket Chip with 4
-MB of L2 cache and 16 GB of DDR3, and **no** network interface card.
 
-We will leave the ``workload`` mapping unchanged here, since we do
-want to run the buildroot-based Linux on our simulated system. The ``terminate_on_completion``
-feature is an advanced feature that you can learn more about in the
-:ref:`manager-configuration-files` section.
+Here are some highlights of this section:
 
-As a final sanity check, in the mappings we changed, the ``config_runtime.yaml`` file should now look like this:
-
-.. code-block:: yaml
-
-	run_farm:
-	    base_recipe: run-farm-recipes/aws_ec2.yaml
-	    recipe_arg_overrides:
-	    	run_farm_tag: mainrunfarm
-	    	always_expand_run_farm: true
-	    	launch_instances_timeout_minutes: 60
-	    	run_instance_market: ondemand
-	    	spot_interruption_behavior: terminate
-	    	spot_max_price: ondemand
-	    	default_simulation_dir: /home/centos
-	    	run_farm_hosts_to_use:
-	    	    - f1.16xlarge: 0
-	    	    - f1.4xlarge: 0
-	    	    - f1.2xlarge: 1
-	    	    - m4.16xlarge: 0
-	    	    - z1d.3xlarge: 0
-	    	    - z1d.6xlarge: 0
-
-	target_config:
-		topology: no_net_config
-		no_net_num_nodes: 1
-		link_latency: 6405
-		switching_latency: 10
-		net_bandwidth: 200
-		profile_interval: -1
-		default_hw_config: firesim_rocket_quadcore_no_nic_l2_llc4mb_ddr3
-		plusarg_passthrough: ""
-
-	workload:
-		workload_name: linux-uniform.json
-		terminate_on_completion: no
-		suffix_tag: null
+* ``topology`` is set to ``no_net_config``, indicating that we do not want a
+  network. 
+* ``no_net_num_nodes`` is set to ``1``, indicating that we only want to
+  simulate one node. 
+* ``default_hw_config`` is ``firesim_rocket_quadcore_no_nic_l2_llc4mb_ddr3``.
+  This references a pre-built, publically-available AWS FPGA Image that is
+  specified in ``firesim/deploy/config_hwdb.yaml``.  This pre-built image
+  models a Quad-core Rocket Chip with 4 MB of L2 cache and 16 GB
+  of DDR3, and no network interface card.
 
 .. attention::
 
     **[Advanced users] Simulating BOOM instead of Rocket Chip**: If you would like to simulate a single-core `BOOM <https://github.com/ucb-bar/riscv-boom>`__ as a target, set ``default_hw_config`` to ``firesim_boom_singlecore_no_nic_l2_llc4mb_ddr3``.
+
+
+Finally, let's take a look at the ``workload`` section, which defines the
+target software that we'd like to run on the simulated target design. By
+default, it should look like this: 
+
+.. code-block:: yaml
+
+    workload:
+        workload_name: linux-uniform.json
+        terminate_on_completion: no
+        suffix_tag: null
+
+
+We'll also leave the ``workload`` mapping unchanged here, since we
+want to run the specified buildroot-based Linux (``linux-uniform.json``) on our
+simulated system. The ``terminate_on_completion`` feature is an advanced
+feature that you can learn more about in the :ref:`manager-configuration-files`
+section.
 
 
 Launching a Simulation!
@@ -209,7 +180,7 @@ Setting up the simulation infrastructure
 
 The manager will also take care of building and deploying all software
 components necessary to run your simulation. The manager will also handle
-flashing FPGAs. To tell the manager to setup our simulation infrastructure,
+programming FPGAs. To tell the manager to set up our simulation infrastructure,
 let's run:
 
 .. code-block:: bash
@@ -252,7 +223,7 @@ necessary to run a simulation.
 So, let's launch our simulation!
 
 
-Running a simulation!
+Running the simulation
 ^^^^^^^^^^^^^^^^^^^^^^^^^
 
 Finally, let's run our simulation! To do so, run:
@@ -312,7 +283,7 @@ live status page:
 This will only exit once all of the simulated nodes have shut down. So, let's let it
 run and open another ssh connection to the manager instance. From there, ``cd`` into
 your firesim directory again and ``source sourceme-manager.sh`` again to get
-our ssh key setup. To access our simulated system, ssh into the IP address being
+our ssh key set up. To access our simulated system, ssh into the IP address being
 printed by the status page, **from your manager instance**. In our case, from
 the above output, we see that our simulated system is running on the instance with
 IP ``172.30.2.174``. So, run:
@@ -358,7 +329,7 @@ with a Linux login prompt, like so:
 You can ignore the messages about the network -- that is expected because we
 are simulating a design without a NIC.
 
-Now, you can login to the system! The username is ``root``.
+Now, you can login to the system! The username is ``root`` and there is no password.
 At this point, you should be presented with a regular console,
 where you can type commands into the simulation and run programs. For example:
 

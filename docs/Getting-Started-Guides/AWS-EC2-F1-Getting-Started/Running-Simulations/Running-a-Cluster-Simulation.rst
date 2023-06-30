@@ -10,18 +10,6 @@ This will require one ``f1.16xlarge`` (8 FPGA) instance.
 Make sure you are ``ssh`` or ``mosh``'d into your manager instance and have sourced
 ``sourceme-manager.sh`` before running any of these commands.
 
-Returning to a clean configuration
--------------------------------------
-
-If you already ran the single-node getting started guide, let's return to a clean FireSim
-manager configuration by doing the following:
-
-.. code-block:: bash
-
-    cd firesim/deploy
-    cp sample-backup-configs/sample_config_runtime.yaml config_runtime.yaml
-
-
 Building target software
 ------------------------
 
@@ -37,19 +25,21 @@ this like so:
 .. code-block:: bash
 
     cd firesim/sw/firesim-software
+    ./init-submodules.sh
     ./marshal -v build br-base.json
 
 This process will take about 10 to 15 minutes on a ``c5.4xlarge`` instance.
 Once this is completed, you'll have the following files:
 
--  ``firesim/sw/firesim-software/images/firechip/br-base/br-disk-bin`` - a bootloader + Linux
+-  ``firesim/sw/firesim-software/images/firechip/br-base/br-base-bin`` - a bootloader + Linux
    kernel image for the nodes we will simulate.
--  ``firesim/sw/firesim-software/images/firechip/br-base/br-disk.img`` - a disk image for
+-  ``firesim/sw/firesim-software/images/firechip/br-base/br-base.img`` - a disk image for
    each the nodes we will simulate
 
 These files will be used to form base images to either build more complicated
 workloads (see the :ref:`defining-custom-workloads` section) or to copy around
 for deploying.
+
 
 Setting up the manager configuration
 -------------------------------------
@@ -66,15 +56,23 @@ you have not modified it):
    :code: yaml
 
 For the 8-node cluster simulation, the defaults in this file are close to what
-we want but require slight modification. Let's outline the important parameters:
+we want but require slight modification. Let's outline the important parameters
+we need to change:
 
-* ``f1.16xlarges: 1``: Change this parameter. This tells the manager that we want to launch one ``f1.16xlarge`` when we call the ``launchrunfarm`` command.
-* ``f1.4xlarges: 0``: Change this parameter. This tells the manager to not launch any ``f1.4xlarge`` machines when we call the ``launchrunfarm`` command.
-* ``topology: example_8config``: This tells the manager to use the topology named ``example_8config`` which is defined in ``deploy/runtools/user_topology.py``. This topology simulates an 8-node cluster with one ToR switch.
+* ``f1.16xlarges:``: Change this parameter to ``1``. This tells the manager that we want to launch one ``f1.16xlarge`` when we call the ``launchrunfarm`` command.
+* ``f1.2xlarges:``: Change this parameter to ``0``. This tells the manager to not launch any ``f1.2xlarge`` machines when we call the ``launchrunfarm`` command.
+* ``topology:``: Change this parameter to ``example_8config``. This tells the manager to use the topology named ``example_8config`` which is defined in ``deploy/runtools/user_topology.py``. This topology simulates an 8-node cluster with one ToR switch.
+* ``default_hw_config:`` Change this parameter to ``firesim_rocket_quadcore_nic_l2_llc4mb_ddr3``. This tells the manager that we want to simulate a quad-core Rocket Chip configuration with 512 KB of L2, 4 MB of L3 (LLC), 16 GB of DDR3, and a NIC, for each of the simulated nodes in the topology.
+
+.. attention::
+
+    **[Advanced users] Simulating BOOM instead of Rocket Chip**: If you would like to simulate a single-core `BOOM <https://github.com/ucb-bar/riscv-boom>`__ as a target, set ``default_hw_config`` to ``firesim_boom_singlecore_nic_l2_llc4mb_ddr3``.
+
+There are also some parameters that we won't need to change, but are worth highlighting:
+
 * ``link_latency: 6405``: This models a network with 6405 cycles of link latency. Since we are modeling processors running at 3.2 Ghz, 1 cycle = 1/3.2 ns, so 6405 cycles is roughly 2 microseconds.
 * ``switching_latency: 10``: This models switches with a minimum port-to-port latency of 10 cycles.
 * ``net_bandwidth: 200``: This sets the bandwidth of the NICs to 200 Gbit/s. Currently you can set any integer value less than this without making hardware modifications.
-* ``default_hw_config: firesim_rocket_quadcore_nic_l2_llc4mb_ddr3``: This tells the manager to use a quad-core Rocket Chip configuration with 512 KB of L2, 4 MB of L3 (LLC) and 16 GB of DDR3, with a NIC, for each of the simulated nodes in the topology.
 
 You'll see other parameters here, like ``run_instance_market``,
 ``spot_interruption_behavior``, and ``spot_max_price``. If you're an experienced
@@ -82,51 +80,10 @@ AWS user, you can see what these do by looking at the
 :ref:`manager-configuration-files` section. Otherwise, don't change them.
 
 As in the single-node getting started guide, we will leave the ``workload:`` mapping
-unchanged here, since we do want to run the buildroot-based Linux on our
+unchanged here, since we want to run the default buildroot-based Linux on our
 simulated system. The ``terminate_on_completion`` feature is an advanced feature
 that you can learn more about in the :ref:`manager-configuration-files`
 section.
-
-As a final sanity check, your ``config_runtime.yaml`` file should now look like this:
-
-.. code-block:: yaml
-
-	run_farm:
-	    base_recipe: run-farm-recipes/aws_ec2.yaml
-	    recipe_arg_overrides:
-	    	run_farm_tag: mainrunfarm
-	    	always_expand_run_farm: true
-	    	launch_instances_timeout_minutes: 60
-	    	run_instance_market: ondemand
-	    	spot_interruption_behavior: terminate
-	    	spot_max_price: ondemand
-	    	default_simulation_dir: /home/centos
-	    	run_farm_hosts_to_use:
-	    	    - f1.16xlarge: 1
-	    	    - f1.4xlarge: 0
-	    	    - f1.2xlarge: 0
-	    	    - m4.16xlarge: 0
-	    	    - z1d.3xlarge: 0
-	    	    - z1d.6xlarge: 0
-
-	target_config:
-		topology: example_8config
-		no_net_num_nodes: 1
-		link_latency: 6405
-		switching_latency: 10
-		net_bandwidth: 200
-		profile_interval: -1
-		default_hw_config: firesim_rocket_quadcore_nic_l2_llc4mb_ddr3
-		plusarg_passthrough: ""
-
-	workload:
-		workload_name: linux-uniform.json
-		terminate_on_completion: no
-		suffix_tag: null
-
-.. attention::
-
-    **[Advanced users] Simulating BOOM instead of Rocket Chip**: If you would like to simulate a single-core `BOOM <https://github.com/ucb-bar/riscv-boom>`__ as a target, set ``default_hw_config`` to ``firesim_boom_singlecore_nic_l2_llc4mb_ddr3``.
 
 
 Launching a Simulation!
@@ -183,7 +140,7 @@ Setting up the simulation infrastructure
 The manager will also take care of building and deploying all software
 components necessary to run your simulation (including switches for the networked
 case). The manager will also handle
-flashing FPGAs. To tell the manager to setup our simulation infrastructure,
+programming FPGAs. To tell the manager to set up our simulation infrastructure,
 let's run:
 
 .. code-block:: bash
@@ -251,7 +208,7 @@ infrastructure necessary to run everything in our simulation.
 
 So, let's launch our simulation!
 
-Running a simulation!
+Running the simulation
 ^^^^^^^^^^^^^^^^^^^^^^^^^
 
 Finally, let's run our simulation! To do so, run:
@@ -327,7 +284,7 @@ a live status page once simulations are kicked-off:
     --------------------------------------------------------------------------------
 
 
-In cycle-accurate networked mode, this will only exit when any ONE of the
+In cycle-accurate networked mode, this will exit when any ONE of the
 simulated nodes shuts down. So, let's let it run and open another ssh
 connection to the manager instance. From there, ``cd`` into your firesim
 directory again and ``source sourceme-manager.sh`` again to get our ssh key
@@ -382,7 +339,7 @@ If you also ran the single-node no-nic simulation you'll notice a difference
 in this boot output -- here, Linux sees the NIC and its assigned MAC address and
 automatically brings up the ``eth0`` interface at boot.
 
-Now, you can login to the system! The username is ``root``.
+Now, you can login to the system! The username is ``root`` and there is no password.
 At this point, you should be presented with a regular console,
 where you can type commands into the simulation and run programs. For example:
 
