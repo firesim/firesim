@@ -12,7 +12,7 @@ Launching a "Manager Instance"
 
 Now, we need to launch a "Manager Instance" that acts as a
 "head" node that we will ``ssh`` or ``mosh`` into to work from.
-Since we will deploy the heavy lifting to separate ``c5.4xlarge`` and
+Since we will deploy the heavy lifting to separate ``z1d.2xlarge`` and
 ``f1`` instances later, the Manager Instance can be a relatively cheap instance.
 In this guide, however, we will use a ``c5.4xlarge``,
 running the AWS FPGA Developer AMI. (Be sure to subscribe to the AMI
@@ -34,11 +34,15 @@ To launch a manager instance, follow these steps:
 #. In the *Application and OS Images* search box, search for
    ``FPGA Developer AMI - 1.12.2-40257ab5-6688-4c95-97d1-e251a40fd1fc`` and
    select the AMI that appears under the **Community AMIs** tab (there
-   should be only one). **DO NOT USE ANY OTHER VERSION.** For example, **do not** use `FPGA Developer AMI` from the *AWS Marketplace AMIs* tab, as you will likely get an incorrect version of the AMI.
-   If you find that there are no results for this search, you can try incrementing the last part of the version number in the search string, e.g., ``1.12.2 -> 1.12.3``. Other parts of the search term should be unchanged.
+   should be only one). 
+   
+   * If you find that there are no results for this search, you can try incrementing the last part of the **version number** (``Z`` in ``X.Y.Z``) in the search string, e.g., ``1.12.2 -> 1.12.3``. Other parts of the search string should be unchanged.
+
+   * **Do not** use `FPGA Developer AMI` from the *AWS Marketplace AMIs* tab, as you will likely get an incorrect version of the AMI.
+
 #. In the *Instance Type* drop-down, select the instance type of
    your choosing. A good choice is a ``c5.4xlarge`` (16 cores, 32 GiB) or a ``z1d.2xlarge`` (8 cores, 64 GiB).
-#. In the *Key pair (login)* drop-down, select the ``firesim`` key pair we setup earlier.
+#. In the *Key pair (login)* drop-down, select the ``firesim`` key pair we set up earlier.
 #. In the *Network settings* drop-down click *edit* and modify the following settings:
 
    #. Under *VPC - required*, select the ``firesim`` VPC. Any subnet within the ``firesim`` VPC is fine.
@@ -47,11 +51,11 @@ To launch a manager instance, follow these steps:
       created for you earlier. Do **NOT** select the ``for-farms-only-firesim`` security group that might also be in the list (it is also fine if this group does not appear in your list).
 
 #. In the *Configure storage* section, increase the size of the root
-   volume to at least 300GB. The default of 85GB can quickly become too small as
+   volume to at least 300GB. The default of 120GB can quickly become too small as
    you accumulate large Vivado reports/outputs, large waveforms, XSim outputs,
    and large root filesystems for simulations. You should remove the
    small (5-8GB) secondary volume that is added by default.
-#. In the *Advanced details* drop-down, we'll leave most settings unchanged. The exceptions being:
+#. In the *Advanced details* drop-down, change the following:
 
    #. Under *Termination protection*, select Enable. This adds a layer of
       protection to prevent your manager instance from being terminated by
@@ -110,7 +114,10 @@ In either case, ``ssh`` into your instance (e.g. ``ssh -i firesim.pem centos@YOU
     machine launch script started
     machine launch script completed
 
-Once this line appears, exit and re-``ssh`` into the system. If you want
+You can also view the live output of the installation process by running ``tail -f /tmp/machine-launchstatus.log``.
+
+Once ``machine launch script completed`` appears in
+``/tmp/machine-launchstatus``, exit and re-``ssh`` into the system. If you want
 to use ``mosh``, ``mosh`` back into the system.
 
 Key Setup, Part 2
