@@ -5,6 +5,7 @@
 .. |builder_name| replace:: Xilinx Vivado
 .. |bit_builder_path| replace:: ``bit-builder-recipes/rhsresearch_nitefury_ii.yaml``
 .. |vivado_with_version| replace:: Vivado 2022.1
+.. |vivado_version_number_only| replace:: 2022.1
 .. |vivado_default_install_path| replace:: ``/tools/Xilinx/Vivado/2022.1``
 .. |board_package_install| replace:: No special board support package is required for the Nitefury II. Move on to the next step.
 

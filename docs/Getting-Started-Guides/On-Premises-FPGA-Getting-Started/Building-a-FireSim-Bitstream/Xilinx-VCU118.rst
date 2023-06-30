@@ -5,6 +5,7 @@
 .. |builder_name| replace:: Xilinx Vivado
 .. |bit_builder_path| replace:: ``bit-builder-recipes/xilinx_vcu118.yaml``
 .. |vivado_with_version| replace:: Vivado 2019.1
+.. |vivado_version_number_only| replace:: 2019.1
 .. |vivado_default_install_path| replace:: ``/tools/Xilinx/Vivado/2019.1``
 .. |board_package_install| replace:: No special board support package is required for the VCU118. Move on to the next step.
 
