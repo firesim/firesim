@@ -53,7 +53,7 @@ Note ``topology`` is set to
 ``no_net_num_nodes`` is set to ``1``, indicating that we only want to simulate
 one node. Lastly, the ``default_hw_config`` is
 ``firesim_rocket_quadcore_no_nic_l2_llc4mb_ddr3``.
-Let's modify the ``default_hw_config`` (the target design) to "|hwdb_entry|".
+Let's modify the ``default_hw_config`` (the target design) to "|hwdb_entry_name|".
 This new hardware configuration does not
 have a NIC and is pre-built for the |fpga_type| FPGA.
 This hardware configuration models a Single-core Rocket Chip SoC and **no** network interface card.
@@ -83,7 +83,7 @@ As a final sanity check, in the mappings we changed, the ``config_runtime.yaml``
         switching_latency: 10
         net_bandwidth: 200
         profile_interval: -1
-        default_hw_config: |hwdb_entry|
+        default_hw_config: |hwdb_entry_name|
         plusarg_passthrough: ""
 
     workload:
