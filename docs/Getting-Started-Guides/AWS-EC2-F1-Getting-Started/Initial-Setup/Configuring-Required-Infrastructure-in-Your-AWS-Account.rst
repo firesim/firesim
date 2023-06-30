@@ -31,22 +31,37 @@ private key locally as ``firesim.pem``. You can use this key to access
 all instances from your local machine. We will copy this file to our
 manager instance later, so that the manager can also use it.
 
-Check your EC2 Instance Limits
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+Double Check your EC2 Instance Limits
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 AWS limits access to particular instance types for new/infrequently used
-accounts to protect their infrastructure. You should make sure that your
-account has access to ``f1.2xlarge``, ``f1.4xlarge``, ``f1.16xlarge``,
-``m4.16xlarge``, and ``c5.4xlarge`` instances by looking at the "Limits" page
-in the EC2 panel, which you can access
-`here <https://console.aws.amazon.com/ec2/v2/home#Limits:>`__. The
-values listed on this page represent the maximum number of any of these
+accounts to protect their infrastructure. You can learn more about how
+these limits/quotas work `here <https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/ec2-on-demand-instances.html#ec2-on-demand-instances-limits>`__.
+
+You should make sure that your
+account has the ability to launch a sufficient number of instances to follow
+this guide by looking at the "Service Quotas" page in the AWS Console, which you can access
+`here <https://console.aws.amazon.com/servicequotas/home/services/ec2/quotas/>`__.
+Be sure that the correct region is selected once you open this page. 
+
+The values listed on this page represent the maximum number vCPUs of any of these
 instances that you can run at once, which will limit the size of
-simulations (# of nodes) that you can run. If you need to increase your
-limits, follow the instructions on the
-:ref:`limitincrease` page.
-To follow this guide, you need to be able to run one ``f1.2xlarge`` instance
-and two ``c5.4xlarge`` instances.
+simulations (e.g., number of parallel FPGAs) that you can run. If you need to
+increase your limits, follow the instructions below.
+
+To complete this guide, you need to have the following limits:
+
+* ``Running On-Demand F instances``: 64 vCPUs.
+
+    * This is sufficient for 8 parallel FPGAs. Each 8 vCPUs = one FPGA.
+
+* ``Running On-Demand Standard (A, C, D, H, I, M, R, T, Z) instances``: 24 vCPUs.
+
+    * This is sufficient for one ``c5.4xlarge`` manager instance and one ``z1d.2xlarge`` build farm instance.
+
+If you have insufficient limits, follow the instructions on the :ref:`limitincrease` page.
+
+
 
 Start a t2.nano instance to run the remaining configuration commands
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~

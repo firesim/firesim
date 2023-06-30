@@ -19,35 +19,38 @@ credit card number.
 Requesting Limit Increases
 --------------------------
 
-In our experience, new AWS accounts do not have access to EC2 F1 instances by
-default. In order to get access, you should file a limit increase
-request. You can learn more about EC2 instance limits here: https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/ec2-on-demand-instances.html#ec2-on-demand-instances-limits
+AWS limits access to particular instance types for new/infrequently used
+accounts to protect their infrastructure. You can learn more about how
+these limits/quotas work `here <https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/ec2-on-demand-instances.html#ec2-on-demand-instances-limits>`__.
 
-To request a limit increase, follow these steps:
+You should make sure that your
+account has the ability to launch a sufficient number of instances to follow
+this guide by looking at the "Service Quotas" page in the AWS Console, which you can access
+`here <https://console.aws.amazon.com/servicequotas/home/services/ec2/quotas/>`__.
+Be sure that the correct region is selected once you open this page. 
 
-https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/ec2-resource-limits.html
+The values listed on this page represent the maximum number vCPUs of any of these
+instances that you can run at once, which will limit the size of
+simulations (e.g., number of parallel FPGAs) that you can run. If you need to
+increase your limits, follow the instructions below.
 
-You'll probably want to start out with the following request, depending on your existing limits:
+To complete this guide, you need to have the following limits:
 
-.. code-block:: text
+* ``Running On-Demand F instances``: 64 vCPUs.
 
-    Limit Type:                EC2 Instances
-    Region:                    US East (Northern Virginia)
-    Primary Instance Type:     All F instances
-    Limit:                     Instance Limit
-    New limit value:           64
+    * This is sufficient for 8 parallel FPGAs. Each 8 vCPUs = one FPGA.
 
+* ``Running On-Demand Standard (A, C, D, H, I, M, R, T, Z) instances``: 24 vCPUs.
 
-This limit of 64 vCPUs for F instances allows you to run both examples in this
-getting started guide, a single-node target design simulation on an
-``f1.2xlarge`` and an eight-node target design simulation on an
-``f1.16xlarge``.
+    * This is sufficient for one ``c5.4xlarge`` manager instance and one ``z1d.2xlarge`` build farm instance.
 
-For the "Use Case Description", you should describe your project and write
-something about hardware simulation and mention that information about the tool
-you're using can be found at: https://fires.im
+If you have insufficient limits, request a limit increase by following these steps:
 
-This process has a human in the loop, so you should submit it ASAP. At
+https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/ec2-resource-limits.html#request-increase
+
+In your request, enter the vCPU limits for the two instance classes shown above.
+
+This process sometimes has a human in the loop, so you should submit it ASAP. At
 this point, you should wait for the response to this request.
 
 Hit Next below to continue.
