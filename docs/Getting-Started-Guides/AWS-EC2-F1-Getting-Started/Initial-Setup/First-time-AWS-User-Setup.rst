@@ -14,14 +14,6 @@ First, you'll need an AWS account. Create one by going to
 You'll want to create a personal account. You will have to give it a
 credit card number.
 
-AWS Credit at Berkeley
-----------------------
-
-If you're an internal user at Berkeley and affiliated with UCB-BAR or the RISE
-Lab, see the `RISE Lab Wiki
-<https://rise.cs.berkeley.edu/wiki/resources/aws>`__  for instructions on
-getting access to the AWS credit pool. Otherwise, continue with the following section.
-
 .. _limitincrease:
 
 Requesting Limit Increases
