@@ -12,4 +12,10 @@
    all FireSim features. If you're unsure, use the XDMA-based U250 flow
    instead: :ref:`u250-standard-flow`
 
-.. include:: Xilinx-Bitstream-Template.rst
+Building Your Own Hardware Designs
+===================================================================
+
+This section will guide you through building a |fpga_name| FPGA bitstream to run FireSim simulations.
+
+.. include:: Xilinx-All-Bitstream-Template.rst
+

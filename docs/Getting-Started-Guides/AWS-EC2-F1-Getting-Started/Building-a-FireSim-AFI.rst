@@ -68,7 +68,7 @@ Now, we can run a build like so:
 
     firesim buildbitstream
 
-This will run through the entire build process, taking the Chisel RTL
+This will run through the entire build process, taking the Chisel (or Verilog) RTL
 and producing an AFI/AGFI that runs on the FPGA. This whole process will
 usually take a few hours. When the build
 completes, you will see a directory in

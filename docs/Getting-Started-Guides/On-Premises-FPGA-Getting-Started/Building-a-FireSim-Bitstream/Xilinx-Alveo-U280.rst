@@ -4,5 +4,16 @@
 .. |bit_file_type| replace:: ``bitstream_tar``
 .. |builder_name| replace:: Xilinx Vivado
 .. |bit_builder_path| replace:: ``bit-builder-recipes/xilinx_alveo_u280.yaml``
+.. |vivado_with_version| replace:: Vivado 2021.1
+.. |vivado_default_install_path| replace:: ``/tools/Xilinx/Vivado/2021.1``
+.. |board_package_install| replace:: Download the board support package directory from https://github.com/Xilinx/open-nic-shell/tree/main/board_files/Xilinx/au280 and place the directory in ``/tools/Xilinx/Vivado/2021.1/data/xhub/boards/XilinxBoardStore/boards/Xilinx/``.
 
-.. include:: Xilinx-Bitstream-Template.rst
+Building Your Own Hardware Designs
+===================================================================
+
+This section will guide you through building a |fpga_name| FPGA bitstream to run FireSim simulations.
+
+.. include:: Xilinx-XDMA-Build-Farm-Setup-Template.rst
+
+.. include:: Xilinx-All-Bitstream-Template.rst
+
