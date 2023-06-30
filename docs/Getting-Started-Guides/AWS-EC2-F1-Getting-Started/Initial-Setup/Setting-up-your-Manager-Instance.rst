@@ -162,7 +162,7 @@ first time will take some time -- however each time after that should be instant
 Also, if your ``firesim.pem`` key requires a passphrase, you will be asked for
 it here and ``ssh-agent`` should cache it.
 
-**Every time you login to your manager instance to use FireSim, you should ``cd`` into
+**Every time you login to your manager instance to use FireSim, you should** ``cd`` **into
 your firesim directory and source this file again.**
 
 

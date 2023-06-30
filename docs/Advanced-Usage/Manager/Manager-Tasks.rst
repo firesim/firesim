@@ -198,8 +198,10 @@ that someone else owns and gave you access to.
 ``firesim launchrunfarm``
 ---------------------------
 
-This command launches a **Run Farm** on which you run simulations. Run farms
-consist of a set of **run farm hosts** that can be spawned by AWS EC2 or managed by the user.
+.. Note:: Can only be used for the F1 platform.
+
+This command launches a **Run Farm** on AWS EC2 on which you run simulations. Run farms
+consist of a set of **run farm instances** that can be spawned on AWS EC2.
 The ``run_farm`` mapping in ``config_runtime.yaml`` determines the run farm used and its configuration (see :ref:`config-runtime`).
 The ``base_recipe`` key/value pair specifies the default set of arguments to use for a particular run farm type.
 To change the run farm type, a new ``base_recipe`` file must be provided from ``deploy/run-farm-recipes``.
@@ -208,40 +210,22 @@ These keys/values must match the same mapping structure as the ``args`` mapping.
 Overridden arguments override recursively such that all key/values present in the override args replace the default arguments given
 by the ``base_recipe``. In the case of sequences, a overridden sequence completely replaces the corresponding sequence in the default args.
 
-Run Farm type-specific details:
+An AWS EC2 run farm consists of AWS instances like ``f1.16xlarge``, ``f1.4xlarge``, ``f1.2xlarge``, and ``m4.16xlarge`` instances.
+Before you run the command, you define the number of each that you want in the ``recipe_arg_overrides`` section of
+``config_runtime.yaml`` or in the ``base_recipe`` itself.
 
-.. tabs::
+A launched run farm is tagged with a ``run_farm_tag``,
+which is used to disambiguate multiple parallel run
+farms; that is, you can have many run farms running, each running a different
+experiment at the same time, each with its own unique ``run_farm_tag``. One
+convenient feature to add to your AWS management panel is the column for
+``fsimcluster``, which contains the ``run_farm_tag`` value. You can see how to do
+that in the :ref:`fsimcluster-aws-panel` section.
 
-    .. tab:: AWS EC2
-
-        An AWS EC2 run farm consists of AWS instances like ``f1.16xlarge``, ``f1.4xlarge``, ``f1.2xlarge``, and ``m4.16xlarge`` instances.
-        Before you run the command, you define the number of each that you want in the ``recipe_arg_overrides`` section of
-        ``config_runtime.yaml`` or in the ``base_recipe`` itself.
-
-        A launched run farm is tagged with a ``run_farm_tag``,
-        which is used to disambiguate multiple parallel run
-        farms; that is, you can have many run farms running, each running a different
-        experiment at the same time, each with its own unique ``run_farm_tag``. One
-        convenient feature to add to your AWS management panel is the column for
-        ``fsimcluster``, which contains the ``run_farm_tag`` value. You can see how to do
-        that in the :ref:`fsimcluster-aws-panel` section.
-
-        The other options in the ``run_farm`` section, ``run_instance_market``,
-        ``spot_interruption_behavior``, and ``spot_max_price`` define *how* instances in
-        the run farm are launched. See the documentation for ``config_runtime.yaml`` for
-        more details on other arguments (see :ref:`config-runtime`).
-
-    .. tab:: Externally Provisioned
-
-        An Externally Provisioned run farm consists of a set of unmanaged run farm hosts given by the user.
-        A run farm host is configured by a ``default_platform`` that determines how to run simulations on the host.
-        Additionally a sequence of hosts is given in ``run_farm_hosts_to_use``.
-        This sequence consists of a mapping from an unique hostname/IP address to a specification that indicates the
-        amount of FPGAs it hosts, the number of potential metasimulations it can run, and more.
-        Before you run the command, you define sequence of run farm hosts in the ``recipe_arg_overrides`` section of
-        ``config_runtime.yaml`` or in the ``base_recipe`` itself.
-        See the documentation for ``config_runtime.yaml`` for
-        more details on other arguments (see :ref:`config-runtime`).
+The other options in the ``run_farm`` section, ``run_instance_market``,
+``spot_interruption_behavior``, and ``spot_max_price`` define *how* instances in
+the run farm are launched. See the documentation for ``config_runtime.yaml`` for
+more details on other arguments (see :ref:`config-runtime`).
 
 **ERRATA**: One current requirement is that you must define a target config in
 the ``target_config`` section of ``config_runtime.yaml`` that does not require
@@ -255,7 +239,7 @@ will see the command print out instance IDs for the correct number/types of
 instances (you do not need to pay attention to these or record them).
 If an error occurs, it will be printed to console.
 
-.. warning:: For the AWS EC2 case, once you run this command, your run farm will continue to run until you call
+.. warning:: On AWS EC2, once you run this command, your run farm will continue to run until you call
     ``firesim terminaterunfarm``. This means you will be charged for the running
     instances in your run farm until you call ``terminaterunfarm``. You are
     responsible for ensuring that instances are only running when you want them to
@@ -266,25 +250,16 @@ If an error occurs, it will be printed to console.
 ``firesim terminaterunfarm``
 -----------------------------
 
-This command potentially terminates some or all of the instances in the Run Farm defined
+.. Note:: Can only be used for the F1 platform.
+
+This command terminates some or all of the instances in the Run Farm defined
 in your ``config_runtime.yaml`` file by the ``run_farm`` ``base_recipe``, depending on the command line arguments
 you supply.
 
-Run Farm type-specific details:
-
-.. tabs::
-
-    .. tab:: AWS EC2
-
-        By default, running ``firesim terminaterunfarm`` will terminate
-        ALL instances with the specified ``run_farm_tag``. When you run this command,
-        it will prompt for confirmation that you want to terminate the listed instances.
-        If you respond in the affirmative, it will move forward with the termination.
-
-    .. tab:: Externally Provisioned
-
-        By default, this run of ``firesim terminaterunfarm`` does nothing since externally managed
-        run farm hosts should be managed by the user (and not by FireSim).
+By default, running ``firesim terminaterunfarm`` will terminate
+ALL instances with the specified ``run_farm_tag``. When you run this command,
+it will prompt for confirmation that you want to terminate the listed instances.
+If you respond in the affirmative, it will move forward with the termination.
 
 If you do not want to have to confirm the termination (e.g. you are using this
 command in a script), you can give the command the ``--forceterminate`` command
@@ -295,15 +270,10 @@ RUN FARM WITHOUT PROMPTING FOR CONFIRMATION:
 
     firesim terminaterunfarm --forceterminate
 
-.. Warning:: DEPRECATION: The ``--terminatesome<INSTANCE>`` flags have been changed to a single ``--terminatesome`` flag and will be removed in a future version
 
-.. Warning:: The following ``--terminatesome<INSTANCE>`` flags are only available for AWS EC2.
-
-There a few additional commandline arguments that let you terminate only
-some of the instances in a particular Run Farm: ``--terminatesomef116 INT``,
-``--terminatesomef14 INT``, ``--terminatesomef12 INT``, and
-``--terminatesomem416 INT``, which will terminate ONLY as many of each type of
-instance as you specify.
+The ``--terminatesome=INSTANCE_TYPE:COUNT`` flag additionally allows you to 
+terminate only some (``COUNT``) of the instances of a particular type
+(``INSTANCE_TYPE``) in a particular Run Farm.
 
 Here are some examples:
 
@@ -311,7 +281,7 @@ Here are some examples:
 
     [ start with 2 f1.16xlarges, 2 f1.2xlarges, 2 m4.16xlarges ]
 
-    firesim terminaterunfarm --terminatesomef116 1 --forceterminate
+    firesim terminaterunfarm --terminatesome=f1.16xlarge:1 --forceterminate
 
     [ now, we have: 1 f1.16xlarges, 2 f1.2xlarges, 2 m4.16xlarges ]
 
@@ -320,12 +290,12 @@ Here are some examples:
 
     [ start with 2 f1.16xlarges, 2 f1.2xlarges, 2 m4.16xlarges ]
 
-    firesim terminaterunfarm --terminatesomef116 1 --terminatesomef12 2 --forceterminate
+    firesim terminaterunfarm --terminatesome=f1.16xlarge:1 --terminatesome=f1.2xlarge:2 --forceterminate
 
     [ now, we have: 1 f1.16xlarges, 0 f1.2xlarges, 2 m4.16xlarges ]
 
 
-.. warning:: In the AWS EC2 case, Once you call ``launchrunfarm``, you will be charged for running instances in
+.. warning:: On AWS EC2, once you call ``launchrunfarm``, you will be charged for running instances in
     your Run Farm until you call ``terminaterunfarm``. You are responsible for
     ensuring that instances are only running when you want them to be by checking
     the AWS EC2 Management Panel.
@@ -352,7 +322,7 @@ is a rough outline of what the command does:
 Details about setting up your simulation configuration can be found in
 :ref:`config-runtime`.
 
-**Once you run a simulation, you should re-run ``firesim infrasetup`` before
+**Once you run a simulation, you should re-run** ``firesim infrasetup`` **before
 starting another one, even if it is the same exact simulation on the same Run
 Farm.**
 
