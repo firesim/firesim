@@ -2,7 +2,6 @@
 .. |fpga_name_short| replace:: Xilinx Alveo U250
 .. _fpga_name_short: https://www.xilinx.com/products/boards-and-kits/alveo/u250.html
 .. |flow_name| replace:: XDMA-based
-.. |bit_type| replace:: ``bitstream_tar``
 .. |build_type| replace:: Xilinx Vivado
 
 .. _u250-standard-flow:

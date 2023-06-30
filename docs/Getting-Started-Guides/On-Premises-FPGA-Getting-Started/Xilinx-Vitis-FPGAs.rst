@@ -2,7 +2,6 @@
 .. |fpga_name_short| replace:: Xilinx Alveo U250
 .. _fpga_name_short: https://www.xilinx.com/products/boards-and-kits/alveo/u250.html
 .. |flow_name| replace:: Vitis-based
-.. |bit_type| replace:: ``xclbin``
 .. |build_type| replace:: Xilinx Vitis
 
 .. warning:: ⚠️  **We highly recommend using the XDMA-based U250 flow instead of this
@@ -22,8 +21,8 @@
       and deploying simulations locally.
 
 #. **Single-node simulation guide**: This guide walks you through the
-   process of running one simulation locally consisting of a single
-   |fpga_name_short|, using our pre-built public FireSim |bit_type| bitstream.
+   process of running a simulation locally on a single
+   |fpga_name_short|, using a pre-built, public bitstream.
 
 #. **Building your own hardware designs guide (Chisel to FPGA Image)**:
    This guide walks you through the full process of taking Rocket Chip RTL

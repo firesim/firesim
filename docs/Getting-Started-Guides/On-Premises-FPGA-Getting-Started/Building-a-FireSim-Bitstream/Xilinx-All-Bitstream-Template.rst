@@ -59,9 +59,9 @@ that describes everything that happened, in-detail, during this run (this is a
 good file to send us if you encounter problems).
 
 The manager will also print an entry that can be added to ``config_hwdb.yaml`` so that the
-bitstream can be used to run simulations. This entry will contain a |bit_file_type| key whose
+bitstream can be used to run simulations. This entry will contain a ``bitstream_tar`` key whose
 value is the path to the final generated bitstream file. You can share generated bitstreams
-with others by sharing the file listed in |bit_file_type| and the ``config_hwdb.yaml``
+with others by sharing the file listed in ``bitstream_tar`` and the ``config_hwdb.yaml``
 entry for it.
 
 Now that you know how to generate your own FPGA image, you can modify the target-design

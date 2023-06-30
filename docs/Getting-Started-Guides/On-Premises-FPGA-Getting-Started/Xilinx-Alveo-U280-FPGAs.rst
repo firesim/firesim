@@ -2,7 +2,6 @@
 .. |fpga_name_short| replace:: Xilinx Alveo U280
 .. _fpga_name_short: https://www.xilinx.com/products/boards-and-kits/alveo/u280.html
 .. |flow_name| replace:: XDMA-based
-.. |bit_type| replace:: ``bitstream_tar``
 .. |build_type| replace:: Xilinx Vivado
 
 .. include:: Intro-Template.rst
