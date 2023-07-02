@@ -1,0 +1,5 @@
+.*.swp
+.*.swo
+
+cl_*
+!cl_firesim
