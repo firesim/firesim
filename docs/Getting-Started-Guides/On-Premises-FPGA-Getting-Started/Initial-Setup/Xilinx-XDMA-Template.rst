@@ -194,7 +194,7 @@ Now, let's attach your |fpga_name|_ FPGA(s) to your Run Farm Machines:
 9. Right-click on your FPGA and click "Add Configuration Memory Device". For a |fpga_name|_, choose |fpga_spi_part_number|
    as the Configuration Memory Part. Click "OK" when prompted to program the configuration memory device.
 
-10. For Configuration file, choose the ``firesim.mcs`` |extra_mcs|.
+10. For Configuration file, choose the ``firesim.mcs`` |extra_mcs|
 
 11. Uncheck "Verify" and click OK.
 
