@@ -8,6 +8,7 @@ CONDA_INSTALLER_VERSION=23.1.0-1
 CONDA_INSTALLER="https://github.com/conda-forge/miniforge/releases/download/${CONDA_INSTALLER_VERSION}/Miniforge3-${CONDA_INSTALLER_VERSION}-Linux-x86_64.sh"
 CONDA_CMD="conda" # some installers install mamba or micromamba
 CONDA_ENV_NAME="firesim"
+CONDA_SHELL_TYPE=bash
 
 DRY_RUN_OPTION=""
 DRY_RUN_ECHO=()
@@ -19,24 +20,25 @@ usage()
     echo
     echo "Options:"
     echo "[--help]                  List this help"
-    echo "[--prefix <prefix>]       Install prefix for conda. Defaults to /opt/conda."
+    echo "[--prefix <prefix>]       Install prefix for conda. Defaults to $CONDA_INSTALL_PREFIX."
     echo "                          If <prefix>/bin/conda already exists, it will be used and install is skipped."
-    echo "[--env <name>]            Name of environment to create for conda. Defaults to 'firesim'."
+    echo "[--env <name>]            Name of environment to create for conda. Defaults to '$CONDA_ENV_NAME'."
     echo "[--dry-run]               Pass-through to all conda commands and only print other commands."
     echo "                          NOTE: --dry-run will still install conda to --prefix"
     echo "[--reinstall-conda]       Repairs a broken base environment by reinstalling."
     echo "                          NOTE: will only reinstall conda and exit without modifying the --env"
+    echo "[--shell]                 Run initialization for a specific shell. Defaults to $CONDA_SHELL_TYPE."
     echo
     echo "Examples:"
     echo "  % $0"
     echo "     Install into default system-wide prefix (using sudo if needed) and add install to system-wide /etc/profile.d"
     echo "  % $0 --prefix ~/conda --env my_custom_env"
-    echo "     Install into $HOME/conda and add install to ~/.bashrc"
+    echo "     Install into $HOME/conda and add install to $CONDA_SHELL_TYPE init files (i.e. ~/.*rc)"
     echo "  % $0 --prefix \${CONDA_EXE%/bin/conda} --env my_custom_env"
     echo "     Create my_custom_env in existing conda install"
     echo "     NOTES:"
     echo "       * CONDA_EXE is set in your environment when you activate a conda env"
-    echo "       * my_custom_env will not be activated by default at login see /etc/profile.d/conda.sh & ~/.bashrc"
+    echo "       * my_custom_env will not be activated by default at login see /etc/profile.d/conda.sh & $CONDA_SHELL_TYPE init files (i.e. ~/.*rc)"
 }
 
 
@@ -68,6 +70,11 @@ while [ $# -gt 0 ]; do
         --reinstall-conda)
             shift
             REINSTALL_CONDA=1
+            ;;
+        --shell)
+            shift
+            CONDA_SHELL_TYPE="$1"
+            shift
             ;;
         *)
             echo "Invalid Argument: $1"
@@ -121,6 +128,8 @@ set -o pipefail
         centos)
             ;;
         amzn)
+            ;;
+        debian)
             ;;
         *)
             echo "::ERROR:: Unknown OS flavor '$OS_FLAVOR'. Unable to do platform-specific setup."
@@ -198,7 +207,7 @@ set -o pipefail
         # run conda-init and look at it's output to insert 'conda activate $CONDA_ENV_NAME' into the
         # block that conda-init will update if ever conda is installed to a different prefix and
         # this is rerun.
-        $SUDO "${CONDA_EXE}" init $DRY_RUN_OPTION "${conda_init_extra_args[@]}" bash 2>&1 | \
+        $SUDO "${CONDA_EXE}" init $DRY_RUN_OPTION "${conda_init_extra_args[@]}" $CONDA_SHELL_TYPE 2>&1 | \
             tee >(grep '^modified' | grep -v "$CONDA_INSTALL_PREFIX" | awk '{print $NF}' | \
             "${DRY_RUN_ECHO[@]}" $SUDO xargs -r sed -i -e "/<<< conda initialize <<</iconda activate $CONDA_ENV_NAME")
 
@@ -308,6 +317,8 @@ set -o pipefail
             chmod +x AmazonLinux2-user-data.sh
             sudo ./AmazonLinux2-user-data.sh
             echo "firesim" | sudo passwd ec2-user --stdin # default password is 'firesim'
+            ;;
+        debian)
             ;;
         *)
             echo "::ERROR:: Unknown OS flavor '$OS_FLAVOR'. Unable to do platform-specific setup."
