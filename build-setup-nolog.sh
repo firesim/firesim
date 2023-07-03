@@ -214,7 +214,7 @@ cd "$RDIR"
 # commands to run only on EC2
 # see if the instance info page exists. if not, we are not on ec2.
 # this is one of the few methods that works without sudo
-if wget -T 1 -t 3 -O /dev/null http://169.254.169.254/; then
+if wget -T 1 -t 3 -O /dev/null http://169.254.169.254/latest/; then
 
     (
 	# ensure that we're using the system toolchain to build the kernel modules
