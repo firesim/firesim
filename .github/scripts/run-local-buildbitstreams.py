@@ -195,6 +195,15 @@ def run_local_buildbitstreams():
                     if match_bit == True:
                         sys.exit(f"::ERROR:: Unable to replace URL for {hwdb_entry_name} in {sample_hwdb_filename}")
 
+                # strip newlines from end of file
+                with open(sample_hwdb_filename, "r+") as sample_hwdb_file:
+                    content = sample_hwdb_file.read()
+                    content = content.rstrip('\n')
+                    sample_hwdb_file.seek(0)
+
+                    sample_hwdb_file.write(content)
+                    sample_hwdb_file.truncate()
+
             # could potentially use knight/ferry in the future (currently unused since they are currently overloaded)
             hosts = {
                 ("localhost", "vitis:2022.1"),
@@ -239,8 +248,16 @@ def run_local_buildbitstreams():
             # same order as in config_build.yaml
             # hwdb_entry_name, platform_name, buildtool:version
             batch_hwdbs_in = [
-                ("nitefury_firesim_rocket_singlecore_no_nic", "rhsresearch_nitefury_ii", "vitis:2022.1"),
+                ("vitis_firesim_rocket_singlecore_no_nic", "vitis", "vitis:2022.1"),
                 ("alveo_u250_firesim_rocket_singlecore_no_nic", "xilinx_alveo_u250", "vivado:2021.1"),
+                ("alveo_u250_firesim_gemmini_rocket_singlecore_no_nic", "xilinx_alveo_u250", "vivado:2021.1"),
+            ]
+
+            do_builds(batch_hwdbs_in)
+
+            batch_hwdbs_in = [
+                ("nitefury_firesim_rocket_singlecore_no_nic", "rhsresearch_nitefury_ii", "vitis:2022.1"),
+                ("alveo_u200_firesim_rocket_singlecore_no_nic", "xilinx_alveo_u200", "vivado:2021.1"),
                 ("alveo_u280_firesim_rocket_singlecore_no_nic", "xilinx_alveo_u280", "vivado:2021.1"),
                 ("xilinx_vcu118_firesim_rocket_singlecore_4GB_no_nic", "xilinx_vcu118", "vivado:2019.1"),
             ]
