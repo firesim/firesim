@@ -66,6 +66,15 @@ def run_agfi_buildbitstream():
                     if match_agfi == True:
                         sys.exit("::ERROR:: Unable to find matching AGFI key for HWDB entry")
 
+            # strip newlines from end of file
+            with open(sample_hwdb_filename, "r+") as sample_hwdb_file:
+                content = sample_hwdb_file.read()
+                content = content.rstrip('\n')
+                sample_hwdb_file.seek(0)
+
+                sample_hwdb_file.write(content)
+                sample_hwdb_file.truncate()
+
             print(f"Printing {sample_hwdb_filename}...")
             run(f"cat {sample_hwdb_filename}")
 
