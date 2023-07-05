@@ -48,7 +48,9 @@ Among other setup steps, the script will install Miniforge Conda (https://github
 
 When prompted, you should allow the Conda installer to modify your ``~/.bashrc`` to automatically place you in the conda environment when opening a new shell.
 
-**Once the** ``machine-launch-script.sh`` **completes, ensure that you log out of the machine / exit out of the terminal so that the** ``.bashrc`` **modifications can apply**.
+.. warning::
+    **Once the** ``machine-launch-script.sh`` **completes, ensure that you log out of the 
+    machine / exit out of the terminal so that the** ``.bashrc`` **modifications can apply**.
 
 After re-logging back into the machine, you should be in the ``firesim`` Conda environment.
 
@@ -83,8 +85,9 @@ Once ``build-setup.sh`` completes, run:
 This will perform various environment setup steps, such as adding the RISC-V tools to your
 path. Sourcing this the first time will take some time -- however each subsequent sourcing should be instantaneous.
 
-**Every time you want to use FireSim, you should** ``cd`` **into
-your FireSim directory and source** ``sourceme-manager.sh`` **again with the arguments shown above.**
+.. warning::
+    **Every time you want to use FireSim, you should** ``cd`` **into
+    your FireSim directory and source** ``sourceme-manager.sh`` **again with the arguments shown above.**
 
 
 Initializing FireSim Config Files

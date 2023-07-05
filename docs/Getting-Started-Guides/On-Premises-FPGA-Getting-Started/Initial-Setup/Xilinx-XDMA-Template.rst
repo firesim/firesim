@@ -27,12 +27,13 @@ all the installation instructions on your single machine, without duplication
 (i.e., don't re-run a step on the same machine if it is required on multiple
 machine types).
 
-**We highly recommend using Ubuntu 20.04 LTS as the host operating system for
-all machine types in an on-premises setup, as this is the OS recommended by
-Xilinx.**
+.. warning::
+    **We highly recommend using Ubuntu 20.04 LTS as the host operating system for
+    all machine types in an on-premises setup, as this is the OS recommended by
+    Xilinx.**
 
 
-1. Fix default .bashrc
+1. Fix default ``.bashrc``
 ^^^^^^^^^^^^^^^^^^^^^^^
 
 **Machines:** Manager Machine, Run Farm Machines, Build Farm Machines.
@@ -191,7 +192,7 @@ Now, let's attach your |fpga_name|_ FPGA(s) to your Run Farm Machines:
 
 10. For configuration file, choose the ``firesim.mcs`` file from step 7.
 
-11. Uncheck "verify" and click OK.
+11. Uncheck "Verify" and click OK.
 
 12. When flashing is completed, power off your machine fully (i.e., the FPGA should completely lose power).
 
