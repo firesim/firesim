@@ -1,0 +1,7 @@
+{
+  "benchmark_name"            : "dummy",
+  "common_bootbinary"         : "dummy",
+  "common_rootfs"             : null,
+  "common_outputs"            : [],
+  "common_simulation_outputs" : ["uartlog", "memory_stats*.csv"]
+}
