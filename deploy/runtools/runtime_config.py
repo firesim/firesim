@@ -836,8 +836,12 @@ class RuntimeConfig:
 
         # setup workload config obj, aka a list of workloads that can be assigned
         # to a server
-        self.workload = WorkloadConfig(self.innerconf.workload_name, self.launch_time,
-                                       self.innerconf.suffixtag)
+        if args.task != 'enumeratefpgas':
+            self.workload = WorkloadConfig(self.innerconf.workload_name, self.launch_time,
+                                           self.innerconf.suffixtag)
+        else:
+            self.workload = WorkloadConfig('dummy.json', self.launch_time,
+                                           self.innerconf.suffixtag)
 
         # start constructing the target configuration tree
         self.firesim_topology_with_passes = FireSimTopologyWithPasses(
