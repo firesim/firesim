@@ -1,6 +1,6 @@
 .. |fpga_name| replace:: Xilinx VCU118
 .. _fpga_name: https://www.xilinx.com/products/boards-and-kits/vcu118.html
-.. |fpga_power_info| replace:: For the VCU118, this is usually ATX 4-pin peripheral power (NOT PCIe power) from the system's PSU, attached to the FPGA via the "ATX Power Supply Adapter Cable" that comes with the VCU118.
+.. |fpga_power_info| replace:: For the VCU118, this is usually ATX 4-pin peripheral power (**NOT** PCIe power) from the system's PSU, attached to the FPGA via the "ATX Power Supply Adapter Cable" that comes with the VCU118.
 .. |hwdb_entry_name| replace:: ``xilinx_vcu118_firesim_rocket_singlecore_4GB_no_nic``
 .. |platform_name| replace:: xilinx_vcu118
 .. |board_name| replace:: vcu118
