@@ -54,10 +54,11 @@ scaling the number of FPGAs in-use to match workload requirements. For example,
 on AWS EC2 F1, it is just as cost effective to run the 10 workloads in SPECInt2017 in parallel
 on 10 cloud FPGAs vs. running them serially on one cloud FPGA.
 
-All automation in FireSim works in both the on-premises and cloud
-usage models, which enables a **hybrid usage model** where early development happens
-on one (or a small cluster of) on-premises FPGA(s), while bursting to a large
-number of cloud FPGAs when a high-degree of parallelism is necessary.
+.. note::
+    All automation in FireSim works in both the on-premises and cloud
+    usage models, which enables a **hybrid usage model** where early development happens
+    on one (or a small cluster of) on-premises FPGA(s), while bursting to a large
+    number of cloud FPGAs when a high degree of parallelism is necessary.
 
 3. Datacenter/Cluster Simulations on On-Premises or Cloud FPGAs
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
