@@ -3,7 +3,7 @@
 ![FireSim Documentation Status](https://readthedocs.org/projects/firesim/badge/)
 ![Github Actions Status](https://github.com/firesim/firesim/actions/workflows/firesim-run-tests.yml/badge.svg)
 
-| We're running the First FireSim and Chipyard User/Developer Workshop at ASPLOS 2023 on March 26, 2023! This workshop will feature a full-day of submitted talks from users and developers in the FireSim and Chipyard community. Learn more and **submit your work** on the [2023 Workshop Page](https://fires.im/workshop-2023/)! |
+| We held the First FireSim and Chipyard User/Developer Workshop at ASPLOS 2023 on March 26, 2023! This workshop featured a full-day of talks from users and developers in the FireSim and Chipyard community. YouTube videos of the talks are available on the [2023 Workshop Page](https://fires.im/workshop-2023/)! |
 |--------|
 
 ## Contents
@@ -24,7 +24,7 @@ You can also get help from the FireSim user community on our [User Forum](https:
 Additionally, we frequently run tutorials at various conferences
 and events; for overview purposes, you can find the most recent slide decks at [fires.im/tutorial-recent](https://fires.im/tutorial-recent) (you should still follow [docs.fires.im](https://docs.fires.im) for the most up to date getting-started guide).
 
-Another good overview from a recent seminar (in video format) can be found [on YouTube](https://www.youtube.com/watch?v=UlYOsRBhtY8).
+Another good overview from a recent event (in video format) can be found [on YouTube](https://www.youtube.com/watch?v=_leRHbe5t6M).
 
 ## What is FireSim?
 
@@ -36,18 +36,19 @@ ASIC RTL with cycle-accurate hardware and software models for other system compo
 scale from individual SoC simulations hosted on on-prem FPGAs (e.g., a single Xilinx Alveo board attached to a desktop) 
 to massive datacenter-scale simulations harnessing hundreds of cloud FPGAs (e.g., on Amazon EC2 F1).
 
-**Who's using and developing FireSim?** FireSim users across academia and industry have written over 25 papers using FireSim in many areas, including computer architecture, systems, networking, circuits, security, and more (see the [Publications page](https://fires.im/publications/)). FireSim has also been used in the development of shipping commercial silicon. FireSim was originally developed in the [Electrical Engineering and Computer Sciences
+**Who's using and developing FireSim?** FireSim users across academia and industry (at 20+ institutions) have published over 40 papers using FireSim in many areas, including computer architecture, systems, networking, security, scientific computing, circuits, design automation, and more (see the [Publications page](https://fires.im/publications/)). FireSim has also been used in the development of shipping commercial silicon. FireSim was originally developed in the [Electrical Engineering and Computer Sciences
 Department][eecs] at the [University of California, Berkeley][berkeley], but now has industrial and academic contributors from all over the world.
 
 You can learn more about FireSim in the following places:
 
 * **FireSim website**: https://fires.im
 * **FireSim ISCA 2018 Paper**: [Paper PDF](https://sagark.org/assets/pubs/firesim-isca2018.pdf) | [IEEE Xplore](https://ieeexplore.ieee.org/document/8416816) | [ACM DL](https://dl.acm.org/citation.cfm?id=3276543) | [BibTeX](https://sagark.org/assets/pubs/firesim-isca2018.bib.txt) | Selected as one of IEEE Micro’s “Top Picks from Computer Architecture Conferences, 2018”.
-* **FireSim documentation**: https://docs.fires.im
-* **FireSim (+Chipyard) Tutorial**: https://fires.im/tutorial/
-* **Scala API Documentation**: https://fires.im/firesim/latest/api/
-* **Two-minute lightning talk from ISCA 2018** (FireSim simulating a datacenter): [YouTube](https://www.youtube.com/watch?v=4XwoSe5c8lY)
-* **Chisel Community Conference Tutorial**: [YouTube](https://www.youtube.com/watch?v=S3OriQnJXYQ)
+* **FireSim ISCA-50 Retrospective**: [Paper PDF](https://sites.coecis.cornell.edu/isca50retrospective/files/2023/06/Karandikar_2018_FireSim.pdf)
+* **FireSim documentation**: [https://docs.fires.im](https://docs.fires.im)
+* **Scala API Documentation**: [https://fires.im/firesim/latest/api/](https://fires.im/firesim/latest/api/)
+* **LatchUp 2023 Update Talk**: [YouTube](https://www.youtube.com/watch?v=_leRHbe5t6M)
+* **FireSim (+Chipyard) Tutorial**: [https://fires.im/tutorial-recent/](https://fires.im/tutorial-recent/)
+* **ASPLOS 2023 Tutorial Videos**: [YouTube Playlist](https://www.youtube.com/playlist?list=PL-YKJjRMRb9xe1RP4uoM69CRyXZZFy2ta)
 * **Updates/News**: [Changelog](/CHANGELOG.md) | [FireSim Blog](https://fires.im/blog/) | [Twitter](https://twitter.com/firesimproject)
 
 ## What can I simulate with FireSim?
@@ -99,7 +100,7 @@ Head to the [FireSim Website](https://fires.im) to learn more.
 
 ### **ISCA 2018**: FireSim: FPGA-Accelerated Cycle-Exact Scale-Out System Simulation in the Public Cloud
 
-You can learn more about FireSim in our ISCA 2018 paper, which covers the overall FireSim infrastructure and large distributed simulations of networked clusters. This paper was **selected as one of IEEE Micro’s “Top Picks from Computer Architecture Conferences, 2018”.**
+You can learn more about FireSim in our ISCA 2018 paper, which covers the overall FireSim infrastructure and large distributed simulations of networked clusters. This paper was selected as one of **IEEE Micro’s "Top Picks from Computer Architecture Conferences, 2018"** and for **"ISCA@50 25-year Retrospective 1996-2020"**.
 
 > Sagar Karandikar, Howard Mao, Donggyu Kim, David Biancolin, Alon Amid, Dayeol
 Lee, Nathan Pemberton, Emmanuel Amaro, Colin Schmidt, Aditya Chopra, Qijing
@@ -139,7 +140,7 @@ Our paper describing FireSim's Compiler, _Golden Gate_:
 
 ### **ASPLOS 2020**: FirePerf: FPGA-Accelerated Full-System Hardware/Software Performance Profiling and Co-Design
 
-Our paper to appear in ASPLOS 2020 discusses system-level profiling features in FireSim:
+Our paper that discusses system-level profiling features in FireSim:
 
 > Sagar Karandikar, Albert Ou, Alon Amid, Howard Mao, Randy Katz, Borivoje Nikolić, and Krste Asanović, **FirePerf: FPGA-Accelerated Full-System Hardware/Software Performance Profiling and Co-Design**, *In Proceedings of the Twenty-Fifth International Conference on Architectural Support for Programming Languages and Operating Systems (ASPLOS 2020)*, Lausanne, Switzerland, March 2020.
 
@@ -152,6 +153,21 @@ In this special issue, we describe the automated instance-multithreading optimiz
 > David Biancolin, Albert Magyar, Sagar Karandikar, Alon Amid, Borivoje Nikolić, Jonathan  Bachrach, Krste Asanović. **Accessible, FPGA Resource-Optimized Simulation of Multi-Clock Systems in FireSim**. *In IEEE Micro Volume: 41, Issue: 4, July-Aug. 1 2021*
 
 [Article PDF](https://davidbiancolin.github.io/papers/firesim-micro21.pdf)
+
+### **ISCA@50 Retrospective: 1996-2020**: FireSim: FPGA-Accelerated Cycle-Exact Scale-Out System Simulation in the Public Cloud
+
+This retrospective paper, included in the "ISCA@50 Retrospective: 1996-2020" collection, provides an update and retrospective
+on FireSim's development and evolution since the original ISCA 2018 paper.
+
+> Sagar Karandikar, Howard Mao, Donggyu Kim, David Biancolin, Alon Amid, Dayeol
+Lee, Nathan Pemberton, Emmanuel Amaro, Colin Schmidt, Aditya Chopra, Qijing
+Huang, Kyle Kovacs, Borivoje Nikolic, Randy Katz, Jonathan Bachrach, and Krste
+Asanović. **FireSim: FPGA-Accelerated Cycle-Exact Scale-Out System Simulation in
+the Public Cloud**. *In ISCA@50 Retrospective: 1996-2020*, 
+Edited by José F. Martínez and Lizy K. John, June 2023.
+
+[Retrospective PDF](https://sites.coecis.cornell.edu/isca50retrospective/files/2023/06/Karandikar_2018_FireSim.pdf)
+
 
 You can find other publications, including publications that *use* FireSim on the [FireSim Website](https://fires.im/publications/).
 

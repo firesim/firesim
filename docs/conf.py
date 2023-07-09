@@ -10,6 +10,7 @@ import shutil
 import os
 import subprocess
 import sys
+import time
 
 from sphinx.util import logging
 logger = logging.getLogger(__name__)
@@ -27,8 +28,11 @@ logger = logging.getLogger(__name__)
 # -- Project information -----------------------------------------------------
 
 project = u'FireSim'
-copyright = u'2018, Sagar Karandikar, Howard Mao, Donggyu Kim, David Biancolin, Alon Amid, and Berkeley Architecture Research'
-author = u'Sagar Karandikar, Howard Mao, Donggyu Kim, David Biancolin, Alon Amid, and Berkeley Architecture Research'
+
+this_year = time.strftime("%Y")
+
+copyright = u'2018-' + this_year + ' Sagar Karandikar, David Biancolin, Abraham Gonzalez, Howard Mao, Donggyu Kim, Alon Amid, and Berkeley Architecture Research'
+author = u'Sagar Karandikar, David Biancolin, Abraham Gonzalez, Howard Mao, Donggyu Kim, Alon Amid, and Berkeley Architecture Research'
 
 on_rtd = os.environ.get("READTHEDOCS") == "True"
 on_gha = os.environ.get("GITHUB_ACTIONS") == "true"
@@ -117,7 +121,7 @@ language = 'en'
 # List of patterns, relative to source directory, that match files and
 # directories to ignore when looking for source files.
 # This pattern also affects html_static_path and html_extra_path .
-exclude_patterns = [u'_build', 'Thumbs.db', '.DS_Store']
+exclude_patterns = [u'_build', 'Thumbs.db', '.DS_Store', '**/*-Template.rst']
 
 # The name of the Pygments (syntax highlighting) style to use.
 pygments_style = 'sphinx'
@@ -195,7 +199,7 @@ latex_elements = {
 #  author, documentclass [howto, manual, or own class]).
 latex_documents = [
     (master_doc, 'FireSim.tex', u'FireSim Documentation',
-     u'Sagar Karandikar, Howard Mao, \\\\ Donggyu Kim, David Biancolin, \\\\ Alon Amid,  \\\\ Berkeley Architecture Research', 'manual'),
+     u'Sagar Karandikar, David Biancolin, \\\\ Abraham Gonzalez, Howard Mao, \\\\ Donggyu Kim, Alon Amid, \\\\ Berkeley Architecture Research', 'manual'),
 ]
 
 

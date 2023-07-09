@@ -159,7 +159,7 @@ are homogeneous and use this value for all nodes.
 
 You should set this to one of the hardware configurations you have defined already in
 ``config_hwdb.yaml``.  You should set this to the NAME (mapping title) of the
-hardware configuration from ``config_hwdb.yaml``, NOT the actual AGFI or ``xclbin`` itself
+hardware configuration from ``config_hwdb.yaml``, NOT the actual AGFI or ``bitstream_tar`` itself
 (NOT something like ``agfi-XYZ...``).
 
 
@@ -316,7 +316,7 @@ write:
 ``agfis_to_share``
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-.. Warning:: This is only used in the AWS EC2 case.
+.. Note:: This is only used in the AWS EC2 case.
 
 This is used by the ``shareagfi`` command to share the specified agfis with the
 users specified in the next (``share_with_accounts``) section. In this section,
@@ -342,7 +342,7 @@ you would use:
 ``share_with_accounts``
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-.. Warning:: This is only used in the AWS EC2 case.
+.. Note:: This is only used in the AWS EC2 case.
 
 A list of AWS account IDs that you want to share the AGFIs listed in
 ``agfis_to_share`` with when calling the manager's ``shareagfi`` command. You
@@ -470,7 +470,7 @@ to the relative name of the config. For example,
 ``bit_builder_recipe``
 """""""""""""""""""""""
 
-This specifies the bitstream type to generate for a particular recipe (ex. build a Vitis ``xclbin``).
+This specifies the bitstream type to generate for a particular recipe.
 This must point to a file in ``deploy/bit-builder-recipes/``.
 See :ref:`bit-builder-recipe` for more details on bit builders and their arguments.
 
@@ -497,12 +497,12 @@ Here is a sample of this configuration file:
 
 This file tracks hardware configurations that you can deploy as simulated nodes
 in FireSim. Each such configuration contains a name for easy reference in higher-level
-configurations, defined in the section header, an handle to a bitstream (i.e. an AGFI or ``xclbin`` path), which represents the
+configurations, defined in the section header, an handle to a bitstream (i.e. an AGFI or ``bitstream_tar`` path), which represents the
 FPGA image, a custom runtime config, if one is needed, and a deploy quintuplet
 override if one is necessary.
 
-When you build a new bitstream, you should put the default version of it in this
-file so that it can be referenced from your other configuration files (i.e. the AGFI ID or ``xclbin`` path).
+When you build a new bitstream, you should put it in this
+file so that it can be referenced from your other configuration files.
 
 The following is an example section from this file - you can add as many of
 these as necessary:
@@ -512,10 +512,12 @@ these as necessary:
    :start-after: DOCREF START: Example HWDB Entry
    :end-before: DOCREF END: Example HWDB Entry
 
-``NAME_GOES_HERE``
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+Here are the components of these entries:
 
-In this example, ``firesim_rocket_quadcore_nic_l2_llc4mb_ddr3`` is the name that will be
+The name: ``firesim_boom_singlecore_nic_l2_llc4mb_ddr3``
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+In this example, ``firesim_boom_singlecore_nic_l2_llc4mb_ddr3`` is the name that will be
 used to reference this hardware design in other configuration locations. The following
 items describe this hardware configuration:
 
@@ -523,22 +525,18 @@ items describe this hardware configuration:
 """""""""""""""
 
 This represents the AGFI (FPGA Image) used by this hardware configuration.
-Only used in AWS EC2 F1 FireSim configurations (a ``xclbin`` key/value cannot exist with this
+Only used in AWS EC2 F1 FireSim configurations (a ``bitstream_tar`` key/value cannot exist with this
 key/value in the same recipe).
-
-``xclbin``
-"""""""""""""""
-
-Indicates where the bitstream (FPGA Image) is located, may be one of:
-  * A Uniform Resource Identifier (URI), (see :ref:`uri-path-support` for details)
-  * A filesystem path available to the manager. Local paths are relative to the `deploy` folder.
 
 ``bitstream_tar``
 """""""""""""""""
 
+This is not shown in the example entry above, but would be used for an on-premises bitstream.
+
 Indicates where the bitstream (FPGA Image) and metadata associated with it is located, may be one of:
-  * A Uniform Resource Identifier (URI), (see :ref:`uri-path-support` for details)
-  * A filesystem path available to the manager. Local paths are relative to the `deploy` folder.
+
+* A Uniform Resource Identifier (URI), (see :ref:`uri-path-support` for details)
+* A filesystem path available to the manager. Local paths are relative to the `deploy` folder.
 
 ``deploy_quintuplet_override``
 """"""""""""""""""""""""""""""
@@ -567,11 +565,13 @@ to the relative name of the config. For example,
 
 ``driver_tar``
 """""""""""""""""""""""""""""
-They key can be one of:
-  * A Uniform Resource Identifier (URI), (see :ref:`uri-path-support` for details)
-  * A filesystem path available to the manager. Local paths are relative to the `deploy` folder.
 
-When this key is present, the local driver will not build from source.
+The value for this key can be one of:
+
+* A Uniform Resource Identifier (URI), (see :ref:`uri-path-support` for details)
+* A filesystem path available to the manager. Local paths are relative to the `deploy` folder.
+
+When this key is present, the FireSim FPGA-driver software will not be built from source.
 Instead, during `firesim infrasetup`, this file will be deployed and extracted
 into the `sim_slot_X` folder on the run farm instance. This file may
 be a `.tar`, `.tar.gz`, `.tar.bz2` or any other format that GNU tar (version 1.26)
@@ -586,7 +586,7 @@ Add more hardware config sections, like ``NAME_GOES_HERE_2``
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 You can add as many of these entries to ``config_hwdb.yaml`` as you want, following the format
-discussed above (i.e. you provide ``agfi`` or ``xclbin``, ``deploy_quintuplet_override``, and ``custom_runtime_config``).
+discussed above (i.e. you provide ``agfi`` or ``bitstream_tar``, ``deploy_quintuplet_override``, and ``custom_runtime_config``).
 
 .. _run-farm-recipe:
 
@@ -605,7 +605,7 @@ This key/value specifies a run farm class to use for launching, managing, and te
 run farm hosts used for simulations.
 By default, run farm classes can be found in :gh-file-ref:`deploy/runtools/run_farm.py`. However, you can specify
 your own custom run farm classes by adding your python file to the ``PYTHONPATH``.
-For example, to use the ``AWSEC2F1`` build farm class, you would write ``run_farm_type: AWSEC2F1``.
+For example, to use the ``AWSEC2F1`` run farm class, you would write ``run_farm_type: AWSEC2F1``.
 
 ``args``
 ^^^^^^^^^^^^^^^^^^^^^
@@ -617,12 +617,8 @@ the ``_parse_args`` function in the run farm class given by ``run_farm_type``.
 ``aws_ec2.yaml`` run farm recipe
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-This run farm recipe configures a FireSim run farm to use AWS EC2 instances.
-
-Here is an example of this configuration file:
-
-.. literalinclude:: /../deploy/run-farm-recipes/aws_ec2.yaml
-   :language: yaml
+The run farm recipe shown above configures a FireSim run farm to use AWS EC2 instances.
+It contains several key/value pairs:
 
 ``run_farm_tag``
 """"""""""""""""
@@ -734,7 +730,7 @@ for AWS EC2 simulations.
 ``externally_provisioned.yaml`` run farm recipe
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-This run farm is an allows users to provide an list of pre-setup unmanaged run farm hosts (by hostname or IP address) that
+This run farm allows users to provide a list of pre-setup unmanaged run farm hosts (by hostname or IP address) that
 they can run simulations on.
 Note that this run farm type does not launch or terminate the run farm hosts. This functionality should be handled by the user.
 For example, users can use this run farm type to run simulations locally.
@@ -752,7 +748,7 @@ simulations across all run farm hosts.
 For example, this class manages how to flash FPGAs with bitstreams, how to copy back results, and how to check if a simulation is running.
 By default, deploy platform classes can be found in :gh-file-ref:`deploy/runtools/run_farm_deploy_managers.py`. However, you can specify
 your own custom run farm classes by adding your python file to the ``PYTHONPATH``.
-There are default deploy managers / platforms that correspond to AWS EC2 F1 FPGAs, Vitis FPGAs, and Xilinx Alveo U250/U280 FPGAs, ``EC2InstanceDeployManager``, ``VitisInstanceDeployManager``, ``XilinxAlveo{U250,U280}InstanceDeployManager``, respectively.
+There are default deploy managers / platforms that correspond to AWS EC2 F1 FPGAs, Vitis FPGAs, Xilinx Alveo U250/U280 FPGAs, Xilinx VCU118 FPGAs, and RHS Research Nitefury II FPGAs: ``EC2InstanceDeployManager``, ``VitisInstanceDeployManager``, ``Xilinx{AlveoU250,AlveoU280,VCU118}InstanceDeployManager``, and ``RHSResearchNitefuryIIInstanceDeployManager`` respectively.
 For example, to use the ``EC2InstanceDeployManager`` deploy platform class, you would write ``default_platform: EC2InstanceDeployManager``.
 
 ``default_simulation_dir``
@@ -941,7 +937,7 @@ When enabled, this appends the current users AWS user ID and region to the ``s3_
 ``vitis.yaml`` bit builder recipe
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-This bit builder recipe configures a build farm host to build an Vitis bitstream (FPGA bitstream called an ``xclbin``).
+This bit builder recipe configures a build farm host to build an Vitis bitstream (FPGA bitstream called an ``xclbin``, packaged into a ``bitstream_tar``).
 
 ``device``
 """"""""""""""""""""""""""
@@ -955,9 +951,20 @@ Here is an example of this configuration file:
 ``xilinx_alveo_u250.yaml`` bit builder recipe
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-This bit builder recipe configures a build farm host to build an Xilinx Alveo U250 bitstream.
+This bit builder recipe configures a build farm host to build an Xilinx Alveo U250 bitstream, packaged into a ``bitstream_tar``.
 
 ``xilinx_alveo_u280.yaml`` bit builder recipe
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-This bit builder recipe configures a build farm host to build an Xilinx Alveo U280 bitstream.
+This bit builder recipe configures a build farm host to build an Xilinx Alveo U280 bitstream, packaged into a ``bitstream_tar``.
+
+``xilinx_vcu118.yaml`` bit builder recipe
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+This bit builder recipe configures a build farm host to build an Xilinx VCU118 bitstream, packaged into a ``bitstream_tar``.
+
+``rhsresearch_nitefury_ii.yaml`` bit builder recipe
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+This bit builder recipe configures a build farm host to build an RHS Research Nitefury II bitstream, packaged into a ``bitstream_tar``.
+

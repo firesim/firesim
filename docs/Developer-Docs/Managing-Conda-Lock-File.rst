@@ -1,8 +1,8 @@
 Managing the Conda Lock File
 ------------------------------
 
-The default conda environment set by ``build-setup.sh`` uses the `lock file ("*.conda-lock.yml") <https://github.com/conda-incubator/conda-lock>`_ in ``conda-reqs/*``.
-This file is derived from the conda requirements files (``*.yaml``) also located at ``conda-reqs/*``.
+The default Conda environment set by ``build-setup.sh`` uses the `lock file ("*.conda-lock.yml") <https://github.com/conda-incubator/conda-lock>`_ in ``conda-reqs/*``.
+This file is derived from the Conda requirements files (``*.yaml``) also located at ``conda-reqs/*``.
 
 Updating Conda Requirements
 ===========================
@@ -16,7 +16,7 @@ There are two different methods:
 Caveats of the Conda Lock File and CI
 =====================================
 
-Unfortunately, so far as we know, there is no way to derive the conda requirements files from the conda lock file.
+Unfortunately, so far as we know, there is no way to derive the Conda requirements files from the Conda lock file.
 Thus, there is no way to verify that a lock file satisfies a set of requirements given by a requirements file(s).
 It is recommended that anytime you update a requirements file, you update the lock file in the same PR.
 This check is what the ``check-conda-lock-modified`` CI job does.

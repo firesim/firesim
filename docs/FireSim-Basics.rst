@@ -3,134 +3,107 @@
 FireSim Basics
 ===================================
 
-FireSim is a cycle-accurate, FPGA-accelerated scale-out computer system
-simulation platform developed in the Berkeley Architecture Research Group in
-the EECS Department at the University of California, Berkeley.
+FireSim is an open-source
+FPGA-accelerated full-system hardware simulation platform that makes
+it easy to validate, profile, and debug RTL hardware implementations
+at 10s to 100s of MHz. FireSim simplifies co-simulating 
+ASIC RTL with cycle-accurate hardware and software models for other system components (e.g. I/Os). FireSim can productively 
+scale from individual SoC simulations hosted on on-prem FPGAs (e.g., a single Xilinx Alveo board attached to a desktop) 
+to massive datacenter-scale simulations harnessing hundreds of cloud FPGAs (e.g., on Amazon EC2 F1).
 
-FireSim is capable of simulating from **one to thousands of multi-core compute
-nodes**, derived from **silicon-proven** and **open** target-RTL, with an optional
-cycle-accurate network simulation tying them together. FireSim runs on FPGAs in **public
-cloud** environments like AWS EC2 F1, removing the high capex traditionally
-involved in large-scale FPGA-based simulation, as well as on on-premises FPGAs.
+FireSim users across academia and industry (at 20+ institutions) have published
+over 40 papers using FireSim in many areas, including computer architecture,
+systems, networking, security, scientific computing, circuits, design
+automation, and more (see the `Publications page <https://fires.im/publications>`__ on
+the FireSim website to learn more). FireSim
+has also been used in the development of commercially-available silicon. FireSim
+was originally developed in the Electrical Engineering and Computer Sciences
+Department at the University of California, Berkeley, but
+now has industrial and academic contributors from all over the world.
 
-FireSim is useful both for datacenter architecture research as well as running
-many single-node architectural experiments in parallel on FPGAs. By harnessing
-a standardized host platform and providing a large amount of
-automation/tooling, FireSim drastically simplifies the process of building and
-deploying large-scale FPGA-based hardware simulations.
+This documentation will walk you through getting started with using FireSim on
+your platform and also serves as a reference for more advanced FireSim features. For higher-level
+technical discussion about FireSim, see the `FireSim website <https://fires.im>`__.
 
-To learn more, see the `FireSim website <https://fires.im>`__ and the FireSim
-`ISCA 2018 paper <https://sagark.org/assets/pubs/firesim-isca2018.pdf>`__.
 
-For a two-minute overview that describes how FireSim simulates a datacenter,
-see our ISCA 2018 lightning talk `on YouTube <https://www.youtube.com/watch?v=4XwoSe5c8lY>`__.
+Common FireSim usage models
+---------------------------------------
 
-Three common use cases:
---------------------------
+Below are three common usage models for FireSim. The first two are the most common, while the
+third model is primarily for those interested in warehouse-scale computer research. The getting
+started guides on this documentation site will cover all three models.
 
-Single-Node Simulation In Parallel Using On-Premises FPGAs
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+1. Single-Node Simulations Using One or More On-Premises FPGAs
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-In this mode, FireSim allows for simulation of individual Rocket
-Chip-based nodes without a network, which allows individual simulations to run
-at ~150 MHz. The FireSim manager has the ability to automatically distribute
-jobs to on-premises FPGAs allowing users to harness existing FPGAs for quick turnaround time and
-maximum flexibility. For example, users can run all of SPECInt2017 on Rocket Chip
-in ~1 day by running the 10 separate workloads in parallel on 10 on-premises FPGAs.
+In this usage model, FireSim allows for simulation of targets consisting of
+individual SoC designs (e.g., those produced by `Chipyard <https://chipyard.readthedocs.io/>`__)
+at 150+ MHz running on on-premises
+FPGAs, such as those attached to your local desktop, laptop, or cluster. Just
+like on the cloud, the FireSim manager can automatically distribute and manage
+jobs on one or more on-premises FPGAs, including running complex workloads like
+SPECInt2017 with full reference inputs.
 
-Single-Node Simulation In Parallel Using Cloud FPGAs
+2. Single-Node Simulations Using Cloud FPGAs
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-In this mode, FireSim allows for simulation of individual Rocket
-Chip-based nodes without a network, which allows individual simulations to run
-at ~150 MHz. The FireSim manager has the ability to automatically distribute
-jobs to many parallel simulations running on cloud FPGAs, expediting the process of running large
-workloads like SPEC. For example, users can run all of SPECInt2017 on Rocket Chip
-in ~1 day by running the 10 separate workloads in parallel on 10 FPGAs hosted in the cloud.
+This usage model is similar to the previous on-premises case, but instead
+deploys simulations on FPGAs attached to cloud instances, rather than requiring
+users to obtain and set-up on-premises FPGAs. This allows for dynamically
+scaling the number of FPGAs in-use to match workload requirements. For example,
+on AWS EC2 F1, it is just as cost effective to run the 10 workloads in SPECInt2017 in parallel
+on 10 cloud FPGAs vs. running them serially on one cloud FPGA.
 
-Datacenter/Cluster Simulation
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+.. note::
+    All automation in FireSim works in both the on-premises and cloud
+    usage models, which enables a **hybrid usage model** where early development happens
+    on one (or a small cluster of) on-premises FPGA(s), while bursting to a large
+    number of cloud FPGAs when a high degree of parallelism is necessary.
+
+3. Datacenter/Cluster Simulations on On-Premises or Cloud FPGAs
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 In this mode, FireSim also models a cycle-accurate network with
-parameterizeable bandwidth and link latency, as well as configurable
-topology, to accurately model current and future datacenter-scale
+parameterizeable bandwidth, link latency, and configurable
+topology to accurately model current and future datacenter-scale
 systems. For example, FireSim has been used to simulate 1024 quad-core
-Rocket Chip-based nodes, interconnected by a 200 Gbps, 2us network. To learn
+RISC-V Rocket Chip-based nodes, interconnected by a 200 Gbps, 2us Ethernet network. To learn
 more about this use case, see our `ISCA 2018 paper
-<https://sagark.org/assets/pubs/firesim-isca2018.pdf>`__ or `two-minute lightning talk
-<https://www.youtube.com/watch?v=4XwoSe5c8lY>`__.
+<https://sagark.org/assets/pubs/firesim-isca2018.pdf>`__.
+
 
 Other Use Cases
 ---------------------
 
-This release does not support a non-cycle-accurate network as our `AWS Compute Blog Post/Demo
-<https://aws.amazon.com/blogs/compute/bringing-datacenter-scale-hardware-software-co-design-to-the-cloud-with-firesim-and-amazon-ec2-f1-instances/>`__
-used. This feature will be restored in a future release.
+If you have other use-cases that we haven't covered or don't fit into the above
+buckets, feel free to contact us!
 
-If you have other use-cases that we haven't covered, feel free to contact us!
+Choose your platform to get started
+--------------------------------------
 
+FireSim supports many types of FPGAs and FPGA platforms! Click one of the following links to work through the getting started guide for your particular platform.
 
-Background/Terminology
----------------------------
+* :doc:`/Getting-Started-Guides/AWS-EC2-F1-Getting-Started/index`
+  
+  * Status: ✅ All FireSim Features Supported.
 
-.. figure:: img/firesim_env.png
-   :alt: FireSim Infrastructure Setup
+* :doc:`/Getting-Started-Guides/On-Premises-FPGA-Getting-Started/Xilinx-Alveo-U250-FPGAs`
+  
+  * Status: ✅ All FireSim Features Supported.
 
-   FireSim Infrastructure Diagram
+* :doc:`/Getting-Started-Guides/On-Premises-FPGA-Getting-Started/Xilinx-Alveo-U280-FPGAs`
+  
+  * Status: ✅ All FireSim Features Supported.
 
-**FireSim Manager** (``firesim``)
-  This program (available on your path as ``firesim``
-  once we source necessary scripts) automates the work required to launch FPGA
-  builds and run simulations. Most users will only have to interact with the
-  manager most of the time. If you're familiar with tools like Vagrant or Docker, the ``firesim``
-  command is just like the ``vagrant`` and ``docker`` commands, but for FPGA simulators
-  instead of VMs/containers.
+* :doc:`/Getting-Started-Guides/On-Premises-FPGA-Getting-Started/Xilinx-VCU118-FPGAs`
+  
+  * Status: ✅ All FireSim Features Supported.
 
-**Manager Instance**
-  This is the main host (ex. AWS EC2 instance or local machine) that you will
-  SSH-into and do work on. This is where you'll clone your copy of FireSim and
-  use the FireSim Manager to deploy builds/simulations from.
+* :doc:`/Getting-Started-Guides/On-Premises-FPGA-Getting-Started/RHS-Research-Nitefury-II-FPGAs`
+  
+  * Status: ✅ All FireSim Features Supported.
 
-**Build Farm**
-  These are instances that are managed by the FireSim manager when you run FPGA builds.
-  The manager will automatically ship source for builds to these instances and
-  run the Verilog -> FPGA Image process on them.
+* :doc:`Getting-Started-Guides/On-Premises-FPGA-Getting-Started/Xilinx-Vitis-FPGAs`
+  
+  * Status: ⚠️  DMA-based Bridges Not Supported. The Vitis-based U250 flow is **not recommended** unless you have specific constraints that require using Vitis. Notably, the Vitis-based flow does not support DMA-based FireSim bridges (e.g., TracerV, Synthesizable Printfs, etc.), while the XDMA-based flows support all FireSim features, as shown above. If you're unsure, use the XDMA-based U250 flow instead: :doc:`/Getting-Started-Guides/On-Premises-FPGA-Getting-Started/Xilinx-Alveo-U250-FPGAs`.
 
-**Run Farm**
-  These are a collection of instances that the manager
-  manages and deploys simulations onto. You can use multiple
-  Run Farms in parallel, to run multiple separate
-  simulations in parallel.
-
-To disambiguate between the computers being simulated and the computers doing
-the simulating, we also define:
-
-**Target**
-  The design and environment under simulation. Generally, a
-  group of one or more multi-core RISC-V microprocessors with or without a network between them.
-
-**Host**
-  The computers executing the FireSim simulation -- the **Run Farm** from above.
-
-We frequently prefix words with these terms. For example, software can run
-on the simulated RISC-V system (*target*-software) or on a host x86 machine (*host*-software).
-
-**Golden Gate (MIDAS II)**
-  The FIRRTL compiler used by FireSim to convert target RTL into a decoupled
-  simulator. Formerly named MIDAS.
-
-Get Started
------------
-
-FireSim supports many type of FPGAs and FPGA platforms!
-Click one of the following links to get started with your particular platform.
-
-.. warning:: If using a Xilinx Alveo U250 or U280, we recommend the FPGA-specific flows instead of the Xilinx Vitis flow.
-
-* :doc:`/Getting-Started-Guides/AWS-EC2-F1-Tutorial/index`
-
-* :doc:`/Getting-Started-Guides/On-Premises-FPGA-Tutorial/Xilinx-Alveo-U250-FPGAs`
-
-* :doc:`/Getting-Started-Guides/On-Premises-FPGA-Tutorial/Xilinx-Alveo-U280-FPGAs`
-
-* :doc:`Getting-Started-Guides/On-Premises-FPGA-Tutorial/Xilinx-Vitis-FPGAs`
