@@ -177,15 +177,16 @@ set -o pipefail
         $SUDO bash ./install_conda.sh -b -p "$CONDA_INSTALL_PREFIX" $conda_install_extra
         rm ./install_conda.sh
 
+	# get most up-to-date conda version
+ 	"${DRY_RUN_ECHO[@]}" $SUDO "$CONDA_EXE" update $DRY_RUN_OPTION -y -n base -c conda-forge conda
+
         # see https://conda-forge.org/docs/user/tipsandtricks.html#multiple-channels
         # for more information on strict channel_priority
         "${DRY_RUN_ECHO[@]}" $SUDO "$CONDA_EXE" config --system --set channel_priority flexible
-        # By default, don't mess with people's PS1, I personally find it annoying
+        # by default, don't mess with people's PS1, I personally find it annoying
         "${DRY_RUN_ECHO[@]}" $SUDO "$CONDA_EXE" config --system --set changeps1 false
-        # don't automatically activate the 'base' environment when intializing shells
+        # don't automatically activate the 'base' environment when initializing shells
         "${DRY_RUN_ECHO[@]}" $SUDO "$CONDA_EXE" config --system --set auto_activate_base false
-	# don't automatically update conda to avoid https://github.com/conda-forge/conda-libmamba-solver-feedstock/issues/2
-        "${DRY_RUN_ECHO[@]}" $SUDO "$CONDA_EXE" config --system --set auto_update_conda false
 	# automatically use the ucb-bar channel for specific packages https://anaconda.org/ucb-bar/repo
         "${DRY_RUN_ECHO[@]}" $SUDO "$CONDA_EXE" config --system --add channels ucb-bar
 
@@ -204,7 +205,7 @@ set -o pipefail
             # initialize conda in the system-wide rcfiles
             conda_init_extra_args=(--no-user --system)
         fi
-        # run conda-init and look at it's output to insert 'conda activate $CONDA_ENV_NAME' into the
+        # run conda-init and look at its output to insert 'conda activate $CONDA_ENV_NAME' into the
         # block that conda-init will update if ever conda is installed to a different prefix and
         # this is rerun.
         $SUDO "${CONDA_EXE}" init $DRY_RUN_OPTION "${conda_init_extra_args[@]}" $CONDA_SHELL_TYPE 2>&1 | \
@@ -292,11 +293,13 @@ set -o pipefail
         argcomplete_extra_args=( --dest "${BASH_COMPLETION_COMPAT_DIR}" )
 
     else
-        # if we're aren't installing into a system directory, then initialize argcomplete
+        # if we aren't installing into a system directory, then initialize argcomplete
         # with --user so that it goes into the home directory
         argcomplete_extra_args=( --user )
     fi
-    "${DRY_RUN_ECHO[@]}" $SUDO "${CONDA_ENV_BIN}/activate-global-python-argcomplete" "${argcomplete_extra_args[@]}"
+    set +o pipefail
+    "${DRY_RUN_ECHO[@]}" yes | $SUDO "${CONDA_ENV_BIN}/activate-global-python-argcomplete" "${argcomplete_extra_args[@]}"
+    set -o pipefail
 
     # emergency fix for buildroot open files limit issue:
     if [[ "$INSTALL_TYPE" == system ]]; then

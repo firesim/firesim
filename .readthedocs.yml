@@ -13,3 +13,9 @@ submodules:
 
 conda:
    environment: conda-reqs/docs.yaml
+
+formats:
+   - pdf
+   - htmlzip
+   - epub
+

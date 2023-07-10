@@ -19,7 +19,7 @@ def run_docs_generated_components_check():
         with prefix('source sourceme-manager.sh --skip-ssh-setup'):
             with prefix("cd deploy"):
                 run("cat config_runtime.yaml")
-                path = "docs/Getting-Started-Guides/On-Premises-FPGA-Tutorial/Running-Simulations/DOCS_EXAMPLE_config_runtime.yaml"
+                path = "docs/Getting-Started-Guides/On-Premises-FPGA-Getting-Started/Running-Simulations/DOCS_EXAMPLE_config_runtime.yaml"
                 run(f"cat ../{path}")
                 run(f"diff config_runtime.yaml ../{path}")
 

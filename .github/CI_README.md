@@ -26,7 +26,7 @@ to use this instance as a GH-A self-hosted runner (see https://docs.github.com/e
 Running FPGA-related Tasks
 --------------------------
 
-CI now includes the capability to run FPGA-simulations on specific PRs. This requires that you tag your PR on creation with the tag `ci:fpga-deploy`. Adding the tag after the PR is created will not run the FPGA jobs without a resynchronization event (e.g., closing + reopening the PR, adding a new commit, or rebasing the branch). 
+CI now includes the capability to run FPGA-simulations on specific PRs. This requires that you tag your PR on creation with the tag `ci:fpga-deploy`. Adding the tag after the PR is created will not run the FPGA jobs without a resynchronization event (e.g., closing + reopening the PR, adding a new commit, or rebasing the branch).
 
 Debugging Failures
 ------------------
@@ -44,7 +44,7 @@ If the instance is stopped, then you must request a AWS IAM user account from th
 Prior CI Jobs for Pull Requests
 ------------------------------
 
-The default behavior is that a new commit to a PR will cancel any existing workflows that are still running. This is to save resources and is done by the `cancel-prior-workflows` job. If you wish to 
+The default behavior is that a new commit to a PR will cancel any existing workflows that are still running. This is to save resources and is done by the `cancel-prior-workflows` job. If you wish to
 allow all prior workflows to keep running, add the `ci:persist-prior-workflows` tag to your PR. Please use this tag sparingly, and with caution.
 
 GitHub Secrets
@@ -63,4 +63,4 @@ GitHub Secrets
 * **FIRESIM_PEM**: Used by the manager on CI manager instances and VMs
 * **FIRESIM_PEM_PUBLIC**: Public key of the above secret, used to setup the key in Azure
 * **FIRESIM_REPO_DEP_KEY**: Used to push scala doc to GH pages
-* **GH_A_PERSONAL_ACCESS_TOKEN**: Used to dynamically register and deregister GitHub Actions runners. See `https://docs.github.com/en/authentication/keeping-your-account-and-data-secure/creating-a-personal-access-token`, and enable the `workflow` (Update GitHub Action workflows) setting.
+* **BARTENDER_PERSONAL_ACCESS_TOKEN**: Used to dynamically register and deregister GitHub Actions runners. See `https://docs.github.com/en/authentication/keeping-your-account-and-data-secure/creating-a-personal-access-token`, and enable the `workflow` (Update GitHub Action workflows) setting.

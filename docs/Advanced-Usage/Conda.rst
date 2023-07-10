@@ -1,12 +1,12 @@
 Non-Source Dependency Management
 ================================
 
-In the AWS EC2 F1 setup, in :doc:`/Getting-Started-Guides/AWS-EC2-F1-Tutorial/Initial-Setup/Setting-up-your-Manager-Instance`, we quickly copy-pasted the contents
+In the AWS EC2 F1 setup, in :doc:`/Getting-Started-Guides/AWS-EC2-F1-Getting-Started/Initial-Setup/Setting-up-your-Manager-Instance`, we quickly copy-pasted the contents
 of ``scripts/machine-launch-script.sh`` into the EC2 Management Console and
 that script installed many dependencies that FireSim needs using
-`conda <https://conda.io/en/latest/index.html>`_,  a platform-agnostic package
+`Conda <https://conda.io/en/latest/index.html>`_,  a platform-agnostic package
 manager, specifically using packages from the `conda-forge community <https://conda-forge.org/#about>`_
-(or in the case of :doc:`/Getting-Started-Guides/AWS-EC2-F1-Tutorial/Initial-Setup/Setting-up-your-Manager-Instance`, we ran ``scripts/machine-launch-script.sh``).
+(or in the case of :doc:`/Getting-Started-Guides/AWS-EC2-F1-Getting-Started/Initial-Setup/Setting-up-your-Manager-Instance`, we ran ``scripts/machine-launch-script.sh``).
 
 In many situations, you may not need to know anything about ``conda``.  By default, the
 ``machine-launch-script.sh`` installs ``conda`` into ``/opt/conda`` and all of the FireSim dependencies into
@@ -23,7 +23,7 @@ is that you are able to write into the install location.  See ``machine-launch-s
     To :ref:`run a simulation on a F1 FPGA <running_simulations>` , FireSim currently requires that
     you are able to act as root via ``sudo``.
 
-    However, you can do many things without having root, like :doc:`/Getting-Started-Guides/AWS-EC2-F1-Tutorial/Building-a-FireSim-AFI`,
+    However, you can do many things without having root, like :doc:`/Getting-Started-Guides/AWS-EC2-F1-Getting-Started/Building-a-FireSim-AFI`,
     `<meta-simulation>`_ of a FireSim system using Verilator or even developing new features in FireSim.
 
 Updating a Package Version
@@ -103,7 +103,7 @@ like the following ::
 
 This shows you that the first time ``machine-launch-script.sh`` was run, it created 'revision' 0 of the environment with
 many packages.  After updating the version of ``moto`` and rerunning, 'revision' 1 was created by updating the version
-of ``moto``.  At any time, you can revert your conda environment back to an older 'revision' using ``conda install -revision <n>``
+of ``moto``.  At any time, you can revert your Conda environment back to an older 'revision' using ``conda install -revision <n>``
 
 Multiple Environments
 ---------------------
@@ -151,7 +151,7 @@ Look for what you need in this order:
    mailing list know so that we can help get the addition merged.
 #. `PyPI <https://pypi.org/>`_ (for Python packages).  While it is possible to install packages with pip into a ``conda``
    environment, `there are caveats <https://docs.conda.io/projects/conda/en/latest/user-guide/tasks/manage-environments.html?highlight=pip#using-pip-in-an-environment>`_.
-   In short, you're less likely to create a mess if you use only conda to manage the requirements and dependencies
+   In short, you're less likely to create a mess if you use only Conda to manage the requirements and dependencies
    in your environment.
 #. System packages as a last resort.  It's very difficult to have the same tools on different platforms when they are being
    built and shipped by different systems and organizations.  That being said, in a pinch, you can find a section for
@@ -187,10 +187,10 @@ If you instead need to enable debugging or possibly actively hack on the source 
 If you are developing a Python package, it is usually easiest to install all dependencies using ``conda`` and then install
 your package in 'development mode' using ``pip install -e <path to clone>`` (and making sure that you are using ``pip`` from your environment).
 
-Running conda with sudo
+Running Conda with sudo
 -----------------------
 
-``tl;dr;`` run conda like this when using ``sudo``::
+``tl;dr;`` run Conda like this when using ``sudo``::
 
     sudo -E $CONDA_EXE <remaining options to conda>
 
@@ -202,16 +202,16 @@ You also probably want to include the ``-E`` option to ``sudo`` (or more specifi
 ``--preserve-env=CONDA_DEFAULT_ENV``) so that the default choice for the environment to modify
 is preserved in the sudo environment.
 
-Running things from your conda environment with sudo
+Running things from your Conda environment with sudo
 ----------------------------------------------------
 
 If you are running other commands using sudo (perhaps to run something under gdb), remember, the ``secure_path``
-does not include the conda environment by default and you will need to specify the full path to what you want to run,
+does not include the Conda environment by default and you will need to specify the full path to what you want to run,
 or in some cases, it is easiest to wrap what you want to run in a full login shell invocation like::
 
    sudo /bin/bash -l -c "<command to run as root>"
 
-The ``-l`` option to ``bash`` ensures that the **default** conda environment is fully activated.  In the rare case that
+The ``-l`` option to ``bash`` ensures that the **default** Conda environment is fully activated.  In the rare case that
 you are using a non-default named environment, you will want to activate it before running your command::
 
     sudo /bin/bash -l -c "conda activate <myenv> && <command to run as root>"
