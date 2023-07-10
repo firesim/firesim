@@ -15,7 +15,11 @@ gha_runs_api_url     = f"{gha_api_url}/runs"
 gha_workflow_api_url = f"{gha_runs_api_url}/{ci_env['GITHUB_RUN_ID']}"
 
 def get_header(gh_token: str) -> Dict[str, str]:
-    return {"Authorization": f"token {gh_token.strip()}", "Accept": "application/vnd.github+json"}
+    return {
+        "Authorization": f"token {gh_token.strip()}",
+        "Accept": "application/vnd.github+json",
+        "User-Agent": "bar-tender",
+    }
 
 def get_runners(gh_token: str) -> List[Dict[str, Any]]:
     r = requests.get(gha_runners_api_url, headers=get_header(gh_token))
