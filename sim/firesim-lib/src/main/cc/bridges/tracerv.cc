@@ -35,9 +35,6 @@ tracerv_t::tracerv_t(simif_t &sim,
     : streaming_bridge_driver_t(sim, stream, &KIND), mmio_addrs(mmio_addrs),
       stream_idx(stream_idx), stream_depth(stream_depth),
       max_core_ipc(max_core_ipc), clock_info(clock_info) {
-  // Biancolin: move into elaboration
-  assert(this->max_core_ipc <= 7 &&
-         "TracerV only supports cores with a maximum IPC <= 7");
   const char *tracefilename = nullptr;
   const char *dwarf_file_name = nullptr;
   this->tracefile = nullptr;
@@ -272,8 +269,6 @@ void tracerv_t::serialize(
                     OUTBUF[i + 0],
                     q,
                     OUTBUF[i + q + 1] & (~valid_mask));
-          } else {
-            break;
           }
         }
       }
