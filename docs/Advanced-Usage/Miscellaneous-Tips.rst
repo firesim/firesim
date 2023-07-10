@@ -145,8 +145,8 @@ Using FireSim CI
 For more information on how to deal with the FireSim CI and how to run FPGA simulations in the CI,
 refer to the the ``CI_README.md`` under the ``.github/`` directory.
 
-What to do if your AGFI build goes from pending to failed
------------------------------------
+How to view AWS build logs when AGFI build fails
+---------------------------------------------------------
 
 There are times when we want to view Vivado logs when a bitstream build fails (especially when a bitstream build fails
 while the manager is printing out ``pending``).
