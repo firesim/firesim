@@ -142,7 +142,7 @@ else
 	./scripts/generate-conda-lockfile.sh
     fi
     LOCKFILE="$(find $RDIR/conda-reqs/*.conda-lock.yml)"
-    conda-lock install -p $RDIR/.conda-env $LOCKFILE
+    conda-lock install --conda $(which conda) -p $RDIR/.conda-env $LOCKFILE
     source $RDIR/.conda-env/etc/profile.d/conda.sh
     conda activate $RDIR/.conda-env
     env_append "$CONDA_ACTIVATE_PREAMBLE"
