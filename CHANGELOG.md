@@ -2,6 +2,22 @@
 
 This changelog follows the format defined here: https://keepachangelog.com/en/1.0.0/
 
+## [1.17.1] - 2023-07-12
+Fix missing mcs file in VCU118 bitstream_tar. Automatically generate release notes for faster releases. CI improvements.
+
+### Added
+- Bucket log docs (by @joey0320 in https://github.com/firesim/firesim/pull/1575)
+- Add release note automation (by @abejgonzalez in https://github.com/firesim/firesim/pull/1595)
+
+### Changed
+- Use bar-tender specific access (by @abejgonzalez in https://github.com/firesim/firesim/pull/1558)
+- CI modifications - Support Vivado 2022.1, New CI machine(s) (by @abejgonzalez in https://github.com/firesim/firesim/pull/1592)
+
+### Fixed
+- Fix VCU118 bitstream_tar missing mcs file (by @abejgonzalez in https://github.com/firesim/firesim/pull/1592)
+
+**Full Changelog:** https://github.com/firesim/firesim/compare/1.17.0...main
+
 ## [1.17.0] - 2023-06-16
 Support for several new local FPGA boards added: Xilinx VCU118 (w/XDMA), Xilinx Alveo U250/U280 (w/XDMA, in addition to previous Vitis support), RHSResearch NiteFury II (w/XDMA). FireSim now also supports Xcelium for metasims.
 
