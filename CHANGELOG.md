@@ -2,7 +2,7 @@
 
 This changelog follows the format defined here: https://keepachangelog.com/en/1.0.0/
 
-## [1.17.1] - 2023-07-12
+## [1.17.1] - 2023-07-14
 Fix missing mcs file in VCU118 bitstream_tar. Automatically generate release notes for faster releases. CI improvements.
 
 ### Added
@@ -15,6 +15,7 @@ Fix missing mcs file in VCU118 bitstream_tar. Automatically generate release not
 
 ### Fixed
 - Fix VCU118 bitstream_tar missing mcs file (by @abejgonzalez in https://github.com/firesim/firesim/pull/1592)
+- Additional VCU118 inital setup fixes (by @sagark in https://github.com/firesim/firesim/pull/1606)
 
 **Full Changelog:** https://github.com/firesim/firesim/compare/1.17.0...main
 
