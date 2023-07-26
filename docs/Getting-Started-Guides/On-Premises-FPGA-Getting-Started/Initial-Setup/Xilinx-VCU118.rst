@@ -15,6 +15,6 @@
 .. |extra_mcs| replace:: file from step 7 and for Configuration file 2, choose the ``firesim_secondary.mcs`` file from step 7.
 .. |dip_switch_extra| replace:: power). Then, set the SW16 switches on the board to ``0001`` to set the board to automatically program the FPGA from the QSPI at boot (i.e., ``position 1 = 0``, ``position 2 = 0``, ``position 3 = 0``, and ``position 4 = 1``. Having the switch set to the side of the position label indicates 0.)
 .. |nitefury_patch_xdma| replace:: The directory you are now in contains the XDMA kernel module. Now, let's build and install it:
-.. |jtag_cable_reminder| replace:: If wanted, you can remove the USB cable for JTAG (the FPGA is programmed through PCI-E for FireSim simulations on the Xilinx VCU118).
+.. |jtag_cable_reminder| replace:: If necessary, you can remove the USB cable for JTAG (the FPGA is programmed through PCIe for FireSim simulations on the Xilinx VCU118). However, we still recommend leaving the cable attached, since it will allow you to re-flash the SPI in case there are issues.
 
 .. include:: Xilinx-XDMA-Template.rst
