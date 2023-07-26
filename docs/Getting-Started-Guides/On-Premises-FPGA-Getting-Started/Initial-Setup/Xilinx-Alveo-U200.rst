@@ -1,0 +1,19 @@
+.. |fpga_name| replace:: Xilinx Alveo U200
+.. _fpga_name: https://www.xilinx.com/products/boards-and-kits/alveo/u200.html
+.. |fpga_power_info| replace:: For the U200, this is usually PCIe power coming directly from the system's PSU.
+.. |hwdb_entry_name| replace:: ``alveo_u200_firesim_rocket_singlecore_no_nic``
+.. |platform_name| replace:: xilinx_alveo_u200
+.. |board_name| replace:: au200
+.. |tool_type| replace:: Xilinx Vivado
+.. |tool_type_lab| replace:: Xilinx Vivado Lab
+.. |example_var| replace:: ``XILINX_VIVADO``
+.. |deploy_manager_code| replace:: ``XilinxAlveoU200InstanceDeployManager``
+.. |fpga_spi_part_number| replace:: ``mt25qu01g-spi-x1_x2_x4``
+.. |fpga_attach_prereq| replace:: into an open PCIe slot in the machine.
+.. |jtag_help| replace:: JTAG.
+.. |extra_mcs| replace:: file from step 7.
+.. |mcs_info| replace:: Inside, you will find three files; the one we are currently interested in will be called ``firesim.mcs``. Note the full path of this ``firesim.mcs`` file for the next step.
+.. |dip_switch_extra| replace:: power).
+.. |nitefury_patch_xdma| replace:: The directory you are now in contains the XDMA kernel module. Now, let's build and install it:
+
+.. include:: Xilinx-XDMA-Template.rst

@@ -10,6 +10,7 @@ New to FireSim? Jump to the :doc:`/FireSim-Basics` page for more info.
 
    FireSim-Basics
    Getting-Started-Guides/AWS-EC2-F1-Getting-Started/index
+   Getting-Started-Guides/On-Premises-FPGA-Getting-Started/Xilinx-Alveo-U200-FPGAs
    Getting-Started-Guides/On-Premises-FPGA-Getting-Started/Xilinx-Alveo-U250-FPGAs
    Getting-Started-Guides/On-Premises-FPGA-Getting-Started/Xilinx-Alveo-U280-FPGAs
    Getting-Started-Guides/On-Premises-FPGA-Getting-Started/Xilinx-VCU118-FPGAs
