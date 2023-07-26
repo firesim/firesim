@@ -15,5 +15,6 @@
 .. |mcs_info| replace:: Inside, you will find three files; the one we are currently interested in will be called ``firesim.mcs``. Note the full path of this ``firesim.mcs`` file for the next step.
 .. |dip_switch_extra| replace:: power).
 .. |nitefury_patch_xdma| replace:: The directory you are now in contains the XDMA kernel module. Now, let's build and install it:
+.. |jtag_cable_reminder| replace:: Remember to keep the USB cable for JTAG connected at all times when running FireSim simulations (it is used to program the FPGA).
 
 .. include:: Xilinx-XDMA-Template.rst

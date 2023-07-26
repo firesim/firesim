@@ -159,7 +159,7 @@ Now, test that the module can be inserted:
 
 
 The second command above should have produced output indicating that the XVSEC
-driver is loaded. 
+driver is loaded.
 
 Also, make sure you get output for the following (usually, ``/usr/local/sbin/xvsecctl``):
 
@@ -211,6 +211,8 @@ Now, let's attach your |fpga_name|_ FPGA(s) to your Run Farm Machines:
 If successful, this should show an entry with Xilinx as the manufacturer and
 two memory regions. There should be one entry
 for each FPGA you've added to the Run Farm Machine.
+
+.. note:: |jtag_cable_reminder|
 
 
 6. Install sshd
@@ -335,12 +337,12 @@ Then, reboot your machine.
 Finally, let's ensure that the |tool_type_lab| tools are properly sourced in
 your shell setup (i.e. ``.bashrc``) so that any shell on your Run Farm Machines
 can use the corresponding programs.  The environment variables should be
-visible to any non-interactive shells that are spawned.  
+visible to any non-interactive shells that are spawned.
 
 You can check this by running the following on the Manager Machine,
 replacing ``RUN_FARM_IP`` with ``localhost`` if your Run Farm machine
-and Manager machine are the same machine, or replacing it with the Run Farm 
-machine's IP address if they are different machines. 
+and Manager machine are the same machine, or replacing it with the Run Farm
+machine's IP address if they are different machines.
 
 .. code-block:: bash
 
@@ -355,4 +357,3 @@ each Run Farm machine, replacing ``RUN_FARM_IP`` with a different Run Farm Machi
 IP address.
 
 Congratulations! We've now set up your machine/cluster to run simulations. Click Next to continue with the guide.
-

@@ -15,5 +15,6 @@
 .. |mcs_info| replace:: Inside, you will find three files; the one we are currently interested in will be called ``firesim.mcs``. Note the full path of this ``firesim.mcs`` file for the next step.
 .. |dip_switch_extra| replace:: power).
 .. |nitefury_patch_xdma| replace:: The directory you are now in contains the XDMA kernel module. For the Nitefury to work, we will need to make one modification to the driver. Find the line containing ``#define XDMA_ENGINE_XFER_MAX_DESC``. Change the value on this line from ``0x800`` to ``16``. Then, build and install the driver:
+.. |jtag_cable_reminder| replace:: Remember to keep the USB cable for JTAG connected at all times when running FireSim simulations (it is used to program the FPGA).
 
 .. include:: Xilinx-XDMA-Template.rst
