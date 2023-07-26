@@ -187,21 +187,18 @@ Now, let's attach your |fpga_name|_ FPGA(s) to your Run Farm Machines:
 
 6. Obtain an existing bitstream tar file for your FPGA by opening the ``bitstream_tar`` URL listed
    under |hwdb_entry_name| in the following file: :gh-file-ref:`deploy/sample-backup-configs/sample_config_hwdb.yaml`.
-7. Extract the ``.tar.gz`` file to a known location. Inside, you will find
-   three files; the one we are currently interested in will be called
-   ``firesim.mcs``. Note the full path of this ``firesim.mcs`` file for the
-   next step.
+7. Extract the ``.tar.gz`` file to a known location. |mcs_info|
 
 8. Open Vivado Lab and click "Open Hardware Manager". Then click "Open Target" and "Auto connect".
 
 9. Right-click on your FPGA and click "Add Configuration Memory Device". For a |fpga_name|_, choose |fpga_spi_part_number|
    as the Configuration Memory Part. Click "OK" when prompted to program the configuration memory device.
 
-10. For Configuration file, choose the ``firesim.mcs`` file from step 7.
+10. For Configuration file, choose the ``firesim.mcs`` |extra_mcs|
 
 11. Uncheck "Verify" and click OK.
 
-12. When programming the configuration memory device is completed, power off your machine fully (i.e., the FPGA should completely lose power).
+12. When programming the configuration memory device is completed, power off your machine fully (i.e., the FPGA should completely lose |dip_switch_extra|
 
 13. Cold-boot the machine. A cold boot is required for the FPGA to be successfully re-programmed from its flash.
 
