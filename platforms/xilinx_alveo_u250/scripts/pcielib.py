@@ -1,6 +1,7 @@
 import subprocess
 import sys
 import re
+import time
 from pathlib import Path
 
 from typing import Dict, List
@@ -102,6 +103,7 @@ def clear_serr_bits(bus_id: str) -> None:
         run = subprocess.run(['setpci', '-s', bridgeBDF, 'COMMAND=0000:0100'])
         if run.returncode != 0:
             sys.exit(f":ERROR: Unable to clear SERR bit for {bridgeBDF}")
+        time.sleep(1)
 
 # clear fatal error reporting enable bit in the device control register
 # https://support.xilinx.com/s/question/0D52E00006hpjPHSAY/dell-r720-poweredge-server-reboots-on-fpga-reprogramming?language=en_US
@@ -110,6 +112,7 @@ def clear_fatal_error_reporting_bits(bus_id: str) -> None:
         run = subprocess.run(['setpci', '-s', bridgeBDF, 'CAP_EXP+8.w=0000:0004'])
         if run.returncode != 0:
             sys.exit(f":ERROR: Unable to clear error reporting bit for {bridgeBDF}")
+        time.sleep(1)
 
 def write_to_linux_device_path(path: Path, data: str = '1\n') -> None:
     try:
@@ -117,6 +120,7 @@ def write_to_linux_device_path(path: Path, data: str = '1\n') -> None:
         open(path, 'w').write(data)
     except:
         sys.exit(f":ERROR: Cannot write to {path} value: {data}")
+    time.sleep(1)
 
 def remove(bus_id: str) -> None:
     for devicePaths in get_device_paths(bus_id):
@@ -138,6 +142,7 @@ def enable_memmapped_transfers(bus_id: str) -> None:
         run = subprocess.run(['setpci', '-s', deviceBDF, 'COMMAND=0x02'])
         if run.returncode != 0:
             sys.exit(f":ERROR: Unable to enable memmapped transfers on {deviceBDF}")
+        time.sleep(1)
 
 def any_device_exists(bus_id: str) -> bool:
     return len(get_device_paths(bus_id)) > 0

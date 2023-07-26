@@ -6,9 +6,9 @@ FireSim Basics
 FireSim is an open-source
 FPGA-accelerated full-system hardware simulation platform that makes
 it easy to validate, profile, and debug RTL hardware implementations
-at 10s to 100s of MHz. FireSim simplifies co-simulating 
-ASIC RTL with cycle-accurate hardware and software models for other system components (e.g. I/Os). FireSim can productively 
-scale from individual SoC simulations hosted on on-prem FPGAs (e.g., a single Xilinx Alveo board attached to a desktop) 
+at 10s to 100s of MHz. FireSim simplifies co-simulating
+ASIC RTL with cycle-accurate hardware and software models for other system components (e.g. I/Os). FireSim can productively
+scale from individual SoC simulations hosted on on-prem FPGAs (e.g., a single Xilinx Alveo board attached to a desktop)
 to massive datacenter-scale simulations harnessing hundreds of cloud FPGAs (e.g., on Amazon EC2 F1).
 
 FireSim users across academia and industry (at 20+ institutions) have published
@@ -84,26 +84,29 @@ Choose your platform to get started
 FireSim supports many types of FPGAs and FPGA platforms! Click one of the following links to work through the getting started guide for your particular platform.
 
 * :doc:`/Getting-Started-Guides/AWS-EC2-F1-Getting-Started/index`
-  
+
+  * Status: ✅ All FireSim Features Supported.
+
+* :doc:`/Getting-Started-Guides/On-Premises-FPGA-Getting-Started/Xilinx-Alveo-U200-FPGAs`
+
   * Status: ✅ All FireSim Features Supported.
 
 * :doc:`/Getting-Started-Guides/On-Premises-FPGA-Getting-Started/Xilinx-Alveo-U250-FPGAs`
-  
+
   * Status: ✅ All FireSim Features Supported.
 
 * :doc:`/Getting-Started-Guides/On-Premises-FPGA-Getting-Started/Xilinx-Alveo-U280-FPGAs`
-  
+
   * Status: ✅ All FireSim Features Supported.
 
 * :doc:`/Getting-Started-Guides/On-Premises-FPGA-Getting-Started/Xilinx-VCU118-FPGAs`
-  
+
   * Status: ✅ All FireSim Features Supported.
 
 * :doc:`/Getting-Started-Guides/On-Premises-FPGA-Getting-Started/RHS-Research-Nitefury-II-FPGAs`
-  
+
   * Status: ✅ All FireSim Features Supported.
 
 * :doc:`Getting-Started-Guides/On-Premises-FPGA-Getting-Started/Xilinx-Vitis-FPGAs`
-  
-  * Status: ⚠️  DMA-based Bridges Not Supported. The Vitis-based U250 flow is **not recommended** unless you have specific constraints that require using Vitis. Notably, the Vitis-based flow does not support DMA-based FireSim bridges (e.g., TracerV, Synthesizable Printfs, etc.), while the XDMA-based flows support all FireSim features, as shown above. If you're unsure, use the XDMA-based U250 flow instead: :doc:`/Getting-Started-Guides/On-Premises-FPGA-Getting-Started/Xilinx-Alveo-U250-FPGAs`.
 
+  * Status: ⚠️  DMA-based Bridges Not Supported. The Vitis-based U250 flow is **not recommended** unless you have specific constraints that require using Vitis. Notably, the Vitis-based flow does not support DMA-based FireSim bridges (e.g., TracerV, Synthesizable Printfs, etc.), while the XDMA-based flows support all FireSim features, as shown above. If you're unsure, use the XDMA-based U250 flow instead: :doc:`/Getting-Started-Guides/On-Premises-FPGA-Getting-Started/Xilinx-Alveo-U250-FPGAs`.
