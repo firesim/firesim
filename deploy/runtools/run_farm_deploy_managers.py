@@ -1104,8 +1104,8 @@ class XilinxVCU118InstanceDeployManager(InstanceDeployManager):
 
             if not self.parent_node.metasimulation_enabled:
                 self.instance_logger(f"""Determine BDF for {slotno}""")
-                collect = run('lspci | grep -i xilinx')
-                bdfs = [ i[:7] for i in collect.splitlines() if len(i.strip()) >= 0 ]
+                collect = [line for line in run('lspci | grep -i xilinx').splitlines() if re.search('xilinx', line, flags=re.IGNORECASE)]
+                bdfs = [ i[:7] for i in collect if len(i.strip()) >= 0 ]
                 bdf = bdfs[slotno].replace('.', ':').split(':')
                 extra_args = f"+domain=0x0000 +bus=0x{bdf[0]} +device=0x{bdf[1]} +function=0x0 +bar=0x0 +pci-vendor=0x10ee +pci-device=0x903f"
             else:
