@@ -413,7 +413,7 @@ Specifies the host FPGA frequency for a bitstream build.
 
 Specifies a pre-canned set of strategies and directives to pass to the
 bitstream build. Note, these are implemented differently on different host
-platforms, but try to optimize for the same things. Strategies supported across both Vitis, Xilinx Alveo U250/U280, and EC2 F1 include:
+platforms, but try to optimize for the same things. Strategies supported across both Vitis, Xilinx Alveo U200/U250/U280, and EC2 F1 include:
 
  - ``TIMING``: Optimize for improved fmax.
  - ``AREA``: Optimize for reduced resource utilization.
@@ -748,7 +748,7 @@ simulations across all run farm hosts.
 For example, this class manages how to flash FPGAs with bitstreams, how to copy back results, and how to check if a simulation is running.
 By default, deploy platform classes can be found in :gh-file-ref:`deploy/runtools/run_farm_deploy_managers.py`. However, you can specify
 your own custom run farm classes by adding your python file to the ``PYTHONPATH``.
-There are default deploy managers / platforms that correspond to AWS EC2 F1 FPGAs, Vitis FPGAs, Xilinx Alveo U250/U280 FPGAs, Xilinx VCU118 FPGAs, and RHS Research Nitefury II FPGAs: ``EC2InstanceDeployManager``, ``VitisInstanceDeployManager``, ``Xilinx{AlveoU250,AlveoU280,VCU118}InstanceDeployManager``, and ``RHSResearchNitefuryIIInstanceDeployManager`` respectively.
+There are default deploy managers / platforms that correspond to AWS EC2 F1 FPGAs, Vitis FPGAs, Xilinx Alveo U200/U250/U280 FPGAs, Xilinx VCU118 FPGAs, and RHS Research Nitefury II FPGAs: ``EC2InstanceDeployManager``, ``VitisInstanceDeployManager``, ``Xilinx{AlveoU200,AlveoU250,AlveoU280,VCU118}InstanceDeployManager``, and ``RHSResearchNitefuryIIInstanceDeployManager`` respectively.
 For example, to use the ``EC2InstanceDeployManager`` deploy platform class, you would write ``default_platform: EC2InstanceDeployManager``.
 
 ``default_simulation_dir``
@@ -948,6 +948,11 @@ Here is an example of this configuration file:
 .. literalinclude:: /../deploy/bit-builder-recipes/vitis.yaml
    :language: yaml
 
+``xilinx_alveo_u200.yaml`` bit builder recipe
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+This bit builder recipe configures a build farm host to build an Xilinx Alveo U200 bitstream, packaged into a ``bitstream_tar``.
+
 ``xilinx_alveo_u250.yaml`` bit builder recipe
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
@@ -967,4 +972,3 @@ This bit builder recipe configures a build farm host to build an Xilinx VCU118 b
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 This bit builder recipe configures a build farm host to build an RHS Research Nitefury II bitstream, packaged into a ``bitstream_tar``.
-

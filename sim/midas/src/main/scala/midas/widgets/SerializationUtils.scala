@@ -31,7 +31,6 @@ object SerializationUtils {
     val inputPorts  = inputs.map(field => field.name -> Input(field.regenType()))
     val outputPorts  = outputs.map(field => field.name -> Output(field.regenType()))
     override val elements = immutable.ListMap((inputPorts ++ outputPorts):_*)
-    override def cloneType = new RegeneratedTargetIO(inputs, outputs).asInstanceOf[this.type]
   }
 }
 

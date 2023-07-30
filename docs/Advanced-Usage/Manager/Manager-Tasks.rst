@@ -25,7 +25,7 @@ Then, do platform-specific init steps for the given ``--platform``.
 
    .. tab:: All other platforms
 
-        This includes platforms such as: ``xilinx_alveo_u250``, ``xilinx_alveo_u280``, ``xilinx_vcu118``, and ``rhsresearch_nitefury_ii``.
+        This includes platforms such as: ``xilinx_alveo_u200``, ``xilinx_alveo_u250``, ``xilinx_alveo_u280``, ``xilinx_vcu118``, and ``rhsresearch_nitefury_ii``.
 
         * Setup the ``config_runtime.yaml`` and ``config_build.yaml`` files with externally provisioned run/build farm arguments.
 
@@ -271,7 +271,7 @@ RUN FARM WITHOUT PROMPTING FOR CONFIRMATION:
     firesim terminaterunfarm --forceterminate
 
 
-The ``--terminatesome=INSTANCE_TYPE:COUNT`` flag additionally allows you to 
+The ``--terminatesome=INSTANCE_TYPE:COUNT`` flag additionally allows you to
 terminate only some (``COUNT``) of the instances of a particular type
 (``INSTANCE_TYPE``) in a particular Run Farm.
 
@@ -426,4 +426,3 @@ used to run simulations for each FPGA attached to the machine.
 If you ever change the physical layout of a Run Farm Machine in your Run Farm
 (e.g., which PCIe slot the FPGAs are attached to), you will need to re-run this
 command.
-

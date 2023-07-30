@@ -192,7 +192,6 @@ abstract class ChannelizedWrapperIO(val config: SimWrapperConfig)
 
 class ClockRecord(numClocks: Int) extends Record {
   override val elements = ListMap(Seq.tabulate(numClocks)(i => s"_$i" -> Clock()):_*)
-  override def cloneType = new ClockRecord(numClocks).asInstanceOf[this.type]
 }
 
 class TargetBoxIO(config: SimWrapperConfig) extends ChannelizedWrapperIO(config) {
@@ -212,7 +211,6 @@ class TargetBoxIO(config: SimWrapperConfig) extends ChannelizedWrapperIO(config)
   override val elements = ListMap((Seq(clockElement) ++ wireElements ++ rvElements):_*) ++
     // Untokenized ports
     ListMap("hostClock" -> hostClock, "hostReset" -> hostReset)
-  override def cloneType: this.type = new TargetBoxIO(config).asInstanceOf[this.type]
 }
 
 class TargetBox(config: SimWrapperConfig) extends BlackBox {
@@ -229,7 +227,6 @@ class SimWrapperChannels(config: SimWrapperConfig) extends ChannelizedWrapperIO(
   }).get
 
   override val elements = ListMap((Seq(clockElement) ++ wireElements ++ rvElements):_*)
-  override def cloneType: this.type = new SimWrapperChannels(config).asInstanceOf[this.type]
 }
 
 /**
