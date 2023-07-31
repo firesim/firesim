@@ -144,3 +144,32 @@ Using FireSim CI
 
 For more information on how to deal with the FireSim CI and how to run FPGA simulations in the CI,
 refer to the the ``CI_README.md`` under the ``.github/`` directory.
+
+How to view AWS build logs when AGFI build fails
+---------------------------------------------------------
+
+There are times when we want to view Vivado logs when a bitstream build fails (especially when a bitstream build fails
+while the manager is printing out ``pending``).
+The AWS AGFI creation backend stores these logs in storage servers called S3 buckets.
+The following steps will guide you on how to copy these logs from the bucket to your manager instance:
+
+1. Go to your AWS console.
+
+2. Select "View all services".
+
+3. Under "Storage", select "S3".
+
+4. On the left panel, select "Buckets".
+
+5. Now select the bucket that you created.
+
+See 
+https://docs.aws.amazon.com/AmazonS3/latest/userguide/access-bucket-intro.html
+for the bucket naming style.
+The bucket name is defined in ``firesim/deploy/bit-builder-recipes/f1.yaml``
+
+6. Under "logs/agfi-<somenumber>", you will see "<date and time>_vivado.log". Select it and copy the S3 URI.
+
+7. Now, go back to your manager instance and run ``aws s3 cp <URI that you just copied> some_descriptive_name.log``.
+
+Now you should be able to view the Vivado log using your favorite text editor.
