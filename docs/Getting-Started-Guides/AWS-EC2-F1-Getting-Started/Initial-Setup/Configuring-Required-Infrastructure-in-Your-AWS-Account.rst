@@ -126,6 +126,7 @@ output format to ``json``. You will need to generate an AWS access key in the "S
 Again on the ``t2.nano`` instance, do the following:
 
 .. code-block:: bash
+   :substitutions:
 
     sudo yum install -y python3-pip
     sudo python3 -m pip install boto3
