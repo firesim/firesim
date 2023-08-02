@@ -43,14 +43,16 @@ DRIVER_H = \
 	$(shell find $(driver_dir) -name "*.h") \
 	$(shell find $(firesim_lib_dir) -name "*.h") \
 	$(DROMAJO_REQS) \
-	$(TESTCHIPIP_CSRC_DIR)/testchip_tsi.h
+	$(TESTCHIPIP_CSRC_DIR)/testchip_tsi.h \
+	$(TESTCHIPIP_CSRC_DIR)/testchip_htif.h
 
 DRIVER_CC = \
 	$(addprefix $(driver_dir)/firesim/, $(addsuffix .cc, firesim_top)) \
 	$(wildcard $(addprefix $(firesim_lib_dir)/, $(addsuffix .cc, bridges/* fesvr/* bridges/tracerv/*)))  \
 	$(RISCV)/lib/libfesvr.a \
 	$(DROMAJO_LIB_DIR)/lib$(DROMAJO_LIB_NAME).a \
-	$(TESTCHIPIP_CSRC_DIR)/testchip_tsi.cc
+	$(TESTCHIPIP_CSRC_DIR)/testchip_tsi.cc \
+	$(TESTCHIPIP_CSRC_DIR)/testchip_htif.cc
 
 # Disable missing override warning for testchipip.
 TARGET_CXX_FLAGS += -g \

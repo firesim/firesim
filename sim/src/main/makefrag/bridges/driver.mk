@@ -15,6 +15,7 @@ DRIVER_CC := \
 		$(driver_dir)/bridges/BridgeHarness.cc \
 		$(driver_dir)/bridges/$(DESIGN).cc \
 		$(testchipip_csrc_dir)/testchip_tsi.cc \
+		$(testchipip_csrc_dir)/testchip_htif.cc \
 		$(wildcard $(addprefix $(firesim_lib_dir)/, \
 			bridges/uart.cc \
 			bridges/tsibridge.cc \
