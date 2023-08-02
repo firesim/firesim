@@ -114,6 +114,9 @@ jobs:
           environment-file: conda-reqs/ci-shared.yaml
           miniforge-version: latest
       - uses: ./.github/actions/repo-setup-aws
+      - run: aws sts get-caller-identity
+      - run: aws iam get-user
+      - run: exit 1
       - name: Launch AWS instance used for the FireSim manager (instance info found here)
         run: ./.github/scripts/launch-manager-instance.py
       - name: Setup N Github Actions Runners on AWS instance
