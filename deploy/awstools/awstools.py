@@ -492,12 +492,12 @@ def launch_instances(instancetype: str, count: int, instancemarket: str, spotint
             instances += instance
 
         except client.exceptions.ClientError as e:
-            rootLogger.critical(e)
+            rootLogger.debug(e)
             startsubnet += 1
             if (startsubnet < len(subnets)):
-                rootLogger.critical("This probably means there was no more capacity in this availability zone. Trying the next one.")
+                rootLogger.debug("This probably means there was no more capacity in this availability zone. Trying the next one.")
             else:
-                rootLogger.critical("Tried all subnets, but there was insufficient capacity to launch your instances")
+                rootLogger.info("Tried all subnets, but there was insufficient capacity to launch your instances")
                 startsubnet = 0
                 if first_subnet_wraparound is None:
                     # so that we are guaranteed that the default timeout of `timedelta()` aka timedelta(0)
@@ -506,17 +506,17 @@ def launch_instances(instancetype: str, count: int, instancemarket: str, spotint
                     first_subnet_wraparound = datetime.now() - timedelta(microseconds=1)
 
                 time_elapsed = datetime.now() - first_subnet_wraparound
-                rootLogger.critical("have been trying for {} using timeout of {}".format(time_elapsed, timeout))
-                rootLogger.critical("""only {} of {} {} instances have been launched""".format(len(instances), count, instancetype))
+                rootLogger.info("have been trying for {} using timeout of {}".format(time_elapsed, timeout))
+                rootLogger.info("""only {} of {} {} instances have been launched""".format(len(instances), count, instancetype))
                 if time_elapsed > timeout:
                     rootLogger.critical("""Aborting! only the following {} instances were launched""".format(len(instances)))
                     rootLogger.critical(instances)
                     rootLogger.critical("To continue trying to allocate instances, you can rerun launchrunfarm")
                     sys.exit(1)
                 else:
-                    rootLogger.critical("Will keep trying after sleeping for a bit...")
+                    rootLogger.info("Will keep trying after sleeping for a bit...")
                     time.sleep(30)
-                    rootLogger.critical("Continuing to request remaining {}, {} instances".format(count - len(instances), instancetype))
+                    rootLogger.info("Continuing to request remaining {}, {} instances".format(count - len(instances), instancetype))
     return instances
 
 def run_block_device_dict() -> List[Dict[str, Any]]:
