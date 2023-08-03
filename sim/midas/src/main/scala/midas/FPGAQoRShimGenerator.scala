@@ -1,4 +1,5 @@
 // See LICENSE for license details.
+
 package midas.unittest
 
 import chisel3._
@@ -34,4 +35,3 @@ class Midas2QoRTargets extends Config((site, here, up) => {
     )
   }
 })
-
