@@ -198,11 +198,13 @@ Now, let's attach your |fpga_name|_ FPGA(s) to your Run Farm Machines:
 
 11. Uncheck "Verify" and click OK.
 
-12. When programming the configuration memory device is completed, power off your machine fully (i.e., the FPGA should completely lose |dip_switch_extra|
+12. Right-click on your FPGA and clock "Boot from Configuration Memory Device".
 
-13. Cold-boot the machine. A cold boot is required for the FPGA to be successfully re-programmed from its flash.
+13. When programming the configuration memory device is completed, power off your machine fully (i.e., the FPGA should completely lose |dip_switch_extra|
 
-14. Once the machine has booted, run the following to ensure that your FPGA is set up properly:
+14. Cold-boot the machine. A cold boot is required for the FPGA to be successfully re-programmed from its flash.
+
+15. Once the machine has booted, run the following to ensure that your FPGA is set up properly:
 
 .. code-block:: bash
 
