@@ -198,7 +198,7 @@ Now, let's attach your |fpga_name|_ FPGA(s) to your Run Farm Machines:
 
 11. Uncheck "Verify" and click OK.
 
-12. Right-click on your FPGA and clock "Boot from Configuration Memory Device".
+12. Right-click on your FPGA and click "Boot from Configuration Memory Device".
 
 13. When programming the configuration memory device is completed, power off your machine fully (i.e., the FPGA should completely lose |dip_switch_extra|
 
