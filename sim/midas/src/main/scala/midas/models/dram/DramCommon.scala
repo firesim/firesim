@@ -2,7 +2,6 @@ package midas
 package models
 
 import org.chipsalliance.cde.config.Parameters
-import freechips.rocketchip.util.GenericParameterizedBundle
 import chisel3._
 import chisel3.util._
 
@@ -345,7 +344,7 @@ class FirstReadyFCFSEntry(key: DRAMBaseConfig)(implicit p: Parameters) extends M
 // timing and resource constraints are met. The controller must also ensure CAS
 // commands use the open ROW.
 
-class BankStateTrackerO(key: DramOrganizationParams) extends GenericParameterizedBundle(key)
+class BankStateTrackerO(val key: DramOrganizationParams) extends Bundle
     with CommandLegalBools {
 
   import DRAMMasEnums._
@@ -355,7 +354,7 @@ class BankStateTrackerO(key: DramOrganizationParams) extends GenericParameterize
   def isRowHit(ref: MASEntry): Bool = ref.rowAddr === openRow && state === bank_active
 }
 
-class BankStateTrackerIO(val key: DramOrganizationParams) extends GenericParameterizedBundle(key)
+class BankStateTrackerIO(val key: DramOrganizationParams) extends Bundle
   with HasLegalityUpdateIO {
   val out = new BankStateTrackerO(key)
   val cmdUsesThisBank = Input(Bool())
@@ -443,7 +442,7 @@ class BankStateTracker(key: DramOrganizationParams) extends Module with HasDRAMM
 // timing and resource constraints are met. The controller must also ensure CAS
 // commands use the open ROW.
 
-class RankStateTrackerO(key: DramOrganizationParams) extends GenericParameterizedBundle(key)
+class RankStateTrackerO(val key: DramOrganizationParams) extends Bundle
     with CommandLegalBools {
   import DRAMMasEnums._
   val canREF = Output(Bool())
@@ -452,7 +451,7 @@ class RankStateTrackerO(key: DramOrganizationParams) extends GenericParameterize
   val banks = Vec(key.maxBanks, Output(new BankStateTrackerO(key)))
 }
 
-class RankStateTrackerIO(val key: DramOrganizationParams) extends GenericParameterizedBundle(key)
+class RankStateTrackerIO(val key: DramOrganizationParams) extends Bundle
     with HasLegalityUpdateIO with HasDRAMMASConstants {
   val rank = new RankStateTrackerO(key)
   val tCycle = Input(UInt(maxDRAMTimingBits.W))
@@ -605,7 +604,7 @@ class CommandBusMonitor extends Module {
   }
 }
 
-class RankRefreshUnitIO(key: DramOrganizationParams) extends GenericParameterizedBundle(key) {
+class RankRefreshUnitIO(val key: DramOrganizationParams) extends Bundle {
   val rankStati = Vec(key.maxRanks, Flipped(new RankStateTrackerO(key)))
   // The user may have instantiated multiple ranks, but is only modelling a single
   // rank system. Don't issue refreshes to ranks we aren't modelling
