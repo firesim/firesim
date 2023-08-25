@@ -3,8 +3,6 @@
 package midas
 package passes
 
-
-
 import firrtl._
 import firrtl.annotations.{CircuitName, ModuleTarget, InstanceTarget}
 import firrtl.options.Dependency
@@ -117,4 +115,3 @@ private[passes] class SimulationMapping(targetName: String) extends firrtl.Trans
     linkedState.copy(annotations = linkedState.annotations ++ generateHeaderAnnos(shim))
   }
 }
-
