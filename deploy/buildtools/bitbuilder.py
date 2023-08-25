@@ -685,6 +685,7 @@ class XilinxAlveoBitBuilder(BitBuilder):
         local_cl_dir = f"{local_results_dir}/{fpga_build_postfix}"
         bit_path = f"{local_cl_dir}/vivado_proj/firesim.bit"
         mcs_path = f"{local_cl_dir}/vivado_proj/firesim.mcs"
+        mcs_secondary_path = f"{local_cl_dir}/vivado_proj/firesim_secondary.mcs"
         tar_staging_path = f"{local_cl_dir}/{self.build_config.PLATFORM}"
         tar_name = "firesim.tar.gz"
 
@@ -694,8 +695,9 @@ class XilinxAlveoBitBuilder(BitBuilder):
 
         # store bitfile (and mcs if it exists)
         local(f"cp {bit_path} {tar_staging_path}")
-        if self.build_config.PLATFORM != "xilinx_vcu118":
-            local(f"cp {mcs_path} {tar_staging_path}")
+        local(f"cp {mcs_path} {tar_staging_path}")
+        if self.build_config.PLATFORM == "xilinx_vcu118":
+            local(f"cp {mcs_secondary_path} {tar_staging_path}")
 
         # store metadata string
         local(f"""echo '{self.get_metadata_string()}' >> {tar_staging_path}/metadata""")
@@ -848,4 +850,3 @@ class RHSResearchNitefuryIIBitBuilder(XilinxAlveoBitBuilder):
         rootLogger.debug(rsync_cap.stderr)
 
         return f"{dest_alveo_dir}/{fpga_build_postfix}"
-

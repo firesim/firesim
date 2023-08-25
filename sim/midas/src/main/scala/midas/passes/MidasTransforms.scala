@@ -3,10 +3,7 @@
 package midas
 package passes
 
-
-
 import firrtl._
-
 
 private[midas] class MidasTransforms extends Transform {
   def inputForm = LowForm

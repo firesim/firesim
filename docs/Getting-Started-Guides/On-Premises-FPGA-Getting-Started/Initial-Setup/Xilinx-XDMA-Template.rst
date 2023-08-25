@@ -159,7 +159,7 @@ Now, test that the module can be inserted:
 
 
 The second command above should have produced output indicating that the XVSEC
-driver is loaded. 
+driver is loaded.
 
 Also, make sure you get output for the following (usually, ``/usr/local/sbin/xvsecctl``):
 
@@ -187,25 +187,24 @@ Now, let's attach your |fpga_name|_ FPGA(s) to your Run Farm Machines:
 
 6. Obtain an existing bitstream tar file for your FPGA by opening the ``bitstream_tar`` URL listed
    under |hwdb_entry_name| in the following file: :gh-file-ref:`deploy/sample-backup-configs/sample_config_hwdb.yaml`.
-7. Extract the ``.tar.gz`` file to a known location. Inside, you will find
-   three files; the one we are currently interested in will be called
-   ``firesim.mcs``. Note the full path of this ``firesim.mcs`` file for the
-   next step.
+7. Extract the ``.tar.gz`` file to a known location. |mcs_info|
 
 8. Open Vivado Lab and click "Open Hardware Manager". Then click "Open Target" and "Auto connect".
 
 9. Right-click on your FPGA and click "Add Configuration Memory Device". For a |fpga_name|_, choose |fpga_spi_part_number|
    as the Configuration Memory Part. Click "OK" when prompted to program the configuration memory device.
 
-10. For Configuration file, choose the ``firesim.mcs`` file from step 7.
+10. For Configuration file, choose the ``firesim.mcs`` |extra_mcs|
 
 11. Uncheck "Verify" and click OK.
 
-12. When programming the configuration memory device is completed, power off your machine fully (i.e., the FPGA should completely lose power).
+12. Right-click on your FPGA and click "Boot from Configuration Memory Device".
 
-13. Cold-boot the machine. A cold boot is required for the FPGA to be successfully re-programmed from its flash.
+13. When programming the configuration memory device is completed, power off your machine fully (i.e., the FPGA should completely lose |dip_switch_extra|)
 
-14. Once the machine has booted, run the following to ensure that your FPGA is set up properly:
+14. Cold-boot the machine. A cold boot is required for the FPGA to be successfully re-programmed from its flash.
+
+15. Once the machine has booted, run the following to ensure that your FPGA is set up properly:
 
 .. code-block:: bash
 
@@ -214,6 +213,8 @@ Now, let's attach your |fpga_name|_ FPGA(s) to your Run Farm Machines:
 If successful, this should show an entry with Xilinx as the manufacturer and
 two memory regions. There should be one entry
 for each FPGA you've added to the Run Farm Machine.
+
+.. note:: |jtag_cable_reminder|
 
 
 6. Install sshd
@@ -338,12 +339,12 @@ Then, reboot your machine.
 Finally, let's ensure that the |tool_type_lab| tools are properly sourced in
 your shell setup (i.e. ``.bashrc``) so that any shell on your Run Farm Machines
 can use the corresponding programs.  The environment variables should be
-visible to any non-interactive shells that are spawned.  
+visible to any non-interactive shells that are spawned.
 
 You can check this by running the following on the Manager Machine,
 replacing ``RUN_FARM_IP`` with ``localhost`` if your Run Farm machine
-and Manager machine are the same machine, or replacing it with the Run Farm 
-machine's IP address if they are different machines. 
+and Manager machine are the same machine, or replacing it with the Run Farm
+machine's IP address if they are different machines.
 
 .. code-block:: bash
 
@@ -358,4 +359,3 @@ each Run Farm machine, replacing ``RUN_FARM_IP`` with a different Run Farm Machi
 IP address.
 
 Congratulations! We've now set up your machine/cluster to run simulations. Click Next to continue with the guide.
-
