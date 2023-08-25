@@ -1,5 +1,5 @@
-#ifndef TRACERV_PROCESSING_GUARD
-#define TRACERV_PROCESSING_GUARD
+#ifndef __TRACERV_PROCESSING_H
+#define __TRACERV_PROCESSING_H
 
 #include <inttypes.h>
 #include <string>
@@ -43,4 +43,4 @@ public:
   Instr *getInstrFromAddr(uint64_t lookupaddress);
 };
 
-#endif
+#endif // __TRACERV_PROCESSING_H
