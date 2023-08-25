@@ -200,7 +200,7 @@ Now, let's attach your |fpga_name|_ FPGA(s) to your Run Farm Machines:
 
 12. Right-click on your FPGA and click "Boot from Configuration Memory Device".
 
-13. When programming the configuration memory device is completed, power off your machine fully (i.e., the FPGA should completely lose |dip_switch_extra|
+13. When programming the configuration memory device is completed, power off your machine fully (i.e., the FPGA should completely lose |dip_switch_extra|)
 
 14. Cold-boot the machine. A cold boot is required for the FPGA to be successfully re-programmed from its flash.
 
