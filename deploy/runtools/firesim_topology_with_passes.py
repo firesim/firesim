@@ -558,7 +558,7 @@ class FireSimTopologyWithPasses:
                         time.sleep(1)
                         continue
                     else:
-                        rootLogger.warning("Unknown screen state. Breaking poll")
+                        rootLogger.warning(f"Unknown screen state. Breaking poll and printing screen state:\n{screenoutput}")
                         break
 
         execute(screens, hosts=all_run_farm_ips)
