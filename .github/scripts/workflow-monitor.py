@@ -82,7 +82,8 @@ def main(platform: Platform, issue_id: int):
                     raise Exception(f"Unexpected Workflow State: {state_status}")
 
             else:
-                print(f"HTTP GET error: {res.json()}. Retrying.")
+                print(f"HTTP GET error: Status Code: {res.status_code}. Retrying...")
+                print(f"HTTP GET error: Text: {res.text}. Retrying...")
                 consecutive_failures = consecutive_failures + 1
                 if consecutive_failures == QUERY_FAILURE_THRESHOLD:
                     platform_lib.terminate_instances(ci_env['PERSONAL_ACCESS_TOKEN'], ci_env['GITHUB_RUN_ID'])
