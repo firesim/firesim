@@ -34,6 +34,11 @@ class TracerVModuleTestCount7
       7
     })
 
+class TracerVModuleTestCount9
+    extends Config((site, here, up) => { case TracerVModuleInstructionCount =>
+      9
+    })
+
 class TracerVModuleTestCount14
     extends Config((site, here, up) => { case TracerVModuleInstructionCount =>
       14
