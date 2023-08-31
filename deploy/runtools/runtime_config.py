@@ -371,7 +371,6 @@ class RuntimeHWConfig:
         command_linklatencies = array_to_plusargs(all_linklatencies, "+linklatency")
         command_netbws = array_to_plusargs(all_netbws, "+netbw")
         command_shmemportnames = array_to_plusargs(all_shmemportnames, "+shmemportname")
-        command_dromajo = "+drj_dtb=" + all_bootbinaries[0] + ".dtb" +  " +drj_bin=" + all_bootbinaries[0] + " +drj_rom=" + all_bootbinaries[0] + ".rom"
 
         command_niclogs = array_to_lognames(all_macs, "niclog")
         command_blkdev_logs = array_to_lognames(all_rootfses, "blkdev-log")
@@ -399,7 +398,6 @@ class RuntimeHWConfig:
         permissive_driver_args += command_blkdev_logs
         permissive_driver_args += [f"{tracefile}", f"+trace-select={tracerv_config.select}", f"+trace-start={tracerv_config.start}", f"+trace-end={tracerv_config.end}", f"+trace-output-format={tracerv_config.output_format}", dwarf_file_name]
         permissive_driver_args += [f"+autocounter-readrate={autocounter_config.readrate}", autocounterfile]
-        permissive_driver_args += [command_dromajo]
         permissive_driver_args += [print_cycle_prefix, f"+print-start={synthprint_config.start}", f"+print-end={synthprint_config.end}"]
         permissive_driver_args += command_linklatencies
         permissive_driver_args += command_netbws

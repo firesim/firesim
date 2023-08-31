@@ -29,7 +29,6 @@ dependencies:
     - conda-gcc-specs
     - binutils
 
-    - dromajo # from ucb-bar channel - https://github.com/riscv-boom/dromajo
     - riscv-tools==1.0.3 # from ucb-bar channel - https://github.com/ucb-bar/riscv-tools-feedstock
 
     # firemarshal deps
