@@ -32,13 +32,13 @@ public:
             uint32_t stream_idx,
             uint32_t stream_depth);
 
-  override ~cospike_t() = default;
+  ~cospike_t() override = default;
 
-  virtual void init();
-  virtual void tick();
-  virtual bool terminate() { return cospike_failed; };
-  virtual int exit_code() { return (cospike_failed) ? cospike_exit_code : 0; };
-  virtual void finish() { this->flush(); };
+  void init() override;
+  void tick() override;
+  bool terminate() override { return cospike_failed; };
+  int exit_code() override { return (cospike_failed) ? cospike_exit_code : 0; };
+  void finish() override { this->flush(); };
 
 private:
   int invoke_cospike(uint8_t *buf);

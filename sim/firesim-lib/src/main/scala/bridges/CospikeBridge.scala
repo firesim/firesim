@@ -107,7 +107,6 @@ class CospikeBridgeModule(params: CospikeBridgeParams)(implicit p: Parameters) e
         pre_cat
       } else {
         Cat(trace.wdata.get.pad(wdataWidth), pre_cat)
-
       }
     }
 
