@@ -23,7 +23,7 @@ class FuzzingUIntSourceBridge(width: Int) extends BlackBox
   generateAnnotations()
 }
 
-class FuzzingUIntSourceBridgeModule(key: FuzzingUIntSourceKey)(implicit p: Parameters) 
+class FuzzingUIntSourceBridgeModule(key: FuzzingUIntSourceKey)(implicit p: Parameters)
     extends BridgeModule[HostPortIO[FuzzingUIntSourceTargetIO]]()(p) {
   lazy val module = new BridgeModuleImp(this) {
     val io = IO(new WidgetIO())
@@ -31,6 +31,8 @@ class FuzzingUIntSourceBridgeModule(key: FuzzingUIntSourceKey)(implicit p: Param
     hPort.fromHost.hValid := true.B
     hPort.toHost.hReady := true.B
     hPort.hBits.uint := chisel3.util.random.LFSR(key.width, hPort.fromHost.hReady)
+
+    io.ctrl := DontCare
 
     override def genHeader(base: BigInt, memoryRegions: Map[String, BigInt], sb: StringBuilder): Unit = {}
   }
