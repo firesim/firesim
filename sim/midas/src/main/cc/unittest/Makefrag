@@ -32,7 +32,7 @@ subst_prefix=,midas.unittest.
 
 $(GEN_DIR)/$(DESIGN).fir $(GEN_DIR)/$(DESIGN).behav_srams.v: $(scala_srcs)
 	mkdir -p $(@D)
-	cd $(BASE_DIR) && $(SBT) "project $(SBT_PROJECT); runMain freechips.rocketchip.system.Generator \
+	cd $(BASE_DIR) && $(SBT) "project $(SBT_PROJECT); runMain midas.chiselstage.Generator \
 		--target-dir $(GEN_DIR) \
 		--name $(DESIGN) \
 		--top-module freechips.rocketchip.unittest.TestHarness \
