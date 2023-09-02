@@ -16,7 +16,7 @@ export SBT_OPTS ?= -Dsbt.ivy.home=$(base_dir)/.ivy2 -Dsbt.global.base=$(base_dir
 sbt_sources = $(shell find -L $(base_dir) -name target -prune -o -iname "*.sbt" -print 2> /dev/null)
 SCALA_BUILDTOOL_DEPS ?= $(sbt_sources)
 
-SBT ?= java -jar $(rocketchip_dir)/sbt-launch.jar $(SBT_OPTS)
+SBT ?= java -jar $(chipyard_dir)/scripts/sbt-launch.jar $(SBT_OPTS)
 
 # (1) - classpath of the fat jar
 # (2) - main class
