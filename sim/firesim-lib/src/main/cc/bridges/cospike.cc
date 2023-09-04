@@ -132,7 +132,7 @@ int cospike_t::invoke_cospike(uint8_t *buf) {
 
 #ifdef DEBUG
   fprintf(stderr,
-          "C[%d] V(%d) PC(0x%x) Insn(0x%x) EIC(%d:%d:%d) Wdata(%d:0x%x) "
+          "C[%d] V(%d) PC(0x%lx) Insn(0x%x) EIC(%d:%d:%ld) Wdata(%d:0x%lx) "
           "Priv(%d)\n",
           this->_hartid,
           valid,
@@ -179,7 +179,7 @@ size_t cospike_t::process_tokens(int num_beats, size_t minimum_batch_beats) {
        offset += bytes_per_trace) {
 #ifdef DEBUG
     fprintf(stderr,
-            "Off(%d/%d:%d) token(",
+            "Off(%d/%ld:%lu) token(",
             offset,
             bytes_received,
             offset / bytes_per_trace);
@@ -200,7 +200,7 @@ size_t cospike_t::process_tokens(int num_beats, size_t minimum_batch_beats) {
       printf("[ERROR] Cospike: Errored during simulation with %d\n", rval);
 
 #ifdef DEBUG
-      fprintf(stderr, "Off(%d) token(", offset / bytes_per_trace);
+      fprintf(stderr, "Off(%lu) token(", offset / bytes_per_trace);
 
       for (int32_t i = STREAM_WIDTH_BYTES - 1; i >= 0; --i) {
         fprintf(stderr, "%02x", (OUTBUF + offset)[i]);
