@@ -20,6 +20,7 @@ public:
             uint32_t cause_width,
             uint32_t wdata_width,
             uint32_t num_commit_insts,
+            uint32_t bits_per_trace,
             const char *isa,
             uint32_t vlen,
             const char *priv,
@@ -81,7 +82,7 @@ private:
 
   // other misc members
   uint32_t _num_commit_insts;
-  uint8_t _commit_inst_idx;
+  uint32_t _bits_per_trace;
   bool cospike_failed;
   int cospike_exit_code;
 
