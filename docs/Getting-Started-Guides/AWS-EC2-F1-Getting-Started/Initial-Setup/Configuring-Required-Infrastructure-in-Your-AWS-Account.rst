@@ -131,7 +131,7 @@ Again on the ``t2.nano`` instance, do the following:
     sudo yum install -y python3-pip
     sudo python3 -m pip install boto3
     sudo python3 -m pip install --upgrade awscli
-    wget https://raw.githubusercontent.com/firesim/firesim/|version|/deploy/awstools/aws_setup.py
+    wget https://raw.githubusercontent.com/firesim/firesim/|overall_version|/deploy/awstools/aws_setup.py
     chmod +x aws_setup.py
     ./aws_setup.py
 
