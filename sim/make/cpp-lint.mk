@@ -12,7 +12,6 @@ clang_tidy_files := $(shell \
 		| grep -v TestPointerChaser.cc \
 		| grep -v simif_ \
 		| grep -v tracerv \
-		| grep -v dromajo \
 		| grep -v tsibridge \
 		| grep -v fesvr \
 		| grep -v generated-src \
