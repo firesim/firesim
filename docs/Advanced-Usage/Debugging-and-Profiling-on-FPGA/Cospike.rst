@@ -7,7 +7,10 @@ Instead of using TracerV to provide a cycle-by-cycle trace of a target
 CPU's architectural state, you can use the `Spike co-simulator <https://github.com/riscv-software-src/riscv-isa-sim>`_ to verify
 the functionality of a BOOM design.
 
-.. note:: This work currently only works for single core BOOM designs with a commit width of 1 or 2.
+.. note:: This work currently only works for single core BOOM designs.
+
+.. note:: Cospike only supports non block-device simulations at this time.
+
 
 .. _cospike-bridge:
 
