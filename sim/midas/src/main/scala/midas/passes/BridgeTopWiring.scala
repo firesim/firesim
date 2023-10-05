@@ -17,7 +17,7 @@ import midas.passes.fame.RTRenamer
 import midas.targetutils.FAMEAnnotation
 
 /**
-  * Provides signals for the transform to wire to the top-level of hte module hierarchy.
+  * Provides signals for the transform to wire to the top-level of the module hierarchy.
   *
   * @param target The signal to be plumbed to the top
   *
