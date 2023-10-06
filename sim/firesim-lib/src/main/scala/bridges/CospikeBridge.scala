@@ -4,6 +4,7 @@ package firesim.bridges
 import chisel3._
 import chisel3.util._
 import org.chipsalliance.cde.config.Parameters
+import freechips.rocketchip.util.DecoupledHelper
 
 import testchipip.{SerializableTileTraceIO, SpikeCosimConfig, TileTraceIO, TraceBundleWidths}
 
@@ -108,42 +109,66 @@ class CospikeBridgeModule(params: CospikeBridgeParams)(implicit p: Parameters)
       }
     }
 
-    val maxTraceSize  = paddedTraces.map(t => t.getWidth).max
-    val outDataSzBits = streamEnq.bits.getWidth
+    val maxTraceSize        = paddedTraces.map(t => t.getWidth).max
+    val outDataSzBits       = streamEnq.bits.getWidth
+    val totalTracesPerToken = (outDataSzBits / maxTraceSize).toInt
+    val bitsPerTrace        = roundUp(outDataSzBits / totalTracesPerToken, 8)
 
-    // constant
-    // TODO: match tracerv in supporting commitWidth > 2
-    val totalTracesPerToken = 2 // minTraceSz==190b so round up to nearest is 256b
-    // constant
+    require(
+      maxTraceSize < bitsPerTrace,
+      f"All instruction trace bits (i.e. valid, pc, instBits...) (${maxTraceSize}b) must fit in ${bitsPerTrace}b",
+    )
+    require(
+      bitsPerTrace * totalTracesPerToken <= outDataSzBits,
+      f"All traces must fit in single token (${bitsPerTrace * totalTracesPerToken} > ${outDataSzBits})",
+    )
 
-    val bitsPerTrace = outDataSzBits / totalTracesPerToken
+    val armCount = (traces.length + totalTracesPerToken - 1) / totalTracesPerToken
 
-    require(maxTraceSize < bitsPerTrace, "All instruction trace bits (i.e. valid, pc, instBits...) must fit in 256b")
+    // Literally each arm of the mux, these are directly the bits that get put into the bump
+    val allStreamBits =
+      paddedTraces.grouped(totalTracesPerToken).toSeq.map(grp => Cat(grp.map(t => t.asUInt.pad(bitsPerTrace)).reverse))
 
-    // how many traces being sent over
-    val numTraces      = traces.size
-    // num tokens needed to display full set of instructions from one cycle
-    val numTokenForAll = ((numTraces - 1) / totalTracesPerToken) + 1
+    // Number of bits to use for the counter, the +1 is required because the counter will count 1 past the number of arms
+    val counterBits = log2Ceil(armCount + 1)
 
-    // only inc the counter when the something is sent (this implies that the input is valid and output is avail on the other side)
-    val counterFire = streamEnq.fire
-    val (cnt, wrap) = Counter(counterFire, numTokenForAll)
+    // This counter acts to select the mux arm
+    val counter = RegInit(0.U(counterBits.W))
 
-    val paddedTracesAligned   = paddedTraces.map(t => t.asUInt.pad(bitsPerTrace))
-    val paddedTracesTruncated = if (numTraces == 1) {
-      (VecInit(paddedTracesAligned).asUInt >> (outDataSzBits.U * cnt))
-    } else {
-      (VecInit(paddedTracesAligned).asUInt >> (outDataSzBits.U * cnt))(outDataSzBits - 1, 0)
+    // The main mux where the input arms are different possible valid traces, and the output goes to streamEnq
+    val streamMux = MuxLookup(counter, allStreamBits(0), Seq.tabulate(armCount)(x => x.U -> allStreamBits(x)))
+
+    // a parallel set of arms to a parallel mux, true if any instructions in the arm are valid (OR reduction)
+    val anyValid =
+      traces
+        .grouped(totalTracesPerToken)
+        .toSeq
+        .map(arm => arm.map(trace => trace.valid | trace.exception | (trace.cause =/= 0.U)).reduce((a, b) => (a | b)))
+
+    // all of the valids of the larger indexed arms are OR reduced
+    val anyValidRemain    =
+      Seq.tabulate(armCount)(idx => (idx until armCount).map(x => anyValid(x)).reduce((a, b) => (a | b)))
+    val anyValidRemainMux = MuxLookup(counter, false.B, Seq.tabulate(armCount)(x => x.U -> anyValidRemain(x)))
+
+    streamEnq.bits := streamMux
+
+    val maybeFire = !anyValidRemainMux || (counter === (armCount - 1).U)
+    val maybeEnq  = anyValidRemainMux
+
+    val commonPredicates = Seq(hPort.toHost.hValid, streamEnq.ready)
+    val do_enq_helper    = DecoupledHelper((maybeEnq +: commonPredicates): _*)
+    val do_fire_helper   = DecoupledHelper((maybeFire +: commonPredicates): _*)
+
+    // Note, if we dequeue a token that wins out over the increment below
+    when(do_fire_helper.fire()) {
+      counter := 0.U
+    }.elsewhen(do_enq_helper.fire()) {
+      counter := counter + 1.U
     }
 
-    streamEnq.valid := hPort.toHost.hValid
-    streamEnq.bits  := paddedTracesTruncated
-
-    // tell the host that you are ready to get more
-    hPort.toHost.hReady := streamEnq.ready && wrap
-
-    // This is uni-directional. We don't drive tokens back to the target.
-    hPort.fromHost.hValid := true.B
+    streamEnq.valid       := do_enq_helper.fire(streamEnq.ready)
+    hPort.toHost.hReady   := do_fire_helper.fire(hPort.toHost.hValid)
+    hPort.fromHost.hValid := true.B // this is uni-directional. we don't drive tokens back to target
 
     genCRFile()
 
@@ -159,7 +184,8 @@ class CospikeBridgeModule(params: CospikeBridgeParams)(implicit p: Parameters)
           UInt32(insnWidth),
           UInt32(causeWidth),
           UInt32(wdataWidth),
-          UInt32(numTraces),
+          UInt32(traces.length),
+          UInt32(bitsPerTrace),
           CStrLit(params.cfg.isa),
           UInt32(params.cfg.vlen),
           CStrLit(params.cfg.priv),
@@ -178,6 +204,7 @@ class CospikeBridgeModule(params: CospikeBridgeParams)(implicit p: Parameters)
 
     // general information printout
     println(s"Cospike Bridge Information")
-    println(s"  Total Inst. Traces / Commit Width: ${numTraces}")
+    println(s"  Total Inst. Traces (i.e. Commit Width): ${traces.length}")
+    println(s"  Total Traces Per Token: ${totalTracesPerToken}")
   }
 }

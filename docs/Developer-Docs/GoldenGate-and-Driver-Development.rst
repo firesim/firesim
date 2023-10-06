@@ -27,6 +27,9 @@ Single tests may be run directly out of :gh-file-ref:`sim/` as follows::
    # Run a specific integration test (desired)
    make testOnly TARGET_PROJECT=midasexamples SCALA_TEST=firesim.midasexamples.GCDF1Test
 
+   # note: you can disable certain subsets of tests by using a
+   # TEST_DISABLE_{VERILATOR,VCS,VIVADO}=1 environment variable
+
 These tests may be run from the SBT console continuously, and SBT will rerun
 them on Scala changes (but not driver changes). Out of :gh-file-ref:`sim/`::
 
@@ -170,7 +173,7 @@ Scala guidelines
 
 The Scala sources are formatted using both ``Scalafmt`` and ``Scalafix``. All submitted
 pull-requests must be formatted prior to being accepted and merged. The configuration files
-are found here: `Scalafmt config <https://github.com/firesim/firesim/blob/main/sim/.scalafix.conf>`_, 
-`Scalafix config <https://github.com/firesim/firesim/blob/main/sim/.scalafmt.conf>`_. Run 
+are found here: `Scalafmt config <https://github.com/firesim/firesim/blob/main/sim/.scalafix.conf>`_,
+`Scalafix config <https://github.com/firesim/firesim/blob/main/sim/.scalafmt.conf>`_. Run
 ``make -C sim scala-lint-check`` to check your code for compliance. Run ``make -C sim scala-lint`` to
 automatically apply fixes.
