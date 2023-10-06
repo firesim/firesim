@@ -6,7 +6,6 @@ import midas.widgets._
 import chisel3._
 import chisel3.util._
 import org.chipsalliance.cde.config.Parameters
-import freechips.rocketchip.subsystem.PeripheryBusKey
 import sifive.blocks.devices.uart.{UARTPortIO, UARTParams}
 
 //Note: This file is heavily commented as it serves as a bridge walkthrough
@@ -32,7 +31,7 @@ case class UARTKey(uParams: UARTParams, div: Int)
 // DOC include end: UART Bridge Constructor Arg
 
 // DOC include start: UART Bridge Target-Side Module
-class UARTBridge(uParams: UARTParams)(implicit p: Parameters) extends BlackBox
+class UARTBridge(uParams: UARTParams, freqMHz: Int)(implicit p: Parameters) extends BlackBox
     with Bridge[HostPortIO[UARTBridgeTargetIO], UARTBridgeModule] {
   // Since we're extending BlackBox this is the port will connect to in our target's RTL
   val io = IO(new UARTBridgeTargetIO(uParams))
@@ -43,9 +42,8 @@ class UARTBridge(uParams: UARTParams)(implicit p: Parameters) extends BlackBox
   val bridgeIO = HostPort(io)
 
   // Do some intermediate work to compute our host-side BridgeModule's constructor argument
-  val frequency = p(PeripheryBusKey).dtsFrequency.get
   val baudrate = uParams.initBaudRate
-  val div = (frequency / baudrate).toInt
+  val div = (freqMHz * 1000000 / baudrate).toInt
 
   // And then implement the constructorArg member
   val constructorArg = Some(UARTKey(uParams, div))
@@ -58,8 +56,8 @@ class UARTBridge(uParams: UARTParams)(implicit p: Parameters) extends BlackBox
 
 // DOC include start: UART Bridge Companion Object
 object UARTBridge {
-  def apply(clock: Clock, uart: UARTPortIO, reset: Bool)(implicit p: Parameters): UARTBridge = {
-    val ep = Module(new UARTBridge(uart.c))
+  def apply(clock: Clock, uart: UARTPortIO, reset: Bool, freqMHz: Int)(implicit p: Parameters): UARTBridge = {
+    val ep = Module(new UARTBridge(uart.c, freqMHz))
     ep.io.uart <> uart
     ep.io.clock := clock
     ep.io.reset := reset
