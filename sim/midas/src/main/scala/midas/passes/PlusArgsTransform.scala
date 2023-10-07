@@ -15,7 +15,7 @@ import collection.mutable
 /**
   * Take the annotated target and drive with plus args bridge(s)
   */
-class PlusArgsTransform extends Transform {
+class PlusArgsWiringTransform extends Transform {
   def inputForm: CircuitForm = LowForm
   def outputForm: CircuitForm = MidForm
   override def name = "[Golden Gate] PlusArgs Transform"
