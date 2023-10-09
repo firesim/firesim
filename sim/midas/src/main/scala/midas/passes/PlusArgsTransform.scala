@@ -32,8 +32,8 @@ class PlusArgsWiringTransform extends Transform {
 // width: Int)
 
   private var idx = 0
-  def getPlusArgBridgeName(): String = {
-    val ret = s"PlusArgsBridge_${idx}"
+  def getPlusArgBridgeName(argName: String): String = {
+    val ret = s"PlusArgsBridge_${argName}"
     idx += 1
     ret
   }
@@ -58,7 +58,6 @@ class PlusArgsWiringTransform extends Transform {
     anno: PlusArgsFirrtlAnnotation,
     bridgeName: String
   ): Module= {
-    println("addBridgeInstanceInModule")
     val ref = anno.target.name
     val newRef = ref + "_plusargs_"
     val argsW = IntWidth(BigInt(anno.width))
@@ -84,11 +83,10 @@ class PlusArgsWiringTransform extends Transform {
     anno: PlusArgsFirrtlAnnotation
   ): plusArgsBridgeInfo = {
     val argsW = IntWidth(BigInt(anno.width))
-    val name = getPlusArgBridgeName()
+    val name = getPlusArgBridgeName(anno.target.name)
     val bClkPort  = Port(NoInfo, "clock",   Input,  ClockType)
-    val bRstPort  = Port(NoInfo, "reset",   Input,  ResetType)
     val bArgsPort = Port(NoInfo, "io_out", Output, firrtl.ir.UIntType(argsW))
-    val bPorts = Seq(bClkPort, bRstPort, bArgsPort)
+    val bPorts = Seq(bClkPort, bArgsPort)
     val bModule = ExtModule(NoInfo, name, bPorts, name, Seq())
 
     val bmt = ModuleTarget(circuitMain, name)
@@ -96,12 +94,13 @@ class PlusArgsWiringTransform extends Transform {
       target = bmt,
       bridgeChannels = Seq(
         PipeBridgeChannel(
-          name = "out",
+          name = "outChannel",
           clock = bmt.ref("clock"),
-          sinks = Seq(),
-          sources = Seq(bmt.ref("io_out")),
+          sinks = Seq(bmt.ref("io_out")),
+          sources = Seq(),
           latency = 0
-      )),
+        )
+    ),
       widgetClass = classOf[PlusArgsBridgeModule].getName,
       widgetConstructorKey = Some(PlusArgsBridgeParams(
         anno.name,
@@ -161,10 +160,8 @@ class PlusArgsWiringTransform extends Transform {
   }
 
   def execute(state: CircuitState): CircuitState = {
-    println("PlusArgsWiringTransform")
     val resolver = new ResolveAndCheck
     val updatedState = resolver.runTransform(doTransform(state))
-    println("updatedState done")
 
     val emitter = new EmitFirrtl("post-plusargs-transform.fir")
     emitter.runTransform(updatedState)
