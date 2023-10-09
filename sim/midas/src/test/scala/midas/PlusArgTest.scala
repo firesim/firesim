@@ -3,7 +3,6 @@ package goldengate.tests
 
 import chisel3._
 import chisel3.util._
-import chisel3.experimental.{IO, annotate, DataMirror}
 import chisel3.stage.{ChiselCircuitAnnotation, ChiselGeneratorAnnotation, ChiselStage, CircuitSerializationAnnotation}
 
 import org.scalatest.freespec.AnyFreeSpec
@@ -12,20 +11,13 @@ import org.scalatest.TestSuite
 import firrtl._
 import firrtl.annotations.{DeletedAnnotation, JsonProtocol}
 import firrtl.options.TargetDirAnnotation
-import firrtl.stage.{RunFirrtlTransformAnnotation, FirrtlCircuitAnnotation}
-import firrtl.transforms.DontTouchAnnotation
+import firrtl.stage.FirrtlCircuitAnnotation
 
-
-import midas.stage._
-
-import freechips.rocketchip.prci._
-import freechips.rocketchip.diplomacy._
-import org.chipsalliance.cde.config.{Config, Field, Parameters}
 
 import java.io.{File, PrintWriter}
 import freechips.rocketchip.util.DecoupledHelper
 
-
+import midas.targetutils.PlusArgsFirrtlAnnotation
 
 
 class TL(w: Int) extends Bundle {
@@ -86,6 +78,14 @@ class Top(w: Int) extends Module {
   val foo = Module(new Foo(w))
   val bar = Module(new Bar(w))
 
+  val temp = WireInit(0.U(32.W))
+  val cnt = RegInit(1024.U)
+  midas.targetutils.PlusArgs(temp, "temp_cy=%d", 5, "this is a docstring", temp.getWidth)
+  when (cnt =/= 0.U) {
+    cnt := cnt - 1.U
+    printf("T: %d", temp)
+  }
+
   bar.io.y.a <> foo.io.x.a
   foo.io.x.d <> bar.io.y.d
 
@@ -115,16 +115,29 @@ trait GoldenGateCompilerTest { this: TestSuite =>
   }
 }
 
-class CheckCombFirrtlGenerator extends AnyFreeSpec with GoldenGateCompilerTest {
+class PlusArgsFirrtlGenerator extends AnyFreeSpec with GoldenGateCompilerTest {
   def generateFirrtl() = {
-    val (firrtl, _) = compile(new Top(2), "low", a=Seq())
+    val (firrtl, annos) = compile(new Top(2), "low", a=Seq())
 
     val firrtlWriter = new PrintWriter(new File("midas/test-inputs/simple.fir"))
     firrtlWriter.write(firrtl)
     firrtlWriter.close()
+
+    val annosWriter = new PrintWriter(new File("midas/test-inputs/anno.json"))
+    annosWriter.write(JsonProtocol.serialize(annos.filter(_ match {
+      case _: DeletedAnnotation => false
+      case _: EmittedComponent => false
+      case _: EmittedAnnotation[_] => false
+      case _: FirrtlCircuitAnnotation => false
+      case _: ChiselCircuitAnnotation => false
+      case _: CircuitSerializationAnnotation => false
+      case _: PlusArgsFirrtlAnnotation => true
+      case _ => false
+    })))
+    annosWriter.close()
   }
 }
 
-class GenerateFirrtlForCheckCombLogic extends CheckCombFirrtlGenerator {
+class GenerateFirrtlForPlusArgs extends PlusArgsFirrtlGenerator {
   generateFirrtl()
 }

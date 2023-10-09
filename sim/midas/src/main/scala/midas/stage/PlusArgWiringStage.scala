@@ -36,14 +36,15 @@ class PlusArgsWiringPhase extends Phase {
   def transform(annotations: AnnotationSeq): AnnotationSeq = {
     val allCircuits = annotations.collect({ case FirrtlCircuitAnnotation(circuit) => circuit })
     require(allCircuits.size == 1, "PlusArgsWiring Modules can only process a single Firrtl Circuit at a time.")
+    println("PlusArgsWiringPhase")
 
     val state = CircuitState(allCircuits.head, firrtl.ChirrtlForm, annotations)
 
-    val combCheck = new Compiler(
+    val wired = new Compiler(
       firrtl.stage.Forms.LowForm ++ Seq(Dependency[PlusArgsWiringTransform])
     ).execute(state)
 
-    combCheck.annotations
+    wired.annotations
   }
 }
 

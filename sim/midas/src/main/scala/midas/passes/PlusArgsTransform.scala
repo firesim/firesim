@@ -90,6 +90,7 @@ class PlusArgsWiringTransform extends Transform {
   }
 
   def execute(state: CircuitState): CircuitState = {
+    println("PlusArgsWiringTransform")
     val updatedState = doTransform(state)
     // Clean up annotations so that their ReferenceTargets, which
     // are implicitly marked as DontTouch, can be optimized across
