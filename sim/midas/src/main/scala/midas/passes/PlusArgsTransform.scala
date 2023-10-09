@@ -5,12 +5,14 @@ package midas.passes
 import firrtl._
 import firrtl.ir._
 import firrtl.annotations._
+import firrtl.annotations.TargetToken._
 import midas.widgets._
 import midas.targetutils._
 import midas.passes.fame.{WireChannel, FAMEChannelConnectionAnnotation}
 
 import java.io._
 import collection.mutable
+import firrtl.analyses.InstanceKeyGraph
 
 /**
   * Take the annotated target and drive with plus args bridge(s)
@@ -20,60 +22,130 @@ class PlusArgsWiringTransform extends Transform {
   def outputForm: CircuitForm = MidForm
   override def name = "[Golden Gate] PlusArgs Transform"
 
-  private def implementViaBridge(
-      state: CircuitState,
-      annos: Seq[PlusArgsFirrtlAnnotation]): CircuitState = {
+// case class PlusArgsFirrtlAnnotation(
+// target: ReferenceTarget,
+// clock: ReferenceTarget,
+// reset: ReferenceTarget,
+// name: String,
+// default: BigInt,
+// docstring: String,
+// width: Int)
 
-    val sinkToPlusArgsAnnoMap = annos.map(anno => anno.target -> anno).toMap
-    val bridgeTopWiringAnnos = annos.map(anno => BridgeTopWiringAnnotation(anno.target, anno.clock))
+  private var idx = 0
+  def getPlusArgBridgeName(): String = {
+    val ret = s"PlusArgsBridge_${idx}"
+    idx += 1
+    ret
+  }
 
-    // Step 1: Call BridgeTopWiring
-    val topWiringPrefix = "plusargs"
-    val wiredState = (new BridgeTopWiring(topWiringPrefix + "_")).execute(
-      state.copy(annotations = state.annotations ++ bridgeTopWiringAnnos))
-    val outputAnnos = wiredState.annotations.collect({ case a: BridgeTopWiringOutputAnnotation => a })
-    val sortedOutputAnnos = outputAnnos.sortBy(_.srcClockPort.ref)
+  case class plusArgsBridgeInfo(
+    newMod: Module, // New module def
+    bridgeMod: ExtModule, // Bridge module
+    bridgeAnno: BridgeAnnotation) // bridge anno
 
-    // Step 2: For each group of wired events, generate associated bridge annotations
-    val c = wiredState.circuit
-    val topModule = c.modules.collectFirst({ case m: Module if m.name == c.main => m }).get
-    val topMT = ModuleTarget(c.main, c.main)
-    val topNS = Namespace(topModule)
-    val addedPorts = mutable.ArrayBuffer[Port]()
-    val addedStmts = mutable.ArrayBuffer[Statement]()
-    // Needed to pass out the widths for each plusarg; sufficient to grab just uint ports
-    val portWidthMap = topModule.ports.collect {
-      case Port(_, name, _, UIntType(IntWidth(w))) => name -> w.toInt
-    }.toMap
-
-    val bridgeAnnos = for ((srcClockRT, oAnno) <- sortedOutputAnnos.map(a => (a.srcClockPort, a))) yield {
-      val sinkClockRT = oAnno.sinkClockPort
-      val fcca = FAMEChannelConnectionAnnotation.sink(
-          oAnno.topSink.ref,
-          WireChannel,
-          Some(sinkClockRT),
-          Seq(oAnno.topSink))
-
-      val plusArgsAnno = sinkToPlusArgsAnnoMap(oAnno.pathlessSource)
-
-      val bridgeAnno = BridgeIOAnnotation(
-        target = topMT.ref(topWiringPrefix),
-        // We need to pass the name of the trigger port so each bridge can
-        // disambiguate between them and connect to the correct one in simulation mapping
-        widgetClass = classOf[PlusArgsBridgeModule].getName,
-        widgetConstructorKey = PlusArgsBridgeParams(plusArgsAnno.name, plusArgsAnno.default, plusArgsAnno.docstring, plusArgsAnno.width),
-        channelNames = Seq(fcca).map(_.globalName)
-      )
-      Seq(bridgeAnno) :+ fcca
+  def onStmt(stmt: Statement, ref: String, newRef: String, argsW: IntWidth): Seq[Statement] = {
+    stmt match {
+      case DefNode(i, n, v) if (n == ref) =>
+        val wire = DefWire(NoInfo, newRef, firrtl.ir.UIntType(argsW))
+        val newDef = DefNode(i, n, WRef(newRef))
+        Seq(wire, newDef)
+      case s => Seq(s)
     }
+  }
 
-    val updatedCircuit = c.copy(modules = c.modules.map({
-      case m: Module if m.name == c.main => m.copy(ports = m.ports ++ addedPorts, body = Block(m.body, addedStmts.toSeq:_*))
-      case o => o
-    }))
+  def addBridgeInstanceInModule(
+    mod: Module,
+    anno: PlusArgsFirrtlAnnotation,
+    bridgeName: String
+  ): Module= {
+    println("addBridgeInstanceInModule")
+    val ref = anno.target.name
+    val newRef = ref + "_plusargs_"
+    val argsW = IntWidth(BigInt(anno.width))
 
-    val cleanedAnnotations = wiredState.annotations.filterNot(outputAnnos.toSet)
-    CircuitState(updatedCircuit, wiredState.form, cleanedAnnotations ++ bridgeAnnos.flatten)
+    val body = mod.body
+    val inst = DefInstance(bridgeName, bridgeName)
+    val clkConn = Connect(NoInfo, WSubField(WRef(bridgeName), "clock"), WRef(anno.clock.name))
+    val refConn = Connect(NoInfo, WRef(newRef), WSubField(WRef(bridgeName), "io_out"))
+
+    val bStmts = Seq(inst, clkConn, refConn)
+    val newBody = body match {
+      case Block(stmts) =>
+        val newStmts = stmts.flatMap(onStmt(_, ref, newRef, argsW))
+        new Block(newStmts ++ bStmts)
+      case _ => throw new Exception("Module body is not a Block")
+    }
+    mod.copy(body = newBody)
+  }
+
+  def connectBridgeInsideModule(
+    circuitMain: String,
+    mod: Module,
+    anno: PlusArgsFirrtlAnnotation
+  ): plusArgsBridgeInfo = {
+    val argsW = IntWidth(BigInt(anno.width))
+    val name = getPlusArgBridgeName()
+    val bClkPort  = Port(NoInfo, "clock",   Input,  ClockType)
+    val bRstPort  = Port(NoInfo, "reset",   Input,  ResetType)
+    val bArgsPort = Port(NoInfo, "io_out", Output, firrtl.ir.UIntType(argsW))
+    val bPorts = Seq(bClkPort, bRstPort, bArgsPort)
+    val bModule = ExtModule(NoInfo, name, bPorts, name, Seq())
+
+    val bmt = ModuleTarget(circuitMain, name)
+    val bAnno = BridgeAnnotation(
+      target = bmt,
+      bridgeChannels = Seq(
+        PipeBridgeChannel(
+          name = "out",
+          clock = bmt.ref("clock"),
+          sinks = Seq(),
+          sources = Seq(bmt.ref("io_out")),
+          latency = 0
+      )),
+      widgetClass = classOf[PlusArgsBridgeModule].getName,
+      widgetConstructorKey = Some(PlusArgsBridgeParams(
+        anno.name,
+        anno.default,
+        anno.docstring,
+        anno.width)))
+    val newMod = addBridgeInstanceInModule(mod, anno, name)
+    plusArgsBridgeInfo(newMod, bModule, bAnno)
+  }
+
+  def connectBridgePerAnno(
+    state: CircuitState,
+    anno: PlusArgsFirrtlAnnotation
+  ): CircuitState = {
+    val iKeyGraph = InstanceKeyGraph(state.circuit)
+    val iKeyPath = iKeyGraph.findInstancesInHierarchy(anno.target.module)
+
+    // Limit the number of instances with modules containing PlusArgs annotations to one.
+    // This isn't a big problem since we use the no-dedup flag for FireSim flows so
+    // big enough modules have separate names anyways.
+    assert(iKeyPath.size == 1, "Should only contain one instance of this module")
+    val ik = iKeyPath(0).last
+    val moduleDefs = state.circuit.modules.collect({
+      case m: Module => OfModule(m.name) -> m
+    }).toMap
+    val mdef = moduleDefs(ik.OfModule)
+    print(iKeyPath(0).last)
+
+    val info = connectBridgeInsideModule(state.circuit.main, mdef, anno)
+    val newAnnos = state.annotations.toSeq :+ info.bridgeAnno
+    val newMods = state.circuit.modules.flatMap {
+      case m: Module if (m.name == ik.module) =>
+        Seq(info.newMod, info.bridgeMod)
+      case m => Seq(m)
+    }
+    val newCircuit = state.circuit.copy(modules=newMods)
+    state.copy(circuit=newCircuit, annotations=newAnnos)
+  }
+
+  def connectBridge(
+    state: CircuitState,
+    annos: Seq[PlusArgsFirrtlAnnotation]
+  ): CircuitState = {
+    annos.foldLeft(state)((s, a) => connectBridgePerAnno(s, a))
   }
 
   def doTransform(state: CircuitState): CircuitState = {
@@ -84,14 +156,19 @@ class PlusArgsWiringTransform extends Transform {
     if (!plusArgsAnnos.isEmpty) {
       println(s"[PlusArgs] PlusArgs are:")
       plusArgsAnnos.foreach({ case anno => println(s"   Name: ${anno.name} Docstring: ${anno.docstring} DefaultValue: ${anno.default} Width: ${anno.width}") })
-
-      implementViaBridge(state, plusArgsAnnos.toSeq)
+      connectBridge(state, plusArgsAnnos.toSeq)
     } else { state }
   }
 
   def execute(state: CircuitState): CircuitState = {
     println("PlusArgsWiringTransform")
-    val updatedState = doTransform(state)
+    val resolver = new ResolveAndCheck
+    val updatedState = resolver.runTransform(doTransform(state))
+    println("updatedState done")
+
+    val emitter = new EmitFirrtl("post-plusargs-transform.fir")
+    emitter.runTransform(updatedState)
+
     // Clean up annotations so that their ReferenceTargets, which
     // are implicitly marked as DontTouch, can be optimized across
     updatedState.copy(

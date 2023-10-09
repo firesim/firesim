@@ -322,7 +322,7 @@ case class PlusArgsFirrtlAnnotation(
   default: BigInt,
   docstring: String,
   width: Int)
-    extends firrtl.annotations.Annotation with DontTouchAllTargets {
+    extends firrtl.annotations.Annotation with FAMEAnnotation with DontTouchAllTargets {
   def update(renames: RenameMap): Seq[firrtl.annotations.Annotation] = {
     val renamer = new ReferenceTargetRenamer(renames)
     val renamedTarget = renamer.exactRename(target)
