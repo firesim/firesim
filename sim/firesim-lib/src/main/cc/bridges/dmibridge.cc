@@ -102,7 +102,7 @@ void dmibridge_t::tick() {
   if (resp_valid) {
     out_resp.resp = read(mmio_addrs.out_bits_resp);
     out_resp.data = read(mmio_addrs.out_bits_data);
-    printf("DEBUG: Resp read: resp(0x%x) data(0x%x)\n", out_resp.resp, out_resp.data);
+    //printf("DEBUG: Resp read: resp(0x%x) data(0x%x)\n", out_resp.resp, out_resp.data);
     write(mmio_addrs.out_ready, 1);
   }
   fesvr->tick(
@@ -114,7 +114,7 @@ void dmibridge_t::tick() {
   if (!terminate()) {
     if (fesvr->req_valid() && read(mmio_addrs.in_ready)) {
       dtm_t::req in_req = fesvr->req_bits();
-      printf("DEBUG: Req sent: addr(0x%x) op(0x%x) data(0x%x)\n", in_req.addr, in_req.op, in_req.data);
+      //printf("DEBUG: Req sent: addr(0x%x) op(0x%x) data(0x%x)\n", in_req.addr, in_req.op, in_req.data);
       write(mmio_addrs.in_bits_addr, in_req.addr);
       write(mmio_addrs.in_bits_op, in_req.op);
       write(mmio_addrs.in_bits_data, in_req.data);
