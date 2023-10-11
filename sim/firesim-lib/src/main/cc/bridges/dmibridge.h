@@ -7,7 +7,6 @@
 
 class loadmem_t;
 class firesim_dtm_t;
-class firesim_loadmem_t;
 
 struct DMIBRIDGEMODULE_struct {
   uint64_t in_bits_addr;
@@ -44,7 +43,6 @@ public:
 
 private:
   const DMIBRIDGEMODULE_struct mmio_addrs;
-  loadmem_t &loadmem_widget;
 
   firesim_dtm_t *fesvr;
   bool has_mem;
@@ -59,14 +57,6 @@ private:
 
   // Tell the widget to start enqueuing tokens
   void go();
-  //// Moves data to and from the widget and fesvr
-  //void send(); // FESVR -> Widget
-  //void recv(); // Widget -> FESVR
-
-  // Helper functions to handoff fesvr requests to the loadmem unit
-  void handle_loadmem_read(firesim_loadmem_t loadmem);
-  void handle_loadmem_write(firesim_loadmem_t loadmem);
-  void dmi_bypass_via_loadmem();
 };
 
 #endif // __DMIBRIDGE_H
