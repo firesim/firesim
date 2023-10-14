@@ -18,8 +18,8 @@ dmibridge_t::dmibridge_t(simif_t &simif,
                          const std::vector<std::string> &args,
                          bool has_mem,
                          int64_t mem_host_offset)
-    : bridge_driver_t(simif, &KIND), mmio_addrs(mmio_addrs),
-      has_mem(false), mem_host_offset(mem_host_offset) {
+    : bridge_driver_t(simif, &KIND), mmio_addrs(mmio_addrs), has_mem(false),
+      mem_host_offset(mem_host_offset) {
 
   std::string num_equals = std::to_string(dmino) + std::string("=");
   std::string prog_arg = std::string("+prog") + num_equals;
@@ -102,19 +102,17 @@ void dmibridge_t::tick() {
   if (resp_valid) {
     out_resp.resp = read(mmio_addrs.out_bits_resp);
     out_resp.data = read(mmio_addrs.out_bits_data);
-    //printf("DEBUG: Resp read: resp(0x%x) data(0x%x)\n", out_resp.resp, out_resp.data);
+    // printf("DEBUG: Resp read: resp(0x%x) data(0x%x)\n", out_resp.resp,
+    // out_resp.data);
     write(mmio_addrs.out_ready, 1);
   }
-  fesvr->tick(
-    read(mmio_addrs.in_ready),
-    resp_valid,
-    out_resp
-  );
+  fesvr->tick(read(mmio_addrs.in_ready), resp_valid, out_resp);
 
   if (!terminate()) {
     if (fesvr->req_valid() && read(mmio_addrs.in_ready)) {
       dtm_t::req in_req = fesvr->req_bits();
-      //printf("DEBUG: Req sent: addr(0x%x) op(0x%x) data(0x%x)\n", in_req.addr, in_req.op, in_req.data);
+      // printf("DEBUG: Req sent: addr(0x%x) op(0x%x) data(0x%x)\n",
+      // in_req.addr, in_req.op, in_req.data);
       write(mmio_addrs.in_bits_addr, in_req.addr);
       write(mmio_addrs.in_bits_op, in_req.op);
       write(mmio_addrs.in_bits_data, in_req.data);
