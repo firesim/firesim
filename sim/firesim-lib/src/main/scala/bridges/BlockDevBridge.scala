@@ -10,23 +10,23 @@ import midas.widgets._
 import midas.models.DynamicLatencyPipe
 import testchipip.{BlockDeviceIO, BlockDeviceRequest, BlockDeviceData, BlockDeviceKey, BlockDeviceConfig}
 
-class BlockDevBridgeTargetIO(implicit val p: Parameters) extends Bundle {
-  val bdev = Flipped(new BlockDeviceIO)
+class BlockDevBridgeTargetIO(bdParams: BlockDeviceConfig) extends Bundle {
+  val bdev = Flipped(new BlockDeviceIO(bdParams))
   val reset = Input(Bool())
   val clock = Input(Clock())
 }
 
-class BlockDevBridge(implicit p: Parameters) extends BlackBox
+class BlockDevBridge(bdParams: BlockDeviceConfig) extends BlackBox
     with Bridge[HostPortIO[BlockDevBridgeTargetIO], BlockDevBridgeModule]  {
-  val io = IO(new BlockDevBridgeTargetIO)
+  val io = IO(new BlockDevBridgeTargetIO(bdParams))
   val bridgeIO = HostPort(io)
-  val constructorArg = p(BlockDeviceKey)
+  val constructorArg = Some(bdParams)
   generateAnnotations()
 }
 
 object BlockDevBridge  {
-  def apply(clock: Clock, blkdevIO: BlockDeviceIO, reset: Bool)(implicit p: Parameters): BlockDevBridge = {
-    val ep = Module(new BlockDevBridge)
+  def apply(clock: Clock, blkdevIO: BlockDeviceIO, reset: Bool): BlockDevBridge = {
+    val ep = Module(new BlockDevBridge(blkdevIO.bdParams))
     ep.io.bdev <> blkdevIO
     ep.io.clock := clock
     ep.io.reset := reset
@@ -54,12 +54,12 @@ class BlockDevBridgeModule(blockDevExternal: BlockDeviceConfig, hostP: Parameter
     val defaultWriteLatency = (1 << 8).U(latencyBits.W)
 
     val io = IO(new WidgetIO())
-    val hPort = IO(HostPort(new BlockDevBridgeTargetIO))
+    val hPort = IO(HostPort(new BlockDevBridgeTargetIO(blockDevExternal)))
 
-    val reqBuf = Module(new Queue(new BlockDeviceRequest, 10))
-    val dataBuf = Module(new Queue(new BlockDeviceData, 32))
+    val reqBuf = Module(new Queue(new BlockDeviceRequest(blockDevExternal), 10))
+    val dataBuf = Module(new Queue(new BlockDeviceData(blockDevExternal), 32))
 
-    val rRespBuf = Module(new Queue(new BlockDeviceData, 32))
+    val rRespBuf = Module(new Queue(new BlockDeviceData(blockDevExternal), 32))
     val wAckBuf = Module(new Queue(UInt(tagBits.W), 4))
 
     val target = hPort.hBits.bdev

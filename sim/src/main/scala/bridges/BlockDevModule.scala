@@ -7,14 +7,15 @@ import chisel3.util._
 
 import firesim.midasexamples.PeekPokeMidasExampleHarness
 import org.chipsalliance.cde.config.Parameters
+import testchipip.BlockDeviceKey
 
 class BlockDevDUT(implicit val p: Parameters) extends Module {
-  val rd = Module(new BlockDevBridge)
+  val rd = Module(new BlockDevBridge(p(BlockDeviceKey).get))
   rd.io.clock := clock
   rd.io.reset := reset
   val rdev = rd.io.bdev
 
-  val wr = Module(new BlockDevBridge)
+  val wr = Module(new BlockDevBridge(p(BlockDeviceKey).get))
   wr.io.clock := clock
   wr.io.reset := reset
   val wdev = wr.io.bdev
