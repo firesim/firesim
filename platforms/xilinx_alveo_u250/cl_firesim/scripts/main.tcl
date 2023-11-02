@@ -94,6 +94,9 @@ if {[llength [get_filesets -quiet impl]]} {
     set_property constrset impl [get_runs impl_1]
 }
 
+set rpt_dir ${root_dir}/vivado_proj/reports
+file mkdir ${rpt_dir}
+
 foreach sourceFile [list ${root_dir}/scripts/synthesis.tcl ${root_dir}/scripts/implementation_${vivado_version}.tcl] {
   set sourceFile [retrieveVersionedFile $sourceFile $vivado_version]
   if {![file exists $sourceFile]} {
