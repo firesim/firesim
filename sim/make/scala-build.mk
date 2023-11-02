@@ -49,12 +49,14 @@ TARGET_SOURCE_DIRS ?=
 # Build jars using SBT assembly and cache them.
 ################################################################################
 
-# Helpers to identify all source files of the FireSim project.
-find_sources_in_dir = $(shell \
-	find -L $(1)/ -name target -prune -o -iname "[!.]*.scala" -print \
-	2> /dev/null \
-	| grep -E $(2) \
-)
+# Returns a list of files in directories $1 with single file extension $2 that have $3 in the name.
+fs_lookup_srcs = $(shell find -L $(1) -name target -prune -o \( -iname "*.$(2)" ! -iname ".*" \) -print 2> /dev/null | grep -E $(3))
+
+# Returns a list of files in directories $1 with *any* of the file extensions in $3 that have $2 in the name
+fs_lookup_srcs_by_multiple_type = $(foreach type,$(3),$(call fs_lookup_srcs,$(1),$(type),$(2)))
+
+SCALA_EXT = scala
+VLOG_EXT = sv v
 
 firesim_source_dirs = \
 	$(addprefix $(firesim_base_dir)/,\
@@ -62,13 +64,14 @@ firesim_source_dirs = \
 			midas \
 			midas/targetutils \
 			firesim-lib \
-			rocket-chip/src \
-			rocket-chip/api-config-chipsalliance \
 	)
-firesim_main_srcs = $(foreach dir, $(firesim_source_dirs), \
-	$(call find_sources_in_dir, $(dir), 'src/main/scala'))
-firesim_test_srcs = $(foreach dir, $(firesim_source_dirs), \
-	$(call find_sources_in_dir, $(dir), 'src/test/scala'))
+
+firesim_main_srcs = \
+	$(call fs_lookup_srcs_by_multiple_type, $(firesim_source_dirs), 'src/main/scala', $(SCALA_EXT)) \
+	$(call fs_lookup_srcs_by_multiple_type, $(firesim_source_dirs), 'src/main/resources', $(VLOG_EXT))
+firesim_test_srcs = \
+	$(call fs_lookup_srcs_by_multiple_type, $(firesim_source_dirs), 'src/test/scala', $(SCALA_EXT)) \
+	$(call fs_lookup_srcs_by_multiple_type, $(firesim_source_dirs), 'src/test/resources', $(VLOG_EXT))
 
 FIRESIM_MAIN_CP := $(BUILD_DIR)/firesim-main.jar
 # if *_CLASSPATH is a true java classpath, it can be colon-delimited list of paths (on *nix)
@@ -79,8 +82,9 @@ $(FIRESIM_MAIN_CP): $(SCALA_BUILDTOOL_DEPS) $(firesim_main_srcs) $(firesim_test_
 
 ifneq ($(FIRESIM_SBT_PROJECT),$(TARGET_SBT_PROJECT))
 
-target_srcs = $(foreach dir,$(TARGET_SOURCE_DIRS), \
-	$(call find_sources_in_dir, $(dir), 'src/main/scala'))
+target_srcs = \
+	$(call fs_lookup_srcs_by_multiple_type, $(TARGET_SOURCE_DIRS), 'src/main/scala', $(SCALA_EXT)) \
+	$(call fs_lookup_srcs_by_multiple_type, $(TARGET_SOURCE_DIRS), 'src/main/resources', $(VLOG_EXT))
 
 TARGET_CP := $(BUILD_DIR)/target.jar
 # if *_CLASSPATH is a true java classpath, it can be colon-delimited list of paths (on *nix)
