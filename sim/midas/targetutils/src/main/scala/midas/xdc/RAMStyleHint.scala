@@ -51,7 +51,7 @@ object RAMStyleHint {
   // _reg suffix is applied to memory cells by Vivado, the glob manages
   // duplication for multibit memories.
   private [midas] def propertyTemplate(style: RAMStyle): String =
-    s"set_property RAM_STYLE ${style} [get_cells {}_reg*]"
+    s"set_property RAM_STYLE ${style} [get_cells -hierarchical -regexp .*{}_reg.*]"
 
   private def annotate(style: RAMStyle, rT: =>ReferenceTarget): Unit = {
     chisel3.experimental.annotate(new ChiselAnnotation {
@@ -73,8 +73,8 @@ object RAMStyleHint {
   /**
     * Annotates a FIRRTL ReferenceTarget indicating it should be implemented with a particular
     * Xilinx RAM structure.
-    * 
-    * Note: the onus is on the user to ensure the RT points at a mem-like structure. In general, 
+    *
+    * Note: the onus is on the user to ensure the RT points at a mem-like structure. In general,
     * one should prefer using the apply method that accepts a chisel3.MemBase[_] to get compile-time errors.
     */
   def apply(mem: =>ReferenceTarget, style: RAMStyle): Unit = {
