@@ -1,22 +1,22 @@
 `timescale 1ns/1ps
 //////////////////////////////////////////////////////////////////////////////////
-// Company: 
-// Engineer: 
-// 
+// Company:
+// Engineer:
+//
 // Create Date: 09/10/2021 07:33:50 PM
-// Design Name: 
+// Design Name:
 // Module Name: firesim_wrapper
-// Project Name: 
-// Target Devices: 
-// Tool Versions: 
-// Description: 
-// 
-// Dependencies: 
-// 
+// Project Name:
+// Target Devices:
+// Tool Versions:
+// Description:
+//
+// Dependencies:
+//
 // Revision:
 // Revision 0.01 - File Created
 // Additional Comments:
-// 
+//
 //////////////////////////////////////////////////////////////////////////////////
 
 
@@ -118,6 +118,123 @@ module firesim_wrapper(
     M_AXI_DDR0_wready,
     M_AXI_DDR0_wstrb,
     M_AXI_DDR0_wvalid,
+    M_AXI_DDR1_araddr,
+    M_AXI_DDR1_arburst,
+    M_AXI_DDR1_arcache,
+    M_AXI_DDR1_arid,
+    M_AXI_DDR1_arlen,
+    M_AXI_DDR1_arlock,
+    M_AXI_DDR1_arprot,
+    M_AXI_DDR1_arqos,
+    M_AXI_DDR1_arready,
+    M_AXI_DDR1_arregion,
+    M_AXI_DDR1_arsize,
+    M_AXI_DDR1_arvalid,
+    M_AXI_DDR1_awaddr,
+    M_AXI_DDR1_awburst,
+    M_AXI_DDR1_awcache,
+    M_AXI_DDR1_awid,
+    M_AXI_DDR1_awlen,
+    M_AXI_DDR1_awlock,
+    M_AXI_DDR1_awprot,
+    M_AXI_DDR1_awqos,
+    M_AXI_DDR1_awready,
+    M_AXI_DDR1_awregion,
+    M_AXI_DDR1_awsize,
+    M_AXI_DDR1_awvalid,
+    M_AXI_DDR1_bready,
+    M_AXI_DDR1_bid,
+    M_AXI_DDR1_bresp,
+    M_AXI_DDR1_bvalid,
+    M_AXI_DDR1_rdata,
+    M_AXI_DDR1_rid,
+    M_AXI_DDR1_rlast,
+    M_AXI_DDR1_rready,
+    M_AXI_DDR1_rresp,
+    M_AXI_DDR1_rvalid,
+    M_AXI_DDR1_wdata,
+    M_AXI_DDR1_wlast,
+    M_AXI_DDR1_wready,
+    M_AXI_DDR1_wstrb,
+    M_AXI_DDR1_wvalid,
+    M_AXI_DDR2_araddr,
+    M_AXI_DDR2_arburst,
+    M_AXI_DDR2_arcache,
+    M_AXI_DDR2_arid,
+    M_AXI_DDR2_arlen,
+    M_AXI_DDR2_arlock,
+    M_AXI_DDR2_arprot,
+    M_AXI_DDR2_arqos,
+    M_AXI_DDR2_arready,
+    M_AXI_DDR2_arregion,
+    M_AXI_DDR2_arsize,
+    M_AXI_DDR2_arvalid,
+    M_AXI_DDR2_awaddr,
+    M_AXI_DDR2_awburst,
+    M_AXI_DDR2_awcache,
+    M_AXI_DDR2_awid,
+    M_AXI_DDR2_awlen,
+    M_AXI_DDR2_awlock,
+    M_AXI_DDR2_awprot,
+    M_AXI_DDR2_awqos,
+    M_AXI_DDR2_awready,
+    M_AXI_DDR2_awregion,
+    M_AXI_DDR2_awsize,
+    M_AXI_DDR2_awvalid,
+    M_AXI_DDR2_bready,
+    M_AXI_DDR2_bid,
+    M_AXI_DDR2_bresp,
+    M_AXI_DDR2_bvalid,
+    M_AXI_DDR2_rdata,
+    M_AXI_DDR2_rid,
+    M_AXI_DDR2_rlast,
+    M_AXI_DDR2_rready,
+    M_AXI_DDR2_rresp,
+    M_AXI_DDR2_rvalid,
+    M_AXI_DDR2_wdata,
+    M_AXI_DDR2_wlast,
+    M_AXI_DDR2_wready,
+    M_AXI_DDR2_wstrb,
+    M_AXI_DDR2_wvalid,
+    M_AXI_DDR3_araddr,
+    M_AXI_DDR3_arburst,
+    M_AXI_DDR3_arcache,
+    M_AXI_DDR3_arid,
+    M_AXI_DDR3_arlen,
+    M_AXI_DDR3_arlock,
+    M_AXI_DDR3_arprot,
+    M_AXI_DDR3_arqos,
+    M_AXI_DDR3_arready,
+    M_AXI_DDR3_arregion,
+    M_AXI_DDR3_arsize,
+    M_AXI_DDR3_arvalid,
+    M_AXI_DDR3_awaddr,
+    M_AXI_DDR3_awburst,
+    M_AXI_DDR3_awcache,
+    M_AXI_DDR3_awid,
+    M_AXI_DDR3_awlen,
+    M_AXI_DDR3_awlock,
+    M_AXI_DDR3_awprot,
+    M_AXI_DDR3_awqos,
+    M_AXI_DDR3_awready,
+    M_AXI_DDR3_awregion,
+    M_AXI_DDR3_awsize,
+    M_AXI_DDR3_awvalid,
+    M_AXI_DDR3_bready,
+    M_AXI_DDR3_bid,
+    M_AXI_DDR3_bresp,
+    M_AXI_DDR3_bvalid,
+    M_AXI_DDR3_rdata,
+    M_AXI_DDR3_rid,
+    M_AXI_DDR3_rlast,
+    M_AXI_DDR3_rready,
+    M_AXI_DDR3_rresp,
+    M_AXI_DDR3_rvalid,
+    M_AXI_DDR3_wdata,
+    M_AXI_DDR3_wlast,
+    M_AXI_DDR3_wready,
+    M_AXI_DDR3_wstrb,
+    M_AXI_DDR3_wvalid,
     sys_clk_30,
     sys_reset_n
 );
@@ -237,7 +354,142 @@ module firesim_wrapper(
     (* X_INTERFACE_INFO = "xilinx.com:interface:aximm_rtl:1.0 M_AXI_DDR0 WSTRB" *) output[7:0] M_AXI_DDR0_wstrb;
     (* X_INTERFACE_INFO = "xilinx.com:interface:aximm_rtl:1.0 M_AXI_DDR0 WVALID" *) output M_AXI_DDR0_wvalid;
 
-    (* X_INTERFACE_PARAMETER = "XIL_INTERFACENAME CLK.SYS_CLK_30, ASSOCIATED_BUSIF S_AXI_CTRL:S_AXI_DMA:M_AXI_DDR0, CLK_DOMAIN design_1_clk_wiz_0_0_clk_out1, INSERT_VIP 0, PHASE 0" *)
+    (* X_INTERFACE_PARAMETER = "XIL_INTERFACENAME M_AXI_DDR1, ADDR_WIDTH 34, ARUSER_WIDTH 0, AWUSER_WIDTH 0, BUSER_WIDTH 0, CLK_DOMAIN design_1_clk_wiz_0_0_clk_out1, DATA_WIDTH 64, HAS_BRESP 1, HAS_BURST 1, HAS_CACHE 1, HAS_LOCK 1, HAS_PROT 1, HAS_QOS 1, HAS_REGION 1, HAS_RRESP 1, HAS_WSTRB 1, ID_WIDTH 16, INSERT_VIP 0, MAX_BURST_LENGTH 256, NUM_READ_OUTSTANDING 2, NUM_READ_THREADS 1, NUM_WRITE_OUTSTANDING 2, NUM_WRITE_THREADS 1, PHASE 0, PROTOCOL AXI4, READ_WRITE_MODE READ_WRITE, RUSER_BITS_PER_BYTE 0, RUSER_WIDTH 0, SUPPORTS_NARROW_BURST 1, WUSER_BITS_PER_BYTE 0, WUSER_WIDTH 0" *)
+        (* X_INTERFACE_INFO = "xilinx.com:interface:aximm_rtl:1.0 M_AXI_DDR1 ARADDR" *) output[33:0] M_AXI_DDR1_araddr;
+    (* X_INTERFACE_INFO = "xilinx.com:interface:aximm_rtl:1.0 M_AXI_DDR1 ARBURST" *) output[1:0] M_AXI_DDR1_arburst;
+    (* X_INTERFACE_INFO = "xilinx.com:interface:aximm_rtl:1.0 M_AXI_DDR1 ARCACHE" *) output[3:0] M_AXI_DDR1_arcache;
+    (* X_INTERFACE_INFO = "xilinx.com:interface:aximm_rtl:1.0 M_AXI_DDR1 ARID" *) output[15:0] M_AXI_DDR1_arid;
+    (* X_INTERFACE_INFO = "xilinx.com:interface:aximm_rtl:1.0 M_AXI_DDR1 ARLEN" *) output[7:0] M_AXI_DDR1_arlen;
+    (* X_INTERFACE_INFO = "xilinx.com:interface:aximm_rtl:1.0 M_AXI_DDR1 ARLOCK" *) output[0:0] M_AXI_DDR1_arlock;
+    (* X_INTERFACE_INFO = "xilinx.com:interface:aximm_rtl:1.0 M_AXI_DDR1 ARPROT" *) output[2:0] M_AXI_DDR1_arprot;
+    (* X_INTERFACE_INFO = "xilinx.com:interface:aximm_rtl:1.0 M_AXI_DDR1 ARQOS" *) output[3:0] M_AXI_DDR1_arqos;
+    (* X_INTERFACE_INFO = "xilinx.com:interface:aximm_rtl:1.0 M_AXI_DDR1 ARREADY" *) input M_AXI_DDR1_arready;
+    (* X_INTERFACE_INFO = "xilinx.com:interface:aximm_rtl:1.0 M_AXI_DDR1 ARREGION" *) output[3:0] M_AXI_DDR1_arregion; // TODO: connect
+    (* X_INTERFACE_INFO = "xilinx.com:interface:aximm_rtl:1.0 M_AXI_DDR1 ARSIZE" *) output[2:0] M_AXI_DDR1_arsize;
+    (* X_INTERFACE_INFO = "xilinx.com:interface:aximm_rtl:1.0 M_AXI_DDR1 ARVALID" *) output M_AXI_DDR1_arvalid;
+
+    (* X_INTERFACE_INFO = "xilinx.com:interface:aximm_rtl:1.0 M_AXI_DDR1 AWADDR" *) output[33:0] M_AXI_DDR1_awaddr;
+    (* X_INTERFACE_INFO = "xilinx.com:interface:aximm_rtl:1.0 M_AXI_DDR1 AWBURST" *) output[1:0] M_AXI_DDR1_awburst;
+    (* X_INTERFACE_INFO = "xilinx.com:interface:aximm_rtl:1.0 M_AXI_DDR1 AWCACHE" *) output[3:0] M_AXI_DDR1_awcache;
+    (* X_INTERFACE_INFO = "xilinx.com:interface:aximm_rtl:1.0 M_AXI_DDR1 AWID" *) output[15:0] M_AXI_DDR1_awid;
+    (* X_INTERFACE_INFO = "xilinx.com:interface:aximm_rtl:1.0 M_AXI_DDR1 AWLEN" *) output[7:0] M_AXI_DDR1_awlen;
+    (* X_INTERFACE_INFO = "xilinx.com:interface:aximm_rtl:1.0 M_AXI_DDR1 AWLOCK" *) output[0:0] M_AXI_DDR1_awlock;
+    (* X_INTERFACE_INFO = "xilinx.com:interface:aximm_rtl:1.0 M_AXI_DDR1 AWPROT" *) output[2:0] M_AXI_DDR1_awprot;
+    (* X_INTERFACE_INFO = "xilinx.com:interface:aximm_rtl:1.0 M_AXI_DDR1 AWQOS" *) output[3:0] M_AXI_DDR1_awqos;
+    (* X_INTERFACE_INFO = "xilinx.com:interface:aximm_rtl:1.0 M_AXI_DDR1 AWREADY" *) input M_AXI_DDR1_awready;
+    (* X_INTERFACE_INFO = "xilinx.com:interface:aximm_rtl:1.0 M_AXI_DDR1 AWREGION" *) output[3:0] M_AXI_DDR1_awregion; // TODO: connect
+    (* X_INTERFACE_INFO = "xilinx.com:interface:aximm_rtl:1.0 M_AXI_DDR1 AWSIZE" *) output[2:0] M_AXI_DDR1_awsize;
+    (* X_INTERFACE_INFO = "xilinx.com:interface:aximm_rtl:1.0 M_AXI_DDR1 AWVALID" *) output M_AXI_DDR1_awvalid;
+
+    (* X_INTERFACE_INFO = "xilinx.com:interface:aximm_rtl:1.0 M_AXI_DDR1 BID" *) input[15:0] M_AXI_DDR1_bid;
+    (* X_INTERFACE_INFO = "xilinx.com:interface:aximm_rtl:1.0 M_AXI_DDR1 BREADY" *) output M_AXI_DDR1_bready;
+    (* X_INTERFACE_INFO = "xilinx.com:interface:aximm_rtl:1.0 M_AXI_DDR1 BRESP" *) input[1:0] M_AXI_DDR1_bresp;
+    (* X_INTERFACE_INFO = "xilinx.com:interface:aximm_rtl:1.0 M_AXI_DDR1 BVALID" *) input M_AXI_DDR1_bvalid;
+
+    (* X_INTERFACE_INFO = "xilinx.com:interface:aximm_rtl:1.0 M_AXI_DDR1 RDATA" *) input[63:0] M_AXI_DDR1_rdata;
+    (* X_INTERFACE_INFO = "xilinx.com:interface:aximm_rtl:1.0 M_AXI_DDR1 RID" *) input[15:0] M_AXI_DDR1_rid;
+    (* X_INTERFACE_INFO = "xilinx.com:interface:aximm_rtl:1.0 M_AXI_DDR1 RLAST" *) input M_AXI_DDR1_rlast;
+    (* X_INTERFACE_INFO = "xilinx.com:interface:aximm_rtl:1.0 M_AXI_DDR1 RREADY" *) output M_AXI_DDR1_rready;
+    (* X_INTERFACE_INFO = "xilinx.com:interface:aximm_rtl:1.0 M_AXI_DDR1 RRESP" *) input[1:0] M_AXI_DDR1_rresp;
+    (* X_INTERFACE_INFO = "xilinx.com:interface:aximm_rtl:1.0 M_AXI_DDR1 RVALID" *) input M_AXI_DDR1_rvalid;
+
+    (* X_INTERFACE_INFO = "xilinx.com:interface:aximm_rtl:1.0 M_AXI_DDR1 WDATA" *) output[63:0] M_AXI_DDR1_wdata;
+    (* X_INTERFACE_INFO = "xilinx.com:interface:aximm_rtl:1.0 M_AXI_DDR1 WLAST" *) output M_AXI_DDR1_wlast;
+    (* X_INTERFACE_INFO = "xilinx.com:interface:aximm_rtl:1.0 M_AXI_DDR1 WREADY" *) input M_AXI_DDR1_wready;
+    (* X_INTERFACE_INFO = "xilinx.com:interface:aximm_rtl:1.0 M_AXI_DDR1 WSTRB" *) output[7:0] M_AXI_DDR1_wstrb;
+    (* X_INTERFACE_INFO = "xilinx.com:interface:aximm_rtl:1.0 M_AXI_DDR1 WVALID" *) output M_AXI_DDR1_wvalid;
+
+    (* X_INTERFACE_PARAMETER = "XIL_INTERFACENAME M_AXI_DDR2, ADDR_WIDTH 34, ARUSER_WIDTH 0, AWUSER_WIDTH 0, BUSER_WIDTH 0, CLK_DOMAIN design_1_clk_wiz_0_0_clk_out1, DATA_WIDTH 64, HAS_BRESP 1, HAS_BURST 1, HAS_CACHE 1, HAS_LOCK 1, HAS_PROT 1, HAS_QOS 1, HAS_REGION 1, HAS_RRESP 1, HAS_WSTRB 1, ID_WIDTH 16, INSERT_VIP 0, MAX_BURST_LENGTH 256, NUM_READ_OUTSTANDING 2, NUM_READ_THREADS 1, NUM_WRITE_OUTSTANDING 2, NUM_WRITE_THREADS 1, PHASE 0, PROTOCOL AXI4, READ_WRITE_MODE READ_WRITE, RUSER_BITS_PER_BYTE 0, RUSER_WIDTH 0, SUPPORTS_NARROW_BURST 1, WUSER_BITS_PER_BYTE 0, WUSER_WIDTH 0" *)
+        (* X_INTERFACE_INFO = "xilinx.com:interface:aximm_rtl:1.0 M_AXI_DDR2 ARADDR" *) output[33:0] M_AXI_DDR2_araddr;
+    (* X_INTERFACE_INFO = "xilinx.com:interface:aximm_rtl:1.0 M_AXI_DDR2 ARBURST" *) output[1:0] M_AXI_DDR2_arburst;
+    (* X_INTERFACE_INFO = "xilinx.com:interface:aximm_rtl:1.0 M_AXI_DDR2 ARCACHE" *) output[3:0] M_AXI_DDR2_arcache;
+    (* X_INTERFACE_INFO = "xilinx.com:interface:aximm_rtl:1.0 M_AXI_DDR2 ARID" *) output[15:0] M_AXI_DDR2_arid;
+    (* X_INTERFACE_INFO = "xilinx.com:interface:aximm_rtl:1.0 M_AXI_DDR2 ARLEN" *) output[7:0] M_AXI_DDR2_arlen;
+    (* X_INTERFACE_INFO = "xilinx.com:interface:aximm_rtl:1.0 M_AXI_DDR2 ARLOCK" *) output[0:0] M_AXI_DDR2_arlock;
+    (* X_INTERFACE_INFO = "xilinx.com:interface:aximm_rtl:1.0 M_AXI_DDR2 ARPROT" *) output[2:0] M_AXI_DDR2_arprot;
+    (* X_INTERFACE_INFO = "xilinx.com:interface:aximm_rtl:1.0 M_AXI_DDR2 ARQOS" *) output[3:0] M_AXI_DDR2_arqos;
+    (* X_INTERFACE_INFO = "xilinx.com:interface:aximm_rtl:1.0 M_AXI_DDR2 ARREADY" *) input M_AXI_DDR2_arready;
+    (* X_INTERFACE_INFO = "xilinx.com:interface:aximm_rtl:1.0 M_AXI_DDR2 ARREGION" *) output[3:0] M_AXI_DDR2_arregion; // TODO: connect
+    (* X_INTERFACE_INFO = "xilinx.com:interface:aximm_rtl:1.0 M_AXI_DDR2 ARSIZE" *) output[2:0] M_AXI_DDR2_arsize;
+    (* X_INTERFACE_INFO = "xilinx.com:interface:aximm_rtl:1.0 M_AXI_DDR2 ARVALID" *) output M_AXI_DDR2_arvalid;
+
+    (* X_INTERFACE_INFO = "xilinx.com:interface:aximm_rtl:1.0 M_AXI_DDR2 AWADDR" *) output[33:0] M_AXI_DDR2_awaddr;
+    (* X_INTERFACE_INFO = "xilinx.com:interface:aximm_rtl:1.0 M_AXI_DDR2 AWBURST" *) output[1:0] M_AXI_DDR2_awburst;
+    (* X_INTERFACE_INFO = "xilinx.com:interface:aximm_rtl:1.0 M_AXI_DDR2 AWCACHE" *) output[3:0] M_AXI_DDR2_awcache;
+    (* X_INTERFACE_INFO = "xilinx.com:interface:aximm_rtl:1.0 M_AXI_DDR2 AWID" *) output[15:0] M_AXI_DDR2_awid;
+    (* X_INTERFACE_INFO = "xilinx.com:interface:aximm_rtl:1.0 M_AXI_DDR2 AWLEN" *) output[7:0] M_AXI_DDR2_awlen;
+    (* X_INTERFACE_INFO = "xilinx.com:interface:aximm_rtl:1.0 M_AXI_DDR2 AWLOCK" *) output[0:0] M_AXI_DDR2_awlock;
+    (* X_INTERFACE_INFO = "xilinx.com:interface:aximm_rtl:1.0 M_AXI_DDR2 AWPROT" *) output[2:0] M_AXI_DDR2_awprot;
+    (* X_INTERFACE_INFO = "xilinx.com:interface:aximm_rtl:1.0 M_AXI_DDR2 AWQOS" *) output[3:0] M_AXI_DDR2_awqos;
+    (* X_INTERFACE_INFO = "xilinx.com:interface:aximm_rtl:1.0 M_AXI_DDR2 AWREADY" *) input M_AXI_DDR2_awready;
+    (* X_INTERFACE_INFO = "xilinx.com:interface:aximm_rtl:1.0 M_AXI_DDR2 AWREGION" *) output[3:0] M_AXI_DDR2_awregion; // TODO: connect
+    (* X_INTERFACE_INFO = "xilinx.com:interface:aximm_rtl:1.0 M_AXI_DDR2 AWSIZE" *) output[2:0] M_AXI_DDR2_awsize;
+    (* X_INTERFACE_INFO = "xilinx.com:interface:aximm_rtl:1.0 M_AXI_DDR2 AWVALID" *) output M_AXI_DDR2_awvalid;
+
+    (* X_INTERFACE_INFO = "xilinx.com:interface:aximm_rtl:1.0 M_AXI_DDR2 BID" *) input[15:0] M_AXI_DDR2_bid;
+    (* X_INTERFACE_INFO = "xilinx.com:interface:aximm_rtl:1.0 M_AXI_DDR2 BREADY" *) output M_AXI_DDR2_bready;
+    (* X_INTERFACE_INFO = "xilinx.com:interface:aximm_rtl:1.0 M_AXI_DDR2 BRESP" *) input[1:0] M_AXI_DDR2_bresp;
+    (* X_INTERFACE_INFO = "xilinx.com:interface:aximm_rtl:1.0 M_AXI_DDR2 BVALID" *) input M_AXI_DDR2_bvalid;
+
+    (* X_INTERFACE_INFO = "xilinx.com:interface:aximm_rtl:1.0 M_AXI_DDR2 RDATA" *) input[63:0] M_AXI_DDR2_rdata;
+    (* X_INTERFACE_INFO = "xilinx.com:interface:aximm_rtl:1.0 M_AXI_DDR2 RID" *) input[15:0] M_AXI_DDR2_rid;
+    (* X_INTERFACE_INFO = "xilinx.com:interface:aximm_rtl:1.0 M_AXI_DDR2 RLAST" *) input M_AXI_DDR2_rlast;
+    (* X_INTERFACE_INFO = "xilinx.com:interface:aximm_rtl:1.0 M_AXI_DDR2 RREADY" *) output M_AXI_DDR2_rready;
+    (* X_INTERFACE_INFO = "xilinx.com:interface:aximm_rtl:1.0 M_AXI_DDR2 RRESP" *) input[1:0] M_AXI_DDR2_rresp;
+    (* X_INTERFACE_INFO = "xilinx.com:interface:aximm_rtl:1.0 M_AXI_DDR2 RVALID" *) input M_AXI_DDR2_rvalid;
+
+    (* X_INTERFACE_INFO = "xilinx.com:interface:aximm_rtl:1.0 M_AXI_DDR2 WDATA" *) output[63:0] M_AXI_DDR2_wdata;
+    (* X_INTERFACE_INFO = "xilinx.com:interface:aximm_rtl:1.0 M_AXI_DDR2 WLAST" *) output M_AXI_DDR2_wlast;
+    (* X_INTERFACE_INFO = "xilinx.com:interface:aximm_rtl:1.0 M_AXI_DDR2 WREADY" *) input M_AXI_DDR2_wready;
+    (* X_INTERFACE_INFO = "xilinx.com:interface:aximm_rtl:1.0 M_AXI_DDR2 WSTRB" *) output[7:0] M_AXI_DDR2_wstrb;
+    (* X_INTERFACE_INFO = "xilinx.com:interface:aximm_rtl:1.0 M_AXI_DDR2 WVALID" *) output M_AXI_DDR2_wvalid;
+
+    (* X_INTERFACE_PARAMETER = "XIL_INTERFACENAME M_AXI_DDR3, ADDR_WIDTH 34, ARUSER_WIDTH 0, AWUSER_WIDTH 0, BUSER_WIDTH 0, CLK_DOMAIN design_1_clk_wiz_0_0_clk_out1, DATA_WIDTH 64, HAS_BRESP 1, HAS_BURST 1, HAS_CACHE 1, HAS_LOCK 1, HAS_PROT 1, HAS_QOS 1, HAS_REGION 1, HAS_RRESP 1, HAS_WSTRB 1, ID_WIDTH 16, INSERT_VIP 0, MAX_BURST_LENGTH 256, NUM_READ_OUTSTANDING 2, NUM_READ_THREADS 1, NUM_WRITE_OUTSTANDING 2, NUM_WRITE_THREADS 1, PHASE 0, PROTOCOL AXI4, READ_WRITE_MODE READ_WRITE, RUSER_BITS_PER_BYTE 0, RUSER_WIDTH 0, SUPPORTS_NARROW_BURST 1, WUSER_BITS_PER_BYTE 0, WUSER_WIDTH 0" *)
+        (* X_INTERFACE_INFO = "xilinx.com:interface:aximm_rtl:1.0 M_AXI_DDR3 ARADDR" *) output[33:0] M_AXI_DDR3_araddr;
+    (* X_INTERFACE_INFO = "xilinx.com:interface:aximm_rtl:1.0 M_AXI_DDR3 ARBURST" *) output[1:0] M_AXI_DDR3_arburst;
+    (* X_INTERFACE_INFO = "xilinx.com:interface:aximm_rtl:1.0 M_AXI_DDR3 ARCACHE" *) output[3:0] M_AXI_DDR3_arcache;
+    (* X_INTERFACE_INFO = "xilinx.com:interface:aximm_rtl:1.0 M_AXI_DDR3 ARID" *) output[15:0] M_AXI_DDR3_arid;
+    (* X_INTERFACE_INFO = "xilinx.com:interface:aximm_rtl:1.0 M_AXI_DDR3 ARLEN" *) output[7:0] M_AXI_DDR3_arlen;
+    (* X_INTERFACE_INFO = "xilinx.com:interface:aximm_rtl:1.0 M_AXI_DDR3 ARLOCK" *) output[0:0] M_AXI_DDR3_arlock;
+    (* X_INTERFACE_INFO = "xilinx.com:interface:aximm_rtl:1.0 M_AXI_DDR3 ARPROT" *) output[2:0] M_AXI_DDR3_arprot;
+    (* X_INTERFACE_INFO = "xilinx.com:interface:aximm_rtl:1.0 M_AXI_DDR3 ARQOS" *) output[3:0] M_AXI_DDR3_arqos;
+    (* X_INTERFACE_INFO = "xilinx.com:interface:aximm_rtl:1.0 M_AXI_DDR3 ARREADY" *) input M_AXI_DDR3_arready;
+    (* X_INTERFACE_INFO = "xilinx.com:interface:aximm_rtl:1.0 M_AXI_DDR3 ARREGION" *) output[3:0] M_AXI_DDR3_arregion; // TODO: connect
+    (* X_INTERFACE_INFO = "xilinx.com:interface:aximm_rtl:1.0 M_AXI_DDR3 ARSIZE" *) output[2:0] M_AXI_DDR3_arsize;
+    (* X_INTERFACE_INFO = "xilinx.com:interface:aximm_rtl:1.0 M_AXI_DDR3 ARVALID" *) output M_AXI_DDR3_arvalid;
+
+    (* X_INTERFACE_INFO = "xilinx.com:interface:aximm_rtl:1.0 M_AXI_DDR3 AWADDR" *) output[33:0] M_AXI_DDR3_awaddr;
+    (* X_INTERFACE_INFO = "xilinx.com:interface:aximm_rtl:1.0 M_AXI_DDR3 AWBURST" *) output[1:0] M_AXI_DDR3_awburst;
+    (* X_INTERFACE_INFO = "xilinx.com:interface:aximm_rtl:1.0 M_AXI_DDR3 AWCACHE" *) output[3:0] M_AXI_DDR3_awcache;
+    (* X_INTERFACE_INFO = "xilinx.com:interface:aximm_rtl:1.0 M_AXI_DDR3 AWID" *) output[15:0] M_AXI_DDR3_awid;
+    (* X_INTERFACE_INFO = "xilinx.com:interface:aximm_rtl:1.0 M_AXI_DDR3 AWLEN" *) output[7:0] M_AXI_DDR3_awlen;
+    (* X_INTERFACE_INFO = "xilinx.com:interface:aximm_rtl:1.0 M_AXI_DDR3 AWLOCK" *) output[0:0] M_AXI_DDR3_awlock;
+    (* X_INTERFACE_INFO = "xilinx.com:interface:aximm_rtl:1.0 M_AXI_DDR3 AWPROT" *) output[2:0] M_AXI_DDR3_awprot;
+    (* X_INTERFACE_INFO = "xilinx.com:interface:aximm_rtl:1.0 M_AXI_DDR3 AWQOS" *) output[3:0] M_AXI_DDR3_awqos;
+    (* X_INTERFACE_INFO = "xilinx.com:interface:aximm_rtl:1.0 M_AXI_DDR3 AWREADY" *) input M_AXI_DDR3_awready;
+    (* X_INTERFACE_INFO = "xilinx.com:interface:aximm_rtl:1.0 M_AXI_DDR3 AWREGION" *) output[3:0] M_AXI_DDR3_awregion; // TODO: connect
+    (* X_INTERFACE_INFO = "xilinx.com:interface:aximm_rtl:1.0 M_AXI_DDR3 AWSIZE" *) output[2:0] M_AXI_DDR3_awsize;
+    (* X_INTERFACE_INFO = "xilinx.com:interface:aximm_rtl:1.0 M_AXI_DDR3 AWVALID" *) output M_AXI_DDR3_awvalid;
+
+    (* X_INTERFACE_INFO = "xilinx.com:interface:aximm_rtl:1.0 M_AXI_DDR3 BID" *) input[15:0] M_AXI_DDR3_bid;
+    (* X_INTERFACE_INFO = "xilinx.com:interface:aximm_rtl:1.0 M_AXI_DDR3 BREADY" *) output M_AXI_DDR3_bready;
+    (* X_INTERFACE_INFO = "xilinx.com:interface:aximm_rtl:1.0 M_AXI_DDR3 BRESP" *) input[1:0] M_AXI_DDR3_bresp;
+    (* X_INTERFACE_INFO = "xilinx.com:interface:aximm_rtl:1.0 M_AXI_DDR3 BVALID" *) input M_AXI_DDR3_bvalid;
+
+    (* X_INTERFACE_INFO = "xilinx.com:interface:aximm_rtl:1.0 M_AXI_DDR3 RDATA" *) input[63:0] M_AXI_DDR3_rdata;
+    (* X_INTERFACE_INFO = "xilinx.com:interface:aximm_rtl:1.0 M_AXI_DDR3 RID" *) input[15:0] M_AXI_DDR3_rid;
+    (* X_INTERFACE_INFO = "xilinx.com:interface:aximm_rtl:1.0 M_AXI_DDR3 RLAST" *) input M_AXI_DDR3_rlast;
+    (* X_INTERFACE_INFO = "xilinx.com:interface:aximm_rtl:1.0 M_AXI_DDR3 RREADY" *) output M_AXI_DDR3_rready;
+    (* X_INTERFACE_INFO = "xilinx.com:interface:aximm_rtl:1.0 M_AXI_DDR3 RRESP" *) input[1:0] M_AXI_DDR3_rresp;
+    (* X_INTERFACE_INFO = "xilinx.com:interface:aximm_rtl:1.0 M_AXI_DDR3 RVALID" *) input M_AXI_DDR3_rvalid;
+
+    (* X_INTERFACE_INFO = "xilinx.com:interface:aximm_rtl:1.0 M_AXI_DDR3 WDATA" *) output[63:0] M_AXI_DDR3_wdata;
+    (* X_INTERFACE_INFO = "xilinx.com:interface:aximm_rtl:1.0 M_AXI_DDR3 WLAST" *) output M_AXI_DDR3_wlast;
+    (* X_INTERFACE_INFO = "xilinx.com:interface:aximm_rtl:1.0 M_AXI_DDR3 WREADY" *) input M_AXI_DDR3_wready;
+    (* X_INTERFACE_INFO = "xilinx.com:interface:aximm_rtl:1.0 M_AXI_DDR3 WSTRB" *) output[7:0] M_AXI_DDR3_wstrb;
+    (* X_INTERFACE_INFO = "xilinx.com:interface:aximm_rtl:1.0 M_AXI_DDR3 WVALID" *) output M_AXI_DDR3_wvalid;
+
+    (* X_INTERFACE_PARAMETER = "XIL_INTERFACENAME CLK.SYS_CLK_30, ASSOCIATED_BUSIF S_AXI_CTRL:S_AXI_DMA:M_AXI_DDR0:M_AXI_DDR1:M_AXI_DDR2:M_AXI_DDR3, CLK_DOMAIN design_1_clk_wiz_0_0_clk_out1, INSERT_VIP 0, PHASE 0" *)
         (* X_INTERFACE_INFO = "xilinx.com:signal:clock:1.0 CLK.SYS_CLK_30 CLK" *) input sys_clk_30;
 
     (* X_INTERFACE_PARAMETER = "XIL_INTERFACENAME RST.SYS_RESET_N, INSERT_VIP 0, POLARITY ACTIVE_LOW" *)
@@ -390,132 +642,132 @@ module firesim_wrapper(
         .io_slave_0_r_bits_resp(M_AXI_DDR0_rresp),
         .io_slave_0_r_bits_data(M_AXI_DDR0_rdata),
         .io_slave_0_r_bits_last(M_AXI_DDR0_rlast),
-        .io_slave_0_r_bits_id(M_AXI_DDR0_rid)
+        .io_slave_0_r_bits_id(M_AXI_DDR0_rid),
 
-        // .io_slave_1_aw_ready(fsimtop_s_1_axi_awready),
-        // .io_slave_1_aw_valid(fsimtop_s_1_axi_awvalid),
-        // .io_slave_1_aw_bits_addr(fsimtop_s_1_axi_awaddr_small),
-        // .io_slave_1_aw_bits_len(fsimtop_s_1_axi_awlen),
-        // .io_slave_1_aw_bits_size(fsimtop_s_1_axi_awsize),
-        // .io_slave_1_aw_bits_burst(fsimtop_s_1_axi_awburst), // not available on DDR IF
-        // .io_slave_1_aw_bits_lock(fsimtop_s_1_axi_awlock), // not available on DDR IF
-        // .io_slave_1_aw_bits_cache(fsimtop_s_1_axi_awcache), // not available on DDR IF
-        // .io_slave_1_aw_bits_prot(fsimtop_s_1_axi_awprot), // not available on DDR IF
-        // .io_slave_1_aw_bits_qos(fsimtop_s_1_axi_awqos), // not available on DDR IF
-        // .io_slave_1_aw_bits_id(fsimtop_s_1_axi_awid),
-        //
-        // .io_slave_1_w_ready(fsimtop_s_1_axi_wready),
-        // .io_slave_1_w_valid(fsimtop_s_1_axi_wvalid),
-        // .io_slave_1_w_bits_data(fsimtop_s_1_axi_wdata),
-        // .io_slave_1_w_bits_last(fsimtop_s_1_axi_wlast),
-        // .io_slave_1_w_bits_strb(fsimtop_s_1_axi_wstrb),
-        //
-        // .io_slave_1_b_ready(fsimtop_s_1_axi_bready),
-        // .io_slave_1_b_valid(fsimtop_s_1_axi_bvalid),
-        // .io_slave_1_b_bits_resp(fsimtop_s_1_axi_bresp),
-        // .io_slave_1_b_bits_id(fsimtop_s_1_axi_bid),
-        //
-        // .io_slave_1_ar_ready(fsimtop_s_1_axi_arready),
-        // .io_slave_1_ar_valid(fsimtop_s_1_axi_arvalid),
-        // .io_slave_1_ar_bits_addr(fsimtop_s_1_axi_araddr_small),
-        // .io_slave_1_ar_bits_len(fsimtop_s_1_axi_arlen),
-        // .io_slave_1_ar_bits_size(fsimtop_s_1_axi_arsize),
-        // .io_slave_1_ar_bits_burst(fsimtop_s_1_axi_arburst), // not available on DDR IF
-        // .io_slave_1_ar_bits_lock(fsimtop_s_1_axi_arlock), // not available on DDR IF
-        // .io_slave_1_ar_bits_cache(fsimtop_s_1_axi_arcache), // not available on DDR IF
-        // .io_slave_1_ar_bits_prot(fsimtop_s_1_axi_arprot), // not available on DDR IF
-        // .io_slave_1_ar_bits_qos(fsimtop_s_1_axi_arqos), // not available on DDR IF
-        // .io_slave_1_ar_bits_id(fsimtop_s_1_axi_arid), // not available on DDR IF
-        //
-        // .io_slave_1_r_ready(fsimtop_s_1_axi_rready),
-        // .io_slave_1_r_valid(fsimtop_s_1_axi_rvalid),
-        // .io_slave_1_r_bits_resp(fsimtop_s_1_axi_rresp),
-        // .io_slave_1_r_bits_data(fsimtop_s_1_axi_rdata),
-        // .io_slave_1_r_bits_last(fsimtop_s_1_axi_rlast),
-        // .io_slave_1_r_bits_id(fsimtop_s_1_axi_rid),
-        //
-        // .io_slave_2_aw_ready(fsimtop_s_2_axi_awready),
-        // .io_slave_2_aw_valid(fsimtop_s_2_axi_awvalid),
-        // .io_slave_2_aw_bits_addr(fsimtop_s_2_axi_awaddr_small),
-        // .io_slave_2_aw_bits_len(fsimtop_s_2_axi_awlen),
-        // .io_slave_2_aw_bits_size(fsimtop_s_2_axi_awsize),
-        // .io_slave_2_aw_bits_burst(fsimtop_s_2_axi_awburst), // not available on DDR IF
-        // .io_slave_2_aw_bits_lock(fsimtop_s_2_axi_awlock), // not available on DDR IF
-        // .io_slave_2_aw_bits_cache(fsimtop_s_2_axi_awcache), // not available on DDR IF
-        // .io_slave_2_aw_bits_prot(fsimtop_s_2_axi_awprot), // not available on DDR IF
-        // .io_slave_2_aw_bits_qos(fsimtop_s_2_axi_awqos), // not available on DDR IF
-        // .io_slave_2_aw_bits_id(fsimtop_s_2_axi_awid),
-        //
-        // .io_slave_2_w_ready(fsimtop_s_2_axi_wready),
-        // .io_slave_2_w_valid(fsimtop_s_2_axi_wvalid),
-        // .io_slave_2_w_bits_data(fsimtop_s_2_axi_wdata),
-        // .io_slave_2_w_bits_last(fsimtop_s_2_axi_wlast),
-        // .io_slave_2_w_bits_strb(fsimtop_s_2_axi_wstrb),
-        //
-        // .io_slave_2_b_ready(fsimtop_s_2_axi_bready),
-        // .io_slave_2_b_valid(fsimtop_s_2_axi_bvalid),
-        // .io_slave_2_b_bits_resp(fsimtop_s_2_axi_bresp),
-        // .io_slave_2_b_bits_id(fsimtop_s_2_axi_bid),
-        //
-        // .io_slave_2_ar_ready(fsimtop_s_2_axi_arready),
-        // .io_slave_2_ar_valid(fsimtop_s_2_axi_arvalid),
-        // .io_slave_2_ar_bits_addr(fsimtop_s_2_axi_araddr_small),
-        // .io_slave_2_ar_bits_len(fsimtop_s_2_axi_arlen),
-        // .io_slave_2_ar_bits_size(fsimtop_s_2_axi_arsize),
-        // .io_slave_2_ar_bits_burst(fsimtop_s_2_axi_arburst), // not available on DDR IF
-        // .io_slave_2_ar_bits_lock(fsimtop_s_2_axi_arlock), // not available on DDR IF
-        // .io_slave_2_ar_bits_cache(fsimtop_s_2_axi_arcache), // not available on DDR IF
-        // .io_slave_2_ar_bits_prot(fsimtop_s_2_axi_arprot), // not available on DDR IF
-        // .io_slave_2_ar_bits_qos(fsimtop_s_2_axi_arqos), // not available on DDR IF
-        // .io_slave_2_ar_bits_id(fsimtop_s_2_axi_arid), // not available on DDR IF
-        //
-        // .io_slave_2_r_ready(fsimtop_s_2_axi_rready),
-        // .io_slave_2_r_valid(fsimtop_s_2_axi_rvalid),
-        // .io_slave_2_r_bits_resp(fsimtop_s_2_axi_rresp),
-        // .io_slave_2_r_bits_data(fsimtop_s_2_axi_rdata),
-        // .io_slave_2_r_bits_last(fsimtop_s_2_axi_rlast),
-        // .io_slave_2_r_bits_id(fsimtop_s_2_axi_rid),
-        //
-        // .io_slave_3_aw_ready(fsimtop_s_3_axi_awready),
-        // .io_slave_3_aw_valid(fsimtop_s_3_axi_awvalid),
-        // .io_slave_3_aw_bits_addr(fsimtop_s_3_axi_awaddr_small),
-        // .io_slave_3_aw_bits_len(fsimtop_s_3_axi_awlen),
-        // .io_slave_3_aw_bits_size(fsimtop_s_3_axi_awsize),
-        // .io_slave_3_aw_bits_burst(fsimtop_s_3_axi_awburst), // not available on DDR IF
-        // .io_slave_3_aw_bits_lock(fsimtop_s_3_axi_awlock), // not available on DDR IF
-        // .io_slave_3_aw_bits_cache(fsimtop_s_3_axi_awcache), // not available on DDR IF
-        // .io_slave_3_aw_bits_prot(fsimtop_s_3_axi_awprot), // not available on DDR IF
-        // .io_slave_3_aw_bits_qos(fsimtop_s_3_axi_awqos), // not available on DDR IF
-        // .io_slave_3_aw_bits_id(fsimtop_s_3_axi_awid),
-        //
-        // .io_slave_3_w_ready(fsimtop_s_3_axi_wready),
-        // .io_slave_3_w_valid(fsimtop_s_3_axi_wvalid),
-        // .io_slave_3_w_bits_data(fsimtop_s_3_axi_wdata),
-        // .io_slave_3_w_bits_last(fsimtop_s_3_axi_wlast),
-        // .io_slave_3_w_bits_strb(fsimtop_s_3_axi_wstrb),
-        //
-        // .io_slave_3_b_ready(fsimtop_s_3_axi_bready),
-        // .io_slave_3_b_valid(fsimtop_s_3_axi_bvalid),
-        // .io_slave_3_b_bits_resp(fsimtop_s_3_axi_bresp),
-        // .io_slave_3_b_bits_id(fsimtop_s_3_axi_bid),
-        //
-        // .io_slave_3_ar_ready(fsimtop_s_3_axi_arready),
-        // .io_slave_3_ar_valid(fsimtop_s_3_axi_arvalid),
-        // .io_slave_3_ar_bits_addr(fsimtop_s_3_axi_araddr_small),
-        // .io_slave_3_ar_bits_len(fsimtop_s_3_axi_arlen),
-        // .io_slave_3_ar_bits_size(fsimtop_s_3_axi_arsize),
-        // .io_slave_3_ar_bits_burst(fsimtop_s_3_axi_arburst), // not available on DDR IF
-        // .io_slave_3_ar_bits_lock(fsimtop_s_3_axi_arlock), // not available on DDR IF
-        // .io_slave_3_ar_bits_cache(fsimtop_s_3_axi_arcache), // not available on DDR IF
-        // .io_slave_3_ar_bits_prot(fsimtop_s_3_axi_arprot), // not available on DDR IF
-        // .io_slave_3_ar_bits_qos(fsimtop_s_3_axi_arqos), // not available on DDR IF
-        // .io_slave_3_ar_bits_id(fsimtop_s_3_axi_arid), // not available on DDR IF
-        //
-        // .io_slave_3_r_ready(fsimtop_s_3_axi_rready),
-        // .io_slave_3_r_valid(fsimtop_s_3_axi_rvalid),
-        // .io_slave_3_r_bits_resp(fsimtop_s_3_axi_rresp),
-        // .io_slave_3_r_bits_data(fsimtop_s_3_axi_rdata),
-        // .io_slave_3_r_bits_last(fsimtop_s_3_axi_rlast),
-        // .io_slave_3_r_bits_id(fsimtop_s_3_axi_rid)
+        .io_slave_1_aw_ready(M_AXI_DDR1_awready),
+        .io_slave_1_aw_valid(M_AXI_DDR1_awvalid),
+        .io_slave_1_aw_bits_addr(M_AXI_DDR1_awaddr),
+        .io_slave_1_aw_bits_len(M_AXI_DDR1_awlen),
+        .io_slave_1_aw_bits_size(M_AXI_DDR1_awsize),
+        .io_slave_1_aw_bits_burst(M_AXI_DDR1_awburst), // not available on DDR IF
+        .io_slave_1_aw_bits_lock(M_AXI_DDR1_awlock), // not available on DDR IF
+        .io_slave_1_aw_bits_cache(M_AXI_DDR1_awcache), // not available on DDR IF
+        .io_slave_1_aw_bits_prot(M_AXI_DDR1_awprot), // not available on DDR IF
+        .io_slave_1_aw_bits_qos(M_AXI_DDR1_awqos), // not available on DDR IF
+        .io_slave_1_aw_bits_id(M_AXI_DDR1_awid),
+
+        .io_slave_1_w_ready(M_AXI_DDR1_wready),
+        .io_slave_1_w_valid(M_AXI_DDR1_wvalid),
+        .io_slave_1_w_bits_data(M_AXI_DDR1_wdata),
+        .io_slave_1_w_bits_last(M_AXI_DDR1_wlast),
+        .io_slave_1_w_bits_strb(M_AXI_DDR1_wstrb),
+
+        .io_slave_1_b_ready(M_AXI_DDR1_bready),
+        .io_slave_1_b_valid(M_AXI_DDR1_bvalid),
+        .io_slave_1_b_bits_resp(M_AXI_DDR1_bresp),
+        .io_slave_1_b_bits_id(M_AXI_DDR1_bid),
+
+        .io_slave_1_ar_ready(M_AXI_DDR1_arready),
+        .io_slave_1_ar_valid(M_AXI_DDR1_arvalid),
+        .io_slave_1_ar_bits_addr(M_AXI_DDR1_araddr),
+        .io_slave_1_ar_bits_len(M_AXI_DDR1_arlen),
+        .io_slave_1_ar_bits_size(M_AXI_DDR1_arsize),
+        .io_slave_1_ar_bits_burst(M_AXI_DDR1_arburst), // not available on DDR IF
+        .io_slave_1_ar_bits_lock(M_AXI_DDR1_arlock), // not available on DDR IF
+        .io_slave_1_ar_bits_cache(M_AXI_DDR1_arcache), // not available on DDR IF
+        .io_slave_1_ar_bits_prot(M_AXI_DDR1_arprot), // not available on DDR IF
+        .io_slave_1_ar_bits_qos(M_AXI_DDR1_arqos), // not available on DDR IF
+        .io_slave_1_ar_bits_id(M_AXI_DDR1_arid), // not available on DDR IF
+
+        .io_slave_1_r_ready(M_AXI_DDR1_rready),
+        .io_slave_1_r_valid(M_AXI_DDR1_rvalid),
+        .io_slave_1_r_bits_resp(M_AXI_DDR1_rresp),
+        .io_slave_1_r_bits_data(M_AXI_DDR1_rdata),
+        .io_slave_1_r_bits_last(M_AXI_DDR1_rlast),
+        .io_slave_1_r_bits_id(M_AXI_DDR1_rid),
+
+        .io_slave_2_aw_ready(M_AXI_DDR2_awready),
+        .io_slave_2_aw_valid(M_AXI_DDR2_awvalid),
+        .io_slave_2_aw_bits_addr(M_AXI_DDR2_awaddr),
+        .io_slave_2_aw_bits_len(M_AXI_DDR2_awlen),
+        .io_slave_2_aw_bits_size(M_AXI_DDR2_awsize),
+        .io_slave_2_aw_bits_burst(M_AXI_DDR2_awburst), // not available on DDR IF
+        .io_slave_2_aw_bits_lock(M_AXI_DDR2_awlock), // not available on DDR IF
+        .io_slave_2_aw_bits_cache(M_AXI_DDR2_awcache), // not available on DDR IF
+        .io_slave_2_aw_bits_prot(M_AXI_DDR2_awprot), // not available on DDR IF
+        .io_slave_2_aw_bits_qos(M_AXI_DDR2_awqos), // not available on DDR IF
+        .io_slave_2_aw_bits_id(M_AXI_DDR2_awid),
+
+        .io_slave_2_w_ready(M_AXI_DDR2_wready),
+        .io_slave_2_w_valid(M_AXI_DDR2_wvalid),
+        .io_slave_2_w_bits_data(M_AXI_DDR2_wdata),
+        .io_slave_2_w_bits_last(M_AXI_DDR2_wlast),
+        .io_slave_2_w_bits_strb(M_AXI_DDR2_wstrb),
+
+        .io_slave_2_b_ready(M_AXI_DDR2_bready),
+        .io_slave_2_b_valid(M_AXI_DDR2_bvalid),
+        .io_slave_2_b_bits_resp(M_AXI_DDR2_bresp),
+        .io_slave_2_b_bits_id(M_AXI_DDR2_bid),
+
+        .io_slave_2_ar_ready(M_AXI_DDR2_arready),
+        .io_slave_2_ar_valid(M_AXI_DDR2_arvalid),
+        .io_slave_2_ar_bits_addr(M_AXI_DDR2_araddr),
+        .io_slave_2_ar_bits_len(M_AXI_DDR2_arlen),
+        .io_slave_2_ar_bits_size(M_AXI_DDR2_arsize),
+        .io_slave_2_ar_bits_burst(M_AXI_DDR2_arburst), // not available on DDR IF
+        .io_slave_2_ar_bits_lock(M_AXI_DDR2_arlock), // not available on DDR IF
+        .io_slave_2_ar_bits_cache(M_AXI_DDR2_arcache), // not available on DDR IF
+        .io_slave_2_ar_bits_prot(M_AXI_DDR2_arprot), // not available on DDR IF
+        .io_slave_2_ar_bits_qos(M_AXI_DDR2_arqos), // not available on DDR IF
+        .io_slave_2_ar_bits_id(M_AXI_DDR2_arid), // not available on DDR IF
+
+        .io_slave_2_r_ready(M_AXI_DDR2_rready),
+        .io_slave_2_r_valid(M_AXI_DDR2_rvalid),
+        .io_slave_2_r_bits_resp(M_AXI_DDR2_rresp),
+        .io_slave_2_r_bits_data(M_AXI_DDR2_rdata),
+        .io_slave_2_r_bits_last(M_AXI_DDR2_rlast),
+        .io_slave_2_r_bits_id(M_AXI_DDR2_rid),
+
+        .io_slave_3_aw_ready(M_AXI_DDR3_awready),
+        .io_slave_3_aw_valid(M_AXI_DDR3_awvalid),
+        .io_slave_3_aw_bits_addr(M_AXI_DDR3_awaddr),
+        .io_slave_3_aw_bits_len(M_AXI_DDR3_awlen),
+        .io_slave_3_aw_bits_size(M_AXI_DDR3_awsize),
+        .io_slave_3_aw_bits_burst(M_AXI_DDR3_awburst), // not available on DDR IF
+        .io_slave_3_aw_bits_lock(M_AXI_DDR3_awlock), // not available on DDR IF
+        .io_slave_3_aw_bits_cache(M_AXI_DDR3_awcache), // not available on DDR IF
+        .io_slave_3_aw_bits_prot(M_AXI_DDR3_awprot), // not available on DDR IF
+        .io_slave_3_aw_bits_qos(M_AXI_DDR3_awqos), // not available on DDR IF
+        .io_slave_3_aw_bits_id(M_AXI_DDR3_awid),
+
+        .io_slave_3_w_ready(M_AXI_DDR3_wready),
+        .io_slave_3_w_valid(M_AXI_DDR3_wvalid),
+        .io_slave_3_w_bits_data(M_AXI_DDR3_wdata),
+        .io_slave_3_w_bits_last(M_AXI_DDR3_wlast),
+        .io_slave_3_w_bits_strb(M_AXI_DDR3_wstrb),
+
+        .io_slave_3_b_ready(M_AXI_DDR3_bready),
+        .io_slave_3_b_valid(M_AXI_DDR3_bvalid),
+        .io_slave_3_b_bits_resp(M_AXI_DDR3_bresp),
+        .io_slave_3_b_bits_id(M_AXI_DDR3_bid),
+
+        .io_slave_3_ar_ready(M_AXI_DDR3_arready),
+        .io_slave_3_ar_valid(M_AXI_DDR3_arvalid),
+        .io_slave_3_ar_bits_addr(M_AXI_DDR3_araddr),
+        .io_slave_3_ar_bits_len(M_AXI_DDR3_arlen),
+        .io_slave_3_ar_bits_size(M_AXI_DDR3_arsize),
+        .io_slave_3_ar_bits_burst(M_AXI_DDR3_arburst), // not available on DDR IF
+        .io_slave_3_ar_bits_lock(M_AXI_DDR3_arlock), // not available on DDR IF
+        .io_slave_3_ar_bits_cache(M_AXI_DDR3_arcache), // not available on DDR IF
+        .io_slave_3_ar_bits_prot(M_AXI_DDR3_arprot), // not available on DDR IF
+        .io_slave_3_ar_bits_qos(M_AXI_DDR3_arqos), // not available on DDR IF
+        .io_slave_3_ar_bits_id(M_AXI_DDR3_arid), // not available on DDR IF
+
+        .io_slave_3_r_ready(M_AXI_DDR3_rready),
+        .io_slave_3_r_valid(M_AXI_DDR3_rvalid),
+        .io_slave_3_r_bits_resp(M_AXI_DDR3_rresp),
+        .io_slave_3_r_bits_data(M_AXI_DDR3_rdata),
+        .io_slave_3_r_bits_last(M_AXI_DDR3_rlast),
+        .io_slave_3_r_bits_id(M_AXI_DDR3_rid)
     );
 endmodule : firesim_wrapper

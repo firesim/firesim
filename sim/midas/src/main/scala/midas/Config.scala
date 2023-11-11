@@ -117,7 +117,7 @@ class F1Config extends Config(new Config((site, here, up) => {
 }) ++ new SimConfig)
 
 class XilinxAlveoConfig extends Config(new Config((site, here, up) => {
-  case HostMemNumChannels => 1
+  case HostMemNumChannels => 4
   case PreLinkCircuitPath => None
   case PostLinkCircuitPath => None
 }) ++ new F1Config ++ new SimConfig)
