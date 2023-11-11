@@ -33,7 +33,7 @@ if {$WNS >= 0 && $WHS >= 0} {
   }
 } else {
   # Intelligent Design Runs (IDR) Flow
-  create_run -flow {Vivado IDR Flow 2022} -parent_run synth_1 idr_impl_1
+  create_run -flow {Vivado IDR Flow 2023} -parent_run synth_1 idr_impl_1
   set_property REFERENCE_RUN ${impl_run} [get_runs idr_impl_1]
   set impl_run [get_runs idr_impl_1]
 
