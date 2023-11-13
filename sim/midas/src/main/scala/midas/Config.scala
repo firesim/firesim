@@ -116,11 +116,17 @@ class F1Config extends Config(new Config((site, here, up) => {
   case PostLinkCircuitPath => Some("WRAPPER_INST/CL/firesim_top")
 }) ++ new SimConfig)
 
-class XilinxAlveoConfig extends Config(new Config((site, here, up) => {
+class XilinxAlveoU250Config extends Config(new Config((site, here, up) => {
   case HostMemNumChannels => 4
-  case PreLinkCircuitPath => None
-  case PostLinkCircuitPath => None
+  case PreLinkCircuitPath => None // use regexp to fix xdc paths
+  case PostLinkCircuitPath => None // use regexp to fix xdc paths
 }) ++ new F1Config ++ new SimConfig)
+
+class XilinxAlveoU200Config extends Config(new Config((site, here, up) => {
+  case HostMemNumChannels => 1
+}) ++ new XilinxAlveoU250Config)
+
+class XilinxAlveoU280Config extends XilinxAlveoU200Config
 
 class NitefuryConfig extends Config(new Config((site, here, up) => {
   case Platform       => (p: Parameters) => new F1Shim()(p)
