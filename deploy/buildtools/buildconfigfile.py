@@ -61,7 +61,8 @@ class BuildConfigFile:
 
         # aws specific options
         self.agfistoshare = global_build_config_file['agfis_to_share']
-        self.acctids_to_sharewith = global_build_config_file['share_with_accounts'].values()
+        swa_dict = global_build_config_file['share_with_accounts']
+        self.acctids_to_sharewith = swa_dict.values() if swa_dict else []
 
         # this is a list of actual builds to run
         builds_to_run_list = global_build_config_file['builds_to_run']
