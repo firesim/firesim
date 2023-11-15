@@ -54,6 +54,9 @@ make_wrapper -files [get_files ${root_dir}/vivado_proj/firesim.srcs/sources_1/bd
 add_files -norecurse ${root_dir}/vivado_proj/firesim.gen/sources_1/bd/design_1/hdl/design_1_wrapper.v
 update_compile_order -fileset sources_1
 
+# Mark top-level name for future steps/cmds
+set top_level_name design_1_wrapper
+
 # Report if any IPs need to be updated
 report_ip_status
 
@@ -79,7 +82,7 @@ if {[file exists [set constrFile [retrieveVersionedFile ${root_dir}/design/bitst
 }
 
 update_compile_order -fileset sources_1
-set_property top design_1_wrapper [current_fileset]
+set_property top $top_level_name [current_fileset]
 update_compile_order -fileset sources_1
 
 if {[llength [get_filesets -quiet synth_fileset]]} {
