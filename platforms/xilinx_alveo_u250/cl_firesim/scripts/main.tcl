@@ -1,5 +1,6 @@
 set root_dir [pwd]
 set vivado_version [version -short]
+set vivado_version_major [string range $vivado_version 0 4]
 
 set ifrequency           [lindex $argv 0]
 set istrategy            [lindex $argv 1]
@@ -17,7 +18,7 @@ proc retrieveVersionedFile {filename version} {
 # get utilities
 source $root_dir/scripts/utils.tcl
 
-puts "Running with Vivado $vivado_version"
+puts "Running with Vivado $vivado_version (Major Version: $vivado_version_major)"
 
 check_file_exists [set sourceFile [retrieveVersionedFile ${root_dir}/scripts/platform_env.tcl $vivado_version]]
 source $sourceFile
@@ -32,7 +33,7 @@ create_project -force firesim ${root_dir}/vivado_proj -part $part
 set_property board_part $board_part [current_project]
 
 # Loading all the verilog files
-foreach addFile [list ${root_dir}/design/axi_tieoff_master.v ${root_dir}/design/firesim_wrapper.v ${root_dir}/design/FireSim-generated.sv ${root_dir}/design/FireSim-generated.defines.vh] {
+foreach addFile [list ${root_dir}/design/axi_tieoff_master.v ${root_dir}/design/overall_fpga_top.v ${root_dir}/design/firesim_wrapper.v ${root_dir}/design/FireSim-generated.sv ${root_dir}/design/FireSim-generated.defines.vh] {
   set addFile [retrieveVersionedFile $addFile $vivado_version]
   check_file_exists $addFile
   add_files $addFile
@@ -48,9 +49,12 @@ set strategy $istrategy
 check_file_exists [set sourceFile ${root_dir}/scripts/create_bd.tcl]
 source $sourceFile
 
-# Making wrapper
-make_wrapper -files [get_files ${root_dir}/vivado_proj/firesim.srcs/sources_1/bd/design_1/design_1.bd] -top
-add_files -norecurse ${root_dir}/vivado_proj/firesim.gen/sources_1/bd/design_1/hdl/design_1_wrapper.v
+# Making wrapper around bd
+generate_target all [get_files ${root_dir}/vivado_proj/firesim.srcs/sources_1/bd/design_1/design_1.bd]
+update_compile_order -fileset sources_1
+
+# Report if any IPs need to be updated
+report_ip_status
 
 # Adding additional constraint sets
 create_fileset -constrset synth_fileset
@@ -92,7 +96,12 @@ if {[llength [get_filesets -quiet impl_fileset]]} {
 set rpt_dir ${root_dir}/vivado_proj/reports
 file mkdir ${rpt_dir}
 
-foreach sourceFile [list ${root_dir}/scripts/synthesis.tcl ${root_dir}/scripts/post_synth.tcl ${root_dir}/scripts/implementation_${vivado_version}.tcl ${root_dir}/scripts/post_impl.tcl] {
+# Set synth/impl strategy vars
+check_file_exists [set sourceFile ${root_dir}/scripts/strategies/strategy_${strategy}.tcl]
+source $sourceFile
+
+# Run synth/impl and generate collateral
+foreach sourceFile [list ${root_dir}/scripts/synthesis.tcl ${root_dir}/scripts/post_synth.tcl ${root_dir}/scripts/implementation.tcl ${root_dir}/scripts/post_impl.tcl] {
   set sourceFile [retrieveVersionedFile $sourceFile $vivado_version]
   check_file_exists $sourceFile
   source $sourceFile

@@ -1,1 +1,0 @@
-implementation_idr_2022.2.tcl
