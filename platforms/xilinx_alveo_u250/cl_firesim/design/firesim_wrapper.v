@@ -1,26 +1,6 @@
 `timescale 1ns/1ps
-//////////////////////////////////////////////////////////////////////////////////
-// Company:
-// Engineer:
-//
-// Create Date: 09/10/2021 07:33:50 PM
-// Design Name:
-// Module Name: firesim_wrapper
-// Project Name:
-// Target Devices:
-// Tool Versions:
-// Description:
-//
-// Dependencies:
-//
-// Revision:
-// Revision 0.01 - File Created
-// Additional Comments:
-//
-//////////////////////////////////////////////////////////////////////////////////
 
-
-module firesim_wrapper(
+module firesim_wrapper (
     S_AXI_CTRL_araddr,
     S_AXI_CTRL_arprot,
     S_AXI_CTRL_arready,
@@ -40,6 +20,7 @@ module firesim_wrapper(
     S_AXI_CTRL_wready,
     S_AXI_CTRL_wstrb,
     S_AXI_CTRL_wvalid,
+
     S_AXI_DMA_araddr,
     S_AXI_DMA_arburst,
     S_AXI_DMA_arcache,
@@ -79,6 +60,7 @@ module firesim_wrapper(
     S_AXI_DMA_wready,
     S_AXI_DMA_wstrb,
     S_AXI_DMA_wvalid,
+
     M_AXI_DDR0_araddr,
     M_AXI_DDR0_arburst,
     M_AXI_DDR0_arcache,
@@ -118,6 +100,7 @@ module firesim_wrapper(
     M_AXI_DDR0_wready,
     M_AXI_DDR0_wstrb,
     M_AXI_DDR0_wvalid,
+
     M_AXI_DDR1_araddr,
     M_AXI_DDR1_arburst,
     M_AXI_DDR1_arcache,
@@ -157,6 +140,7 @@ module firesim_wrapper(
     M_AXI_DDR1_wready,
     M_AXI_DDR1_wstrb,
     M_AXI_DDR1_wvalid,
+
     M_AXI_DDR2_araddr,
     M_AXI_DDR2_arburst,
     M_AXI_DDR2_arcache,
@@ -196,6 +180,7 @@ module firesim_wrapper(
     M_AXI_DDR2_wready,
     M_AXI_DDR2_wstrb,
     M_AXI_DDR2_wvalid,
+
     M_AXI_DDR3_araddr,
     M_AXI_DDR3_arburst,
     M_AXI_DDR3_arcache,
@@ -235,268 +220,232 @@ module firesim_wrapper(
     M_AXI_DDR3_wready,
     M_AXI_DDR3_wstrb,
     M_AXI_DDR3_wvalid,
-    sys_clk_30,
+
+    sys_clk,
     sys_reset_n
 );
 
-    (* X_INTERFACE_PARAMETER = "XIL_INTERFACENAME S_AXI_CTRL, ADDR_WIDTH 32, ARUSER_WIDTH 0, AWUSER_WIDTH 0, BUSER_WIDTH 0, CLK_DOMAIN design_1_clk_wiz_0_0_clk_out1, DATA_WIDTH 32, HAS_BRESP 1, HAS_BURST 0, HAS_CACHE 0, HAS_LOCK 0, HAS_PROT 1, HAS_QOS 0, HAS_REGION 0, HAS_RRESP 1, HAS_WSTRB 1, ID_WIDTH 0, INSERT_VIP 0, MAX_BURST_LENGTH 1, NUM_READ_OUTSTANDING 1, NUM_READ_THREADS 1, NUM_WRITE_OUTSTANDING 1, NUM_WRITE_THREADS 1, PHASE 0, PROTOCOL AXI4LITE, READ_WRITE_MODE READ_WRITE, RUSER_BITS_PER_BYTE 0, RUSER_WIDTH 0, SUPPORTS_NARROW_BURST 0, WUSER_BITS_PER_BYTE 0, WUSER_WIDTH 0" *)
-        (* X_INTERFACE_INFO = "xilinx.com:interface:aximm_rtl:1.0 S_AXI_CTRL ARADDR" *) input[31:0] S_AXI_CTRL_araddr;
-    (* X_INTERFACE_INFO = "xilinx.com:interface:aximm_rtl:1.0 S_AXI_CTRL ARPROT" *) input[2:0] S_AXI_CTRL_arprot;
-    (* X_INTERFACE_INFO = "xilinx.com:interface:aximm_rtl:1.0 S_AXI_CTRL ARREADY" *) output S_AXI_CTRL_arready;
-    (* X_INTERFACE_INFO = "xilinx.com:interface:aximm_rtl:1.0 S_AXI_CTRL ARVALID" *) input S_AXI_CTRL_arvalid;
+    input[31:0] S_AXI_CTRL_araddr;
+    input[2:0] S_AXI_CTRL_arprot;
+    output S_AXI_CTRL_arready;
+    input S_AXI_CTRL_arvalid;
+    input[31:0] S_AXI_CTRL_awaddr;
+    input[2:0] S_AXI_CTRL_awprot;
+    output S_AXI_CTRL_awready;
+    input S_AXI_CTRL_awvalid;
+    input S_AXI_CTRL_bready;
+    output[1:0] S_AXI_CTRL_bresp;
+    output S_AXI_CTRL_bvalid;
+    output[31:0] S_AXI_CTRL_rdata;
+    input S_AXI_CTRL_rready;
+    output[1:0] S_AXI_CTRL_rresp;
+    output S_AXI_CTRL_rvalid;
+    input[31:0] S_AXI_CTRL_wdata;
+    output S_AXI_CTRL_wready;
+    input[3:0] S_AXI_CTRL_wstrb;
+    input S_AXI_CTRL_wvalid;
+    input[63:0] S_AXI_DMA_araddr;
+    input[1:0] S_AXI_DMA_arburst;
+    input[3:0] S_AXI_DMA_arcache;
+    input[3:0] S_AXI_DMA_arid;
+    input[7:0] S_AXI_DMA_arlen;
+    input[0:0] S_AXI_DMA_arlock;
+    input[2:0] S_AXI_DMA_arprot;
+    input[3:0] S_AXI_DMA_arqos;
+    output S_AXI_DMA_arready;
+    input[3:0] S_AXI_DMA_arregion;
+    input[2:0] S_AXI_DMA_arsize;
+    input S_AXI_DMA_arvalid;
+    input[63:0] S_AXI_DMA_awaddr;
+    input[1:0] S_AXI_DMA_awburst;
+    input[3:0] S_AXI_DMA_awcache;
+    input[3:0] S_AXI_DMA_awid;
+    input[7:0] S_AXI_DMA_awlen;
+    input[0:0] S_AXI_DMA_awlock;
+    input[2:0] S_AXI_DMA_awprot;
+    input[3:0] S_AXI_DMA_awqos;
+    output S_AXI_DMA_awready;
+    input[3:0] S_AXI_DMA_awregion;
+    input[2:0] S_AXI_DMA_awsize;
+    input S_AXI_DMA_awvalid;
+    output[3:0] S_AXI_DMA_bid;
+    input S_AXI_DMA_bready;
+    output[1:0] S_AXI_DMA_bresp;
+    output S_AXI_DMA_bvalid;
+    output[511:0] S_AXI_DMA_rdata;
+    output[3:0] S_AXI_DMA_rid;
+    output S_AXI_DMA_rlast;
+    input S_AXI_DMA_rready;
+    output[1:0] S_AXI_DMA_rresp;
+    output S_AXI_DMA_rvalid;
+    input[511:0] S_AXI_DMA_wdata;
+    input S_AXI_DMA_wlast;
+    output S_AXI_DMA_wready;
+    input[63:0] S_AXI_DMA_wstrb;
+    input S_AXI_DMA_wvalid;
+    output[33:0] M_AXI_DDR0_araddr;
+    output[1:0] M_AXI_DDR0_arburst;
+    output[3:0] M_AXI_DDR0_arcache;
+    output[15:0] M_AXI_DDR0_arid;
+    output[7:0] M_AXI_DDR0_arlen;
+    output[0:0] M_AXI_DDR0_arlock;
+    output[2:0] M_AXI_DDR0_arprot;
+    output[3:0] M_AXI_DDR0_arqos;
+    input M_AXI_DDR0_arready;
+    output[3:0] M_AXI_DDR0_arregion; // TODO: connect
+    output[2:0] M_AXI_DDR0_arsize;
+    output M_AXI_DDR0_arvalid;
+    output[33:0] M_AXI_DDR0_awaddr;
+    output[1:0] M_AXI_DDR0_awburst;
+    output[3:0] M_AXI_DDR0_awcache;
+    output[15:0] M_AXI_DDR0_awid;
+    output[7:0] M_AXI_DDR0_awlen;
+    output[0:0] M_AXI_DDR0_awlock;
+    output[2:0] M_AXI_DDR0_awprot;
+    output[3:0] M_AXI_DDR0_awqos;
+    input M_AXI_DDR0_awready;
+    output[3:0] M_AXI_DDR0_awregion; // TODO: connect
+    output[2:0] M_AXI_DDR0_awsize;
+    output M_AXI_DDR0_awvalid;
+    input[15:0] M_AXI_DDR0_bid;
+    output M_AXI_DDR0_bready;
+    input[1:0] M_AXI_DDR0_bresp;
+    input M_AXI_DDR0_bvalid;
+    input[63:0] M_AXI_DDR0_rdata;
+    input[15:0] M_AXI_DDR0_rid;
+    input M_AXI_DDR0_rlast;
+    output M_AXI_DDR0_rready;
+    input[1:0] M_AXI_DDR0_rresp;
+    input M_AXI_DDR0_rvalid;
+    output[63:0] M_AXI_DDR0_wdata;
+    output M_AXI_DDR0_wlast;
+    input M_AXI_DDR0_wready;
+    output[7:0] M_AXI_DDR0_wstrb;
+    output M_AXI_DDR0_wvalid;
+    output[33:0] M_AXI_DDR1_araddr;
+    output[1:0] M_AXI_DDR1_arburst;
+    output[3:0] M_AXI_DDR1_arcache;
+    output[15:0] M_AXI_DDR1_arid;
+    output[7:0] M_AXI_DDR1_arlen;
+    output[0:0] M_AXI_DDR1_arlock;
+    output[2:0] M_AXI_DDR1_arprot;
+    output[3:0] M_AXI_DDR1_arqos;
+    input M_AXI_DDR1_arready;
+    output[3:0] M_AXI_DDR1_arregion; // TODO: connect
+    output[2:0] M_AXI_DDR1_arsize;
+    output M_AXI_DDR1_arvalid;
+    output[33:0] M_AXI_DDR1_awaddr;
+    output[1:0] M_AXI_DDR1_awburst;
+    output[3:0] M_AXI_DDR1_awcache;
+    output[15:0] M_AXI_DDR1_awid;
+    output[7:0] M_AXI_DDR1_awlen;
+    output[0:0] M_AXI_DDR1_awlock;
+    output[2:0] M_AXI_DDR1_awprot;
+    output[3:0] M_AXI_DDR1_awqos;
+    input M_AXI_DDR1_awready;
+    output[3:0] M_AXI_DDR1_awregion; // TODO: connect
+    output[2:0] M_AXI_DDR1_awsize;
+    output M_AXI_DDR1_awvalid;
+    input[15:0] M_AXI_DDR1_bid;
+    output M_AXI_DDR1_bready;
+    input[1:0] M_AXI_DDR1_bresp;
+    input M_AXI_DDR1_bvalid;
+    input[63:0] M_AXI_DDR1_rdata;
+    input[15:0] M_AXI_DDR1_rid;
+    input M_AXI_DDR1_rlast;
+    output M_AXI_DDR1_rready;
+    input[1:0] M_AXI_DDR1_rresp;
+    input M_AXI_DDR1_rvalid;
+    output[63:0] M_AXI_DDR1_wdata;
+    output M_AXI_DDR1_wlast;
+    input M_AXI_DDR1_wready;
+    output[7:0] M_AXI_DDR1_wstrb;
+    output M_AXI_DDR1_wvalid;
+    output[33:0] M_AXI_DDR2_araddr;
+    output[1:0] M_AXI_DDR2_arburst;
+    output[3:0] M_AXI_DDR2_arcache;
+    output[15:0] M_AXI_DDR2_arid;
+    output[7:0] M_AXI_DDR2_arlen;
+    output[0:0] M_AXI_DDR2_arlock;
+    output[2:0] M_AXI_DDR2_arprot;
+    output[3:0] M_AXI_DDR2_arqos;
+    input M_AXI_DDR2_arready;
+    output[3:0] M_AXI_DDR2_arregion; // TODO: connect
+    output[2:0] M_AXI_DDR2_arsize;
+    output M_AXI_DDR2_arvalid;
+    output[33:0] M_AXI_DDR2_awaddr;
+    output[1:0] M_AXI_DDR2_awburst;
+    output[3:0] M_AXI_DDR2_awcache;
+    output[15:0] M_AXI_DDR2_awid;
+    output[7:0] M_AXI_DDR2_awlen;
+    output[0:0] M_AXI_DDR2_awlock;
+    output[2:0] M_AXI_DDR2_awprot;
+    output[3:0] M_AXI_DDR2_awqos;
+    input M_AXI_DDR2_awready;
+    output[3:0] M_AXI_DDR2_awregion; // TODO: connect
+    output[2:0] M_AXI_DDR2_awsize;
+    output M_AXI_DDR2_awvalid;
+    input[15:0] M_AXI_DDR2_bid;
+    output M_AXI_DDR2_bready;
+    input[1:0] M_AXI_DDR2_bresp;
+    input M_AXI_DDR2_bvalid;
+    input[63:0] M_AXI_DDR2_rdata;
+    input[15:0] M_AXI_DDR2_rid;
+    input M_AXI_DDR2_rlast;
+    output M_AXI_DDR2_rready;
+    input[1:0] M_AXI_DDR2_rresp;
+    input M_AXI_DDR2_rvalid;
+    output[63:0] M_AXI_DDR2_wdata;
+    output M_AXI_DDR2_wlast;
+    input M_AXI_DDR2_wready;
+    output[7:0] M_AXI_DDR2_wstrb;
+    output M_AXI_DDR2_wvalid;
+    output[33:0] M_AXI_DDR3_araddr;
+    output[1:0] M_AXI_DDR3_arburst;
+    output[3:0] M_AXI_DDR3_arcache;
+    output[15:0] M_AXI_DDR3_arid;
+    output[7:0] M_AXI_DDR3_arlen;
+    output[0:0] M_AXI_DDR3_arlock;
+    output[2:0] M_AXI_DDR3_arprot;
+    output[3:0] M_AXI_DDR3_arqos;
+    input M_AXI_DDR3_arready;
+    output[3:0] M_AXI_DDR3_arregion; // TODO: connect
+    output[2:0] M_AXI_DDR3_arsize;
+    output M_AXI_DDR3_arvalid;
+    output[33:0] M_AXI_DDR3_awaddr;
+    output[1:0] M_AXI_DDR3_awburst;
+    output[3:0] M_AXI_DDR3_awcache;
+    output[15:0] M_AXI_DDR3_awid;
+    output[7:0] M_AXI_DDR3_awlen;
+    output[0:0] M_AXI_DDR3_awlock;
+    output[2:0] M_AXI_DDR3_awprot;
+    output[3:0] M_AXI_DDR3_awqos;
+    input M_AXI_DDR3_awready;
+    output[3:0] M_AXI_DDR3_awregion; // TODO: connect
+    output[2:0] M_AXI_DDR3_awsize;
+    output M_AXI_DDR3_awvalid;
+    input[15:0] M_AXI_DDR3_bid;
+    output M_AXI_DDR3_bready;
+    input[1:0] M_AXI_DDR3_bresp;
+    input M_AXI_DDR3_bvalid;
+    input[63:0] M_AXI_DDR3_rdata;
+    input[15:0] M_AXI_DDR3_rid;
+    input M_AXI_DDR3_rlast;
+    output M_AXI_DDR3_rready;
+    input[1:0] M_AXI_DDR3_rresp;
+    input M_AXI_DDR3_rvalid;
+    output[63:0] M_AXI_DDR3_wdata;
+    output M_AXI_DDR3_wlast;
+    input M_AXI_DDR3_wready;
+    output[7:0] M_AXI_DDR3_wstrb;
+    output M_AXI_DDR3_wvalid;
 
-    (* X_INTERFACE_INFO = "xilinx.com:interface:aximm_rtl:1.0 S_AXI_CTRL AWADDR" *) input[31:0] S_AXI_CTRL_awaddr;
-    (* X_INTERFACE_INFO = "xilinx.com:interface:aximm_rtl:1.0 S_AXI_CTRL AWPROT" *) input[2:0] S_AXI_CTRL_awprot;
-    (* X_INTERFACE_INFO = "xilinx.com:interface:aximm_rtl:1.0 S_AXI_CTRL AWREADY" *) output S_AXI_CTRL_awready;
-    (* X_INTERFACE_INFO = "xilinx.com:interface:aximm_rtl:1.0 S_AXI_CTRL AWVALID" *) input S_AXI_CTRL_awvalid;
+    input sys_clk;
 
-    (* X_INTERFACE_INFO = "xilinx.com:interface:aximm_rtl:1.0 S_AXI_CTRL BREADY" *) input S_AXI_CTRL_bready;
-    (* X_INTERFACE_INFO = "xilinx.com:interface:aximm_rtl:1.0 S_AXI_CTRL BRESP" *) output[1:0] S_AXI_CTRL_bresp;
-    (* X_INTERFACE_INFO = "xilinx.com:interface:aximm_rtl:1.0 S_AXI_CTRL BVALID" *) output S_AXI_CTRL_bvalid;
-
-    (* X_INTERFACE_INFO = "xilinx.com:interface:aximm_rtl:1.0 S_AXI_CTRL RDATA" *) output[31:0] S_AXI_CTRL_rdata;
-    (* X_INTERFACE_INFO = "xilinx.com:interface:aximm_rtl:1.0 S_AXI_CTRL RREADY" *) input S_AXI_CTRL_rready;
-    (* X_INTERFACE_INFO = "xilinx.com:interface:aximm_rtl:1.0 S_AXI_CTRL RRESP" *) output[1:0] S_AXI_CTRL_rresp;
-    (* X_INTERFACE_INFO = "xilinx.com:interface:aximm_rtl:1.0 S_AXI_CTRL RVALID" *) output S_AXI_CTRL_rvalid;
-
-    (* X_INTERFACE_INFO = "xilinx.com:interface:aximm_rtl:1.0 S_AXI_CTRL WDATA" *) input[31:0] S_AXI_CTRL_wdata;
-    (* X_INTERFACE_INFO = "xilinx.com:interface:aximm_rtl:1.0 S_AXI_CTRL WREADY" *) output S_AXI_CTRL_wready;
-    (* X_INTERFACE_INFO = "xilinx.com:interface:aximm_rtl:1.0 S_AXI_CTRL WSTRB" *) input[3:0] S_AXI_CTRL_wstrb;
-    (* X_INTERFACE_INFO = "xilinx.com:interface:aximm_rtl:1.0 S_AXI_CTRL WVALID" *) input S_AXI_CTRL_wvalid;
-
-    (* X_INTERFACE_PARAMETER = "XIL_INTERFACENAME S_AXI_DMA, ADDR_WIDTH 64, ARUSER_WIDTH 0, AWUSER_WIDTH 0, BUSER_WIDTH 0, CLK_DOMAIN design_1_clk_wiz_0_0_clk_out1, DATA_WIDTH 512, HAS_BRESP 1, HAS_BURST 0, HAS_CACHE 1, HAS_LOCK 1, HAS_PROT 1, HAS_QOS 0, HAS_REGION 0, HAS_RRESP 1, HAS_WSTRB 1, ID_WIDTH 4, INSERT_VIP 0, MAX_BURST_LENGTH 256, NUM_READ_OUTSTANDING 32, NUM_READ_THREADS 4, NUM_WRITE_OUTSTANDING 16, NUM_WRITE_THREADS 4, PHASE 0, PROTOCOL AXI4, READ_WRITE_MODE READ_WRITE, RUSER_BITS_PER_BYTE 0, RUSER_WIDTH 0, SUPPORTS_NARROW_BURST 0, WUSER_BITS_PER_BYTE 0, WUSER_WIDTH 0" *)
-        (* X_INTERFACE_INFO = "xilinx.com:interface:aximm_rtl:1.0 S_AXI_DMA ARADDR" *) input[63:0] S_AXI_DMA_araddr;
-    (* X_INTERFACE_INFO = "xilinx.com:interface:aximm_rtl:1.0 S_AXI_DMA ARBURST" *) input[1:0] S_AXI_DMA_arburst;
-    (* X_INTERFACE_INFO = "xilinx.com:interface:aximm_rtl:1.0 S_AXI_DMA ARCACHE" *) input[3:0] S_AXI_DMA_arcache;
-    (* X_INTERFACE_INFO = "xilinx.com:interface:aximm_rtl:1.0 S_AXI_DMA ARID" *) input[3:0] S_AXI_DMA_arid;
-    (* X_INTERFACE_INFO = "xilinx.com:interface:aximm_rtl:1.0 S_AXI_DMA ARLEN" *) input[7:0] S_AXI_DMA_arlen;
-    (* X_INTERFACE_INFO = "xilinx.com:interface:aximm_rtl:1.0 S_AXI_DMA ARLOCK" *) input[0:0] S_AXI_DMA_arlock;
-    (* X_INTERFACE_INFO = "xilinx.com:interface:aximm_rtl:1.0 S_AXI_DMA ARPROT" *) input[2:0] S_AXI_DMA_arprot;
-    (* X_INTERFACE_INFO = "xilinx.com:interface:aximm_rtl:1.0 S_AXI_DMA ARQOS" *) input[3:0] S_AXI_DMA_arqos;
-    (* X_INTERFACE_INFO = "xilinx.com:interface:aximm_rtl:1.0 S_AXI_DMA ARREADY" *) output S_AXI_DMA_arready;
-    (* X_INTERFACE_INFO = "xilinx.com:interface:aximm_rtl:1.0 S_AXI_DMA ARREGION" *) input[3:0] S_AXI_DMA_arregion;
-    (* X_INTERFACE_INFO = "xilinx.com:interface:aximm_rtl:1.0 S_AXI_DMA ARSIZE" *) input[2:0] S_AXI_DMA_arsize;
-    (* X_INTERFACE_INFO = "xilinx.com:interface:aximm_rtl:1.0 S_AXI_DMA ARVALID" *) input S_AXI_DMA_arvalid;
-
-    (* X_INTERFACE_INFO = "xilinx.com:interface:aximm_rtl:1.0 S_AXI_DMA AWADDR" *) input[63:0] S_AXI_DMA_awaddr;
-    (* X_INTERFACE_INFO = "xilinx.com:interface:aximm_rtl:1.0 S_AXI_DMA AWBURST" *) input[1:0] S_AXI_DMA_awburst;
-    (* X_INTERFACE_INFO = "xilinx.com:interface:aximm_rtl:1.0 S_AXI_DMA AWCACHE" *) input[3:0] S_AXI_DMA_awcache;
-    (* X_INTERFACE_INFO = "xilinx.com:interface:aximm_rtl:1.0 S_AXI_DMA AWID" *) input[3:0] S_AXI_DMA_awid;
-    (* X_INTERFACE_INFO = "xilinx.com:interface:aximm_rtl:1.0 S_AXI_DMA AWLEN" *) input[7:0] S_AXI_DMA_awlen;
-    (* X_INTERFACE_INFO = "xilinx.com:interface:aximm_rtl:1.0 S_AXI_DMA AWLOCK" *) input[0:0] S_AXI_DMA_awlock;
-    (* X_INTERFACE_INFO = "xilinx.com:interface:aximm_rtl:1.0 S_AXI_DMA AWPROT" *) input[2:0] S_AXI_DMA_awprot;
-    (* X_INTERFACE_INFO = "xilinx.com:interface:aximm_rtl:1.0 S_AXI_DMA AWQOS" *) input[3:0] S_AXI_DMA_awqos;
-    (* X_INTERFACE_INFO = "xilinx.com:interface:aximm_rtl:1.0 S_AXI_DMA AWREADY" *) output S_AXI_DMA_awready;
-    (* X_INTERFACE_INFO = "xilinx.com:interface:aximm_rtl:1.0 S_AXI_DMA AWREGION" *) input[3:0] S_AXI_DMA_awregion;
-    (* X_INTERFACE_INFO = "xilinx.com:interface:aximm_rtl:1.0 S_AXI_DMA AWSIZE" *) input[2:0] S_AXI_DMA_awsize;
-    (* X_INTERFACE_INFO = "xilinx.com:interface:aximm_rtl:1.0 S_AXI_DMA AWVALID" *) input S_AXI_DMA_awvalid;
-
-    (* X_INTERFACE_INFO = "xilinx.com:interface:aximm_rtl:1.0 S_AXI_DMA BID" *) output[3:0] S_AXI_DMA_bid;
-    (* X_INTERFACE_INFO = "xilinx.com:interface:aximm_rtl:1.0 S_AXI_DMA BREADY" *) input S_AXI_DMA_bready;
-    (* X_INTERFACE_INFO = "xilinx.com:interface:aximm_rtl:1.0 S_AXI_DMA BRESP" *) output[1:0] S_AXI_DMA_bresp;
-    (* X_INTERFACE_INFO = "xilinx.com:interface:aximm_rtl:1.0 S_AXI_DMA BVALID" *) output S_AXI_DMA_bvalid;
-
-    (* X_INTERFACE_INFO = "xilinx.com:interface:aximm_rtl:1.0 S_AXI_DMA RDATA" *) output[511:0] S_AXI_DMA_rdata;
-    (* X_INTERFACE_INFO = "xilinx.com:interface:aximm_rtl:1.0 S_AXI_DMA RID" *) output[3:0] S_AXI_DMA_rid;
-    (* X_INTERFACE_INFO = "xilinx.com:interface:aximm_rtl:1.0 S_AXI_DMA RLAST" *) output S_AXI_DMA_rlast;
-    (* X_INTERFACE_INFO = "xilinx.com:interface:aximm_rtl:1.0 S_AXI_DMA RREADY" *) input S_AXI_DMA_rready;
-    (* X_INTERFACE_INFO = "xilinx.com:interface:aximm_rtl:1.0 S_AXI_DMA RRESP" *) output[1:0] S_AXI_DMA_rresp;
-    (* X_INTERFACE_INFO = "xilinx.com:interface:aximm_rtl:1.0 S_AXI_DMA RVALID" *) output S_AXI_DMA_rvalid;
-
-    (* X_INTERFACE_INFO = "xilinx.com:interface:aximm_rtl:1.0 S_AXI_DMA WDATA" *) input[511:0] S_AXI_DMA_wdata;
-    (* X_INTERFACE_INFO = "xilinx.com:interface:aximm_rtl:1.0 S_AXI_DMA WLAST" *) input S_AXI_DMA_wlast;
-    (* X_INTERFACE_INFO = "xilinx.com:interface:aximm_rtl:1.0 S_AXI_DMA WREADY" *) output S_AXI_DMA_wready;
-    (* X_INTERFACE_INFO = "xilinx.com:interface:aximm_rtl:1.0 S_AXI_DMA WSTRB" *) input[63:0] S_AXI_DMA_wstrb;
-    (* X_INTERFACE_INFO = "xilinx.com:interface:aximm_rtl:1.0 S_AXI_DMA WVALID" *) input S_AXI_DMA_wvalid;
-
-    (* X_INTERFACE_PARAMETER = "XIL_INTERFACENAME M_AXI_DDR0, ADDR_WIDTH 34, ARUSER_WIDTH 0, AWUSER_WIDTH 0, BUSER_WIDTH 0, CLK_DOMAIN design_1_clk_wiz_0_0_clk_out1, DATA_WIDTH 64, HAS_BRESP 1, HAS_BURST 1, HAS_CACHE 1, HAS_LOCK 1, HAS_PROT 1, HAS_QOS 1, HAS_REGION 1, HAS_RRESP 1, HAS_WSTRB 1, ID_WIDTH 16, INSERT_VIP 0, MAX_BURST_LENGTH 256, NUM_READ_OUTSTANDING 2, NUM_READ_THREADS 1, NUM_WRITE_OUTSTANDING 2, NUM_WRITE_THREADS 1, PHASE 0, PROTOCOL AXI4, READ_WRITE_MODE READ_WRITE, RUSER_BITS_PER_BYTE 0, RUSER_WIDTH 0, SUPPORTS_NARROW_BURST 1, WUSER_BITS_PER_BYTE 0, WUSER_WIDTH 0" *)
-        (* X_INTERFACE_INFO = "xilinx.com:interface:aximm_rtl:1.0 M_AXI_DDR0 ARADDR" *) output[33:0] M_AXI_DDR0_araddr;
-    (* X_INTERFACE_INFO = "xilinx.com:interface:aximm_rtl:1.0 M_AXI_DDR0 ARBURST" *) output[1:0] M_AXI_DDR0_arburst;
-    (* X_INTERFACE_INFO = "xilinx.com:interface:aximm_rtl:1.0 M_AXI_DDR0 ARCACHE" *) output[3:0] M_AXI_DDR0_arcache;
-    (* X_INTERFACE_INFO = "xilinx.com:interface:aximm_rtl:1.0 M_AXI_DDR0 ARID" *) output[15:0] M_AXI_DDR0_arid;
-    (* X_INTERFACE_INFO = "xilinx.com:interface:aximm_rtl:1.0 M_AXI_DDR0 ARLEN" *) output[7:0] M_AXI_DDR0_arlen;
-    (* X_INTERFACE_INFO = "xilinx.com:interface:aximm_rtl:1.0 M_AXI_DDR0 ARLOCK" *) output[0:0] M_AXI_DDR0_arlock;
-    (* X_INTERFACE_INFO = "xilinx.com:interface:aximm_rtl:1.0 M_AXI_DDR0 ARPROT" *) output[2:0] M_AXI_DDR0_arprot;
-    (* X_INTERFACE_INFO = "xilinx.com:interface:aximm_rtl:1.0 M_AXI_DDR0 ARQOS" *) output[3:0] M_AXI_DDR0_arqos;
-    (* X_INTERFACE_INFO = "xilinx.com:interface:aximm_rtl:1.0 M_AXI_DDR0 ARREADY" *) input M_AXI_DDR0_arready;
-    (* X_INTERFACE_INFO = "xilinx.com:interface:aximm_rtl:1.0 M_AXI_DDR0 ARREGION" *) output[3:0] M_AXI_DDR0_arregion; // TODO: connect
-    (* X_INTERFACE_INFO = "xilinx.com:interface:aximm_rtl:1.0 M_AXI_DDR0 ARSIZE" *) output[2:0] M_AXI_DDR0_arsize;
-    (* X_INTERFACE_INFO = "xilinx.com:interface:aximm_rtl:1.0 M_AXI_DDR0 ARVALID" *) output M_AXI_DDR0_arvalid;
-
-    (* X_INTERFACE_INFO = "xilinx.com:interface:aximm_rtl:1.0 M_AXI_DDR0 AWADDR" *) output[33:0] M_AXI_DDR0_awaddr;
-    (* X_INTERFACE_INFO = "xilinx.com:interface:aximm_rtl:1.0 M_AXI_DDR0 AWBURST" *) output[1:0] M_AXI_DDR0_awburst;
-    (* X_INTERFACE_INFO = "xilinx.com:interface:aximm_rtl:1.0 M_AXI_DDR0 AWCACHE" *) output[3:0] M_AXI_DDR0_awcache;
-    (* X_INTERFACE_INFO = "xilinx.com:interface:aximm_rtl:1.0 M_AXI_DDR0 AWID" *) output[15:0] M_AXI_DDR0_awid;
-    (* X_INTERFACE_INFO = "xilinx.com:interface:aximm_rtl:1.0 M_AXI_DDR0 AWLEN" *) output[7:0] M_AXI_DDR0_awlen;
-    (* X_INTERFACE_INFO = "xilinx.com:interface:aximm_rtl:1.0 M_AXI_DDR0 AWLOCK" *) output[0:0] M_AXI_DDR0_awlock;
-    (* X_INTERFACE_INFO = "xilinx.com:interface:aximm_rtl:1.0 M_AXI_DDR0 AWPROT" *) output[2:0] M_AXI_DDR0_awprot;
-    (* X_INTERFACE_INFO = "xilinx.com:interface:aximm_rtl:1.0 M_AXI_DDR0 AWQOS" *) output[3:0] M_AXI_DDR0_awqos;
-    (* X_INTERFACE_INFO = "xilinx.com:interface:aximm_rtl:1.0 M_AXI_DDR0 AWREADY" *) input M_AXI_DDR0_awready;
-    (* X_INTERFACE_INFO = "xilinx.com:interface:aximm_rtl:1.0 M_AXI_DDR0 AWREGION" *) output[3:0] M_AXI_DDR0_awregion; // TODO: connect
-    (* X_INTERFACE_INFO = "xilinx.com:interface:aximm_rtl:1.0 M_AXI_DDR0 AWSIZE" *) output[2:0] M_AXI_DDR0_awsize;
-    (* X_INTERFACE_INFO = "xilinx.com:interface:aximm_rtl:1.0 M_AXI_DDR0 AWVALID" *) output M_AXI_DDR0_awvalid;
-
-    (* X_INTERFACE_INFO = "xilinx.com:interface:aximm_rtl:1.0 M_AXI_DDR0 BID" *) input[15:0] M_AXI_DDR0_bid;
-    (* X_INTERFACE_INFO = "xilinx.com:interface:aximm_rtl:1.0 M_AXI_DDR0 BREADY" *) output M_AXI_DDR0_bready;
-    (* X_INTERFACE_INFO = "xilinx.com:interface:aximm_rtl:1.0 M_AXI_DDR0 BRESP" *) input[1:0] M_AXI_DDR0_bresp;
-    (* X_INTERFACE_INFO = "xilinx.com:interface:aximm_rtl:1.0 M_AXI_DDR0 BVALID" *) input M_AXI_DDR0_bvalid;
-
-    (* X_INTERFACE_INFO = "xilinx.com:interface:aximm_rtl:1.0 M_AXI_DDR0 RDATA" *) input[63:0] M_AXI_DDR0_rdata;
-    (* X_INTERFACE_INFO = "xilinx.com:interface:aximm_rtl:1.0 M_AXI_DDR0 RID" *) input[15:0] M_AXI_DDR0_rid;
-    (* X_INTERFACE_INFO = "xilinx.com:interface:aximm_rtl:1.0 M_AXI_DDR0 RLAST" *) input M_AXI_DDR0_rlast;
-    (* X_INTERFACE_INFO = "xilinx.com:interface:aximm_rtl:1.0 M_AXI_DDR0 RREADY" *) output M_AXI_DDR0_rready;
-    (* X_INTERFACE_INFO = "xilinx.com:interface:aximm_rtl:1.0 M_AXI_DDR0 RRESP" *) input[1:0] M_AXI_DDR0_rresp;
-    (* X_INTERFACE_INFO = "xilinx.com:interface:aximm_rtl:1.0 M_AXI_DDR0 RVALID" *) input M_AXI_DDR0_rvalid;
-
-    (* X_INTERFACE_INFO = "xilinx.com:interface:aximm_rtl:1.0 M_AXI_DDR0 WDATA" *) output[63:0] M_AXI_DDR0_wdata;
-    (* X_INTERFACE_INFO = "xilinx.com:interface:aximm_rtl:1.0 M_AXI_DDR0 WLAST" *) output M_AXI_DDR0_wlast;
-    (* X_INTERFACE_INFO = "xilinx.com:interface:aximm_rtl:1.0 M_AXI_DDR0 WREADY" *) input M_AXI_DDR0_wready;
-    (* X_INTERFACE_INFO = "xilinx.com:interface:aximm_rtl:1.0 M_AXI_DDR0 WSTRB" *) output[7:0] M_AXI_DDR0_wstrb;
-    (* X_INTERFACE_INFO = "xilinx.com:interface:aximm_rtl:1.0 M_AXI_DDR0 WVALID" *) output M_AXI_DDR0_wvalid;
-
-    (* X_INTERFACE_PARAMETER = "XIL_INTERFACENAME M_AXI_DDR1, ADDR_WIDTH 34, ARUSER_WIDTH 0, AWUSER_WIDTH 0, BUSER_WIDTH 0, CLK_DOMAIN design_1_clk_wiz_0_0_clk_out1, DATA_WIDTH 64, HAS_BRESP 1, HAS_BURST 1, HAS_CACHE 1, HAS_LOCK 1, HAS_PROT 1, HAS_QOS 1, HAS_REGION 1, HAS_RRESP 1, HAS_WSTRB 1, ID_WIDTH 16, INSERT_VIP 0, MAX_BURST_LENGTH 256, NUM_READ_OUTSTANDING 2, NUM_READ_THREADS 1, NUM_WRITE_OUTSTANDING 2, NUM_WRITE_THREADS 1, PHASE 0, PROTOCOL AXI4, READ_WRITE_MODE READ_WRITE, RUSER_BITS_PER_BYTE 0, RUSER_WIDTH 0, SUPPORTS_NARROW_BURST 1, WUSER_BITS_PER_BYTE 0, WUSER_WIDTH 0" *)
-        (* X_INTERFACE_INFO = "xilinx.com:interface:aximm_rtl:1.0 M_AXI_DDR1 ARADDR" *) output[33:0] M_AXI_DDR1_araddr;
-    (* X_INTERFACE_INFO = "xilinx.com:interface:aximm_rtl:1.0 M_AXI_DDR1 ARBURST" *) output[1:0] M_AXI_DDR1_arburst;
-    (* X_INTERFACE_INFO = "xilinx.com:interface:aximm_rtl:1.0 M_AXI_DDR1 ARCACHE" *) output[3:0] M_AXI_DDR1_arcache;
-    (* X_INTERFACE_INFO = "xilinx.com:interface:aximm_rtl:1.0 M_AXI_DDR1 ARID" *) output[15:0] M_AXI_DDR1_arid;
-    (* X_INTERFACE_INFO = "xilinx.com:interface:aximm_rtl:1.0 M_AXI_DDR1 ARLEN" *) output[7:0] M_AXI_DDR1_arlen;
-    (* X_INTERFACE_INFO = "xilinx.com:interface:aximm_rtl:1.0 M_AXI_DDR1 ARLOCK" *) output[0:0] M_AXI_DDR1_arlock;
-    (* X_INTERFACE_INFO = "xilinx.com:interface:aximm_rtl:1.0 M_AXI_DDR1 ARPROT" *) output[2:0] M_AXI_DDR1_arprot;
-    (* X_INTERFACE_INFO = "xilinx.com:interface:aximm_rtl:1.0 M_AXI_DDR1 ARQOS" *) output[3:0] M_AXI_DDR1_arqos;
-    (* X_INTERFACE_INFO = "xilinx.com:interface:aximm_rtl:1.0 M_AXI_DDR1 ARREADY" *) input M_AXI_DDR1_arready;
-    (* X_INTERFACE_INFO = "xilinx.com:interface:aximm_rtl:1.0 M_AXI_DDR1 ARREGION" *) output[3:0] M_AXI_DDR1_arregion; // TODO: connect
-    (* X_INTERFACE_INFO = "xilinx.com:interface:aximm_rtl:1.0 M_AXI_DDR1 ARSIZE" *) output[2:0] M_AXI_DDR1_arsize;
-    (* X_INTERFACE_INFO = "xilinx.com:interface:aximm_rtl:1.0 M_AXI_DDR1 ARVALID" *) output M_AXI_DDR1_arvalid;
-
-    (* X_INTERFACE_INFO = "xilinx.com:interface:aximm_rtl:1.0 M_AXI_DDR1 AWADDR" *) output[33:0] M_AXI_DDR1_awaddr;
-    (* X_INTERFACE_INFO = "xilinx.com:interface:aximm_rtl:1.0 M_AXI_DDR1 AWBURST" *) output[1:0] M_AXI_DDR1_awburst;
-    (* X_INTERFACE_INFO = "xilinx.com:interface:aximm_rtl:1.0 M_AXI_DDR1 AWCACHE" *) output[3:0] M_AXI_DDR1_awcache;
-    (* X_INTERFACE_INFO = "xilinx.com:interface:aximm_rtl:1.0 M_AXI_DDR1 AWID" *) output[15:0] M_AXI_DDR1_awid;
-    (* X_INTERFACE_INFO = "xilinx.com:interface:aximm_rtl:1.0 M_AXI_DDR1 AWLEN" *) output[7:0] M_AXI_DDR1_awlen;
-    (* X_INTERFACE_INFO = "xilinx.com:interface:aximm_rtl:1.0 M_AXI_DDR1 AWLOCK" *) output[0:0] M_AXI_DDR1_awlock;
-    (* X_INTERFACE_INFO = "xilinx.com:interface:aximm_rtl:1.0 M_AXI_DDR1 AWPROT" *) output[2:0] M_AXI_DDR1_awprot;
-    (* X_INTERFACE_INFO = "xilinx.com:interface:aximm_rtl:1.0 M_AXI_DDR1 AWQOS" *) output[3:0] M_AXI_DDR1_awqos;
-    (* X_INTERFACE_INFO = "xilinx.com:interface:aximm_rtl:1.0 M_AXI_DDR1 AWREADY" *) input M_AXI_DDR1_awready;
-    (* X_INTERFACE_INFO = "xilinx.com:interface:aximm_rtl:1.0 M_AXI_DDR1 AWREGION" *) output[3:0] M_AXI_DDR1_awregion; // TODO: connect
-    (* X_INTERFACE_INFO = "xilinx.com:interface:aximm_rtl:1.0 M_AXI_DDR1 AWSIZE" *) output[2:0] M_AXI_DDR1_awsize;
-    (* X_INTERFACE_INFO = "xilinx.com:interface:aximm_rtl:1.0 M_AXI_DDR1 AWVALID" *) output M_AXI_DDR1_awvalid;
-
-    (* X_INTERFACE_INFO = "xilinx.com:interface:aximm_rtl:1.0 M_AXI_DDR1 BID" *) input[15:0] M_AXI_DDR1_bid;
-    (* X_INTERFACE_INFO = "xilinx.com:interface:aximm_rtl:1.0 M_AXI_DDR1 BREADY" *) output M_AXI_DDR1_bready;
-    (* X_INTERFACE_INFO = "xilinx.com:interface:aximm_rtl:1.0 M_AXI_DDR1 BRESP" *) input[1:0] M_AXI_DDR1_bresp;
-    (* X_INTERFACE_INFO = "xilinx.com:interface:aximm_rtl:1.0 M_AXI_DDR1 BVALID" *) input M_AXI_DDR1_bvalid;
-
-    (* X_INTERFACE_INFO = "xilinx.com:interface:aximm_rtl:1.0 M_AXI_DDR1 RDATA" *) input[63:0] M_AXI_DDR1_rdata;
-    (* X_INTERFACE_INFO = "xilinx.com:interface:aximm_rtl:1.0 M_AXI_DDR1 RID" *) input[15:0] M_AXI_DDR1_rid;
-    (* X_INTERFACE_INFO = "xilinx.com:interface:aximm_rtl:1.0 M_AXI_DDR1 RLAST" *) input M_AXI_DDR1_rlast;
-    (* X_INTERFACE_INFO = "xilinx.com:interface:aximm_rtl:1.0 M_AXI_DDR1 RREADY" *) output M_AXI_DDR1_rready;
-    (* X_INTERFACE_INFO = "xilinx.com:interface:aximm_rtl:1.0 M_AXI_DDR1 RRESP" *) input[1:0] M_AXI_DDR1_rresp;
-    (* X_INTERFACE_INFO = "xilinx.com:interface:aximm_rtl:1.0 M_AXI_DDR1 RVALID" *) input M_AXI_DDR1_rvalid;
-
-    (* X_INTERFACE_INFO = "xilinx.com:interface:aximm_rtl:1.0 M_AXI_DDR1 WDATA" *) output[63:0] M_AXI_DDR1_wdata;
-    (* X_INTERFACE_INFO = "xilinx.com:interface:aximm_rtl:1.0 M_AXI_DDR1 WLAST" *) output M_AXI_DDR1_wlast;
-    (* X_INTERFACE_INFO = "xilinx.com:interface:aximm_rtl:1.0 M_AXI_DDR1 WREADY" *) input M_AXI_DDR1_wready;
-    (* X_INTERFACE_INFO = "xilinx.com:interface:aximm_rtl:1.0 M_AXI_DDR1 WSTRB" *) output[7:0] M_AXI_DDR1_wstrb;
-    (* X_INTERFACE_INFO = "xilinx.com:interface:aximm_rtl:1.0 M_AXI_DDR1 WVALID" *) output M_AXI_DDR1_wvalid;
-
-    (* X_INTERFACE_PARAMETER = "XIL_INTERFACENAME M_AXI_DDR2, ADDR_WIDTH 34, ARUSER_WIDTH 0, AWUSER_WIDTH 0, BUSER_WIDTH 0, CLK_DOMAIN design_1_clk_wiz_0_0_clk_out1, DATA_WIDTH 64, HAS_BRESP 1, HAS_BURST 1, HAS_CACHE 1, HAS_LOCK 1, HAS_PROT 1, HAS_QOS 1, HAS_REGION 1, HAS_RRESP 1, HAS_WSTRB 1, ID_WIDTH 16, INSERT_VIP 0, MAX_BURST_LENGTH 256, NUM_READ_OUTSTANDING 2, NUM_READ_THREADS 1, NUM_WRITE_OUTSTANDING 2, NUM_WRITE_THREADS 1, PHASE 0, PROTOCOL AXI4, READ_WRITE_MODE READ_WRITE, RUSER_BITS_PER_BYTE 0, RUSER_WIDTH 0, SUPPORTS_NARROW_BURST 1, WUSER_BITS_PER_BYTE 0, WUSER_WIDTH 0" *)
-        (* X_INTERFACE_INFO = "xilinx.com:interface:aximm_rtl:1.0 M_AXI_DDR2 ARADDR" *) output[33:0] M_AXI_DDR2_araddr;
-    (* X_INTERFACE_INFO = "xilinx.com:interface:aximm_rtl:1.0 M_AXI_DDR2 ARBURST" *) output[1:0] M_AXI_DDR2_arburst;
-    (* X_INTERFACE_INFO = "xilinx.com:interface:aximm_rtl:1.0 M_AXI_DDR2 ARCACHE" *) output[3:0] M_AXI_DDR2_arcache;
-    (* X_INTERFACE_INFO = "xilinx.com:interface:aximm_rtl:1.0 M_AXI_DDR2 ARID" *) output[15:0] M_AXI_DDR2_arid;
-    (* X_INTERFACE_INFO = "xilinx.com:interface:aximm_rtl:1.0 M_AXI_DDR2 ARLEN" *) output[7:0] M_AXI_DDR2_arlen;
-    (* X_INTERFACE_INFO = "xilinx.com:interface:aximm_rtl:1.0 M_AXI_DDR2 ARLOCK" *) output[0:0] M_AXI_DDR2_arlock;
-    (* X_INTERFACE_INFO = "xilinx.com:interface:aximm_rtl:1.0 M_AXI_DDR2 ARPROT" *) output[2:0] M_AXI_DDR2_arprot;
-    (* X_INTERFACE_INFO = "xilinx.com:interface:aximm_rtl:1.0 M_AXI_DDR2 ARQOS" *) output[3:0] M_AXI_DDR2_arqos;
-    (* X_INTERFACE_INFO = "xilinx.com:interface:aximm_rtl:1.0 M_AXI_DDR2 ARREADY" *) input M_AXI_DDR2_arready;
-    (* X_INTERFACE_INFO = "xilinx.com:interface:aximm_rtl:1.0 M_AXI_DDR2 ARREGION" *) output[3:0] M_AXI_DDR2_arregion; // TODO: connect
-    (* X_INTERFACE_INFO = "xilinx.com:interface:aximm_rtl:1.0 M_AXI_DDR2 ARSIZE" *) output[2:0] M_AXI_DDR2_arsize;
-    (* X_INTERFACE_INFO = "xilinx.com:interface:aximm_rtl:1.0 M_AXI_DDR2 ARVALID" *) output M_AXI_DDR2_arvalid;
-
-    (* X_INTERFACE_INFO = "xilinx.com:interface:aximm_rtl:1.0 M_AXI_DDR2 AWADDR" *) output[33:0] M_AXI_DDR2_awaddr;
-    (* X_INTERFACE_INFO = "xilinx.com:interface:aximm_rtl:1.0 M_AXI_DDR2 AWBURST" *) output[1:0] M_AXI_DDR2_awburst;
-    (* X_INTERFACE_INFO = "xilinx.com:interface:aximm_rtl:1.0 M_AXI_DDR2 AWCACHE" *) output[3:0] M_AXI_DDR2_awcache;
-    (* X_INTERFACE_INFO = "xilinx.com:interface:aximm_rtl:1.0 M_AXI_DDR2 AWID" *) output[15:0] M_AXI_DDR2_awid;
-    (* X_INTERFACE_INFO = "xilinx.com:interface:aximm_rtl:1.0 M_AXI_DDR2 AWLEN" *) output[7:0] M_AXI_DDR2_awlen;
-    (* X_INTERFACE_INFO = "xilinx.com:interface:aximm_rtl:1.0 M_AXI_DDR2 AWLOCK" *) output[0:0] M_AXI_DDR2_awlock;
-    (* X_INTERFACE_INFO = "xilinx.com:interface:aximm_rtl:1.0 M_AXI_DDR2 AWPROT" *) output[2:0] M_AXI_DDR2_awprot;
-    (* X_INTERFACE_INFO = "xilinx.com:interface:aximm_rtl:1.0 M_AXI_DDR2 AWQOS" *) output[3:0] M_AXI_DDR2_awqos;
-    (* X_INTERFACE_INFO = "xilinx.com:interface:aximm_rtl:1.0 M_AXI_DDR2 AWREADY" *) input M_AXI_DDR2_awready;
-    (* X_INTERFACE_INFO = "xilinx.com:interface:aximm_rtl:1.0 M_AXI_DDR2 AWREGION" *) output[3:0] M_AXI_DDR2_awregion; // TODO: connect
-    (* X_INTERFACE_INFO = "xilinx.com:interface:aximm_rtl:1.0 M_AXI_DDR2 AWSIZE" *) output[2:0] M_AXI_DDR2_awsize;
-    (* X_INTERFACE_INFO = "xilinx.com:interface:aximm_rtl:1.0 M_AXI_DDR2 AWVALID" *) output M_AXI_DDR2_awvalid;
-
-    (* X_INTERFACE_INFO = "xilinx.com:interface:aximm_rtl:1.0 M_AXI_DDR2 BID" *) input[15:0] M_AXI_DDR2_bid;
-    (* X_INTERFACE_INFO = "xilinx.com:interface:aximm_rtl:1.0 M_AXI_DDR2 BREADY" *) output M_AXI_DDR2_bready;
-    (* X_INTERFACE_INFO = "xilinx.com:interface:aximm_rtl:1.0 M_AXI_DDR2 BRESP" *) input[1:0] M_AXI_DDR2_bresp;
-    (* X_INTERFACE_INFO = "xilinx.com:interface:aximm_rtl:1.0 M_AXI_DDR2 BVALID" *) input M_AXI_DDR2_bvalid;
-
-    (* X_INTERFACE_INFO = "xilinx.com:interface:aximm_rtl:1.0 M_AXI_DDR2 RDATA" *) input[63:0] M_AXI_DDR2_rdata;
-    (* X_INTERFACE_INFO = "xilinx.com:interface:aximm_rtl:1.0 M_AXI_DDR2 RID" *) input[15:0] M_AXI_DDR2_rid;
-    (* X_INTERFACE_INFO = "xilinx.com:interface:aximm_rtl:1.0 M_AXI_DDR2 RLAST" *) input M_AXI_DDR2_rlast;
-    (* X_INTERFACE_INFO = "xilinx.com:interface:aximm_rtl:1.0 M_AXI_DDR2 RREADY" *) output M_AXI_DDR2_rready;
-    (* X_INTERFACE_INFO = "xilinx.com:interface:aximm_rtl:1.0 M_AXI_DDR2 RRESP" *) input[1:0] M_AXI_DDR2_rresp;
-    (* X_INTERFACE_INFO = "xilinx.com:interface:aximm_rtl:1.0 M_AXI_DDR2 RVALID" *) input M_AXI_DDR2_rvalid;
-
-    (* X_INTERFACE_INFO = "xilinx.com:interface:aximm_rtl:1.0 M_AXI_DDR2 WDATA" *) output[63:0] M_AXI_DDR2_wdata;
-    (* X_INTERFACE_INFO = "xilinx.com:interface:aximm_rtl:1.0 M_AXI_DDR2 WLAST" *) output M_AXI_DDR2_wlast;
-    (* X_INTERFACE_INFO = "xilinx.com:interface:aximm_rtl:1.0 M_AXI_DDR2 WREADY" *) input M_AXI_DDR2_wready;
-    (* X_INTERFACE_INFO = "xilinx.com:interface:aximm_rtl:1.0 M_AXI_DDR2 WSTRB" *) output[7:0] M_AXI_DDR2_wstrb;
-    (* X_INTERFACE_INFO = "xilinx.com:interface:aximm_rtl:1.0 M_AXI_DDR2 WVALID" *) output M_AXI_DDR2_wvalid;
-
-    (* X_INTERFACE_PARAMETER = "XIL_INTERFACENAME M_AXI_DDR3, ADDR_WIDTH 34, ARUSER_WIDTH 0, AWUSER_WIDTH 0, BUSER_WIDTH 0, CLK_DOMAIN design_1_clk_wiz_0_0_clk_out1, DATA_WIDTH 64, HAS_BRESP 1, HAS_BURST 1, HAS_CACHE 1, HAS_LOCK 1, HAS_PROT 1, HAS_QOS 1, HAS_REGION 1, HAS_RRESP 1, HAS_WSTRB 1, ID_WIDTH 16, INSERT_VIP 0, MAX_BURST_LENGTH 256, NUM_READ_OUTSTANDING 2, NUM_READ_THREADS 1, NUM_WRITE_OUTSTANDING 2, NUM_WRITE_THREADS 1, PHASE 0, PROTOCOL AXI4, READ_WRITE_MODE READ_WRITE, RUSER_BITS_PER_BYTE 0, RUSER_WIDTH 0, SUPPORTS_NARROW_BURST 1, WUSER_BITS_PER_BYTE 0, WUSER_WIDTH 0" *)
-        (* X_INTERFACE_INFO = "xilinx.com:interface:aximm_rtl:1.0 M_AXI_DDR3 ARADDR" *) output[33:0] M_AXI_DDR3_araddr;
-    (* X_INTERFACE_INFO = "xilinx.com:interface:aximm_rtl:1.0 M_AXI_DDR3 ARBURST" *) output[1:0] M_AXI_DDR3_arburst;
-    (* X_INTERFACE_INFO = "xilinx.com:interface:aximm_rtl:1.0 M_AXI_DDR3 ARCACHE" *) output[3:0] M_AXI_DDR3_arcache;
-    (* X_INTERFACE_INFO = "xilinx.com:interface:aximm_rtl:1.0 M_AXI_DDR3 ARID" *) output[15:0] M_AXI_DDR3_arid;
-    (* X_INTERFACE_INFO = "xilinx.com:interface:aximm_rtl:1.0 M_AXI_DDR3 ARLEN" *) output[7:0] M_AXI_DDR3_arlen;
-    (* X_INTERFACE_INFO = "xilinx.com:interface:aximm_rtl:1.0 M_AXI_DDR3 ARLOCK" *) output[0:0] M_AXI_DDR3_arlock;
-    (* X_INTERFACE_INFO = "xilinx.com:interface:aximm_rtl:1.0 M_AXI_DDR3 ARPROT" *) output[2:0] M_AXI_DDR3_arprot;
-    (* X_INTERFACE_INFO = "xilinx.com:interface:aximm_rtl:1.0 M_AXI_DDR3 ARQOS" *) output[3:0] M_AXI_DDR3_arqos;
-    (* X_INTERFACE_INFO = "xilinx.com:interface:aximm_rtl:1.0 M_AXI_DDR3 ARREADY" *) input M_AXI_DDR3_arready;
-    (* X_INTERFACE_INFO = "xilinx.com:interface:aximm_rtl:1.0 M_AXI_DDR3 ARREGION" *) output[3:0] M_AXI_DDR3_arregion; // TODO: connect
-    (* X_INTERFACE_INFO = "xilinx.com:interface:aximm_rtl:1.0 M_AXI_DDR3 ARSIZE" *) output[2:0] M_AXI_DDR3_arsize;
-    (* X_INTERFACE_INFO = "xilinx.com:interface:aximm_rtl:1.0 M_AXI_DDR3 ARVALID" *) output M_AXI_DDR3_arvalid;
-
-    (* X_INTERFACE_INFO = "xilinx.com:interface:aximm_rtl:1.0 M_AXI_DDR3 AWADDR" *) output[33:0] M_AXI_DDR3_awaddr;
-    (* X_INTERFACE_INFO = "xilinx.com:interface:aximm_rtl:1.0 M_AXI_DDR3 AWBURST" *) output[1:0] M_AXI_DDR3_awburst;
-    (* X_INTERFACE_INFO = "xilinx.com:interface:aximm_rtl:1.0 M_AXI_DDR3 AWCACHE" *) output[3:0] M_AXI_DDR3_awcache;
-    (* X_INTERFACE_INFO = "xilinx.com:interface:aximm_rtl:1.0 M_AXI_DDR3 AWID" *) output[15:0] M_AXI_DDR3_awid;
-    (* X_INTERFACE_INFO = "xilinx.com:interface:aximm_rtl:1.0 M_AXI_DDR3 AWLEN" *) output[7:0] M_AXI_DDR3_awlen;
-    (* X_INTERFACE_INFO = "xilinx.com:interface:aximm_rtl:1.0 M_AXI_DDR3 AWLOCK" *) output[0:0] M_AXI_DDR3_awlock;
-    (* X_INTERFACE_INFO = "xilinx.com:interface:aximm_rtl:1.0 M_AXI_DDR3 AWPROT" *) output[2:0] M_AXI_DDR3_awprot;
-    (* X_INTERFACE_INFO = "xilinx.com:interface:aximm_rtl:1.0 M_AXI_DDR3 AWQOS" *) output[3:0] M_AXI_DDR3_awqos;
-    (* X_INTERFACE_INFO = "xilinx.com:interface:aximm_rtl:1.0 M_AXI_DDR3 AWREADY" *) input M_AXI_DDR3_awready;
-    (* X_INTERFACE_INFO = "xilinx.com:interface:aximm_rtl:1.0 M_AXI_DDR3 AWREGION" *) output[3:0] M_AXI_DDR3_awregion; // TODO: connect
-    (* X_INTERFACE_INFO = "xilinx.com:interface:aximm_rtl:1.0 M_AXI_DDR3 AWSIZE" *) output[2:0] M_AXI_DDR3_awsize;
-    (* X_INTERFACE_INFO = "xilinx.com:interface:aximm_rtl:1.0 M_AXI_DDR3 AWVALID" *) output M_AXI_DDR3_awvalid;
-
-    (* X_INTERFACE_INFO = "xilinx.com:interface:aximm_rtl:1.0 M_AXI_DDR3 BID" *) input[15:0] M_AXI_DDR3_bid;
-    (* X_INTERFACE_INFO = "xilinx.com:interface:aximm_rtl:1.0 M_AXI_DDR3 BREADY" *) output M_AXI_DDR3_bready;
-    (* X_INTERFACE_INFO = "xilinx.com:interface:aximm_rtl:1.0 M_AXI_DDR3 BRESP" *) input[1:0] M_AXI_DDR3_bresp;
-    (* X_INTERFACE_INFO = "xilinx.com:interface:aximm_rtl:1.0 M_AXI_DDR3 BVALID" *) input M_AXI_DDR3_bvalid;
-
-    (* X_INTERFACE_INFO = "xilinx.com:interface:aximm_rtl:1.0 M_AXI_DDR3 RDATA" *) input[63:0] M_AXI_DDR3_rdata;
-    (* X_INTERFACE_INFO = "xilinx.com:interface:aximm_rtl:1.0 M_AXI_DDR3 RID" *) input[15:0] M_AXI_DDR3_rid;
-    (* X_INTERFACE_INFO = "xilinx.com:interface:aximm_rtl:1.0 M_AXI_DDR3 RLAST" *) input M_AXI_DDR3_rlast;
-    (* X_INTERFACE_INFO = "xilinx.com:interface:aximm_rtl:1.0 M_AXI_DDR3 RREADY" *) output M_AXI_DDR3_rready;
-    (* X_INTERFACE_INFO = "xilinx.com:interface:aximm_rtl:1.0 M_AXI_DDR3 RRESP" *) input[1:0] M_AXI_DDR3_rresp;
-    (* X_INTERFACE_INFO = "xilinx.com:interface:aximm_rtl:1.0 M_AXI_DDR3 RVALID" *) input M_AXI_DDR3_rvalid;
-
-    (* X_INTERFACE_INFO = "xilinx.com:interface:aximm_rtl:1.0 M_AXI_DDR3 WDATA" *) output[63:0] M_AXI_DDR3_wdata;
-    (* X_INTERFACE_INFO = "xilinx.com:interface:aximm_rtl:1.0 M_AXI_DDR3 WLAST" *) output M_AXI_DDR3_wlast;
-    (* X_INTERFACE_INFO = "xilinx.com:interface:aximm_rtl:1.0 M_AXI_DDR3 WREADY" *) input M_AXI_DDR3_wready;
-    (* X_INTERFACE_INFO = "xilinx.com:interface:aximm_rtl:1.0 M_AXI_DDR3 WSTRB" *) output[7:0] M_AXI_DDR3_wstrb;
-    (* X_INTERFACE_INFO = "xilinx.com:interface:aximm_rtl:1.0 M_AXI_DDR3 WVALID" *) output M_AXI_DDR3_wvalid;
-
-    (* X_INTERFACE_PARAMETER = "XIL_INTERFACENAME CLK.SYS_CLK_30, ASSOCIATED_BUSIF S_AXI_CTRL:S_AXI_DMA:M_AXI_DDR0:M_AXI_DDR1:M_AXI_DDR2:M_AXI_DDR3, CLK_DOMAIN design_1_clk_wiz_0_0_clk_out1, INSERT_VIP 0, PHASE 0" *)
-        (* X_INTERFACE_INFO = "xilinx.com:signal:clock:1.0 CLK.SYS_CLK_30 CLK" *) input sys_clk_30;
-
-    (* X_INTERFACE_PARAMETER = "XIL_INTERFACENAME RST.SYS_RESET_N, INSERT_VIP 0, POLARITY ACTIVE_LOW" *)
-        (* X_INTERFACE_INFO = "xilinx.com:signal:reset:1.0 RST.SYS_RESET_N RST" *) input[0:0] sys_reset_n;
+    input[0:0] sys_reset_n;
 
     F1Shim firesim_top(
-        .clock(sys_clk_30),
+        .clock(sys_clk),
         .reset(!sys_reset_n),
 
         .io_master_aw_ready(S_AXI_CTRL_awready),

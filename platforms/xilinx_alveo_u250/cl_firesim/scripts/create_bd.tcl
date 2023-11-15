@@ -124,7 +124,9 @@ if { $bCheckIPsPassed != 1 } {
 
 # Procedure to create entire design; Provide argument to make
 # procedure reusable. If parentCell is "", will use root.
-proc create_root_design { script_folder parentCell firesim_freq current_vivado_version } {
+proc create_root_design { script_folder parentCell firesim_freq_mhz current_vivado_version } {
+   set firesim_freq_hz [expr $firesim_freq_mhz * 1000000]
+
    if { $parentCell eq "" } {
       set parentCell [get_bd_cells /]
    }

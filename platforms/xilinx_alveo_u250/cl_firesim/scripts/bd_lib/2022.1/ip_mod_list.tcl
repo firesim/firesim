@@ -12,5 +12,4 @@ xilinx.com:ip:xlconstant:1.1\
 
 set list_check_mods "\
 axi_tieoff_master\
-firesim_wrapper\
 "
