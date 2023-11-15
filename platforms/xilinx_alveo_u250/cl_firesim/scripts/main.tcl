@@ -6,7 +6,7 @@ set ifrequency           [lindex $argv 0]
 set istrategy            [lindex $argv 1]
 set iboard               [lindex $argv 2]
 
-proc retrieveVersionedFile {filename version} {
+proc retrieveVersionedFile { filename version } {
   set first [file rootname $filename]
   set last [file extension $filename]
   if {[file exists ${first}_${version}${last}]} {
