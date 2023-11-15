@@ -69,10 +69,6 @@ if {[file exists [set constrFile [retrieveVersionedFile ${root_dir}/design/FireS
 }
 
 if {[file exists [set constrFile [retrieveVersionedFile ${root_dir}/design/FireSim-generated.implementation.xdc $vivado_version]]]} {
-    # add impl clock to top of xdc
-    if {[catch {exec sed -i "1i create_generated_clock -name host_clock \[get_pins design_1_i/clk_wiz_0/inst/mmcme4_adv_inst/CLKOUT0\]\\n" ${constrFile}}]} {
-        puts "ERROR: Updating ${constrFile} failed ($result)"
-    }
     add_files -fileset impl_fileset -norecurse $constrFile
 }
 
