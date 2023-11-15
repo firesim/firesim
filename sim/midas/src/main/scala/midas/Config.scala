@@ -118,12 +118,14 @@ class F1Config extends Config(new Config((site, here, up) => {
 
 class XilinxAlveoU250Config extends Config(new Config((site, here, up) => {
   case HostMemNumChannels => 4
-  case PreLinkCircuitPath => None // use regexp to fix xdc paths
-  case PostLinkCircuitPath => None // use regexp to fix xdc paths
+  case PreLinkCircuitPath => Some("firesim_top")
+  case PostLinkCircuitPath => Some("firesim_top")
 }) ++ new F1Config ++ new SimConfig)
 
 class XilinxAlveoU200Config extends Config(new Config((site, here, up) => {
   case HostMemNumChannels => 1
+  case PreLinkCircuitPath => Some("design_1_i/firesim_wrapper_0/inst/firesim_top")
+  case PostLinkCircuitPath => Some("design_1_i/firesim_wrapper_0/inst/firesim_top")
 }) ++ new XilinxAlveoU250Config)
 
 class XilinxAlveoU280Config extends XilinxAlveoU200Config

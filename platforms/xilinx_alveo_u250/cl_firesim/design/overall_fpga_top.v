@@ -736,229 +736,280 @@ module overall_fpga_top (
         .PCIE_M_AXI_wvalid(PCIE_M_AXI_wvalid)
     );
 
-    firesim_wrapper firesim_wrapper_i (
-        .M_AXI_DDR0_araddr(DDR4_0_S_AXI_araddr),
-        .M_AXI_DDR0_arburst(DDR4_0_S_AXI_arburst),
-        .M_AXI_DDR0_arcache(DDR4_0_S_AXI_arcache),
-        .M_AXI_DDR0_arid(DDR4_0_S_AXI_arid),
-        .M_AXI_DDR0_arlen(DDR4_0_S_AXI_arlen),
-        .M_AXI_DDR0_arlock(DDR4_0_S_AXI_arlock),
-        .M_AXI_DDR0_arprot(DDR4_0_S_AXI_arprot),
-        .M_AXI_DDR0_arqos(DDR4_0_S_AXI_arqos),
-        .M_AXI_DDR0_arready(DDR4_0_S_AXI_arready),
-        .M_AXI_DDR0_arregion(DDR4_0_S_AXI_arregion),
-        .M_AXI_DDR0_arsize(DDR4_0_S_AXI_arsize),
-        .M_AXI_DDR0_arvalid(DDR4_0_S_AXI_arvalid),
-        .M_AXI_DDR0_awaddr(DDR4_0_S_AXI_awaddr),
-        .M_AXI_DDR0_awburst(DDR4_0_S_AXI_awburst),
-        .M_AXI_DDR0_awcache(DDR4_0_S_AXI_awcache),
-        .M_AXI_DDR0_awid(DDR4_0_S_AXI_awid),
-        .M_AXI_DDR0_awlen(DDR4_0_S_AXI_awlen),
-        .M_AXI_DDR0_awlock(DDR4_0_S_AXI_awlock),
-        .M_AXI_DDR0_awprot(DDR4_0_S_AXI_awprot),
-        .M_AXI_DDR0_awqos(DDR4_0_S_AXI_awqos),
-        .M_AXI_DDR0_awready(DDR4_0_S_AXI_awready),
-        .M_AXI_DDR0_awregion(DDR4_0_S_AXI_awregion),
-        .M_AXI_DDR0_awsize(DDR4_0_S_AXI_awsize),
-        .M_AXI_DDR0_awvalid(DDR4_0_S_AXI_awvalid),
-        .M_AXI_DDR0_bready(DDR4_0_S_AXI_bid),
-        .M_AXI_DDR0_bid(DDR4_0_S_AXI_bready),
-        .M_AXI_DDR0_bresp(DDR4_0_S_AXI_bresp),
-        .M_AXI_DDR0_bvalid(DDR4_0_S_AXI_bvalid),
-        .M_AXI_DDR0_rdata(DDR4_0_S_AXI_rdata),
-        .M_AXI_DDR0_rid(DDR4_0_S_AXI_rid),
-        .M_AXI_DDR0_rlast(DDR4_0_S_AXI_rlast),
-        .M_AXI_DDR0_rready(DDR4_0_S_AXI_rready),
-        .M_AXI_DDR0_rresp(DDR4_0_S_AXI_rresp),
-        .M_AXI_DDR0_rvalid(DDR4_0_S_AXI_rvalid),
-        .M_AXI_DDR0_wdata(DDR4_0_S_AXI_wdata),
-        .M_AXI_DDR0_wlast(DDR4_0_S_AXI_wlast),
-        .M_AXI_DDR0_wready(DDR4_0_S_AXI_wready),
-        .M_AXI_DDR0_wstrb(DDR4_0_S_AXI_wstrb),
-        .M_AXI_DDR0_wvalid(DDR4_0_S_AXI_wvalid),
+    F1Shim firesim_top(
+        .clock(sys_clk),
+        .reset(!sys_reset_n),
 
-        .M_AXI_DDR1_araddr(DDR4_1_S_AXI_araddr),
-        .M_AXI_DDR1_arburst(DDR4_1_S_AXI_arburst),
-        .M_AXI_DDR1_arcache(DDR4_1_S_AXI_arcache),
-        .M_AXI_DDR1_arid(DDR4_1_S_AXI_arid),
-        .M_AXI_DDR1_arlen(DDR4_1_S_AXI_arlen),
-        .M_AXI_DDR1_arlock(DDR4_1_S_AXI_arlock),
-        .M_AXI_DDR1_arprot(DDR4_1_S_AXI_arprot),
-        .M_AXI_DDR1_arqos(DDR4_1_S_AXI_arqos),
-        .M_AXI_DDR1_arready(DDR4_1_S_AXI_arready),
-        .M_AXI_DDR1_arregion(DDR4_1_S_AXI_arregion),
-        .M_AXI_DDR1_arsize(DDR4_1_S_AXI_arsize),
-        .M_AXI_DDR1_arvalid(DDR4_1_S_AXI_arvalid),
-        .M_AXI_DDR1_awaddr(DDR4_1_S_AXI_awaddr),
-        .M_AXI_DDR1_awburst(DDR4_1_S_AXI_awburst),
-        .M_AXI_DDR1_awcache(DDR4_1_S_AXI_awcache),
-        .M_AXI_DDR1_awid(DDR4_1_S_AXI_awid),
-        .M_AXI_DDR1_awlen(DDR4_1_S_AXI_awlen),
-        .M_AXI_DDR1_awlock(DDR4_1_S_AXI_awlock),
-        .M_AXI_DDR1_awprot(DDR4_1_S_AXI_awprot),
-        .M_AXI_DDR1_awqos(DDR4_1_S_AXI_awqos),
-        .M_AXI_DDR1_awready(DDR4_1_S_AXI_awready),
-        .M_AXI_DDR1_awregion(DDR4_1_S_AXI_awregion),
-        .M_AXI_DDR1_awsize(DDR4_1_S_AXI_awsize),
-        .M_AXI_DDR1_awvalid(DDR4_1_S_AXI_awvalid),
-        .M_AXI_DDR1_bready(DDR4_1_S_AXI_bid),
-        .M_AXI_DDR1_bid(DDR4_1_S_AXI_bready),
-        .M_AXI_DDR1_bresp(DDR4_1_S_AXI_bresp),
-        .M_AXI_DDR1_bvalid(DDR4_1_S_AXI_bvalid),
-        .M_AXI_DDR1_rdata(DDR4_1_S_AXI_rdata),
-        .M_AXI_DDR1_rid(DDR4_1_S_AXI_rid),
-        .M_AXI_DDR1_rlast(DDR4_1_S_AXI_rlast),
-        .M_AXI_DDR1_rready(DDR4_1_S_AXI_rready),
-        .M_AXI_DDR1_rresp(DDR4_1_S_AXI_rresp),
-        .M_AXI_DDR1_rvalid(DDR4_1_S_AXI_rvalid),
-        .M_AXI_DDR1_wdata(DDR4_1_S_AXI_wdata),
-        .M_AXI_DDR1_wlast(DDR4_1_S_AXI_wlast),
-        .M_AXI_DDR1_wready(DDR4_1_S_AXI_wready),
-        .M_AXI_DDR1_wstrb(DDR4_1_S_AXI_wstrb),
-        .M_AXI_DDR1_wvalid(DDR4_1_S_AXI_wvalid),
+        .io_master_aw_ready(PCIE_M_AXI_LITE_awready),
+        .io_master_aw_valid(PCIE_M_AXI_LITE_awvalid),
+        .io_master_aw_bits_addr(PCIE_M_AXI_LITE_awaddr[24:0]),
+        .io_master_aw_bits_len(8'h0),
+        .io_master_aw_bits_size(3'h2),
+        .io_master_aw_bits_burst(2'h1),
+        .io_master_aw_bits_lock(1'h0),
+        .io_master_aw_bits_cache(4'h0),
+        .io_master_aw_bits_prot(3'h0), //unused? (could connect?) S_AXI_CTRL_awprot
+        .io_master_aw_bits_qos(4'h0),
+        .io_master_aw_bits_region(4'h0),
+        .io_master_aw_bits_id(12'h0),
+        .io_master_aw_bits_user(1'h0),
 
-        .M_AXI_DDR2_araddr(DDR4_2_S_AXI_araddr),
-        .M_AXI_DDR2_arburst(DDR4_2_S_AXI_arburst),
-        .M_AXI_DDR2_arcache(DDR4_2_S_AXI_arcache),
-        .M_AXI_DDR2_arid(DDR4_2_S_AXI_arid),
-        .M_AXI_DDR2_arlen(DDR4_2_S_AXI_arlen),
-        .M_AXI_DDR2_arlock(DDR4_2_S_AXI_arlock),
-        .M_AXI_DDR2_arprot(DDR4_2_S_AXI_arprot),
-        .M_AXI_DDR2_arqos(DDR4_2_S_AXI_arqos),
-        .M_AXI_DDR2_arready(DDR4_2_S_AXI_arready),
-        .M_AXI_DDR2_arregion(DDR4_2_S_AXI_arregion),
-        .M_AXI_DDR2_arsize(DDR4_2_S_AXI_arsize),
-        .M_AXI_DDR2_arvalid(DDR4_2_S_AXI_arvalid),
-        .M_AXI_DDR2_awaddr(DDR4_2_S_AXI_awaddr),
-        .M_AXI_DDR2_awburst(DDR4_2_S_AXI_awburst),
-        .M_AXI_DDR2_awcache(DDR4_2_S_AXI_awcache),
-        .M_AXI_DDR2_awid(DDR4_2_S_AXI_awid),
-        .M_AXI_DDR2_awlen(DDR4_2_S_AXI_awlen),
-        .M_AXI_DDR2_awlock(DDR4_2_S_AXI_awlock),
-        .M_AXI_DDR2_awprot(DDR4_2_S_AXI_awprot),
-        .M_AXI_DDR2_awqos(DDR4_2_S_AXI_awqos),
-        .M_AXI_DDR2_awready(DDR4_2_S_AXI_awready),
-        .M_AXI_DDR2_awregion(DDR4_2_S_AXI_awregion),
-        .M_AXI_DDR2_awsize(DDR4_2_S_AXI_awsize),
-        .M_AXI_DDR2_awvalid(DDR4_2_S_AXI_awvalid),
-        .M_AXI_DDR2_bready(DDR4_2_S_AXI_bid),
-        .M_AXI_DDR2_bid(DDR4_2_S_AXI_bready),
-        .M_AXI_DDR2_bresp(DDR4_2_S_AXI_bresp),
-        .M_AXI_DDR2_bvalid(DDR4_2_S_AXI_bvalid),
-        .M_AXI_DDR2_rdata(DDR4_2_S_AXI_rdata),
-        .M_AXI_DDR2_rid(DDR4_2_S_AXI_rid),
-        .M_AXI_DDR2_rlast(DDR4_2_S_AXI_rlast),
-        .M_AXI_DDR2_rready(DDR4_2_S_AXI_rready),
-        .M_AXI_DDR2_rresp(DDR4_2_S_AXI_rresp),
-        .M_AXI_DDR2_rvalid(DDR4_2_S_AXI_rvalid),
-        .M_AXI_DDR2_wdata(DDR4_2_S_AXI_wdata),
-        .M_AXI_DDR2_wlast(DDR4_2_S_AXI_wlast),
-        .M_AXI_DDR2_wready(DDR4_2_S_AXI_wready),
-        .M_AXI_DDR2_wstrb(DDR4_2_S_AXI_wstrb),
-        .M_AXI_DDR2_wvalid(DDR4_2_S_AXI_wvalid),
+        .io_master_w_ready(PCIE_M_AXI_LITE_wready),
+        .io_master_w_valid(PCIE_M_AXI_LITE_wvalid),
+        .io_master_w_bits_data(PCIE_M_AXI_LITE_wdata),
+        .io_master_w_bits_last(1'h1),
+        .io_master_w_bits_id(12'h0),
+        .io_master_w_bits_strb(PCIE_M_AXI_LITE_wstrb), //OR 8'hff
+        .io_master_w_bits_user(1'h0),
 
-        .M_AXI_DDR3_araddr(DDR4_3_S_AXI_araddr),
-        .M_AXI_DDR3_arburst(DDR4_3_S_AXI_arburst),
-        .M_AXI_DDR3_arcache(DDR4_3_S_AXI_arcache),
-        .M_AXI_DDR3_arid(DDR4_3_S_AXI_arid),
-        .M_AXI_DDR3_arlen(DDR4_3_S_AXI_arlen),
-        .M_AXI_DDR3_arlock(DDR4_3_S_AXI_arlock),
-        .M_AXI_DDR3_arprot(DDR4_3_S_AXI_arprot),
-        .M_AXI_DDR3_arqos(DDR4_3_S_AXI_arqos),
-        .M_AXI_DDR3_arready(DDR4_3_S_AXI_arready),
-        .M_AXI_DDR3_arregion(DDR4_3_S_AXI_arregion),
-        .M_AXI_DDR3_arsize(DDR4_3_S_AXI_arsize),
-        .M_AXI_DDR3_arvalid(DDR4_3_S_AXI_arvalid),
-        .M_AXI_DDR3_awaddr(DDR4_3_S_AXI_awaddr),
-        .M_AXI_DDR3_awburst(DDR4_3_S_AXI_awburst),
-        .M_AXI_DDR3_awcache(DDR4_3_S_AXI_awcache),
-        .M_AXI_DDR3_awid(DDR4_3_S_AXI_awid),
-        .M_AXI_DDR3_awlen(DDR4_3_S_AXI_awlen),
-        .M_AXI_DDR3_awlock(DDR4_3_S_AXI_awlock),
-        .M_AXI_DDR3_awprot(DDR4_3_S_AXI_awprot),
-        .M_AXI_DDR3_awqos(DDR4_3_S_AXI_awqos),
-        .M_AXI_DDR3_awready(DDR4_3_S_AXI_awready),
-        .M_AXI_DDR3_awregion(DDR4_3_S_AXI_awregion),
-        .M_AXI_DDR3_awsize(DDR4_3_S_AXI_awsize),
-        .M_AXI_DDR3_awvalid(DDR4_3_S_AXI_awvalid),
-        .M_AXI_DDR3_bready(DDR4_3_S_AXI_bid),
-        .M_AXI_DDR3_bid(DDR4_3_S_AXI_bready),
-        .M_AXI_DDR3_bresp(DDR4_3_S_AXI_bresp),
-        .M_AXI_DDR3_bvalid(DDR4_3_S_AXI_bvalid),
-        .M_AXI_DDR3_rdata(DDR4_3_S_AXI_rdata),
-        .M_AXI_DDR3_rid(DDR4_3_S_AXI_rid),
-        .M_AXI_DDR3_rlast(DDR4_3_S_AXI_rlast),
-        .M_AXI_DDR3_rready(DDR4_3_S_AXI_rready),
-        .M_AXI_DDR3_rresp(DDR4_3_S_AXI_rresp),
-        .M_AXI_DDR3_rvalid(DDR4_3_S_AXI_rvalid),
-        .M_AXI_DDR3_wdata(DDR4_3_S_AXI_wdata),
-        .M_AXI_DDR3_wlast(DDR4_3_S_AXI_wlast),
-        .M_AXI_DDR3_wready(DDR4_3_S_AXI_wready),
-        .M_AXI_DDR3_wstrb(DDR4_3_S_AXI_wstrb),
-        .M_AXI_DDR3_wvalid(DDR4_3_S_AXI_wvalid),
+        .io_master_b_ready(PCIE_M_AXI_LITE_bready),
+        .io_master_b_valid(PCIE_M_AXI_LITE_bvalid),
+        .io_master_b_bits_resp(PCIE_M_AXI_LITE_bresp),
+        .io_master_b_bits_id(),      // UNUSED at top level
+        .io_master_b_bits_user(),    // UNUSED at top level
 
-        .S_AXI_CTRL_araddr(PCIE_M_AXI_LITE_araddr),
-        .S_AXI_CTRL_arprot(PCIE_M_AXI_LITE_arprot),
-        .S_AXI_CTRL_arready(PCIE_M_AXI_LITE_arready),
-        .S_AXI_CTRL_arvalid(PCIE_M_AXI_LITE_arvalid),
-        .S_AXI_CTRL_awaddr(PCIE_M_AXI_LITE_awaddr),
-        .S_AXI_CTRL_awprot(PCIE_M_AXI_LITE_awprot),
-        .S_AXI_CTRL_awready(PCIE_M_AXI_LITE_awready),
-        .S_AXI_CTRL_awvalid(PCIE_M_AXI_LITE_awvalid),
-        .S_AXI_CTRL_bready(PCIE_M_AXI_LITE_bready),
-        .S_AXI_CTRL_bresp(PCIE_M_AXI_LITE_bresp),
-        .S_AXI_CTRL_bvalid(PCIE_M_AXI_LITE_bvalid),
-        .S_AXI_CTRL_rdata(PCIE_M_AXI_LITE_rdata),
-        .S_AXI_CTRL_rready(PCIE_M_AXI_LITE_rready),
-        .S_AXI_CTRL_rresp(PCIE_M_AXI_LITE_rresp),
-        .S_AXI_CTRL_rvalid(PCIE_M_AXI_LITE_rvalid),
-        .S_AXI_CTRL_wdata(PCIE_M_AXI_LITE_wdata),
-        .S_AXI_CTRL_wready(PCIE_M_AXI_LITE_wready),
-        .S_AXI_CTRL_wstrb(PCIE_M_AXI_LITE_wstrb),
-        .S_AXI_CTRL_wvalid(PCIE_M_AXI_LITE_wvalid),
+        .io_master_ar_ready(PCIE_M_AXI_LITE_arready),
+        .io_master_ar_valid(PCIE_M_AXI_LITE_arvalid),
+        .io_master_ar_bits_addr(PCIE_M_AXI_LITE_araddr[24:0]),
+        .io_master_ar_bits_len(8'h0),
+        .io_master_ar_bits_size(3'h2),
+        .io_master_ar_bits_burst(2'h1),
+        .io_master_ar_bits_lock(1'h0),
+        .io_master_ar_bits_cache(4'h0),
+        .io_master_ar_bits_prot(3'h0), // S_AXI_CTRL_arprot
+        .io_master_ar_bits_qos(4'h0),
+        .io_master_ar_bits_region(4'h0),
+        .io_master_ar_bits_id(12'h0),
+        .io_master_ar_bits_user(1'h0),
 
-        .S_AXI_DMA_araddr(PCIE_M_AXI_araddr),
-        .S_AXI_DMA_arburst(PCIE_M_AXI_arburst),
-        .S_AXI_DMA_arcache(PCIE_M_AXI_arcache),
-        .S_AXI_DMA_arid(PCIE_M_AXI_arid),
-        .S_AXI_DMA_arlen(PCIE_M_AXI_arlen),
-        .S_AXI_DMA_arlock(PCIE_M_AXI_arlock),
-        .S_AXI_DMA_arprot(PCIE_M_AXI_arprot),
-        .S_AXI_DMA_arqos(PCIE_M_AXI_arqos),
-        .S_AXI_DMA_arready(PCIE_M_AXI_arready),
-        .S_AXI_DMA_arregion(PCIE_M_AXI_arregion),
-        .S_AXI_DMA_arsize(PCIE_M_AXI_arsize),
-        .S_AXI_DMA_arvalid(PCIE_M_AXI_arvalid),
-        .S_AXI_DMA_awaddr(PCIE_M_AXI_awaddr),
-        .S_AXI_DMA_awburst(PCIE_M_AXI_awburst),
-        .S_AXI_DMA_awcache(PCIE_M_AXI_awcache),
-        .S_AXI_DMA_awid(PCIE_M_AXI_awid),
-        .S_AXI_DMA_awlen(PCIE_M_AXI_awlen),
-        .S_AXI_DMA_awlock(PCIE_M_AXI_awlock),
-        .S_AXI_DMA_awprot(PCIE_M_AXI_awprot),
-        .S_AXI_DMA_awqos(PCIE_M_AXI_awqos),
-        .S_AXI_DMA_awready(PCIE_M_AXI_awready),
-        .S_AXI_DMA_awregion(PCIE_M_AXI_awregion),
-        .S_AXI_DMA_awsize(PCIE_M_AXI_awsize),
-        .S_AXI_DMA_awvalid(PCIE_M_AXI_awvalid),
-        .S_AXI_DMA_bid(PCIE_M_AXI_bid),
-        .S_AXI_DMA_bready(PCIE_M_AXI_bready),
-        .S_AXI_DMA_bresp(PCIE_M_AXI_bresp),
-        .S_AXI_DMA_bvalid(PCIE_M_AXI_bvalid),
-        .S_AXI_DMA_rdata(PCIE_M_AXI_rdata),
-        .S_AXI_DMA_rid(PCIE_M_AXI_rid),
-        .S_AXI_DMA_rlast(PCIE_M_AXI_rlast),
-        .S_AXI_DMA_rready(PCIE_M_AXI_rready),
-        .S_AXI_DMA_rresp(PCIE_M_AXI_rresp),
-        .S_AXI_DMA_rvalid(PCIE_M_AXI_rvalid),
-        .S_AXI_DMA_wdata(PCIE_M_AXI_wdata),
-        .S_AXI_DMA_wlast(PCIE_M_AXI_wlast),
-        .S_AXI_DMA_wready(PCIE_M_AXI_wready),
-        .S_AXI_DMA_wstrb(PCIE_M_AXI_wstrb),
-        .S_AXI_DMA_wvalid(PCIE_M_AXI_wvalid),
+        .io_master_r_ready(PCIE_M_AXI_LITE_rready),
+        .io_master_r_valid(PCIE_M_AXI_LITE_rvalid),
+        .io_master_r_bits_resp(PCIE_M_AXI_LITE_rresp),
+        .io_master_r_bits_data(PCIE_M_AXI_LITE_rdata),
+        .io_master_r_bits_last(), //UNUSED at top level
+        .io_master_r_bits_id(),      // UNUSED at top level
+        .io_master_r_bits_user(),    // UNUSED at top level
 
-        .sys_clk(sys_clk),
-        .sys_reset_n(sys_reset_n)
+        // special NIC master interface
+        .io_dma_aw_ready(PCIE_M_AXI_awready),
+        .io_dma_aw_valid(PCIE_M_AXI_awvalid),
+        .io_dma_aw_bits_addr(PCIE_M_AXI_awaddr),
+        .io_dma_aw_bits_len(PCIE_M_AXI_awlen),
+        .io_dma_aw_bits_size(PCIE_M_AXI_awsize),
+        .io_dma_aw_bits_burst(2'h1), // PCIE_M_AXI_awburst
+        .io_dma_aw_bits_lock(1'h0), // PCIE_M_AXI_awlock
+        .io_dma_aw_bits_cache(4'h0), // PCIE_M_AXI_awcache
+        .io_dma_aw_bits_prot(3'h0), //unused? (could connect?) PCIE_M_AXI_awprot
+        .io_dma_aw_bits_qos(4'h0), // PCIE_M_AXI_awqos
+        .io_dma_aw_bits_region(4'h0), // PCIE_M_AXI_awregion
+        .io_dma_aw_bits_id(PCIE_M_AXI_awid),
+        .io_dma_aw_bits_user(1'h0),
+
+        .io_dma_w_ready(PCIE_M_AXI_wready),
+        .io_dma_w_valid(PCIE_M_AXI_wvalid),
+        .io_dma_w_bits_data(PCIE_M_AXI_wdata),
+        .io_dma_w_bits_last(PCIE_M_AXI_wlast),
+        .io_dma_w_bits_id(4'h0),
+        .io_dma_w_bits_strb(PCIE_M_AXI_wstrb),
+        .io_dma_w_bits_user(1'h0),
+
+        .io_dma_b_ready(PCIE_M_AXI_bready),
+        .io_dma_b_valid(PCIE_M_AXI_bvalid),
+        .io_dma_b_bits_resp(PCIE_M_AXI_bresp),
+        .io_dma_b_bits_id(PCIE_M_AXI_bid),
+        .io_dma_b_bits_user(),    // UNUSED at top level
+
+        .io_dma_ar_ready(PCIE_M_AXI_arready),
+        .io_dma_ar_valid(PCIE_M_AXI_arvalid),
+        .io_dma_ar_bits_addr(PCIE_M_AXI_araddr),
+        .io_dma_ar_bits_len(PCIE_M_AXI_arlen),
+        .io_dma_ar_bits_size(PCIE_M_AXI_arsize),
+        .io_dma_ar_bits_burst(2'h1), // PCIE_M_AXI_arburst
+        .io_dma_ar_bits_lock(1'h0), // PCIE_M_AXI_arlock
+        .io_dma_ar_bits_cache(4'h0), // PCIE_M_AXI_arcache
+        .io_dma_ar_bits_prot(3'h0), // PCIE_M_AXI_arprot
+        .io_dma_ar_bits_qos(4'h0), // PCIE_M_AXI_arqos
+        .io_dma_ar_bits_region(4'h0), // PCIE_M_AXI_arregion
+        .io_dma_ar_bits_id(PCIE_M_AXI_arid),
+        .io_dma_ar_bits_user(1'h0),
+
+        .io_dma_r_ready(PCIE_M_AXI_rready),
+        .io_dma_r_valid(PCIE_M_AXI_rvalid),
+        .io_dma_r_bits_resp(PCIE_M_AXI_rresp),
+        .io_dma_r_bits_data(PCIE_M_AXI_rdata),
+        .io_dma_r_bits_last(PCIE_M_AXI_rlast),
+        .io_dma_r_bits_id(PCIE_M_AXI_rid),
+        .io_dma_r_bits_user(),    // UNUSED at top level
+
+        // `include "firesim_ila_insert_ports.v"
+
+        .io_slave_0_aw_ready(DDR4_0_S_AXI_awready),
+        .io_slave_0_aw_valid(DDR4_0_S_AXI_awvalid),
+        .io_slave_0_aw_bits_addr(DDR4_0_S_AXI_awaddr),
+        .io_slave_0_aw_bits_len(DDR4_0_S_AXI_awlen),
+        .io_slave_0_aw_bits_size(DDR4_0_S_AXI_awsize),
+        .io_slave_0_aw_bits_burst(DDR4_0_S_AXI_awburst), // not available on DDR IF
+        .io_slave_0_aw_bits_lock(DDR4_0_S_AXI_awlock), // not available on DDR IF
+        .io_slave_0_aw_bits_cache(DDR4_0_S_AXI_awcache), // not available on DDR IF
+        .io_slave_0_aw_bits_prot(DDR4_0_S_AXI_awprot), // not available on DDR IF
+        .io_slave_0_aw_bits_qos(DDR4_0_S_AXI_awqos), // not available on DDR IF
+        .io_slave_0_aw_bits_id(DDR4_0_S_AXI_awid),
+
+        .io_slave_0_w_ready(DDR4_0_S_AXI_wready),
+        .io_slave_0_w_valid(DDR4_0_S_AXI_wvalid),
+        .io_slave_0_w_bits_data(DDR4_0_S_AXI_wdata),
+        .io_slave_0_w_bits_last(DDR4_0_S_AXI_wlast),
+        .io_slave_0_w_bits_strb(DDR4_0_S_AXI_wstrb),
+
+        .io_slave_0_b_ready(DDR4_0_S_AXI_bready),
+        .io_slave_0_b_valid(DDR4_0_S_AXI_bvalid),
+        .io_slave_0_b_bits_resp(DDR4_0_S_AXI_bresp),
+        .io_slave_0_b_bits_id(DDR4_0_S_AXI_bid),
+
+        .io_slave_0_ar_ready(DDR4_0_S_AXI_arready),
+        .io_slave_0_ar_valid(DDR4_0_S_AXI_arvalid),
+        .io_slave_0_ar_bits_addr(DDR4_0_S_AXI_araddr),
+        .io_slave_0_ar_bits_len(DDR4_0_S_AXI_arlen),
+        .io_slave_0_ar_bits_size(DDR4_0_S_AXI_arsize),
+        .io_slave_0_ar_bits_burst(DDR4_0_S_AXI_arburst), // not available on DDR IF
+        .io_slave_0_ar_bits_lock(DDR4_0_S_AXI_arlock), // not available on DDR IF
+        .io_slave_0_ar_bits_cache(DDR4_0_S_AXI_arcache), // not available on DDR IF
+        .io_slave_0_ar_bits_prot(DDR4_0_S_AXI_arprot), // not available on DDR IF
+        .io_slave_0_ar_bits_qos(DDR4_0_S_AXI_arqos), // not available on DDR IF
+        .io_slave_0_ar_bits_id(DDR4_0_S_AXI_arid), // not available on DDR IF
+
+        .io_slave_0_r_ready(DDR4_0_S_AXI_rready),
+        .io_slave_0_r_valid(DDR4_0_S_AXI_rvalid),
+        .io_slave_0_r_bits_resp(DDR4_0_S_AXI_rresp),
+        .io_slave_0_r_bits_data(DDR4_0_S_AXI_rdata),
+        .io_slave_0_r_bits_last(DDR4_0_S_AXI_rlast),
+        .io_slave_0_r_bits_id(DDR4_0_S_AXI_rid),
+
+        .io_slave_1_aw_ready(DDR4_1_S_AXI_awready),
+        .io_slave_1_aw_valid(DDR4_1_S_AXI_awvalid),
+        .io_slave_1_aw_bits_addr(DDR4_1_S_AXI_awaddr),
+        .io_slave_1_aw_bits_len(DDR4_1_S_AXI_awlen),
+        .io_slave_1_aw_bits_size(DDR4_1_S_AXI_awsize),
+        .io_slave_1_aw_bits_burst(DDR4_1_S_AXI_awburst), // not available on DDR IF
+        .io_slave_1_aw_bits_lock(DDR4_1_S_AXI_awlock), // not available on DDR IF
+        .io_slave_1_aw_bits_cache(DDR4_1_S_AXI_awcache), // not available on DDR IF
+        .io_slave_1_aw_bits_prot(DDR4_1_S_AXI_awprot), // not available on DDR IF
+        .io_slave_1_aw_bits_qos(DDR4_1_S_AXI_awqos), // not available on DDR IF
+        .io_slave_1_aw_bits_id(DDR4_1_S_AXI_awid),
+
+        .io_slave_1_w_ready(DDR4_1_S_AXI_wready),
+        .io_slave_1_w_valid(DDR4_1_S_AXI_wvalid),
+        .io_slave_1_w_bits_data(DDR4_1_S_AXI_wdata),
+        .io_slave_1_w_bits_last(DDR4_1_S_AXI_wlast),
+        .io_slave_1_w_bits_strb(DDR4_1_S_AXI_wstrb),
+
+        .io_slave_1_b_ready(DDR4_1_S_AXI_bready),
+        .io_slave_1_b_valid(DDR4_1_S_AXI_bvalid),
+        .io_slave_1_b_bits_resp(DDR4_1_S_AXI_bresp),
+        .io_slave_1_b_bits_id(DDR4_1_S_AXI_bid),
+
+        .io_slave_1_ar_ready(DDR4_1_S_AXI_arready),
+        .io_slave_1_ar_valid(DDR4_1_S_AXI_arvalid),
+        .io_slave_1_ar_bits_addr(DDR4_1_S_AXI_araddr),
+        .io_slave_1_ar_bits_len(DDR4_1_S_AXI_arlen),
+        .io_slave_1_ar_bits_size(DDR4_1_S_AXI_arsize),
+        .io_slave_1_ar_bits_burst(DDR4_1_S_AXI_arburst), // not available on DDR IF
+        .io_slave_1_ar_bits_lock(DDR4_1_S_AXI_arlock), // not available on DDR IF
+        .io_slave_1_ar_bits_cache(DDR4_1_S_AXI_arcache), // not available on DDR IF
+        .io_slave_1_ar_bits_prot(DDR4_1_S_AXI_arprot), // not available on DDR IF
+        .io_slave_1_ar_bits_qos(DDR4_1_S_AXI_arqos), // not available on DDR IF
+        .io_slave_1_ar_bits_id(DDR4_1_S_AXI_arid), // not available on DDR IF
+
+        .io_slave_1_r_ready(DDR4_1_S_AXI_rready),
+        .io_slave_1_r_valid(DDR4_1_S_AXI_rvalid),
+        .io_slave_1_r_bits_resp(DDR4_1_S_AXI_rresp),
+        .io_slave_1_r_bits_data(DDR4_1_S_AXI_rdata),
+        .io_slave_1_r_bits_last(DDR4_1_S_AXI_rlast),
+        .io_slave_1_r_bits_id(DDR4_1_S_AXI_rid),
+
+        .io_slave_2_aw_ready(DDR4_2_S_AXI_awready),
+        .io_slave_2_aw_valid(DDR4_2_S_AXI_awvalid),
+        .io_slave_2_aw_bits_addr(DDR4_2_S_AXI_awaddr),
+        .io_slave_2_aw_bits_len(DDR4_2_S_AXI_awlen),
+        .io_slave_2_aw_bits_size(DDR4_2_S_AXI_awsize),
+        .io_slave_2_aw_bits_burst(DDR4_2_S_AXI_awburst), // not available on DDR IF
+        .io_slave_2_aw_bits_lock(DDR4_2_S_AXI_awlock), // not available on DDR IF
+        .io_slave_2_aw_bits_cache(DDR4_2_S_AXI_awcache), // not available on DDR IF
+        .io_slave_2_aw_bits_prot(DDR4_2_S_AXI_awprot), // not available on DDR IF
+        .io_slave_2_aw_bits_qos(DDR4_2_S_AXI_awqos), // not available on DDR IF
+        .io_slave_2_aw_bits_id(DDR4_2_S_AXI_awid),
+
+        .io_slave_2_w_ready(DDR4_2_S_AXI_wready),
+        .io_slave_2_w_valid(DDR4_2_S_AXI_wvalid),
+        .io_slave_2_w_bits_data(DDR4_2_S_AXI_wdata),
+        .io_slave_2_w_bits_last(DDR4_2_S_AXI_wlast),
+        .io_slave_2_w_bits_strb(DDR4_2_S_AXI_wstrb),
+
+        .io_slave_2_b_ready(DDR4_2_S_AXI_bready),
+        .io_slave_2_b_valid(DDR4_2_S_AXI_bvalid),
+        .io_slave_2_b_bits_resp(DDR4_2_S_AXI_bresp),
+        .io_slave_2_b_bits_id(DDR4_2_S_AXI_bid),
+
+        .io_slave_2_ar_ready(DDR4_2_S_AXI_arready),
+        .io_slave_2_ar_valid(DDR4_2_S_AXI_arvalid),
+        .io_slave_2_ar_bits_addr(DDR4_2_S_AXI_araddr),
+        .io_slave_2_ar_bits_len(DDR4_2_S_AXI_arlen),
+        .io_slave_2_ar_bits_size(DDR4_2_S_AXI_arsize),
+        .io_slave_2_ar_bits_burst(DDR4_2_S_AXI_arburst), // not available on DDR IF
+        .io_slave_2_ar_bits_lock(DDR4_2_S_AXI_arlock), // not available on DDR IF
+        .io_slave_2_ar_bits_cache(DDR4_2_S_AXI_arcache), // not available on DDR IF
+        .io_slave_2_ar_bits_prot(DDR4_2_S_AXI_arprot), // not available on DDR IF
+        .io_slave_2_ar_bits_qos(DDR4_2_S_AXI_arqos), // not available on DDR IF
+        .io_slave_2_ar_bits_id(DDR4_2_S_AXI_arid), // not available on DDR IF
+
+        .io_slave_2_r_ready(DDR4_2_S_AXI_rready),
+        .io_slave_2_r_valid(DDR4_2_S_AXI_rvalid),
+        .io_slave_2_r_bits_resp(DDR4_2_S_AXI_rresp),
+        .io_slave_2_r_bits_data(DDR4_2_S_AXI_rdata),
+        .io_slave_2_r_bits_last(DDR4_2_S_AXI_rlast),
+        .io_slave_2_r_bits_id(DDR4_2_S_AXI_rid),
+
+        .io_slave_3_aw_ready(DDR4_3_S_AXI_awready),
+        .io_slave_3_aw_valid(DDR4_3_S_AXI_awvalid),
+        .io_slave_3_aw_bits_addr(DDR4_3_S_AXI_awaddr),
+        .io_slave_3_aw_bits_len(DDR4_3_S_AXI_awlen),
+        .io_slave_3_aw_bits_size(DDR4_3_S_AXI_awsize),
+        .io_slave_3_aw_bits_burst(DDR4_3_S_AXI_awburst), // not available on DDR IF
+        .io_slave_3_aw_bits_lock(DDR4_3_S_AXI_awlock), // not available on DDR IF
+        .io_slave_3_aw_bits_cache(DDR4_3_S_AXI_awcache), // not available on DDR IF
+        .io_slave_3_aw_bits_prot(DDR4_3_S_AXI_awprot), // not available on DDR IF
+        .io_slave_3_aw_bits_qos(DDR4_3_S_AXI_awqos), // not available on DDR IF
+        .io_slave_3_aw_bits_id(DDR4_3_S_AXI_awid),
+
+        .io_slave_3_w_ready(DDR4_3_S_AXI_wready),
+        .io_slave_3_w_valid(DDR4_3_S_AXI_wvalid),
+        .io_slave_3_w_bits_data(DDR4_3_S_AXI_wdata),
+        .io_slave_3_w_bits_last(DDR4_3_S_AXI_wlast),
+        .io_slave_3_w_bits_strb(DDR4_3_S_AXI_wstrb),
+
+        .io_slave_3_b_ready(DDR4_3_S_AXI_bready),
+        .io_slave_3_b_valid(DDR4_3_S_AXI_bvalid),
+        .io_slave_3_b_bits_resp(DDR4_3_S_AXI_bresp),
+        .io_slave_3_b_bits_id(DDR4_3_S_AXI_bid),
+
+        .io_slave_3_ar_ready(DDR4_3_S_AXI_arready),
+        .io_slave_3_ar_valid(DDR4_3_S_AXI_arvalid),
+        .io_slave_3_ar_bits_addr(DDR4_3_S_AXI_araddr),
+        .io_slave_3_ar_bits_len(DDR4_3_S_AXI_arlen),
+        .io_slave_3_ar_bits_size(DDR4_3_S_AXI_arsize),
+        .io_slave_3_ar_bits_burst(DDR4_3_S_AXI_arburst), // not available on DDR IF
+        .io_slave_3_ar_bits_lock(DDR4_3_S_AXI_arlock), // not available on DDR IF
+        .io_slave_3_ar_bits_cache(DDR4_3_S_AXI_arcache), // not available on DDR IF
+        .io_slave_3_ar_bits_prot(DDR4_3_S_AXI_arprot), // not available on DDR IF
+        .io_slave_3_ar_bits_qos(DDR4_3_S_AXI_arqos), // not available on DDR IF
+        .io_slave_3_ar_bits_id(DDR4_3_S_AXI_arid), // not available on DDR IF
+
+        .io_slave_3_r_ready(DDR4_3_S_AXI_rready),
+        .io_slave_3_r_valid(DDR4_3_S_AXI_rvalid),
+        .io_slave_3_r_bits_resp(DDR4_3_S_AXI_rresp),
+        .io_slave_3_r_bits_data(DDR4_3_S_AXI_rdata),
+        .io_slave_3_r_bits_last(DDR4_3_S_AXI_rlast),
+        .io_slave_3_r_bits_id(DDR4_3_S_AXI_rid)
     );
 
 endmodule
