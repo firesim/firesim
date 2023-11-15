@@ -21,3 +21,11 @@ proc check_file_exists { inFile } {
        exit 1
    }
 }
+
+proc check_progress { run errmsg } {
+   set progress [get_property PROGRESS ${run}]
+   if {$progress != "100%"} {
+       puts "ERROR: $errmsg (progress at $progress/%100)"
+       exit 1
+   }
+}

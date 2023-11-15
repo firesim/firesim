@@ -18,16 +18,13 @@ set_property -dict [ list \
   {STEPS.POST_ROUTE_PHYS_OPT_DESIGN.MORE OPTIONS} "$post_phys_options" \
 ] ${impl_run}
 
-launch_runs ${impl_run} -to_step route_design -jobs ${jobs}
-wait_on_run ${impl_run}
-
-proc check_progress { run errmsg } {
-  if {[get_property PROGRESS ${run}] != "100%"} {
-      puts "ERROR: $errmsg"
-      exit 1
-  }
+if {$route_phys_opt} {
+  set run_to_step {phys_opt_design (Post-Route)}
+} else {
+  set run_to_step route_design
 }
-
+launch_runs ${impl_run} -to_step ${run_to_step} -jobs ${jobs}
+wait_on_run ${impl_run}
 check_progress ${impl_run} "first normal implementation failed"
 
 set WNS [get_property STATS.WNS ${impl_run}]

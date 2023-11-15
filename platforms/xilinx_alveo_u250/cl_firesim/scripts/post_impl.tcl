@@ -18,6 +18,8 @@ close_design
 
 # write bit/mcs
 
-file copy -force ${root_dir}/vivado_proj/firesim.runs/${impl_run}/design_1_wrapper.bit ${root_dir}/vivado_proj/firesim.bit
+set firesim_bit_path ${root_dir}/vivado_proj/firesim.bit
 
-write_cfgmem -force -format mcs -interface SPIx4 -size 1024 -loadbit "up 0x01002000 ${root_dir}/vivado_proj/firesim.bit" -verbose  ${root_dir}/vivado_proj/firesim.mcs
+file copy -force ${root_dir}/vivado_proj/firesim.runs/${impl_run}/overall_fpga_top.bit ${firesim_bit_path}
+
+write_cfgmem -force -format mcs -interface SPIx4 -size 1024 -loadbit "up 0x01002000 ${firesim_bit_path}" -verbose ${root_dir}/vivado_proj/firesim.mcs
