@@ -166,8 +166,8 @@ class XilinxVCU118Config extends Config(new Config((site, here, up) => {
     beatBytes = 8,
     idBits    = 6)
   case HostMemNumChannels => 2
-  case PreLinkCircuitPath => None
-  case PostLinkCircuitPath => None
+  case PreLinkCircuitPath => Some("partition/firesim_top")
+  case PostLinkCircuitPath => Some("partition_wrapper/partition/firesim_top")
 }) ++ new SimConfig)
 
 class VitisConfig extends Config(new Config((site, here, up) => {
