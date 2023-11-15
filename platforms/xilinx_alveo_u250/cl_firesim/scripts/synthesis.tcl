@@ -10,7 +10,4 @@ set_property -dict [ list \
 launch_runs ${synth_run} -jobs ${jobs}
 wait_on_run ${synth_run}
 
-if {[get_property PROGRESS ${synth_run}] != "100%"} {
-    puts "ERROR: synthesis failed"
-    exit 1
-}
+check_progress ${synth_run} "synthesis failed"
