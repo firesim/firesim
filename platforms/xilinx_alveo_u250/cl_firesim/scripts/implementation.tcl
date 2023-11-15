@@ -37,6 +37,7 @@ check_progress ${impl_run} "first normal implementation failed"
 set WNS [get_property STATS.WNS ${impl_run}]
 set WHS [get_property STATS.WHS ${impl_run}]
 
+# run idr or ml flow to close timing
 if {$WNS < 0 || $WHS < 0} {
   check_file_exists [set sourceFile [${root_dir}/scripts/implementation_idr_ml/${vivado_version}.tcl]]
   source $sourceFile
