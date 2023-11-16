@@ -277,7 +277,7 @@ alveo_u250_firesim_rocket_singlecore_no_nic:
     TARGET_PROJECT: firesim
     DESIGN: FireSim
     TARGET_CONFIG: FireSimRocketConfig
-    PLATFORM_CONFIG: BaseXilinxAlveoConfig
+    PLATFORM_CONFIG: BaseXilinxAlveoU250Config
     deploy_quintuplet: null
     platform_config_args:
         fpga_frequency: 60
@@ -293,7 +293,7 @@ alveo_u250_firesim_gemmini_rocket_singlecore_no_nic:
     TARGET_PROJECT: firesim
     DESIGN: FireSim
     TARGET_CONFIG: FireSimLeanGemminiRocketConfig
-    PLATFORM_CONFIG: BaseXilinxAlveoConfig
+    PLATFORM_CONFIG: BaseXilinxAlveoU250Config
     deploy_quintuplet: null
     platform_config_args:
         fpga_frequency: 60
@@ -308,7 +308,7 @@ alveo_u280_firesim_rocket_singlecore_no_nic:
     TARGET_PROJECT: firesim
     DESIGN: FireSim
     TARGET_CONFIG: FireSimRocketConfig
-    PLATFORM_CONFIG: BaseXilinxAlveoConfig
+    PLATFORM_CONFIG: BaseXilinxAlveoU280Config
     deploy_quintuplet: null
     platform_config_args:
         fpga_frequency: 60
@@ -323,7 +323,7 @@ alveo_u200_firesim_rocket_singlecore_no_nic:
     TARGET_PROJECT: firesim
     DESIGN: FireSim
     TARGET_CONFIG: FireSimRocketConfig
-    PLATFORM_CONFIG: BaseXilinxAlveoConfig
+    PLATFORM_CONFIG: BaseXilinxAlveoU200Config
     deploy_quintuplet: null
     platform_config_args:
         fpga_frequency: 60
@@ -361,4 +361,3 @@ nitefury_firesim_rocket_singlecore_no_nic:
     post_build_hook: null
     metasim_customruntimeconfig: null
     bit_builder_recipe: bit-builder-recipes/rhsresearch_nitefury_ii.yaml
-

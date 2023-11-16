@@ -116,11 +116,19 @@ class F1Config extends Config(new Config((site, here, up) => {
   case PostLinkCircuitPath => Some("WRAPPER_INST/CL/firesim_top")
 }) ++ new SimConfig)
 
-class XilinxAlveoConfig extends Config(new Config((site, here, up) => {
-  case HostMemNumChannels => 1
-  case PreLinkCircuitPath => None
-  case PostLinkCircuitPath => None
+class XilinxAlveoU250Config extends Config(new Config((site, here, up) => {
+  case HostMemNumChannels => 4
+  case PreLinkCircuitPath => Some("firesim_top")
+  case PostLinkCircuitPath => Some("firesim_top")
 }) ++ new F1Config ++ new SimConfig)
+
+class XilinxAlveoU200Config extends Config(new Config((site, here, up) => {
+  case HostMemNumChannels => 1
+  case PreLinkCircuitPath => Some("design_1_i/firesim_wrapper_0/inst/firesim_top")
+  case PostLinkCircuitPath => Some("design_1_i/firesim_wrapper_0/inst/firesim_top")
+}) ++ new XilinxAlveoU250Config)
+
+class XilinxAlveoU280Config extends XilinxAlveoU200Config
 
 class NitefuryConfig extends Config(new Config((site, here, up) => {
   case Platform       => (p: Parameters) => new F1Shim()(p)
@@ -158,8 +166,8 @@ class XilinxVCU118Config extends Config(new Config((site, here, up) => {
     beatBytes = 8,
     idBits    = 6)
   case HostMemNumChannels => 2
-  case PreLinkCircuitPath => None
-  case PostLinkCircuitPath => None
+  case PreLinkCircuitPath => Some("partition/firesim_top")
+  case PostLinkCircuitPath => Some("partition_wrapper/partition/firesim_top")
 }) ++ new SimConfig)
 
 class VitisConfig extends Config(new Config((site, here, up) => {
