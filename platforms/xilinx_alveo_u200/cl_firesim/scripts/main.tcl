@@ -64,15 +64,16 @@ report_ip_status
 create_fileset -constrset synth_fileset
 create_fileset -constrset impl_fileset
 
+# TODO: for some reason, this synth xdc cannot properly find cells with get_cells despite having the path
 if {[file exists [set constrFile [retrieveVersionedFile ${root_dir}/design/FireSim-generated.synthesis.xdc $vivado_version]]]} {
+    # map L2 banks to URAMs if possible (might warn if cells not present)
+    add_line_to_file 1 $constrFile "set_property RAM_STYLE ULTRA \[get_cells -hierarchical -regexp {.*firesim_top.*cc_banks_.*_reg.*}\]"
     add_files -fileset synth_fileset -norecurse $constrFile
 }
 
 if {[file exists [set constrFile [retrieveVersionedFile ${root_dir}/design/FireSim-generated.implementation.xdc $vivado_version]]]} {
     # add impl clock to top of xdc
-    if {[catch {exec sed -i "1i create_generated_clock -name host_clock \[get_pins design_1_i/clk_wiz_0/inst/mmcme4_adv_inst/CLKOUT0\]\\n" ${constrFile}}]} {
-        puts "ERROR: Updating ${constrFile} failed ($result)"
-    }
+    add_line_to_file 1 $constrFile "create_generated_clock -name host_clock \[get_pins design_1_i/clk_wiz_0/inst/mmcme4_adv_inst/CLKOUT0\]"
     add_files -fileset impl_fileset -norecurse $constrFile
 }
 
@@ -85,17 +86,28 @@ update_compile_order -fileset sources_1
 set_property top $top_level_name [current_fileset]
 update_compile_order -fileset sources_1
 
-if {[llength [get_filesets -quiet synth_fileset]]} {
-    set_property constrset synth_fileset [get_runs synth_1]
-} else {
-    delete_fileset synth_fileset
+foreach f [get_files -of [get_filesets synth_fileset]] {
+    set_property USED_IN {synthesis} $f
+    set_property USED_IN_IMPLEMENTATION 0 $f
+    set_property USED_IN_SYNTHESIS 1 $f
 }
 
-if {[llength [get_filesets -quiet impl_fileset]]} {
-    set_property constrset impl_fileset [get_runs impl_1]
-} else {
-    delete_fileset impl_fileset
+foreach f [get_files -of [get_filesets impl_fileset]] {
+    set_property USED_IN {implementation} $f
+    set_property USED_IN_IMPLEMENTATION 1 $f
+    set_property USED_IN_SYNTHESIS 0 $f
+    set_property PROCESSING_ORDER LATE $f
 }
+
+proc set_fileset_for_run_or_delete { fsname runname } {
+    if {[llength [get_filesets -quiet $fsname]]} {
+        set_property constrset $fsname [get_runs $runname]
+    } else {
+        delete_fileset $fsname
+    }
+}
+set_fileset_for_run_or_delete synth_fileset synth_1
+set_fileset_for_run_or_delete impl_fileset impl_1
 
 set rpt_dir ${root_dir}/vivado_proj/reports
 file mkdir ${rpt_dir}
