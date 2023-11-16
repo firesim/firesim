@@ -29,3 +29,10 @@ proc check_progress { run errmsg } {
        exit 1
    }
 }
+
+proc add_line_to_file { lineno ifile istr } {
+    if {[catch {exec sed -i "${lineno}i ${istr}\\n" ${ifile}}]} {
+        puts "ERROR: Updating ${ifile} failed ($result)"
+        exit 1
+    }
+}
