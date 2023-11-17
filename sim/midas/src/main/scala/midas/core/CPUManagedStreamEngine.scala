@@ -11,6 +11,7 @@ import freechips.rocketchip.diplomacy._
 import freechips.rocketchip.util.DecoupledHelper
 
 import midas.targetutils.xdc
+import midas.targetutils.{BRAMQueue}
 import midas.widgets._
 
 class StreamAdapterIO(val w: Int) extends Bundle {
