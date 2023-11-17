@@ -401,9 +401,11 @@ class FireSimServerNode(FireSimNode):
             return hash(o) % ((sys.maxsize + 1) * 2)
 
         def mount(img: str, mnt: str, tmp_dir: str) -> None:
+            check_script("firesim-mount")
             run(f"sudo firesim-mount {img} {mnt}")
 
         def umount(mnt: str, tmp_dir: str) -> None:
+            check_script("firesim-unmount")
             run(f"sudo firesim-unmount {mnt}")
 
         # mount rootfs, copy files from it back to local system

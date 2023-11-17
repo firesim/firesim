@@ -8,8 +8,11 @@ from os import fspath
 from os.path import realpath
 from pathlib import Path
 from fabric.api import run, warn_only, hide # type: ignore
+import hashlib
+from tempfile import TemporaryDirectory
 
 from awstools.awstools import get_localhost_instance_id
+from buildtools.bitbuilder import get_deploy_dir
 
 from typing import List, Tuple, Type
 
@@ -456,3 +459,15 @@ def run_only_aws(*args, **kwargs):
         run(*args, **kwargs)
     else:
         sys.exit(1)
+
+def get_md5(file):
+    return hashlib.md5(open(file,'rb').read()).hexdigest()
+
+def check_script(remotescriptname):
+    ogscript = f"{get_deploy_dir()}/sudo-scripts/{remotescriptname}"
+    with TemporaryDirectory() as tmpdir:
+        r = run(f"which {remotescriptname}")
+        get(r, tmpdir)
+        if get_md5(ogscript) != get_md5(f"{tmpdir}/{remotescriptname}"):
+            raise Exception(f"""{remotescriptname} (on remote) differs from the current FireSim version in {ogscript}. Ensure the proper FireSim scripts are sourced (and are the same version as this FireSim)""")
+            sys.exit(1)

@@ -283,6 +283,7 @@ class InstanceDeployManager(metaclass=abc.ABCMeta):
         return len(self.parent_node.switch_slots) != 0
 
     def remove_shm_files(self) -> None:
+        check_script("firesim-remove-dev-shm")
         run("sudo firesim-remove-dev-shm")
 
     def start_switches_instance(self) -> None:
@@ -794,6 +795,7 @@ class XilinxAlveoInstanceDeployManager(InstanceDeployManager):
             if run('lsmod | grep -wq xdma', warn_only=True).return_code != 0:
                 self.instance_logger("Loading XDMA Driver Kernel Module.")
                 # must be installed to this path on sim. machine
+                check_script("firesim-load-xdma-module")
                 run(f"sudo firesim-load-xdma-module", shell=True)
             else:
                 self.instance_logger("XDMA Driver Kernel Module already loaded.")
@@ -804,6 +806,7 @@ class XilinxAlveoInstanceDeployManager(InstanceDeployManager):
             # unload xdma if loaded
             if run('lsmod | grep -wq xdma', warn_only=True).return_code == 0:
                 self.instance_logger("Unloading XDMA Driver Kernel Module.")
+                check_script("firesim-remove-xdma-module")
                 run(f"sudo firesim-remove-xdma-module", shell=True)
             else:
                 self.instance_logger("XDMA Driver Kernel Module already unloaded.")
@@ -1008,6 +1011,7 @@ class XilinxVCU118InstanceDeployManager(InstanceDeployManager):
             if run('lsmod | grep -wq xdma', warn_only=True).return_code != 0:
                 self.instance_logger("Loading XDMA Driver Kernel Module.")
                 # must be installed to this path on sim. machine
+                check_script("firesim-load-xdma-module")
                 run(f"sudo firesim-load-xdma-module", shell=True)
             else:
                 self.instance_logger("XDMA Driver Kernel Module already loaded.")
@@ -1018,6 +1022,7 @@ class XilinxVCU118InstanceDeployManager(InstanceDeployManager):
             if run('lsmod | grep -wq xvsec', warn_only=True).return_code != 0:
                 self.instance_logger("Loading XVSEC Driver Kernel Module.")
                 # must be installed to this path on sim. machine
+                check_script("firesim-load-xvsec-module")
                 run(f"sudo firesim-load-xvsec-module", shell=True)
             else:
                 self.instance_logger("XVSEC Driver Kernel Module already loaded.")
@@ -1051,6 +1056,7 @@ class XilinxVCU118InstanceDeployManager(InstanceDeployManager):
                 devno = bdf['devno']
                 capno = bdf['capno']
                 self.instance_logger(f"""Flashing FPGA Slot: {slotno} (bus:{busno}, dev:{devno}, cap:{capno}) with bit: {bit}""")
+                check_script("firesim-xvsecctl-flash-fpga")
                 run(f"""sudo firesim-xvsecctl-flash-fpga {busno} {devno} {capno} {bit}""")
 
     def infrasetup_instance(self, uridir: str) -> None:
