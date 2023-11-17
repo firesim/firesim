@@ -1,4 +1,4 @@
-name: firesim-local-run-tests
+name: firesim-non-aws-run-tests
 
 on:
   # run ci when pring to main (note: ci runs on the merge commit of the pr!)
