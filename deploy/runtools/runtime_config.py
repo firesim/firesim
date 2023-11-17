@@ -336,7 +336,6 @@ class RuntimeHWConfig:
             autocounter_config: AutoCounterConfig,
             hostdebug_config: HostDebugConfig,
             synthprint_config: SynthPrintConfig,
-            sudo: bool,
             extra_plusargs: str,
             extra_args: str) -> str:
         """ return the command used to boot the simulation. this has to have
@@ -402,7 +401,7 @@ class RuntimeHWConfig:
         permissive_driver_args += command_linklatencies
         permissive_driver_args += command_netbws
         permissive_driver_args += command_shmemportnames
-        driver_call = f"""{"sudo" if sudo else ""} ./{driver} +permissive {" ".join(permissive_driver_args)} {extra_plusargs} +permissive-off {" ".join(command_bootbinaries)} {extra_args} """
+        driver_call = f"""./{driver} +permissive {" ".join(permissive_driver_args)} {extra_plusargs} +permissive-off {" ".join(command_bootbinaries)} {extra_args} """
         base_command = f"""script -f -c 'stty intr ^] && {driver_call} && stty intr ^c' uartlog"""
         screen_wrapped = f"""screen -S {screen_name} -d -m bash -c "{base_command}"; sleep 1"""
 
@@ -614,7 +613,6 @@ class RuntimeBuildRecipeConfig(RuntimeHWConfig):
             autocounter_config: AutoCounterConfig,
             hostdebug_config: HostDebugConfig,
             synthprint_config: SynthPrintConfig,
-            sudo: bool,
             extra_plusargs: str,
             extra_args: str) -> str:
         """ return the command used to boot the meta simulation. """
@@ -640,7 +638,6 @@ class RuntimeBuildRecipeConfig(RuntimeHWConfig):
             autocounter_config,
             hostdebug_config,
             synthprint_config,
-            sudo,
             full_extra_plusargs,
             full_extra_args)
 

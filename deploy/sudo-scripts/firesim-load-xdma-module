@@ -1,0 +1,5 @@
+#!/bin/bash
+
+set -ex
+
+insmod /lib/modules/$(uname -r)/extra/xdma.ko poll_mode=1

@@ -1,0 +1,5 @@
+#!/bin/bash
+
+set -ex
+
+insmod /lib/modules/$(uname -r)/updates/kernel/drivers/xvsec/xvsec.ko

@@ -1,0 +1,8 @@
+must also do (sudo all things along the sim/midas/src/main/cc/simif*.cc path):
+ - sudo chmod a+rwX /sys/bus/pcie/devices/PCIE_EBDF/vendor
+ - sudo chmod a+rwX /sys/bus/pcie/devices/PCIE_EBDF/device
+ - sudo chmod a+rwX /sys/bus/pcie/devices/PCIE_EBDF/xdma/*_h2c_0
+
+on aws require you do the same so you don't need sudo for driver/switches
+
+must also install fpga-util from the platform area and make it sudo executable

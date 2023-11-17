@@ -1,4 +1,4 @@
-""" Miscellaneous utils used by other buildtools pieces. """
+""" Miscellaneous utils used by other runtools pieces. """
 
 from __future__ import annotations
 
@@ -8,6 +8,8 @@ from os import fspath
 from os.path import realpath
 from pathlib import Path
 from fabric.api import run, warn_only, hide # type: ignore
+
+from awstools.awstools import get_localhost_instance_id
 
 from typing import List, Tuple, Type
 
@@ -449,4 +451,8 @@ class MacAddress():
         how many entries you need in your switching tables. """
         return cls.next_mac_alloc
 
-
+def run_only_aws(*args, **kwargs):
+    if get_localhost_instance_id():
+        run(*args, **kwargs)
+    else:
+        sys.exit(1)

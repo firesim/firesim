@@ -1,0 +1,6 @@
+#!/bin/bash
+
+set -ex
+
+mount -o loop $1 $2
+chown -R $(whoami) $2
