@@ -997,6 +997,11 @@ class RHSResearchNitefuryIIInstanceDeployManager(XilinxAlveoInstanceDeployManage
         super().__init__(parent_node)
         self.PLATFORM_NAME = "rhsresearch_nitefury_ii"
 
+class MellanoxInnova2InstanceDeployManager(XilinxAlveoInstanceDeployManager):
+    def __init__(self, parent_node: Inst) -> None:
+        super().__init__(parent_node)
+        self.PLATFORM_NAME = "mellanox_innova_2"
+
 class XilinxVCU118InstanceDeployManager(InstanceDeployManager):
     """ This class manages a Xilinx VCU118-enabled instance using the
     garnet shell. """

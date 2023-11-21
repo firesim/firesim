@@ -137,6 +137,22 @@ $(vitis): $(header) $(DRIVER_CC) $(DRIVER_H) $(midas_cc) $(midas_h)
 		DRIVER="$(DRIVER_CC)" \
 		TOP_DIR=$(chipyard_dir)
 
+# Compile Driver
+$(mellanox_innova_2): export CXXFLAGS := $(CXXFLAGS) $(common_cxx_flags) $(DRIVER_CXXOPTS) \
+              -idirafter ${CONDA_PREFIX}/include -idirafter /usr/include
+$(mellanox_innova_2): export LDFLAGS := $(LDFLAGS) $(common_ld_flags) -Wl,-rpath='$$$$ORIGIN' \
+              -L${CONDA_PREFIX}/lib -Wl,-rpath-link=/usr/lib/x86_64-linux-gnu -L/usr/lib/x86_64-linux-gnu
+
+$(mellanox_innova_2): $(header) $(DRIVER_CC) $(DRIVER_H) $(midas_cc) $(midas_h)
+	mkdir -p $(OUTPUT_DIR)/build
+	cp $(header) $(OUTPUT_DIR)/build/
+	$(MAKE) -C $(simif_dir) driver MAIN=$(PLATFORM) PLATFORM=$(PLATFORM) \
+		DRIVER_NAME=$(DESIGN) \
+		GEN_FILE_BASENAME=$(BASE_FILE_NAME) \
+		GEN_DIR=$(OUTPUT_DIR)/build \
+		OUT_DIR=$(OUTPUT_DIR) \
+		DRIVER="$(DRIVER_CC)" \
+		TOP_DIR=$(chipyard_dir)
 
 tags: $(header) $(DRIVER_CC) $(DRIVER_H) $(midas_cc) $(midas_h)
 	ctags -R --exclude=@.ctagsignore .

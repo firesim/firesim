@@ -1,0 +1,6 @@
+.*.swp
+.*.swo
+__pycache__
+
+cl_*
+!cl_firesim

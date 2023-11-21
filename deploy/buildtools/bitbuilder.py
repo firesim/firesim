@@ -695,7 +695,11 @@ class XilinxAlveoBitBuilder(BitBuilder):
 
         # store bitfile (and mcs if it exists)
         local(f"cp {bit_path} {tar_staging_path}")
-        local(f"cp {mcs_path} {tar_staging_path}")
+        if self.build_config.PLATFORM != "xilinx_vcu118":
+            if self.BOARD_NAME == "mellanox_innova_2":
+                local(f"cp {local_cl_dir}/vivado_proj/firesim*.mcs {tar_staging_path}")
+            else:
+                local(f"cp {mcs_path} {tar_staging_path}")
         if self.build_config.PLATFORM == "xilinx_vcu118":
             local(f"cp {mcs_secondary_path} {tar_staging_path}")
 
@@ -850,3 +854,8 @@ class RHSResearchNitefuryIIBitBuilder(XilinxAlveoBitBuilder):
         rootLogger.debug(rsync_cap.stderr)
 
         return f"{dest_alveo_dir}/{fpga_build_postfix}"
+
+class MellanoxInnova2BitBuilder(XilinxAlveoBitBuilder):
+    def __init__(self, build_config: BuildConfig, args: Dict[str, Any]) -> None:
+        super().__init__(build_config, args)
+        self.BOARD_NAME = "mellanox_innova_2"
