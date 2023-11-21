@@ -21,6 +21,7 @@ DRIVER_H = \
 	$(shell find $(firesim_lib_dir) -name "*.h") \
 	$(TESTCHIPIP_CSRC_DIR)/cospike_impl.h \
 	$(TESTCHIPIP_CSRC_DIR)/testchip_tsi.h \
+	$(TESTCHIPIP_CSRC_DIR)/testchip_dtm.h \
 	$(TESTCHIPIP_CSRC_DIR)/testchip_htif.h
 
 DRIVER_CC = \
@@ -29,6 +30,7 @@ DRIVER_CC = \
 	$(RISCV)/lib/libfesvr.a \
 	$(TESTCHIPIP_CSRC_DIR)/cospike_impl.cc \
 	$(TESTCHIPIP_CSRC_DIR)/testchip_tsi.cc \
+	$(TESTCHIPIP_CSRC_DIR)/testchip_dtm.cc \
 	$(TESTCHIPIP_CSRC_DIR)/testchip_htif.cc
 
 # Disable missing override warning for testchipip.
