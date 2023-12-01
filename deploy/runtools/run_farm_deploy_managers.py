@@ -1120,3 +1120,91 @@ class XilinxVCU118InstanceDeployManager(InstanceDeployManager):
                 run("chmod +x sim-run.sh")
                 run("./sim-run.sh")
 
+class IntelInstanceDeployManager(InstanceDeployManager):
+    PLATFORM_NAME: Optional[str]
+
+    @classmethod
+    def sim_command_requires_sudo(cls) -> bool:
+        """ This sim does requires sudo. """
+        return True
+
+    def __init__(self, parent_node: Inst) -> None:
+        super().__init__(parent_node)
+        self.PLATFORM_NAME = "intel"
+
+    def flash_fpgas(self) -> None:
+        if self.instance_assigned_simulations():
+            self.instance_logger("""Flash all FPGA Slots.""")
+
+            for slotno, firesimservernode in enumerate(self.parent_node.sim_slots):
+                serv = self.parent_node.sim_slots[slotno]
+                hwcfg = serv.get_resolved_server_hardware_config()
+
+                bitstream_tar = hwcfg.get_bitstream_tar_filename()
+                remote_sim_dir = self.get_remote_sim_dir_for_slot(slotno)
+                bitstream_tar_unpack_dir = f"{remote_sim_dir}/{self.PLATFORM_NAME}"
+                bit = f"{remote_sim_dir}/{self.PLATFORM_NAME}/firesim.bit"
+
+                # at this point the tar file is in the sim slot
+                run(f"rm -rf {bitstream_tar_unpack_dir}")
+                run(f"tar xvf {remote_sim_dir}/{bitstream_tar} -C {remote_sim_dir}")
+
+                # TODO: INTELFOLKS: Determine BDF for Intel FPGA and pass it to FPGA programming script
+                # for now you can just figure out the serial # of all fpgas on the machine and program them all
+                # at this point the `bit` file holds the bitstream
+
+    def infrasetup_instance(self, uridir: str) -> None:
+        """ Handle infrastructure setup for this platform. """
+        if self.instance_assigned_simulations():
+            # This is a sim-host node.
+
+            # copy sim infrastructure
+            for slotno in range(len(self.parent_node.sim_slots)):
+                self.copy_sim_slot_infrastructure(slotno, uridir)
+                self.extract_driver_tarball(slotno)
+
+            if not self.parent_node.metasimulation_enabled:
+                # TODO: INTELFOLKS: Any Intel driver that needs to be loaded? Do it here?
+                # flash fpgas
+                self.flash_fpgas()
+
+        if self.instance_assigned_switches():
+            # all nodes could have a switch
+            for slotno in range(len(self.parent_node.switch_slots)):
+                self.copy_switch_slot_infrastructure(slotno)
+
+    def enumerate_fpgas(self, uridir: str) -> None:
+        # TODO: INTELFOLKS: We can ignore this for now
+        return
+
+    def terminate_instance(self) -> None:
+        """ IntelInstanceDeployManager machines cannot be terminated. """
+        return
+
+    def start_sim_slot(self, slotno: int) -> None:
+        """ start a simulation. (same as the default except that you have a mapping from slotno to a specific BDF)"""
+        if self.instance_assigned_simulations():
+            self.instance_logger(f"""Starting {self.sim_type_message} simulation for slot: {slotno}.""")
+            remote_home_dir = self.parent_node.sim_dir
+            remote_sim_dir = f"""{remote_home_dir}/sim_slot_{slotno}/"""
+            assert slotno < len(self.parent_node.sim_slots), f"{slotno} can not index into sim_slots {len(self.parent_node.sim_slots)} on {self.parent_node.host}"
+            server = self.parent_node.sim_slots[slotno]
+
+            if not self.parent_node.metasimulation_enabled:
+                # TODO: INTELFOLKS: Can just run the simulation on a specific FPGA (i.e. with the serial # or BDF or whatever) (these args correspond to C stub)
+                self.instance_logger(f"""Determine BDF for {slotno}""")
+                #collect = run('lspci | grep -i xilinx')
+                #bdfs = [ i[:7] for i in collect.splitlines() if len(i.strip()) >= 0 ]
+                #bdf = bdfs[slotno].replace('.', ':').split(':')
+                #extra_args = f"+domain=0x0000 +bus=0x{bdf[0]} +device=0x{bdf[1]} +function=0x0 +bar=0x0 +pci-vendor=0x10ee +pci-device=0x903f"
+            else:
+                extra_args = None
+
+            # make the local job results dir for this sim slot
+            server.mkdir_and_prep_local_job_results_dir()
+            sim_start_script_local_path = server.write_sim_start_script(slotno, (self.sim_command_requires_sudo() and has_sudo()), extra_args)
+            put(sim_start_script_local_path, remote_sim_dir)
+
+            with cd(remote_sim_dir):
+                run("chmod +x sim-run.sh")
+                run("./sim-run.sh")

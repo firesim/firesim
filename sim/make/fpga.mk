@@ -20,6 +20,9 @@ else ifeq ($(PLATFORM), rhsresearch_nitefury_ii)
 board_dir          := $(platforms_dir)/rhsresearch_nitefury_ii/NiteFury-and-LiteFury-firesim/Sample-Projects/Project-0
 else ifeq ($(PLATFORM), f1)
 board_dir 	   := $(platforms_dir)/f1/aws-fpga/hdk/cl/developer_designs
+# TODO: INTELFOLKS: Can ignore for now I think.
+else ifeq ($(PLATFORM), intel)
+board_dir          := $(platforms_dir)/intel
 else
 $(error Invalid PLATFORM used: $(PLATFORM))
 endif
