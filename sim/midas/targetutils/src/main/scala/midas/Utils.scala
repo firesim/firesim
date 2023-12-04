@@ -5,6 +5,8 @@ package midas.targetutils
 import chisel3._
 import chisel3.util._
 
+import midas.targetutils.xdc._
+
 // Generates a queue that will be implemented in BRAM
 class BRAMFlowQueue[T <: Data](val entries: Int)(data: => T) extends Module {
   val io = IO(new QueueIO(data, entries))
@@ -65,13 +67,26 @@ object BRAMQueue {
 }
 
 object FireSimQueueHelper {
-  def apply[T <: Data](gen: T, entries: Int, isBRAM: Boolean = false): Module = {
-    if (isBRAM) {
-      val m = Module((new BRAMQueue(entries)) { gen })
-      xdc.RAMStyleHint(m.fq.ram, xdc.RAMStyles.BRAM)
-      m
+  def apply[T <: Data](enq: DecoupledIO[T], entries: Int, isFireSim: Boolean = false, overrideStyle: Option[RAMStyle] = None): DecoupledIO[T] = {
+    if (isFireSim) {
+      val bq = Module((new BRAMQueue(entries)) { chiselTypeOf(enq.bits) })
+      // URAMs are 288Kb (rough guess what fits in URAMs better if no override given)
+      val queueSize = enq.bits.getWidth * entries
+      val estStyle = if (queueSize > 225000) RAMStyles.ULTRA else RAMStyles.BRAM
+      println(s"FireSimQueueHelper: $queueSize bits, guessing $estStyle style")
+      val style = overrideStyle.getOrElse(estStyle)
+      println(s"FireSimQueueHelper: Using $style as final style")
+      RAMStyleHint(bq.fq.ram, style)
+      bq.io.enq.valid := enq.valid
+      bq.io.enq.bits := enq.bits
+      enq.ready := bq.io.enq.ready
+      bq.io.deq
     } else {
-      Module(new Queue(gen, entries))
+      val q = Module(new Queue(chiselTypeOf(enq.bits), entries))
+      q.io.enq.valid := enq.valid
+      q.io.enq.bits := enq.bits
+      enq.ready := q.io.enq.ready
+      q.io.deq
     }
   }
 }
