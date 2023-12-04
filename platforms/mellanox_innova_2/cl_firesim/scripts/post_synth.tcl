@@ -1,0 +1,1 @@
+../../../xilinx_alveo_u250/cl_firesim/scripts/post_synth.tcl
