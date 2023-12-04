@@ -139,9 +139,9 @@ $(vitis): $(header) $(DRIVER_CC) $(DRIVER_H) $(midas_cc) $(midas_h)
 
 # Compile Driver
 $(mellanox_innova_2): export CXXFLAGS := $(CXXFLAGS) $(common_cxx_flags) $(DRIVER_CXXOPTS) \
-              -idirafter ${CONDA_PREFIX}/include -idirafter /usr/include
+	-idirafter ${CONDA_PREFIX}/include -idirafter /usr/include
 $(mellanox_innova_2): export LDFLAGS := $(LDFLAGS) $(common_ld_flags) -Wl,-rpath='$$$$ORIGIN' \
-              -L${CONDA_PREFIX}/lib -Wl,-rpath-link=/usr/lib/x86_64-linux-gnu -L/usr/lib/x86_64-linux-gnu
+    -L${CONDA_PREFIX}/lib -Wl,-rpath-link=/usr/lib/x86_64-linux-gnu -L/usr/lib/x86_64-linux-gnu
 
 $(mellanox_innova_2): $(header) $(DRIVER_CC) $(DRIVER_H) $(midas_cc) $(midas_h)
 	mkdir -p $(OUTPUT_DIR)/build

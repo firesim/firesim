@@ -111,3 +111,10 @@ class BaseVitisConfig extends Config(
   new WithAsyncResetReplacement ++
   new midas.VitisConfig
 )
+
+class BaseMellanoxInnova2Config extends Config(
+  new WithWiringTransform ++
+  new WithAsyncResetReplacement ++
+  new midas.MellanoxInnova2Config
+
+)

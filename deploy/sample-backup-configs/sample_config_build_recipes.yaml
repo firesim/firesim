@@ -294,7 +294,7 @@ mellanox_innova_2_firesim_rocket_singlecore_no_nic:
     TARGET_PROJECT: firesim
     DESIGN: FireSim
     TARGET_CONFIG: FireSimRocketConfig
-    PLATFORM_CONFIG: BaseXilinxAlveoConfig
+    PLATFORM_CONFIG: BaseMellanoxInnova2Config
     deploy_quintuplet: null
     platform_config_args:
         fpga_frequency: 60
