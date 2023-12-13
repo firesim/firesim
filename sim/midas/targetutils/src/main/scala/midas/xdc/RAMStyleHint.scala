@@ -26,7 +26,7 @@ object RAMStyles {
     *  In Ultrascale+ (and older families), BRAMs are 36Kb, and have flexible aspect
     *  ratio: 1b x 64K to 72b x 512
     */
-  case object BRAM extends RAMStyle
+  case object BLOCK extends RAMStyle
 
   /** From UG901 (v2020.2): Instructs the tool to infer registers instead of RAMs. */
   case object REGISTERS extends RAMStyle
@@ -73,8 +73,8 @@ object RAMStyleHint {
   /**
     * Annotates a FIRRTL ReferenceTarget indicating it should be implemented with a particular
     * Xilinx RAM structure.
-    * 
-    * Note: the onus is on the user to ensure the RT points at a mem-like structure. In general, 
+    *
+    * Note: the onus is on the user to ensure the RT points at a mem-like structure. In general,
     * one should prefer using the apply method that accepts a chisel3.MemBase[_] to get compile-time errors.
     */
   def apply(mem: =>ReferenceTarget, style: RAMStyle): Unit = {
