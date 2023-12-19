@@ -7,6 +7,7 @@
 #include <sys/types.h>
 #include <unistd.h>
 
+#include "intel-fpga-pcie-drivers/user/api/intel_fpga_pcie_api.hpp"
 #include "bridges/cpu_managed_stream.h"
 #include "core/simif.h"
 
@@ -52,6 +53,7 @@ private:
   int edma_read_fd;
   void *bar0_base;
   uint32_t bar0_size = 0x2000000; // 32 MB (TODO: Make configurable?)
+  intel_fpga_pcie_dev *fs_intel_dev;
 };
 
 static int fpga_pci_check_file_id(char *path, uint16_t id) {
@@ -172,15 +174,14 @@ simif_intel_t::fpga_pci_bar_get_mem_at_offset(uint64_t offset) {
 
 int simif_intel_t::fpga_pci_poke(uint64_t offset, uint32_t value) {
   // TODO: INTELFOLKS: reaplce this w/ write MMIO func
-  uint32_t *reg_ptr = (uint32_t *)fpga_pci_bar_get_mem_at_offset(offset);
-  *reg_ptr = value;
+  int rc = fs_intel_dev->write32(reinterpret_cast<void *>(offset), value);
+  //Todo check if error code \/
   return 0;
 }
 
 int simif_intel_t::fpga_pci_peek(uint64_t offset, uint32_t *value) {
   // TODO: INTELFOLKS: reaplce this w/ read MMIO func
-  uint32_t *reg_ptr = (uint32_t *)fpga_pci_bar_get_mem_at_offset(offset);
-  *value = *reg_ptr;
+  int rc = fs_intel_dev->read32(reinterpret_cast<void *>(offset), value);
   return 0;
 }
 
@@ -212,83 +213,89 @@ void simif_intel_t::fpga_setup(uint16_t domain_id,
                                            uint16_t pci_vendor_id,
                                            uint16_t pci_device_id) {
 
-  int fd = -1;
-  char sysfs_name[256];
-  int ret;
+  uint16_t bdf;
+  bdf  = bus_id << 8;
+  bdf |= device_id << 3;
+  bdf |= pf_id;
+  fs_intel_dev = new intel_fpga_pcie_dev(bdf, bar_id);
 
-  // check vendor id
-  ret = snprintf(sysfs_name,
-                 sizeof(sysfs_name),
-                 "/sys/bus/pci/devices/" PCI_DEV_FMT "/vendor",
-                 domain_id,
-                 bus_id,
-                 device_id,
-                 pf_id);
-  assert(ret >= 0);
-  fpga_pci_check_file_id(sysfs_name, pci_vendor_id);
+  // int fd = -1;
+  // char sysfs_name[256];
+  // int ret;
 
-  // check device id
-  ret = snprintf(sysfs_name,
-                 sizeof(sysfs_name),
-                 "/sys/bus/pci/devices/" PCI_DEV_FMT "/device",
-                 domain_id,
-                 bus_id,
-                 device_id,
-                 pf_id);
-  assert(ret >= 0);
-  fpga_pci_check_file_id(sysfs_name, pci_device_id);
+  // // check vendor id
+  // ret = snprintf(sysfs_name,
+  //                sizeof(sysfs_name),
+  //                "/sys/bus/pci/devices/" PCI_DEV_FMT "/vendor",
+  //                domain_id,
+  //                bus_id,
+  //                device_id,
+  //                pf_id);
+  // assert(ret >= 0);
+  // fpga_pci_check_file_id(sysfs_name, pci_vendor_id);
 
-  // XDMA setup
-  char device_file_name[256];
-  char device_file_name2[256];
-  char user_file_name[256];
+  // // check device id
+  // ret = snprintf(sysfs_name,
+  //                sizeof(sysfs_name),
+  //                "/sys/bus/pci/devices/" PCI_DEV_FMT "/device",
+  //                domain_id,
+  //                bus_id,
+  //                device_id,
+  //                pf_id);
+  // assert(ret >= 0);
+  // fpga_pci_check_file_id(sysfs_name, pci_device_id);
 
-  ret = snprintf(sysfs_name,
-                 sizeof(sysfs_name),
-                 "/sys/bus/pci/devices/" PCI_DEV_FMT "/xdma",
-                 domain_id,
-                 bus_id,
-                 device_id,
-                 pf_id);
-  assert(ret >= 0);
-  DIR *d;
-  struct dirent *dir;
-  int xdma_id = -1;
+  // // XDMA setup
+  // char device_file_name[256];
+  // char device_file_name2[256];
+  // char user_file_name[256];
 
-  d = opendir(sysfs_name);
-  if (d) {
-    while ((dir = readdir(d)) != NULL) {
-      printf("examining xdma/%s\n", dir->d_name);
-      if (strstr(dir->d_name, "xdma") && strstr(dir->d_name, "_h2c_0")) {
-        xdma_id = strtol(dir->d_name + 4, NULL, 10);
-        break;
-      }
-    }
-    closedir(d);
-  }
+  // ret = snprintf(sysfs_name,
+  //                sizeof(sysfs_name),
+  //                "/sys/bus/pci/devices/" PCI_DEV_FMT "/xdma",
+  //                domain_id,
+  //                bus_id,
+  //                device_id,
+  //                pf_id);
+  // assert(ret >= 0);
+  // DIR *d;
+  // struct dirent *dir;
+  // int xdma_id = -1;
 
-  assert(xdma_id != -1);
+  // d = opendir(sysfs_name);
+  // if (d) {
+  //   while ((dir = readdir(d)) != NULL) {
+  //     printf("examining xdma/%s\n", dir->d_name);
+  //     if (strstr(dir->d_name, "xdma") && strstr(dir->d_name, "_h2c_0")) {
+  //       xdma_id = strtol(dir->d_name + 4, NULL, 10);
+  //       break;
+  //     }
+  //   }
+  //   closedir(d);
+  // }
 
-  // open and memory map
-  sprintf(user_file_name, "/dev/xdma%d_user", xdma_id);
+  // assert(xdma_id != -1);
 
-  fd = open(user_file_name, O_RDWR | O_SYNC);
-  assert(fd != -1);
+  // // open and memory map
+  // sprintf(user_file_name, "/dev/xdma%d_user", xdma_id);
 
-  bar0_base = mmap(0, bar0_size, PROT_READ | PROT_WRITE, MAP_SHARED, fd, 0);
-  assert(bar0_base != MAP_FAILED);
-  close(fd);
-  fd = -1;
+  // fd = open(user_file_name, O_RDWR | O_SYNC);
+  // assert(fd != -1);
 
-  sprintf(device_file_name, "/dev/xdma%d_h2c_0", xdma_id);
-  printf("Using xdma write queue: %s\n", device_file_name);
-  sprintf(device_file_name2, "/dev/xdma%d_c2h_0", xdma_id);
-  printf("Using xdma read queue: %s\n", device_file_name2);
+  // bar0_base = mmap(0, bar0_size, PROT_READ | PROT_WRITE, MAP_SHARED, fd, 0);
+  // assert(bar0_base != MAP_FAILED);
+  // close(fd);
+  // fd = -1;
 
-  edma_write_fd = open(device_file_name, O_WRONLY);
-  edma_read_fd = open(device_file_name2, O_RDONLY);
-  assert(edma_write_fd >= 0);
-  assert(edma_read_fd >= 0);
+  // sprintf(device_file_name, "/dev/xdma%d_h2c_0", xdma_id);
+  // printf("Using xdma write queue: %s\n", device_file_name);
+  // sprintf(device_file_name2, "/dev/xdma%d_c2h_0", xdma_id);
+  // printf("Using xdma read queue: %s\n", device_file_name2);
+
+  // edma_write_fd = open(device_file_name, O_WRONLY);
+  // edma_read_fd = open(device_file_name2, O_RDONLY);
+  // assert(edma_write_fd >= 0);
+  // assert(edma_read_fd >= 0);
 }
 
 simif_intel_t::~simif_intel_t() { fpga_shutdown(); }

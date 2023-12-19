@@ -1,0 +1,16 @@
+#!/bin/sh
+module="intel_fpga_pcie_drv"
+device="intel_fpga_pcie_drv"
+mode="666"
+
+# load the module
+/sbin/insmod ./$module.ko $* || exit 1
+
+# Add device manually in case udev isn't set up to do so.
+if [ ! -e /dev/$device ]; then
+	major=`grep -w $device /proc/devices | cut -f1 -d" "`
+	mknod /dev/$device c $major 0
+fi
+
+# change permissions to allow all users to read/write
+chmod $mode /dev/$device
