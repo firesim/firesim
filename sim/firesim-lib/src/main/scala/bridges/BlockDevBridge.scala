@@ -8,7 +8,7 @@ import freechips.rocketchip.util.DecoupledHelper
 
 import midas.widgets._
 import midas.models.DynamicLatencyPipe
-import testchipip.{BlockDeviceIO, BlockDeviceRequest, BlockDeviceData, BlockDeviceKey, BlockDeviceConfig}
+import testchipip.iceblk.{BlockDeviceIO, BlockDeviceRequest, BlockDeviceData, BlockDeviceKey, BlockDeviceConfig}
 
 class BlockDevBridgeTargetIO(bdParams: BlockDeviceConfig) extends Bundle {
   val bdev = Flipped(new BlockDeviceIO(bdParams))
