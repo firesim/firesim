@@ -13,7 +13,7 @@ import os
 
 from util.streamlogger import StreamLogger
 from awstools.awstools import terminate_instances, get_instance_ids_for_instances
-from runtools.utils import has_sudo, run_only_aws
+from runtools.utils import has_sudo, run_only_aws, check_script
 
 from typing import List, Dict, Optional, Union, Tuple, TYPE_CHECKING
 if TYPE_CHECKING:
