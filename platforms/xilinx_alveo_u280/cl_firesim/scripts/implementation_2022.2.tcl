@@ -1,1 +1,0 @@
-../../../xilinx_alveo_u250/cl_firesim/scripts/implementation_2022.2.tcl

@@ -1,0 +1,321 @@
+name: firesim-aws-run-tests
+
+on:
+  # run ci when pring to main (note: ci runs on the merge commit of the pr!)
+  pull_request:
+    branches:
+      - main
+      - stable
+
+defaults:
+  run:
+    shell: bash -leo pipefail {0}
+
+env:
+  PERSONAL_ACCESS_TOKEN: ${{ secrets.BARTENDER_PERSONAL_ACCESS_TOKEN }}
+  GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+  AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID_08012023 }}
+  AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY_08012023 }}
+  AWS_DEFAULT_REGION: ${{ secrets.AWS_DEFAULT_REGION_08012023 }}
+  FIRESIM_PEM: ${{ secrets.FIRESIM_PEM_08012023 }}
+  FIRESIM_PEM_PUBLIC: ${{ secrets.FIRESIM_PEM_PUBLIC }}
+  AZURE_CLIENT_ID: ${{ secrets.AZURE_CLIENT_ID }}
+  AZURE_CLIENT_SECRET: ${{ secrets.AZURE_CLIENT_SECRET }}
+  AZURE_TENANT_ID: ${{ secrets.AZURE_TENANT_ID }}
+  AZURE_SUBSCRIPTION_ID: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
+  AZURE_DEFAULT_REGION: ${{ secrets.AZURE_DEFAULT_REGION }}
+  AZURE_RESOURCE_GROUP: ${{ secrets.AZURE_RESOURCE_GROUP }}
+  AZURE_CI_SUBNET_ID : ${{ secrets.AZURE_CI_SUBNET_ID }}
+  AZURE_CI_NSG_ID : ${{ secrets.AZURE_CI_NSG_ID }}
+  MANAGER_FIRESIM_LOCATION: "~/firesim"
+  LANG: "en_US.UTF-8" # required by SBT when it sees boost directories
+  LANGUAGE: "en_US:en"
+  LC_ALL: "en_US.UTF-8"
+  CI_LABEL_DEBUG: ${{ contains(github.event.pull_request.labels.*.name, 'ci:debug') }}
+  CI_LABEL_PERSIST: ${{ contains(github.event.pull_request.labels.*.name, 'ci:persist-prior-workflows') }}
+  REMOTE_WORK_DIR: /scratch/buildbot/fs-shared/fs-${{ github.sha }}
+  TERM: xterm-256-color
+
+jobs:
+  cancel-prior-workflows:
+    name: cancel-prior-workflows
+    runs-on: ubuntu-20.04
+    steps:
+      - name: Cancel previous workflow runs
+        if: ${{ (env.CI_LABEL_PERSIST != 'true') }}
+        uses: styfle/cancel-workflow-action@0.11.0
+        with:
+          access_token: ${{ github.token }}
+
+  # Set up a set of boolean conditions to control which branches of the CI
+  # workflow will execute This is based off the conditional job execution
+  # example here: https://github.com/dorny/paths-filter#examples
+  change-filters:
+    name: filter-jobs-on-changes
+    runs-on: ubuntu-20.04
+    # Queried by downstream jobs to determine if they should run.
+    outputs:
+      needs-manager: ${{ steps.filter.outputs.all_count != steps.filter.outputs.skip-manager_count }}
+      both-conda-reqs-lock-modified: ${{ ((steps.filter.outputs.conda-reqs == 'false') && (steps.filter.outputs.conda-lock == 'false')) || ((steps.filter.outputs.conda-reqs == 'true') && (steps.filter.outputs.conda-lock == 'true')) }}
+    steps:
+      - uses: actions/checkout@v3
+      - uses: dorny/paths-filter@v2
+        id: filter
+        with:
+          filters: |
+            all:
+              - '**'
+
+            # If any of the files changed match, do a doc build
+            docs: &docs-filter
+              - 'docs/**'
+              - '.readthedocs.yml'
+
+            # If all files match to this filter, skip the main ci pipeline
+            skip-manager:
+              - *docs-filter
+              - '**/*.md'
+              - '**/.gitignore'
+              - '.github/ISSUE_TEMPLATE/**'
+
+            # If conda requirements was modified ensure the lock file is re-generated
+            conda-reqs:
+                - 'conda-reqs/firesim.yaml'
+                - 'conda-reqs/ci-shared.yaml'
+
+            # If conda requirements was modified ensure the lock file is re-generated
+            conda-lock:
+                - 'conda-reqs/conda-reqs.conda-lock.yml'
+
+  setup-self-hosted-manager:
+    name: setup-self-hosted-manager
+    needs: change-filters
+    if: needs.change-filters.outputs.needs-manager == 'true'
+    runs-on: ubuntu-20.04
+    steps:
+      - uses: actions/checkout@v3
+      - uses: conda-incubator/setup-miniconda@v2
+        with:
+          environment-file: conda-reqs/ci-shared.yaml
+          miniforge-version: latest
+      - uses: ./.github/actions/repo-setup-aws
+      - name: Launch AWS instance used for the FireSim manager (instance info found here)
+        run: ./.github/scripts/launch-manager-instance.py
+      - name: Setup N Github Actions Runners on AWS instance
+        run: ./.github/scripts/setup-manager-self-hosted.py aws
+      - name: Catch potentially orphaned manager
+        if: ${{ (env.CI_LABEL_DEBUG != 'true') && (failure() || cancelled()) }}
+        uses: ./.github/actions/change-workflow-instance-states
+        with:
+          new-state: terminate
+          github-token: ${{ env.PERSONAL_ACCESS_TOKEN }}
+
+  setup-manager:
+    name: setup-manager
+    needs: [setup-self-hosted-manager]
+    runs-on: aws-${{ github.run_id }}
+    steps:
+      - uses: actions/checkout@v3
+      - name: Install FireSim pem
+        run: ./.github/scripts/install-firesim-pem.py
+      - name: Setup FireSim repo (.pem, build-setup.sh, AWS credentials, submodules) and CI daemons
+        run: ./.github/scripts/initialize-repo.py
+      - name: Run AWS configure
+        run: ./.github/scripts/run-aws-configure.py
+      - name: Setup Workflow monitor
+        if: ${{ (env.CI_LABEL_DEBUG != 'true') }}
+        uses: ./.github/actions/setup-workflow-monitor
+        with:
+          max-runtime-hours: 8
+      - name: Initial Scala compilation
+        uses: ./.github/actions/initial-scala-compile
+      - name: Catch potentially orphaned manager
+        if: ${{ (env.CI_LABEL_DEBUG != 'true') && (failure() || cancelled()) }}
+        uses: ./.github/actions/change-workflow-instance-states
+        with:
+          new-state: terminate
+          github-token: ${{ env.PERSONAL_ACCESS_TOKEN }}
+
+  build-default-workloads:
+    # Conditionally build rootfs images only if deploying to FPGA to save CI resources
+    # https://stackoverflow.com/questions/62325286/run-github-actions-when-pull-requests-have-a-specific-label/62331521#comment122159108_62331521
+    if: contains(github.event.pull_request.labels.*.name, 'ci:fpga-deploy')
+    name: build-default-workloads
+    needs: [setup-manager]
+    runs-on: aws-${{ github.run_id }}
+    steps:
+      - uses: actions/checkout@v3
+      - name: Build default workloads (FireMarshal and paper workloads)
+        run: .github/scripts/build-default-workloads.py
+
+  run-manager-pytests:
+    name: run-manager-pytests
+    needs: [setup-manager]
+    runs-on: aws-${{ github.run_id }}
+    steps:
+      - uses: actions/checkout@v3
+      - name: Run pytests
+        run: .github/scripts/run-manager-pytests.py
+
+  run-manager-python-typecheck:
+    name: run-manager-python-typecheck
+    needs: [setup-manager]
+    runs-on: aws-${{ github.run_id }}
+    steps:
+      - uses: actions/checkout@v3
+      - name: Run manager Python type checker
+        run: .github/scripts/run-manager-python-typechecking.py
+
+  run-ci-python-typecheck:
+      name: run-ci-python-typecheck
+      needs: [setup-manager]
+      runs-on: aws-${{ github.run_id }}
+      steps:
+      - uses: actions/checkout@v3
+      - name: Run CI Python type checker
+        run: .github/scripts/run-ci-python-typechecking.py
+
+  run-scalafmt-check:
+    name: run-scalafmt-check
+    needs: [setup-manager]
+    runs-on: aws-${{ github.run_id }}
+    steps:
+      - uses: actions/checkout@v3
+      - name: Run Scalafmt on FireSim Scala main sources
+        run: .github/scripts/run-scala-lint-check.py
+
+  run-check-docs-generated-components:
+    name: run-check-docs-generated-components
+    needs: [setup-manager]
+    runs-on: aws-${{ github.run_id }}
+    steps:
+      - uses: actions/checkout@v3
+      - name: Check docs components that require manual re-generation (e.g. config_runtime.yaml example, help output)
+        run: ./.github/scripts/check-docs-generated-components.py
+
+  build-f1-driver:
+    name: build-f1-driver
+    needs: [setup-manager]
+    runs-on: aws-${{ github.run_id }}
+    steps:
+      - uses: actions/checkout@v3
+      - name: Runs compilation of F1 driver for the make-default tuple
+        run: ./.github/scripts/build-f1-driver.py
+
+  run-targetutils-scala-tests:
+    name: run-targetutils-scala-tests
+    needs: [setup-manager]
+    runs-on: aws-${{ github.run_id }}
+    steps:
+      - uses: actions/checkout@v3
+      - name: Run targetutils scala tests
+        run: ./.github/scripts/run-sbt-command.py midasexamples "'project targetutils; test' "
+
+  run-midas-scala-tests:
+    name: run-midas-scala-tests
+    needs: [setup-manager]
+    runs-on: aws-${{ github.run_id }}
+    steps:
+      - uses: actions/checkout@v3
+      - name: Run targetutils scala tests
+        run: ./.github/scripts/run-sbt-command.py midasexamples "'project midas; test' "
+
+  run-test-groupA:
+    name: run-test-groupA
+    needs: [build-f1-driver]
+    runs-on: aws-${{ github.run_id }}
+    steps:
+      - uses: actions/checkout@v3
+      - name: Run CIGroupA Scala tests
+        uses: ./.github/actions/run-scala-test
+        with:
+          test-name: "CIGroupA"
+
+  run-test-groupB:
+    name: run-test-groupB
+    needs: [run-test-groupA]
+    runs-on: aws-${{ github.run_id }}
+    steps:
+      - uses: actions/checkout@v3
+      - name: Run CIGroupB Scala tests
+        uses: ./.github/actions/run-scala-test
+        with:
+          test-name: "CIGroupB"
+
+  run-test-firesim-lib:
+    name: run-test-firesim-lib
+    needs: [run-test-groupB]
+    runs-on: aws-${{ github.run_id }}
+    steps:
+      - uses: actions/checkout@v3
+      - name: Run firesim-lib Scala tests
+        uses: ./.github/actions/run-scala-test
+        with:
+          target-project: "bridges"
+          test-package: "firesim.bridges"
+          test-name: "BridgeTests"
+
+  run-chipyard-tests:
+    name: run-chipyard-tests
+    needs: [run-test-firesim-lib]
+    runs-on: aws-${{ github.run_id }}
+    steps:
+      - uses: actions/checkout@v3
+      - name: Run other (CITests) Scala tests
+        uses: ./.github/actions/run-scala-test
+        with:
+          target-project: "firesim"
+          test-package: "firesim.firesim"
+          test-name: "CITests"
+
+  run-parallel-verilator-metasims:
+    name: run-parallel-verilator-metasims
+    # Building the driver can cause concurrency issues with SBT, so serialize
+    # this behind the scalatest train. Remove once we're off SBT.
+    needs: [run-chipyard-tests]
+    runs-on: aws-${{ github.run_id }}
+    steps:
+      - uses: actions/checkout@v3
+      - name: Run parallel Verilator metasimulation tests (deploy on localhost and on AWS instances)
+        run: .github/scripts/run-parallel-verilator-metasims.py
+
+  run-basic-linux-poweroff:
+    if: contains(github.event.pull_request.labels.*.name, 'ci:fpga-deploy')
+    name: run-basic-linux-poweroff
+    # Building the driver can cause concurrency issues with SBT, so serialize
+    # this behind the scalatest train. Remove once we're off SBT.
+    needs: [build-default-workloads, run-chipyard-tests, run-parallel-verilator-metasims]
+    runs-on: aws-${{ github.run_id }}
+    steps:
+      - uses: actions/checkout@v3
+      - name: Run linux-poweroff test w/ AWS EC2 run farm
+        run: .github/scripts/run-linux-poweroff.py
+
+  run-basic-linux-poweroff-externally-provisioned:
+    if: contains(github.event.pull_request.labels.*.name, 'ci:fpga-deploy')
+    name: run-basic-linux-poweroff-externally-provisioned
+    needs: [build-default-workloads]
+    runs-on: aws-${{ github.run_id }}
+    steps:
+      - uses: actions/checkout@v3
+      - name: Run linux-poweroff test w/ externally provisioned (AWS EC2) run farm
+        run: .github/scripts/run-linux-poweroff-externally-provisioned.py
+
+  run-agfi-buildbitstream:
+    if: contains(github.event.pull_request.labels.*.name, 'ci:agfi-buildbitstream-deploy')
+    name: run-agfi-buildbitstream
+    needs: [build-f1-driver] # delay until known working scala compile
+    runs-on: aws-${{ github.run_id }}
+    timeout-minutes: 600 # 10h
+    steps:
+      - uses: actions/checkout@v3
+      - name: Run buildbitstream command and update sample AGFIs
+        run: .github/scripts/run-agfi-buildbitstream.py
+      - uses: peter-evans/create-pull-request@v5
+        with:
+          base: ${{ github.head_ref }}
+          add-paths: "deploy/sample-backup-configs/sample_config_hwdb.yaml"
+          commit-message: "Update AGFI(s) [ci skip]"
+          body: "Update AGFI(s) for PR #${{ github.event.pull_request.number }}"
+          branch-suffix: random
+          title: "Update AGFI(s) for PR #${{ github.event.pull_request.number }} (`${{ github.head_ref }}`)"
