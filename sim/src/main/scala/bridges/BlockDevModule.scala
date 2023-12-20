@@ -7,7 +7,7 @@ import chisel3.util._
 
 import firesim.midasexamples.PeekPokeMidasExampleHarness
 import org.chipsalliance.cde.config.Parameters
-import testchipip.BlockDeviceKey
+import testchipip.iceblk.BlockDeviceKey
 
 class BlockDevDUT(implicit val p: Parameters) extends Module {
   val rd = Module(new BlockDevBridge(p(BlockDeviceKey).get))

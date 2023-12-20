@@ -6,7 +6,7 @@ import chisel3._
 
 import firesim.midasexamples.PeekPokeMidasExampleHarness
 import org.chipsalliance.cde.config.{Config, Field, Parameters}
-import testchipip.{SerializableTracedInstruction, TraceBundleWidths}
+import testchipip.cosim.{SerializableTracedInstruction, TraceBundleWidths}
 import midas.targetutils.TriggerSink
 
 class TracerVDUTIO(widths: TraceBundleWidths) extends Bundle {
