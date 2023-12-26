@@ -26,6 +26,12 @@ class DefaultVitisConfig
         new midas.VitisConfig
     )
 
+class DefaultU200Config
+    extends Config(
+      new BaseBridgesConfig ++
+        new midas.XilinxAlveoConfig
+    )
+
 class UARTConfig
     extends Config((site, here, up) => { case PeripheryBusKey =>
       PeripheryBusParams(beatBytes = 1, blockBytes = 8, dtsFrequency = Some(100000000))

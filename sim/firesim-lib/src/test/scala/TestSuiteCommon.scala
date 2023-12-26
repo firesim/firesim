@@ -74,6 +74,12 @@ abstract class TestSuiteBase extends org.scalatest.flatspec.AnyFlatSpec {
   // Runs make passing default args to specify the right target design, project and platform
   def make(makeArgs: String*): Int = {
     val cmd = makeCommand(makeArgs: _*)
+    val sourceme = Seq("env")
+
+    //val sourceme = Seq("pwd")
+    sourceme.!
+    val tt = Seq("pwd")
+    tt.!
     println("Running: %s".format(cmd.mkString(" ")))
     cmd.!
   }

@@ -20,6 +20,7 @@ r_dir = $(abspath ../resources)
 PLATFORM ?= f1
 OUT_DIR ?= $(GEN_DIR)
 
+# override CXXFLAGS += -Wall -I$(midas_dir) -I/home/novo/Work/firesim-1.17.0/sim/firesim-lib/src/main/cc -I/home/novo/Work/firesim-1.17.0//target-design/chipyard/generators/testchipip/src/main/resources/testchipip/csrc -I$(GEN_DIR)
 override CXXFLAGS += -Wall -I$(midas_dir) -I$(GEN_DIR)
 override LDFLAGS += -L$(GEN_DIR) -lstdc++ -lpthread -lgmp
 

@@ -10,6 +10,7 @@ from pathlib import Path
 import pcielib
 import util
 import firesim
+import time
 
 from typing import Dict, Any, List
 
@@ -123,9 +124,12 @@ def main(args: List[str]) -> int:
         return bus_ids
 
     def disconnect_bus_id(bus_id: str) -> None:
+        print("DN: disconnect_bus_id")
         pcielib.clear_serr_bits(bus_id)
         pcielib.clear_fatal_error_reporting_bits(bus_id)
         pcielib.remove(bus_id)
+        print("DN: disconnect_bus_id before assert")
+        time.sleep(1)
         assert not pcielib.any_device_exists(bus_id), f"{bus_id} still visible. Check for proper removal."
 
     def reconnect_bus_id(bus_id: str) -> None:
@@ -173,6 +177,7 @@ def main(args: List[str]) -> int:
             print(":WARNING: Please warm reboot the machine")
 
     # disconnect bdfs
+    print("DN: disconnect bdfs")
     if parsed_args.disconnect_bdf:
         if is_bdf_arg(parsed_args):
             bus_ids = get_bus_ids_from_args(parsed_args)
@@ -182,6 +187,7 @@ def main(args: List[str]) -> int:
             sys.exit("Must provide a BDF-like argument to disconnect")
 
     # reconnect bdfs
+    print("DN: reconnect bdfs")
     if parsed_args.reconnect_bdf:
         if is_bdf_arg(parsed_args):
             bus_ids = get_bus_ids_from_args(parsed_args)

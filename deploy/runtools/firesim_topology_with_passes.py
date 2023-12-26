@@ -431,8 +431,10 @@ class FireSimTopologyWithPasses:
         @parallel
         def infrasetup_node_wrapper(run_farm: RunFarm, dir: str) -> None:
             my_node = run_farm.lookup_by_host(env.host_string)
+            
             assert my_node is not None
             assert my_node.instance_deploy_manager is not None
+            
             my_node.instance_deploy_manager.infrasetup_instance(dir)
 
         all_run_farm_ips = [x.get_host() for x in self.run_farm.get_all_bound_host_nodes()]
@@ -444,7 +446,7 @@ class FireSimTopologyWithPasses:
             self.pass_fetch_URI_resolve_runtime_cfg(uridir)
             self.pass_build_required_drivers()
             self.pass_build_required_switches()
-
+            print("DN: F*")
             execute(infrasetup_node_wrapper, self.run_farm, uridir, hosts=all_run_farm_ips)
 
     def enumerate_fpgas_passes(self, use_mock_instances_for_testing: bool) -> None:

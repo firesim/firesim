@@ -799,17 +799,20 @@ class XilinxAlveoInstanceDeployManager(InstanceDeployManager):
 
     def load_xdma(self) -> None:
         """ load the xdma kernel module. """
+        #import pdb; pdb.set_trace()
         if self.instance_assigned_simulations():
             # load xdma if unloaded
-            if run('lsmod | grep -wq xdma', warn_only=True).return_code != 0:
+            if run('lsmod | grep -w xdma', warn_only=True).return_code != 0:
                 self.instance_logger("Loading XDMA Driver Kernel Module.")
                 # must be installed to this path on sim. machine
+                print("DN: And now...")
                 run(f"sudo insmod /lib/modules/$(uname -r)/extra/xdma.ko poll_mode=1", shell=True)
             else:
                 self.instance_logger("XDMA Driver Kernel Module already loaded.")
 
     def unload_xdma(self) -> None:
         """ unload the xdma kernel module. """
+        #import pdb; pdb.set_trace()
         if self.instance_assigned_simulations():
             # unload xdma if loaded
             if run('lsmod | grep -wq xdma', warn_only=True).return_code == 0:

@@ -3,5 +3,10 @@
     "**/target": true
   },
   "metals.bloopSbtAlreadyInstalled": true,
-  "metals.sbtScript": ".vscode/sbt-launch.sh"
+  "metals.sbtScript": ".vscode/sbt-launch.sh",
+  "git.ignoreLimitWarning": true,
+  "files.associations": {
+    "*.sm": "cpp",
+    "string.h": "c"
+  }
 }

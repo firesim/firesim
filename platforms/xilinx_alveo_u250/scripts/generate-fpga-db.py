@@ -38,6 +38,7 @@ def get_bdfs() -> List[str]:
 def call_fpga_util(args: List[str]) -> None:
     progScript = scriptPath / 'fpga-util.py'
     assert progScript.exists(), f"Unable to find {progScript}"
+    print ([str(progScript.resolve().absolute())] + args)
     pProg = subprocess.Popen(
         [str(progScript.resolve().absolute())] + args,
         stdout=subprocess.PIPE
@@ -84,7 +85,9 @@ def get_serial_numbers_and_fpga_types(vivado: Path) -> Dict[str, str]:
     rc, stdout, stderr = util.call_vivado(vivado, ['-source', str(tclScript)])
     if rc != 0:
         sys.exit(f":ERROR: It failed with:\nstdout:\n{stdout}\nstderr:\n{stderr}")
-
+    else:
+        print("     DN:" + stdout)
+        print("     DN:" + stderr)
     outputLines = stdout.splitlines()
     relevantLines= [s for s in outputLines if ("hw_dev" in s) or ("hw_uid" in s)]
     devs = []
@@ -207,14 +210,16 @@ def main(args: List[str]) -> int:
     bdfs = get_bdfs()
 
     # 2. program all fpgas so that they are in a known state
-
+    print(":DN: Disconnect BDFs")
     # disconnect all
     for bdf in bdfs:
         disconnect_bdf(bdf, str(parsed_args.vivado_bin), str(parsed_args.hw_server_bin))
 
+    print(":DN: Program FPGAs")
     for serial in serials:
         program_fpga(serial, str(parsed_args.bitstream.resolve().absolute()), str(parsed_args.vivado_bin), str(parsed_args.hw_server_bin))
 
+    print(":DN: Reconnect BDFs")
     # reconnect all
     for bdf in bdfs:
         reconnect_bdf(bdf, str(parsed_args.vivado_bin), str(parsed_args.hw_server_bin))
@@ -229,7 +234,7 @@ def main(args: List[str]) -> int:
         run_driver_write_fingerprint(bdf, parsed_args.driver, write_val)
 
     # 4. create mapping by checking if fingerprint was overridden
-
+    #import pdb; pdb.set_trace()
     for serial in serials:
         # disconnect all
         for bdf in bdfs:
@@ -245,6 +250,7 @@ def main(args: List[str]) -> int:
         for bdf in bdfs:
             if not (bdf in serial2BDF.values()):
                 rc = run_driver_check_fingerprint(bdf, parsed_args.driver)
+                print ("        DN: check fingerprint:" + str(rc))
                 if rc == 0:
                     serial2BDF[serial] = bdf
                     break
@@ -262,7 +268,7 @@ def main(args: List[str]) -> int:
             "device" : sno2fpga[s],
             "bdf" : b
         })
-
+    #import pdb; pdb.set_trace()
     with open(parsed_args.out_db_json, 'w') as f:
         json.dump(finalMap, f, indent=2)
 

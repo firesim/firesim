@@ -6,10 +6,11 @@ args:
     # managerinit arg start
     # REQUIRED: default platform used for run farm hosts. this is a class specifying
     # how to run simulations on a run farm host.
-    default_platform: EC2InstanceDeployManager
+    #default_platform: EC2InstanceDeployManager
+    default_platform: XilinxAlveoU200InstanceDeployManager
 
     # REQUIRED: default directory where simulations are run out of on the run farm hosts
-    default_simulation_dir: /home/centos
+    default_simulation_dir: /home/novo/Work/FIRESIM_METASIMS_DIR
 
     # REQUIRED: List of unique hostnames/IP addresses, each with their
     # corresponding specification that describes the properties of the host.
@@ -71,7 +72,7 @@ args:
 
         - two_fpgas_spec:
             num_fpgas: 2
-            num_metasims: 0
+            num_metasims: 1
             use_for_switch_only: false
 
         - three_fpgas_spec:

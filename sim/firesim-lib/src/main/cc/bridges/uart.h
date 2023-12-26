@@ -3,8 +3,9 @@
 #ifndef __UART_H
 #define __UART_H
 
-#include "bridges/serial_data.h"
 #include "core/bridge_driver.h"
+#include "bridges/serial_data.h"
+
 
 #include <cstdint>
 #include <memory>

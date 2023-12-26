@@ -61,6 +61,7 @@ class UARTTest(targetConfig: BasePlatformConfig) extends BridgeSuite("UARTModule
 
 class UARTF1Test    extends UARTTest(BaseConfigs.F1)
 class UARTVitisTest extends UARTTest(BaseConfigs.Vitis)
+//class UARTU200Test  extends UARTTest(BaseConfigs.U200)
 
 class BlockDevTest(targetConfig: BasePlatformConfig)
     extends BridgeSuite("BlockDevModule", "BlockDevConfig", targetConfig) {

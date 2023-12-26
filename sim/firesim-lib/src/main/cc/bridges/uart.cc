@@ -140,7 +140,7 @@ public:
     outputfd = ptyfd;
 
     // also, for these we want to log output to file here.
-    std::string uartlogname = std::string("uartlog") + std::to_string(uartno);
+    std::string uartlogname = std::string("uartlog_DN_") + std::to_string(uartno);
     printf("UART logfile is being written to %s\n", uartlogname.c_str());
     this->loggingfd = open(uartlogname.c_str(), O_RDWR | O_CREAT, 0644);
     // Don't block on reads if there is nothing typed in
@@ -181,6 +181,7 @@ create_handler(const std::vector<std::string> &args, int uartno) {
     return std::make_unique<uart_stdin_handler>();
   }
   return std::make_unique<uart_pty_handler>(uartno);
+  //return std::make_unique<uart_stdin_handler>();
 }
 
 uart_t::uart_t(simif_t &simif,
@@ -213,18 +214,21 @@ void uart_t::recv() {
 void uart_t::tick() {
   data.out.ready = true;
   data.in.valid = false;
+  
   do {
     this->recv();
-
+    
     if (data.in.ready) {
       if (auto bits = handler->get()) {
         data.in.bits = *bits;
         data.in.valid = true;
+        //printf("DN receiving UART\n");
       }
     }
-
+    // print in the screen
     if (data.out.fire()) {
       handler->put(data.out.bits);
+      //printf("\nDN receiving UART: %c\n", (char)data.out.bits);
     }
 
     this->send();

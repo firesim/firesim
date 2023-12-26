@@ -1,13 +1,14 @@
 //See LICENSE for license details
-package firesim.bridges
+package firesim.bridges 
 
 import midas.widgets._
 
 import chisel3._
+import chisel3.stage.ChiselStage
 import chisel3.util._
 import org.chipsalliance.cde.config.Parameters
 import freechips.rocketchip.subsystem.PeripheryBusKey
-import sifive.blocks.devices.uart.{UARTPortIO, UARTParams}
+import sifive.blocks.devices.uart.{UARTPortIO, UARTParams} 
 
 //Note: This file is heavily commented as it serves as a bridge walkthrough
 //example in the FireSim docs
@@ -33,7 +34,7 @@ case class UARTKey(uParams: UARTParams, div: Int)
 
 // DOC include start: UART Bridge Target-Side Module
 class UARTBridge(uParams: UARTParams)(implicit p: Parameters) extends BlackBox
-    with Bridge[HostPortIO[UARTBridgeTargetIO], UARTBridgeModule] {
+    with Bridge[HostPortIO[UARTBridgeTargetIO], UARTBridgeModule] { 
   // Since we're extending BlackBox this is the port will connect to in our target's RTL
   val io = IO(new UARTBridgeTargetIO(uParams))
   // Implement the bridgeIO member of Bridge using HostPort. This indicates that
@@ -41,7 +42,7 @@ class UARTBridge(uParams: UARTParams)(implicit p: Parameters) extends BlackBox
   // token corresponding to all of the inputs of this BlackBox, and the output token consisting of 
   // all of the outputs from the BlackBox
   val bridgeIO = HostPort(io)
-
+ 
   // Do some intermediate work to compute our host-side BridgeModule's constructor argument
   val frequency = p(PeripheryBusKey).dtsFrequency.get
   val baudrate = uParams.initBaudRate
@@ -64,7 +65,7 @@ object UARTBridge {
     ep.io.clock := clock
     ep.io.reset := reset
     ep
-  }
+  } 
 }
 // DOC include end: UART Bridge Companion Object
 
@@ -79,6 +80,7 @@ object UARTBridge {
 // don't match, you'll only find out later when Golden Gate attempts to generate your module.
 class UARTBridgeModule(key: UARTKey)(implicit p: Parameters) extends BridgeModule[HostPortIO[UARTBridgeTargetIO]]()(p) {
   lazy val module = new BridgeModuleImp(this) {
+    println("======= DN: UARTBridgeModule lazy eval")
     val div = key.div
     // This creates the interfaces for all of the host-side transport
     // AXI4-lite for the simulation control bus, =

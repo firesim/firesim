@@ -10,8 +10,10 @@ pciDevicesPath = Path('/sys/bus/pci/devices')
 def get_device_paths(bus_id: str) -> List[Path]:
     result = []
     for entry in pciDevicesPath.iterdir():
+        #print ("    DN:" + entry.name)
         if re.match('^0000:' + re.escape(bus_id) + ':[a-fA-F0-9]{2}\.[0-7]$', entry.name):
             result.append(entry)
+    #import pdb; pdb.set_trace()
     return result
 
 def get_device_extended_bdfs(bus_id: str) -> List[str]:
@@ -140,6 +142,7 @@ def enable_memmapped_transfers(bus_id: str) -> None:
             sys.exit(f":ERROR: Unable to enable memmapped transfers on {deviceBDF}")
 
 def any_device_exists(bus_id: str) -> bool:
+    print (get_device_paths(bus_id))
     return len(get_device_paths(bus_id)) > 0
 
 # converter funcs
