@@ -10,7 +10,7 @@ from fabric.api import run, local, warn_only, get, put, cd, hide # type: ignore
 from fabric.exceptions import CommandTimeout # type: ignore
 
 from runtools.switch_model_config import AbstractSwitchToSwitchConfig
-from runtools.utils import get_local_shared_libraries, run_only_aws
+from runtools.utils import get_local_shared_libraries, run_only_aws, check_script
 from runtools.simulation_data_classes import TracerVConfig, AutoCounterConfig, HostDebugConfig, SynthPrintConfig
 
 from runtools.run_farm_deploy_managers import InstanceDeployManager

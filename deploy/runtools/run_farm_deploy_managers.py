@@ -14,6 +14,7 @@ import os
 from util.streamlogger import StreamLogger
 from awstools.awstools import terminate_instances, get_instance_ids_for_instances
 from runtools.utils import has_sudo, run_only_aws, check_script
+from buildtools.bitbuilder import get_deploy_dir
 
 from typing import List, Dict, Optional, Union, Tuple, TYPE_CHECKING
 if TYPE_CHECKING:
@@ -799,6 +800,8 @@ class XilinxAlveoInstanceDeployManager(InstanceDeployManager):
                 run(f"sudo firesim-load-xdma-module", shell=True)
             else:
                 self.instance_logger("XDMA Driver Kernel Module already loaded.")
+            check_script("firesim-chmod-xdma-perm")
+            run(f"sudo firesim-chmod-xdma-perm")
 
     def unload_xdma(self) -> None:
         """ unload the xdma kernel module. """
@@ -806,8 +809,9 @@ class XilinxAlveoInstanceDeployManager(InstanceDeployManager):
             # unload xdma if loaded
             if run('lsmod | grep -wq xdma', warn_only=True).return_code == 0:
                 self.instance_logger("Unloading XDMA Driver Kernel Module.")
-                check_script("firesim-remove-xdma-module")
-                run(f"sudo firesim-remove-xdma-module", shell=True)
+                remotescriptname = "firesim-remove-xdma-module"
+                check_script(remotescriptname)
+                run(f"sudo {remotescriptname}", shell=True)
             else:
                 self.instance_logger("XDMA Driver Kernel Module already unloaded.")
 
@@ -849,7 +853,7 @@ class XilinxAlveoInstanceDeployManager(InstanceDeployManager):
                 bdf = self.slot_to_bdf(slotno)
 
                 self.instance_logger(f"""Flashing FPGA Slot: {slotno} ({bdf}) with bitstream: {bit}""")
-                run(f"""sudo fpga-util.py --bitstream {bit} --bdf {bdf}""")
+                run(f"""{remote_sim_dir}/scripts/fpga-util.py --bitstream {bit} --bdf {bdf}""")
 
     def infrasetup_instance(self, uridir: str) -> None:
         """ Handle infrastructure setup for this platform. """

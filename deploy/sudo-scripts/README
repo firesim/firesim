@@ -6,3 +6,6 @@ must also do (sudo all things along the sim/midas/src/main/cc/simif*.cc path):
 on aws require you do the same so you don't need sudo for driver/switches
 
 must also install fpga-util from the platform area and make it sudo executable
+
+sudo cp sudo-scripts/firesim-* /bin
+
