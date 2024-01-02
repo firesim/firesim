@@ -50,7 +50,7 @@ $(OUT_DIR)/$(DRIVER_NAME)-$(PLATFORM): $(DRIVER) $(driver_h) $(platform_o) $(bri
 driver: $(OUT_DIR)/$(DRIVER_NAME)-$(PLATFORM)
 
 # Sources for building MIDAS-level simulators. Must be defined before sources VCS/Verilator Makefrags
-override CXXFLAGS += -std=c++20 -include $(design_h)
+override CXXFLAGS += -std=c++20
 
 # Models of FPGA primitives that are used in host-level sim, but not in FPGATop
 sim_fpga_resource_models := $(v_dir)/BUFGCE.v
