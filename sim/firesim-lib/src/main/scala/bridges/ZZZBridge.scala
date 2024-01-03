@@ -4,7 +4,6 @@ package firesim.bridges
 import midas.widgets._
 
 import chisel3._
-import chisel3.stage.ChiselStage
 import chisel3.util._
 import org.chipsalliance.cde.config.Parameters
 import freechips.rocketchip.subsystem.PeripheryBusKey
@@ -81,7 +80,6 @@ object ZZZBridge {
 class ZZZBridgeModule(key: ZZZKey)(implicit p: Parameters) extends BridgeModule[HostPortIO[ZZZBridgeTargetIO]]()(p) {
   lazy val module = new BridgeModuleImp(this) {
     println("======= DN: ZZZBridgeModule lazy eval")
-    val div = key.div
     // This creates the interfaces for all of the host-side transport
     // AXI4-lite for the simulation control bus, =
     // AXI4 for DMA
@@ -102,99 +100,32 @@ class ZZZBridgeModule(key: ZZZKey)(implicit p: Parameters) extends BridgeModule[
     val fire = hPort.toHost.hValid && // We have a valid input token: toHost ~= leaving the transformed RTL
                hPort.fromHost.hReady && // We have space to enqueue a new output token
                txfifo.io.enq.ready      // We have space to capture new TX data
-    val targetReset = fire & hPort.hBits.reset
-    rxfifo.reset := reset.asBool || targetReset
-    txfifo.reset := reset.asBool || targetReset
-
+    // val targetReset = fire & hPort.hBits.reset
+    
     hPort.toHost.hReady := fire
     hPort.fromHost.hValid := fire
     // DOC include end: UART Bridge Header
-    val sTxIdle :: sTxWait :: sTxData :: sTxBreak :: Nil = Enum(4)
-    val txState = RegInit(sTxIdle)
-    val txData = Reg(UInt(8.W))
-    // iterate through bits in byte to deserialize
-    val (txDataIdx, txDataWrap) = Counter(txState === sTxData && fire, 8)
-    // iterate using div to convert clock rate to baud
-    val (txBaudCount, txBaudWrap) = Counter(txState === sTxWait && fire, div)
-    val (txSlackCount, txSlackWrap) = Counter(txState === sTxIdle && target.txd === 0.U && fire, 4)
 
-    switch(txState) {
-      is(sTxIdle) {
-        when(txSlackWrap) {
-          txData  := 0.U
-          txState := sTxWait
-        }
-      }
-      is(sTxWait) {
-        when(txBaudWrap) {
-          txState := sTxData
-        }
-      }
-      is(sTxData) {
-        when(fire) {
-          txData := txData | (target.txd << txDataIdx)
-        }
-        when(txDataWrap) {
-          txState := Mux(target.txd === 1.U, sTxIdle, sTxBreak)
-        }.elsewhen(fire) {
-          txState := sTxWait
-        }
-      }
-      is(sTxBreak) {
-        when(target.txd === 1.U && fire) {
-          txState := sTxIdle
-        }
-      }
+    txfifo.io.enq.bits := target.out.bits
+    txfifo.io.enq.valid := target.out.valid
+    target.out.ready := txfifo.io.enq.ready
+
+    target.in.bits := rxfifo.io.deq.bits
+    target.in.valid := rxfifo.io.deq.valid
+    rxfifo.io.deq.ready := target.in.ready
+
+    when (rxfifo.io.enq.fire){
+      printf("ZZZ Module TX (%x): %c\n", rxfifo.io.enq.bits, rxfifo.io.enq.bits)
     }
 
-    txfifo.io.enq.bits  := txData
-    txfifo.io.enq.valid := txDataWrap
+    genROReg(txfifo.io.deq.bits, "outDN_bits")
+    genROReg(txfifo.io.deq.valid, "outDN_valid")
+    Pulsify(genWORegInit(txfifo.io.deq.ready, "outDN_ready", false.B), pulseLength = 1)
 
-    val sRxIdle :: sRxStart :: sRxData :: Nil = Enum(3)
-    val rxState = RegInit(sRxIdle)
-    // iterate using div to convert clock rate to baud
-    val (rxBaudCount, rxBaudWrap) = Counter(fire, div)
-    // iterate through bits in byte to deserialize
-    val (rxDataIdx, rxDataWrap) = Counter(rxState === sRxData && fire && rxBaudWrap, 8)
 
-    target.rxd := 1.U
-    switch(rxState) {
-      is(sRxIdle) {
-        target.rxd := 1.U
-        when (rxBaudWrap && rxfifo.io.deq.valid) {
-          rxState := sRxStart
-        }
-      }
-      is(sRxStart) {
-        target.rxd := 0.U
-        when(rxBaudWrap) {
-          rxState := sRxData
-        }
-      }
-      is(sRxData) {
-        target.rxd := (rxfifo.io.deq.bits >> rxDataIdx)(0)
-        when(rxDataWrap && rxBaudWrap) {
-          rxState := sRxIdle
-        }
-      }
-    }
-    rxfifo.io.deq.ready := (rxState === sRxData) && rxDataWrap && rxBaudWrap && fire
-
-    // DOC include start: UART Bridge Footer
-    // Exposed the head of the queue and the valid bit as a read-only registers
-    // with name "out_bits" and out_valid respectively
-    genROReg(txfifo.io.deq.bits, "out_bits")
-    genROReg(txfifo.io.deq.valid, "out_valid")
-
-    // Generate a writeable register, "out_ready", that when written to dequeues
-    // a single element in the tx_fifo. Pulsify derives the register back to false
-    // after pulseLength cycles to prevent multiple dequeues
-    Pulsify(genWORegInit(txfifo.io.deq.ready, "out_ready", false.B), pulseLength = 1)
-
-    // Generate regisers for the rx-side of the UART; this is eseentially the reverse of the above
-    genWOReg(rxfifo.io.enq.bits, "in_bits")
-    Pulsify(genWORegInit(rxfifo.io.enq.valid, "in_valid", false.B), pulseLength = 1)
-    genROReg(rxfifo.io.enq.ready, "in_ready")
+    genWOReg(rxfifo.io.enq.bits, "inDN_bits")
+    Pulsify(genWORegInit(rxfifo.io.enq.valid, "inDN_valid", false.B), pulseLength = 1)
+    genROReg(rxfifo.io.enq.ready, "inDN_ready")
 
     // This method invocation is required to wire up all of the MMIO registers to
     // the simulation control bus (AXI4-lite)

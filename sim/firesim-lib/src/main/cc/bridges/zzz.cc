@@ -177,9 +177,9 @@ create_handler(const std::vector<std::string> &args, int zzzno) {
   if (!in_name.empty() && !out_name.empty()) {
     return std::make_unique<zzz_file_handler>(in_name, out_name);
   }
-  if (zzzno == 0) {
-    return std::make_unique<zzz_stdin_handler>();
-  }
+  // if (zzzno == 0) {
+  //   return std::make_unique<zzz_stdin_handler>();
+  // }
   return std::make_unique<zzz_pty_handler>(zzzno);
   //return std::make_unique<zzz_stdin_handler>();
 }
@@ -194,44 +194,67 @@ zzz_t::zzz_t(simif_t &simif,
 zzz_t::~zzz_t() = default;
 
 void zzz_t::send() {
-  if (data.in.fire()) {
-    write(mmio_addrs.in_bits, data.in.bits);
-    write(mmio_addrs.in_valid, data.in.valid);
+  // if (data.in.fire()) {
+  //   write(mmio_addrs.in_bits, data.in.bits);
+  //   write(mmio_addrs.in_valid, data.in.valid);
+  // }
+  if (data.inDN.fire()) {
+    write(mmio_addrs.inDN_bits, data.inDN.bits);
+    write(mmio_addrs.inDN_valid, data.inDN.valid);
+    printf("\nZZZ sending to UART: %c\n", data.inDN.bits);
   }
-  if (data.out.fire()) {
-    write(mmio_addrs.out_ready, data.out.ready);
+  // if (data.out.fire()) {
+  //   write(mmio_addrs.out_ready, data.out.ready);
+    
+  // }
+  if (data.outDN.fire()){
+    write(mmio_addrs.outDN_ready, data.outDN.ready);
   }
 }
 
 void zzz_t::recv() {
-  data.in.ready = read(mmio_addrs.in_ready);
-  data.out.valid = read(mmio_addrs.out_valid);
-  if (data.out.valid) {
-    data.out.bits = read(mmio_addrs.out_bits);
-  }
+  // data.in.ready = read(mmio_addrs.in_ready);
+  // data.out.valid = read(mmio_addrs.out_valid);
+  // if (data.out.valid) {
+  //   data.out.bits = read(mmio_addrs.out_bits);
+  // }
+  data.inDN.ready = read(mmio_addrs.inDN_ready);
+  data.outDN.valid = read(mmio_addrs.outDN_valid);
+  if (data.outDN.valid)
+    printf("\nDN receiving: %c\n", read(mmio_addrs.outDN_bits));
 }
 
 void zzz_t::tick() {
-  data.out.ready = true;
-  data.in.valid = false;
+  // data.out.ready = true;
+  data.outDN.ready = true;
+  
+  // data.in.valid = false;
+  data.inDN.valid = false;
   
   do {
     this->recv();
-    
+    /*
     if (data.in.ready) {
       if (auto bits = handler->get()) {
         data.in.bits = *bits;
         data.in.valid = true;
-        //printf("DN receiving ZZZ\n");
+      }
+    } */
+    if (data.inDN.ready) {
+      if (auto bits = handler->get()) {
+        data.inDN.bits = *bits;
+        data.inDN.valid = true;
+        printf("ZZZ: receiving from keyboard: %c\n", *bits);
       }
     }
     // print in the screen
-    if (data.out.fire()) {
-      handler->put(data.out.bits);
-      //printf("\nDN receiving ZZZ: %c\n", (char)data.out.bits);
-    }
+    // if (data.out.fire()) {
+    //   handler->put(data.out.bits);
+    //   //printf("\nDN receiving ZZZ: %c\n", (char)data.out.bits);
+    // }
 
     this->send();
-    data.in.valid = false;
-  } while (data.in.fire() || data.out.fire());
+    // data.in.valid = false;
+    data.inDN.valid = false;
+  } while (data.inDN.fire() || data.outDN.fire());
 }

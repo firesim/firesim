@@ -4,7 +4,7 @@
 #define __ZZZ_H
 
 #include "core/bridge_driver.h"
-#include "bridges/serial_data.h"
+#include "bridges/serial_data_zzz.h"
 
 
 #include <cstdint>
@@ -21,12 +21,18 @@
  * the target configuration.
  */
 struct ZZZBRIDGEMODULE_struct {
-  uint64_t out_bits;
-  uint64_t out_valid;
-  uint64_t out_ready;
-  uint64_t in_bits;
-  uint64_t in_valid;
-  uint64_t in_ready;
+  uint64_t outDN_bits;
+  uint64_t outDN_valid;
+  uint64_t outDN_ready;
+  // uint64_t out_bits;
+  // uint64_t out_valid;
+  // uint64_t out_ready;
+  uint64_t inDN_bits;
+  uint64_t inDN_valid;
+  uint64_t inDN_ready;
+  // uint64_t in_bits;
+  // uint64_t in_valid;
+  // uint64_t in_ready;
 };
 
 /**
