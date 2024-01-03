@@ -8,6 +8,8 @@
 #include <unistd.h>
 
 #include "intel-fpga-pcie-drivers/user/api/intel_fpga_pcie_api.hpp"
+#include "intel-fpga-pcie-drivers/user/api/linux/intel_fpga_pcie_api_linux.cpp"
+#include "intel-fpga-pcie-drivers/user/api/linux/intel_fpga_pcie_api_linux.hpp"
 #include "bridges/cpu_managed_stream.h"
 #include "core/simif.h"
 

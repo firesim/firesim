@@ -33,7 +33,7 @@
 
 #ifdef __linux__
 typedef ssize_t INTEL_FPGA_PCIE_DEV_HANDLE;
-#  include "intel_fpga_pcie_api_linux.hpp"
+#include "linux/intel_fpga_pcie_api_linux.hpp"
 
 #endif // __linux__
 
