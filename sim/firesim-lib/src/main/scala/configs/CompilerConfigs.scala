@@ -76,10 +76,22 @@ class BaseF1Config extends Config(
   new midas.F1Config
 )
 
-class BaseXilinxAlveoConfig extends Config(
+class BaseXilinxAlveoU200Config extends Config(
   new WithWiringTransform ++
   new WithAsyncResetReplacement ++
-  new midas.XilinxAlveoConfig
+  new midas.XilinxAlveoU200Config
+)
+
+class BaseXilinxAlveoU250Config extends Config(
+  new WithWiringTransform ++
+  new WithAsyncResetReplacement ++
+  new midas.XilinxAlveoU250Config
+)
+
+class BaseXilinxAlveoU280Config extends Config(
+  new WithWiringTransform ++
+  new WithAsyncResetReplacement ++
+  new midas.XilinxAlveoU280Config
 )
 
 class BaseNitefuryConfig extends Config(

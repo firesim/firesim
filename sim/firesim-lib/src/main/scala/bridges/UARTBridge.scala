@@ -43,7 +43,7 @@ class UARTBridge(uParams: UARTParams, freqMHz: Int)(implicit p: Parameters) exte
 
   // Do some intermediate work to compute our host-side BridgeModule's constructor argument
   val baudrate = uParams.initBaudRate
-  val div = (freqMHz * 1000000 / baudrate).toInt
+  val div = (BigInt(freqMHz) * 1000000 / baudrate).toInt
 
   // And then implement the constructorArg member
   val constructorArg = Some(UARTKey(uParams, div))
