@@ -3,18 +3,12 @@
 
 template <class T>
 struct serial_data_t {
-  // struct {
-  //   T bits;
-  //   bool valid;
-  //   bool ready;
-  //   bool fire() { return valid && ready; }
-  // } in;
-  // struct {
-  //   T bits;
-  //   bool ready;
-  //   bool valid;
-  //   bool fire() { return valid && ready; }
-  // } out;
+  struct {
+    T bits;
+    bool valid;
+    bool ready;
+    bool fire() { return valid && ready; }
+  } in;
   struct {
     T bits;
     bool ready;

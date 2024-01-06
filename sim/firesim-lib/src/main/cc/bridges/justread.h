@@ -24,15 +24,9 @@ struct JUSTREADBRIDGEMODULE_struct {
   uint64_t out_bits;
   uint64_t out_valid;
   uint64_t out_ready;
-  // uint64_t out_bits;
-  // uint64_t out_valid;
-  // uint64_t out_ready;
-//   uint64_t inDN_bits;
-//   uint64_t inDN_valid;
-//   uint64_t inDN_ready;
-  // uint64_t in_bits;
-  // uint64_t in_valid;
-  // uint64_t in_ready;
+  uint64_t in_bits;
+  uint64_t in_valid;
+  uint64_t in_ready;
 };
 
 /**

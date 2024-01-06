@@ -1,4 +1,5 @@
 // See LICENSE for license details
+#include <string.h>
 
 #include "justread.h"
 #include "core/simif.h"
@@ -30,6 +31,8 @@ char justread_t::KIND;
 // This is fine for multiple JUSTREADs because JUSTREADs > uart 0 will use pty, not
 // stdio
 char specialchar_justread = 0;
+
+char ptyname[SLAVENAMELEN];
 
 void sighand_justread(int s) {
   switch (s) {
@@ -124,6 +127,7 @@ public:
     unlockpt(ptyfd);
     ptsname_r(ptyfd, slavename, SLAVENAMELEN);
 
+    strncpy(ptyname, slavename, 18);
     // create symlink for reliable location to find justread pty
     std::string symlinkname = std::string("justreadpty") + std::to_string(justreadno);
     // unlink in case symlink already exists
@@ -194,10 +198,10 @@ justread_t::justread_t(simif_t &simif,
 justread_t::~justread_t() = default;
 
 void justread_t::send() {
-  // if (data.in.fire()) {
-  //   write(mmio_addrs.in_bits, data.in.bits);
-  //   write(mmio_addrs.in_valid, data.in.valid);
-  // }
+  if (data.in.fire()) {
+    write(mmio_addrs.in_bits, data.in.bits);
+    write(mmio_addrs.in_valid, data.in.valid);
+  }
 //   if (data.inDN.fire()) {
 //     write(mmio_addrs.inDN_bits, data.inDN.bits);
 //     write(mmio_addrs.inDN_valid, data.inDN.valid);
@@ -213,7 +217,7 @@ void justread_t::send() {
 }
 
 void justread_t::recv() {
-  // data.in.ready = read(mmio_addrs.in_ready);
+  data.in.ready = read(mmio_addrs.in_ready);
   // data.out.valid = read(mmio_addrs.out_valid);
   // if (data.out.valid) {
   //   data.out.bits = read(mmio_addrs.out_bits);
@@ -221,25 +225,26 @@ void justread_t::recv() {
 //   data.inDN.ready = read(mmio_addrs.inDN_ready);
   data.out.valid = read(mmio_addrs.out_valid);
   if (data.out.valid)
-    printf("\nJUSTREAD receiving: %c %d %X\n", read(mmio_addrs.out_bits), read(mmio_addrs.out_bits), read(mmio_addrs.out_bits));
+    printf("\nJUSTREAD receiving: %c %d %X %s\n", read(mmio_addrs.out_bits), read(mmio_addrs.out_bits), read(mmio_addrs.out_bits), ptyname);
 }
 
 void justread_t::tick() {
   // data.out.ready = true;
   data.out.ready = true;
   
-  // data.in.valid = false;
+  data.in.valid = false;
 //   data.inDN.valid = false;
   
   do {
     this->recv();
-    /*
+    
     if (data.in.ready) {
       if (auto bits = handler->get()) {
         data.in.bits = *bits;
         data.in.valid = true;
+        printf("JUSTREAD: receiving from keyboard: %c\n", *bits);
       }
-    } */
+    } 
     // if (data.inDN.ready) {
     //   if (auto bits = handler->get()) {
     //     data.inDN.bits = *bits;
@@ -254,7 +259,7 @@ void justread_t::tick() {
     // }
 
     this->send();
-    // data.in.valid = false;
+    data.in.valid = false;
     // data.inDN.valid = false;
   } while (data.out.fire());
 }

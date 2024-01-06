@@ -40,8 +40,8 @@ class JustReadBridge()(implicit p: Parameters) extends BlackBox
 object JustReadBridge {
   def apply(clock: Clock, justread: JustReadTopIO, reset: Bool)(implicit p: Parameters): JustReadBridge = {
     val ep = Module(new JustReadBridge())
-    ep.io.justread.isReady := justread.isReady
-   // ep.io.justread.load := justread.load
+    ep.io.justread.out <> justread.out
+    ep.io.justread.in <> justread.in
     ep.io.clock := clock
     ep.io.reset := reset
     ep
@@ -60,7 +60,8 @@ class JustReadBridgeModule()(implicit p: Parameters) extends BridgeModule[HostPo
     val hPort = IO(HostPort(new JustReadBridgeTargetIO()))
 
     // Generate some FIFOs to capture tokens...
-    val fifo = Module(new Queue(UInt(8.W), 128))
+    val outfifo = Module(new Queue(UInt(8.W), 128))
+    val infifo  = Module(new Queue(UInt(8.W), 128))
 
     val target = hPort.hBits.justread
     // In general, your BridgeModule will not need to do work every host-cycle. In simple Bridges,
@@ -69,22 +70,38 @@ class JustReadBridgeModule()(implicit p: Parameters) extends BridgeModule[HostPo
     // output token
     val fire = hPort.toHost.hValid && // We have a valid input token: toHost ~= leaving the transformed RTL
                hPort.fromHost.hReady && // We have space to enqueue a new output token
-               fifo.io.enq.ready      // We have space to capture new TX data
+               outfifo.io.enq.ready      // We have space to capture new TX data
     val targetReset = fire & hPort.hBits.reset
-    fifo.reset := reset.asBool || targetReset
+    outfifo.reset := reset.asBool || targetReset
 
 
     hPort.toHost.hReady := fire
     hPort.fromHost.hValid := fire
     
-    fifo.io.enq.valid := fire
-    fifo.io.enq.bits := Cat(target.isReady, 0.U(7.W))
-    //target.in := fifo.io.deq.bits
-    //target.load := fifo.io.deq.valid
+    when (target.out.valid){
+      printf("JUSTREAD Module: target.out.valid = true & target.out.bits = (%x): %c\n", target.out.bits, target.out.bits)
+    }
+    when (target.in.valid){
+      printf("JUSTREAD Module: target.in.valid = true & target.in.bits = (%x): %c\n", target.in.bits, target.in.bits)
+      printf("\t outfifo.io.enq.valid = %d\n", outfifo.io.enq.valid)  
+    }
+    outfifo.io.enq.valid := fire && target.out.valid
+    outfifo.io.enq.bits := target.out.bits
+    target.out.ready := fire && outfifo.io.enq.ready
+    
+    target.in.bits := infifo.io.deq.bits
+    target.in.valid := infifo.io.deq.valid
+    infifo.io.deq.ready := fire && target.in.ready
 
-    genROReg(fifo.io.deq.bits, "out_bits")
-    genROReg(fifo.io.deq.valid, "out_valid")
-    Pulsify(genWORegInit(fifo.io.deq.ready, "out_ready", false.B), pulseLength = 1)
+    // target.in.ready := true.B
+
+    genROReg(outfifo.io.deq.bits, "out_bits")
+    genROReg(outfifo.io.deq.valid, "out_valid")
+    Pulsify(genWORegInit(outfifo.io.deq.ready, "out_ready", false.B), pulseLength = 1)
+
+    genWOReg(infifo.io.enq.bits, "in_bits")
+    Pulsify(genWORegInit(infifo.io.enq.valid, "in_valid", false.B), pulseLength = 1)
+    genROReg(infifo.io.enq.ready, "in_ready")
 
     genCRFile()
     // DOC include end: UART Bridge Footer
