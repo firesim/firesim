@@ -209,7 +209,7 @@ void justplay_t::recv() {
   data.in.ready = read(mmio_addrs.in_ready);
   data.out.valid = read(mmio_addrs.out_valid);
   if (data.out.valid){
-    printf("\n[JUSTPLAY driver] Receiving from HW: %c %d %X %s\n", read(mmio_addrs.out_bits), read(mmio_addrs.out_bits), read(mmio_addrs.out_bits), justplay_ptyname);
+    printf("\n[JUSTPLAY driver] Receiving from HW: %d (%s)\n", read(mmio_addrs.out_bits), justplay_ptyname);
     data.out.bits = read(mmio_addrs.out_bits);
     if (data.out.bits%2 == 0){
       data.in.bits = data.out.bits >> 1;
