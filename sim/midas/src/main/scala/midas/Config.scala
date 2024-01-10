@@ -170,6 +170,27 @@ class XilinxVCU118Config extends Config(new Config((site, here, up) => {
   case PostLinkCircuitPath => Some("partition_wrapper/partition/firesim_top")
 }) ++ new SimConfig)
 
+// TODO: Same as F1Config for now
+class IntelConfig extends Config(new Config((site, here, up) => {
+  case Platform       => (p: Parameters) => new F1Shim()(p)
+  case HasDMAChannel  => true
+  case StreamEngineInstantiatorKey => (e: StreamEngineParameters, p: Parameters) => new CPUManagedStreamEngine(p, e)
+  case CPUManagedAXI4Key => Some(CPUManagedAXI4Params(
+    addrBits = 64,
+    dataBits = 512,
+    idBits = 6,
+  ))
+  case FPGAManagedAXI4Key   => None
+  case CtrlNastiKey   => NastiParameters(32, 25, 12)
+  case HostMemChannelKey => HostMemChannelParams(
+    size      = 0x400000000L, // 16 GiB
+    beatBytes = 8,
+    idBits    = 16)
+  case HostMemNumChannels => 4
+  case PreLinkCircuitPath => Some("firesim_top")
+  case PostLinkCircuitPath => Some("WRAPPER_INST/CL/firesim_top")
+}) ++ new SimConfig)
+
 class VitisConfig extends Config(new Config((site, here, up) => {
   case Platform       => (p: Parameters) => new VitisShim()(p)
   case CPUManagedAXI4Key => None

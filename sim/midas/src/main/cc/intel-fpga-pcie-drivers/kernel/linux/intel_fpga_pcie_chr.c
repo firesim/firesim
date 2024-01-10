@@ -533,7 +533,7 @@ static ssize_t chr_access(struct file *filp, const char __user *buf,
     chr_dev_bk = filp->private_data;
     dev_bk = chr_dev_bk->dev_bk;
 
-    if(! access_ok(VERIFY_WRITE, buf, sizeof(buf))) {
+    if(! access_ok(buf, sizeof(buf))) {
         INTEL_FPGA_PCIE_DEBUG("buf is not ok to access");
         return -EFAULT;
     }

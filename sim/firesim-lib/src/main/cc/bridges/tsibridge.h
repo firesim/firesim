@@ -27,7 +27,6 @@ public:
   static char KIND;
 
   tsibridge_t(simif_t &simif,
-              loadmem_t &loadmem_widget,
               const TSIBRIDGEMODULE_struct &mmio_addrs,
               int tsino,
               const std::vector<std::string> &args,
@@ -41,7 +40,6 @@ public:
 
 private:
   const TSIBRIDGEMODULE_struct mmio_addrs;
-  loadmem_t &loadmem_widget;
 
   firesim_tsi_t *fesvr;
   bool has_mem;

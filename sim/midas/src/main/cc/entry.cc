@@ -10,6 +10,7 @@
 #define GET_INCLUDES
 #include "FireSim-generated.const.h"
 #undef GET_INCLUDES
+#include "bridges/loadmem.h"
 
 #define GET_METASIM_INTERFACE_CONFIG
 #define GET_SUBSTRUCT_CHECKS

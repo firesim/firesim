@@ -111,3 +111,9 @@ class BaseVitisConfig extends Config(
   new WithAsyncResetReplacement ++
   new midas.VitisConfig
 )
+
+class BaseIntelConfig extends Config(
+  new WithWiringTransform ++
+  new WithAsyncResetReplacement ++
+  new midas.IntelConfig
+)

@@ -406,7 +406,7 @@ static int map_bars_default(struct pci_dev *dev)
             if (flags & IORESOURCE_IO) {
                 dev_bk->bar[i].base_addr = ioport_map(start, len);
             } else {
-                dev_bk->bar[i].base_addr = ioremap_nocache(start, len);
+                dev_bk->bar[i].base_addr = ioremap_cache(start, len);
 
                 if (flags & IORESOURCE_PREFETCH)
                     dev_bk->bar[i].is_prefetchable = true;
@@ -462,7 +462,7 @@ static void unmap_bars(struct pci_dev *dev)
 MODULE_AUTHOR           ("Intel Corp");
 MODULE_DESCRIPTION      ("Driver for Intel(R) FPGA PCIe IP");
 MODULE_VERSION          ("1.0");
-MODULE_SUPPORTED_DEVICE ("Intel(R) Stratix 10 FPGA");
+// MODULE_SUPPORTED_DEVICE ("Intel(R) Stratix 10 FPGA");
 MODULE_DEVICE_TABLE     (pci, intel_fpga_pcie_id_table);
 MODULE_LICENSE          ("Dual BSD/GPL");
 

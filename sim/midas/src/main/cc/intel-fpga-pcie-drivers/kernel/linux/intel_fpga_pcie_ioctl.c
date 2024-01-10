@@ -101,9 +101,9 @@ long intel_fpga_pcie_unlocked_ioctl(struct file *filp, unsigned int cmd,
      */
     if (_IOC_DIR(cmd) & _IOC_READ) {
         // Note: VERIFY_WRITE is a superset of VERIFY_READ
-        retval = !access_ok(VERIFY_WRITE, (void __user *)uarg, _IOC_SIZE(cmd));
+        retval = !access_ok((void __user *)uarg, _IOC_SIZE(cmd));
     } else if (_IOC_DIR(cmd) & _IOC_WRITE) {
-        retval = !access_ok(VERIFY_READ, (void __user *)uarg, _IOC_SIZE(cmd));
+        retval = !access_ok((void __user *)uarg, _IOC_SIZE(cmd));
     }
     if (unlikely(retval)) {
         INTEL_FPGA_PCIE_DEBUG("ioctl access violation.");
@@ -362,7 +362,7 @@ static long checked_cfg_access(struct pci_dev *dev, unsigned long uarg)
     uint32_t count;
     int retval;
     
-    if(! access_ok(VERIFY_WRITE, uarg, sizeof(uarg))){
+    if(! access_ok(uarg, sizeof(uarg))){
         INTEL_FPGA_PCIE_DEBUG("uarg is not ok to access");
         return -EFAULT;
     }
@@ -499,7 +499,7 @@ static long set_kmem_size(struct dev_bookkeep *dev_bk, unsigned long size)
     // Get new memory region first if requested.
     if (size > 0) {
         dev_bk->kmem_info.virt_addr =
-            dma_zalloc_coherent(&dev_bk->dev->dev, size,
+            dma_alloc_coherent(&dev_bk->dev->dev, size,
                                 &dev_bk->kmem_info.bus_addr, GFP_KERNEL);
         if (!dev_bk->kmem_info.virt_addr) {
             INTEL_FPGA_PCIE_DEBUG("couldn't obtain kernel buffer.");

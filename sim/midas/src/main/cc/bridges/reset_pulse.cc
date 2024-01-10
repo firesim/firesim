@@ -1,4 +1,4 @@
-
+#include <unistd.h>
 #include "reset_pulse.h"
 
 char reset_pulse_t::KIND;
@@ -34,6 +34,8 @@ reset_pulse_t::reset_pulse_t(simif_t &sim,
 }
 
 void reset_pulse_t::init() {
+  sleep(5);
   write(mmio_addrs.pulseLength, this->pulse_length);
   write(mmio_addrs.doneInit, 1);
+  sleep(5);
 }

@@ -12,6 +12,7 @@ firesim_tsi_t::firesim_tsi_t(int argc, char **argv, bool can_have_loadmem)
   has_loadmem = can_have_loadmem;
 }
 
+
 void firesim_tsi_t::idle() {
   is_busy = false;
   for (size_t i = 0; i < idle_counts; i++)

@@ -176,14 +176,18 @@ simif_intel_t::fpga_pci_bar_get_mem_at_offset(uint64_t offset) {
 
 int simif_intel_t::fpga_pci_poke(uint64_t offset, uint32_t value) {
   // TODO: INTELFOLKS: reaplce this w/ write MMIO func
+  sleep(0.1);
   int rc = fs_intel_dev->write32(reinterpret_cast<void *>(offset), value);
-  return rc;
+  // printf("Poked value %u at offset %lu, retcode %i\n", value, offset, rc);
+  return rc == 0;
 }
 
 int simif_intel_t::fpga_pci_peek(uint64_t offset, uint32_t *value) {
   // TODO: INTELFOLKS: reaplce this w/ read MMIO func
+  sleep(0.1);
   int rc = fs_intel_dev->read32(reinterpret_cast<void *>(offset), value);
-  return rc;
+  // printf("Peeked value %u at offset %lu, retcode %i\n", *value, offset, rc);
+  return rc == 0;
 }
 
 void simif_intel_t::check_rc(int rc, char *infostr) {
@@ -303,7 +307,7 @@ simif_intel_t::~simif_intel_t() { fpga_shutdown(); }
 
 void simif_intel_t::write(size_t addr, uint32_t data) {
   int rc = fpga_pci_poke(addr, data);
-  check_rc(!rc, NULL);
+  check_rc(rc, NULL);
 }
 
 uint32_t simif_intel_t::read(size_t addr) {

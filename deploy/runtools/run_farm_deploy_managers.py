@@ -1143,15 +1143,23 @@ class IntelInstanceDeployManager(InstanceDeployManager):
                 bitstream_tar = hwcfg.get_bitstream_tar_filename()
                 remote_sim_dir = self.get_remote_sim_dir_for_slot(slotno)
                 bitstream_tar_unpack_dir = f"{remote_sim_dir}/{self.PLATFORM_NAME}"
-                bit = f"{remote_sim_dir}/{self.PLATFORM_NAME}/firesim.bit"
+                bit = f"{remote_sim_dir}/{self.PLATFORM_NAME}/firesim.sof"
 
-                # at this point the tar file is in the sim slot
+                # # at this point the tar file is in the sim slot
                 run(f"rm -rf {bitstream_tar_unpack_dir}")
                 run(f"tar xvf {remote_sim_dir}/{bitstream_tar} -C {remote_sim_dir}")
 
                 # TODO: INTELFOLKS: Determine BDF for Intel FPGA and pass it to FPGA programming script
                 # for now you can just figure out the serial # of all fpgas on the machine and program them all
                 # at this point the `bit` file holds the bitstream
+                # TODO: Don't hardcode
+                with prefix("export PATH=/home/chief/intelFPGA_pro/23.2/qprogrammer/quartus/bin/:$PATH"):
+                    run(f"bash /home/chief/program_intel_agilex7.sh -1 {bit}")
+
+    def load_intel_driver(self) -> None:
+        # TODO: Don't hardcode
+        with cd("/home/chief/intel-testing/firesim/sim/midas/src/main/cc/intel-fpga-pcie-drivers/kernel/linux"):
+            run("sudo ./install")
 
     def infrasetup_instance(self, uridir: str) -> None:
         """ Handle infrastructure setup for this platform. """
@@ -1165,6 +1173,7 @@ class IntelInstanceDeployManager(InstanceDeployManager):
 
             if not self.parent_node.metasimulation_enabled:
                 # TODO: INTELFOLKS: Any Intel driver that needs to be loaded? Do it here?
+                self.load_intel_driver()
                 # flash fpgas
                 self.flash_fpgas()
 
@@ -1193,10 +1202,10 @@ class IntelInstanceDeployManager(InstanceDeployManager):
             if not self.parent_node.metasimulation_enabled:
                 # TODO: INTELFOLKS: Can just run the simulation on a specific FPGA (i.e. with the serial # or BDF or whatever) (these args correspond to C stub)
                 self.instance_logger(f"""Determine BDF for {slotno}""")
-                #collect = run('lspci | grep -i xilinx')
-                #bdfs = [ i[:7] for i in collect.splitlines() if len(i.strip()) >= 0 ]
-                #bdf = bdfs[slotno].replace('.', ':').split(':')
-                #extra_args = f"+domain=0x0000 +bus=0x{bdf[0]} +device=0x{bdf[1]} +function=0x0 +bar=0x0 +pci-vendor=0x10ee +pci-device=0x903f"
+                collect = run('lspci | grep -i altera')
+                bdfs = [ i[:7] for i in collect.splitlines() if len(i.strip()) >= 0 ]
+                bdf = bdfs[slotno].replace('.', ':').split(':')
+                extra_args = f"+domain=0x0000 +bus=0x{bdf[0]} +device=0x{bdf[1]} +function=0x0 +bar=0x0 +pci-vendor=0x1172 +pci-device=0x000a"
             else:
                 extra_args = None
 

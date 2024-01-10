@@ -11,14 +11,13 @@
 char tsibridge_t::KIND;
 
 tsibridge_t::tsibridge_t(simif_t &simif,
-                         loadmem_t &loadmem_widget,
                          const TSIBRIDGEMODULE_struct &mmio_addrs,
                          int tsino,
                          const std::vector<std::string> &args,
                          bool has_mem,
                          int64_t mem_host_offset)
     : bridge_driver_t(simif, &KIND), mmio_addrs(mmio_addrs),
-      loadmem_widget(loadmem_widget), has_mem(has_mem),
+      has_mem(has_mem),
       mem_host_offset(mem_host_offset) {
 
   std::string num_equals = std::to_string(tsino) + std::string("=");
@@ -103,67 +102,67 @@ void tsibridge_t::recv() {
   }
 }
 
-void tsibridge_t::handle_loadmem_read(firesim_loadmem_t loadmem) {
-  assert(loadmem.size % sizeof(uint32_t) == 0);
-  assert(has_mem);
-  // Loadmem reads are in granularities of the width of the FPGA-DRAM bus
-  mpz_t buf;
-  mpz_init(buf);
-  while (loadmem.size > 0) {
-    loadmem_widget.read_mem(loadmem.addr + mem_host_offset, buf);
-
-    // If the read word is 0; mpz_export seems to return an array with length 0
-    size_t beats_requested =
-        (loadmem.size / sizeof(uint32_t) > loadmem_widget.get_mem_data_chunk())
-            ? loadmem_widget.get_mem_data_chunk()
-            : loadmem.size / sizeof(uint32_t);
-    // The number of beats exported from buf; may be less than beats requested.
-    size_t non_zero_beats;
-    uint32_t *data = (uint32_t *)mpz_export(
-        NULL, &non_zero_beats, -1, sizeof(uint32_t), 0, 0, buf);
-    for (size_t j = 0; j < beats_requested; j++) {
-      if (j < non_zero_beats) {
-        fesvr->send_loadmem_word(data[j]);
-      } else {
-        fesvr->send_loadmem_word(0);
-      }
-    }
-    loadmem.size -= beats_requested * sizeof(uint32_t);
-  }
-  mpz_clear(buf);
-  // Switch back to fesvr for it to process read data
-  fesvr->tick();
-}
-
-void tsibridge_t::handle_loadmem_write(firesim_loadmem_t loadmem) {
-  assert(loadmem.size <= 1024);
-  assert(has_mem);
-  static char buf[1024];
-  fesvr->recv_loadmem_data(buf, loadmem.size);
-  mpz_t data;
-  mpz_init(data);
-  mpz_import(data,
-             (loadmem.size + sizeof(uint32_t) - 1) / sizeof(uint32_t),
-             -1,
-             sizeof(uint32_t),
-             0,
-             0,
-             buf);
-  loadmem_widget.write_mem_chunk(
-      loadmem.addr + mem_host_offset, data, loadmem.size);
-  mpz_clear(data);
-}
-
-void tsibridge_t::tsi_bypass_via_loadmem() {
-  firesim_loadmem_t loadmem;
-  while (fesvr->has_loadmem_reqs()) {
-    // Check for reads first as they preceed a narrow write;
-    if (fesvr->recv_loadmem_read_req(loadmem))
-      handle_loadmem_read(loadmem);
-    if (fesvr->recv_loadmem_write_req(loadmem))
-      handle_loadmem_write(loadmem);
-  }
-}
+// void tsibridge_t::handle_loadmem_read(firesim_loadmem_t loadmem) {
+//   assert(loadmem.size % sizeof(uint32_t) == 0);
+//   assert(has_mem);
+//   // Loadmem reads are in granularities of the width of the FPGA-DRAM bus
+//   mpz_t buf;
+//   mpz_init(buf);
+//   while (loadmem.size > 0) {
+//     loadmem_widget.read_mem(loadmem.addr + mem_host_offset, buf);
+// 
+//     // If the read word is 0; mpz_export seems to return an array with length 0
+//     size_t beats_requested =
+//         (loadmem.size / sizeof(uint32_t) > loadmem_widget.get_mem_data_chunk())
+//             ? loadmem_widget.get_mem_data_chunk()
+//             : loadmem.size / sizeof(uint32_t);
+//     // The number of beats exported from buf; may be less than beats requested.
+//     size_t non_zero_beats;
+//     uint32_t *data = (uint32_t *)mpz_export(
+//         NULL, &non_zero_beats, -1, sizeof(uint32_t), 0, 0, buf);
+//     for (size_t j = 0; j < beats_requested; j++) {
+//       if (j < non_zero_beats) {
+//         fesvr->send_loadmem_word(data[j]);
+//       } else {
+//         fesvr->send_loadmem_word(0);
+//       }
+//     }
+//     loadmem.size -= beats_requested * sizeof(uint32_t);
+//   }
+//   mpz_clear(buf);
+//   // Switch back to fesvr for it to process read data
+//   fesvr->tick();
+// }
+// 
+// void tsibridge_t::handle_loadmem_write(firesim_loadmem_t loadmem) {
+//   assert(loadmem.size <= 1024);
+//   assert(has_mem);
+//   static char buf[1024];
+//   fesvr->recv_loadmem_data(buf, loadmem.size);
+//   mpz_t data;
+//   mpz_init(data);
+//   mpz_import(data,
+//              (loadmem.size + sizeof(uint32_t) - 1) / sizeof(uint32_t),
+//              -1,
+//              sizeof(uint32_t),
+//              0,
+//              0,
+//              buf);
+//   loadmem_widget.write_mem_chunk(
+//       loadmem.addr + mem_host_offset, data, loadmem.size);
+//   mpz_clear(data);
+// }
+// 
+// void tsibridge_t::tsi_bypass_via_loadmem() {
+//   firesim_loadmem_t loadmem;
+//   while (fesvr->has_loadmem_reqs()) {
+//     // Check for reads first as they preceed a narrow write;
+//     if (fesvr->recv_loadmem_read_req(loadmem))
+//       handle_loadmem_read(loadmem);
+//     if (fesvr->recv_loadmem_write_req(loadmem))
+//       handle_loadmem_write(loadmem);
+//   }
+// }
 
 void tsibridge_t::tick() {
   // First, check to see step_size tokens have been enqueued
@@ -175,9 +174,9 @@ void tsibridge_t::tick() {
   if (!fesvr->data_available()) {
     fesvr->tick();
   }
-  if (fesvr->has_loadmem_reqs()) {
-    tsi_bypass_via_loadmem();
-  }
+  // if (fesvr->has_loadmem_reqs()) {
+  //   tsi_bypass_via_loadmem();
+  // }
   if (!terminate()) {
     // Write all the requests to the target
     this->send();
