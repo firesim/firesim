@@ -39,7 +39,7 @@ public:
   void tick() override;
   bool terminate() override { return cospike_failed; };
   int exit_code() override { return (cospike_failed) ? cospike_exit_code : 0; };
-  void finish() override { this->flush(); };
+  void finish() override;
 
 private:
   int invoke_cospike(uint8_t *buf);
@@ -49,6 +49,7 @@ private:
   std::vector<std::string> args;
 
   // in bytes
+  uint32_t _time_width;
   uint32_t _valid_width;
   uint32_t _iaddr_width;
   uint32_t _insn_width;
@@ -60,6 +61,7 @@ private:
   uint32_t _tval_width;
 
   // in bytes
+  uint32_t _time_offset;
   uint32_t _valid_offset;
   uint32_t _iaddr_offset;
   uint32_t _insn_offset;
@@ -89,6 +91,10 @@ private:
   // stream config
   int stream_idx;
   int stream_depth;
+
+  FILE* cospike_log = NULL;
+
+
 };
 
 #endif // __COSPIKE_H

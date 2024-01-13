@@ -78,10 +78,13 @@ class CospikeBridgeModule(params: CospikeBridgeParams)(implicit p: Parameters)
       masked.valid := unmasked.valid && !hPort.hBits.trace.reset
       masked
     })
+    val timestamp = hPort.hBits.trace.trace.time
     private val iaddrWidth = roundUp(traces.map(_.iaddr.getWidth).max, 8)
     private val insnWidth  = roundUp(traces.map(_.insn.getWidth).max, 8)
     private val causeWidth = roundUp(traces.map(_.cause.getWidth).max, 8)
     private val wdataWidth = roundUp(traces.map(t => if (t.wdata.isDefined) t.wdata.get.getWidth else 0).max, 8)
+
+    println(s"iaddrWith ${iaddrWidth} insnWidth ${insnWidth} causeWidth ${causeWidth} wdataWidth ${wdataWidth}")
 
     // hack since for some reason padding a bool doesn't work...
     def boolPad(in: Bool, size: Int): UInt = {
@@ -100,6 +103,7 @@ class CospikeBridgeModule(params: CospikeBridgeParams)(implicit p: Parameters)
         trace.insn.pad(insnWidth),
         trace.iaddr.pad(iaddrWidth),
         boolPad(trace.valid, 8),
+        timestamp.pad(64)
       )
 
       if (wdataWidth == 0) {

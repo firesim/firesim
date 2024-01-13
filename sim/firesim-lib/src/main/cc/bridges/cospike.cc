@@ -50,6 +50,7 @@ cospike_t::cospike_t(simif_t &sim,
       _bootrom(bootrom), _hartid(hartid), _num_commit_insts(num_commit_insts),
       _bits_per_trace(bits_per_trace), stream_idx(stream_idx),
       stream_depth(stream_depth) {
+  this->_time_width = 8;
   this->_valid_width = 1;
   this->_iaddr_width = TO_BYTES(iaddr_width);
   this->_insn_width = TO_BYTES(insn_width);
@@ -60,7 +61,8 @@ cospike_t::cospike_t(simif_t &sim,
   this->_priv_width = 1;
 
   // must align with how the trace is composed
-  this->_valid_offset = 0;
+  this->_time_offset = 0;
+  this->_valid_offset = this->_time_offset + this->_time_width;
   this->_iaddr_offset = this->_valid_offset + this->_valid_width;
   this->_insn_offset = this->_iaddr_offset + this->_iaddr_width;
   this->_priv_offset = this->_insn_offset + this->_insn_width;
@@ -71,6 +73,12 @@ cospike_t::cospike_t(simif_t &sim,
 
   this->cospike_failed = false;
   this->cospike_exit_code = 0;
+
+  cospike_log = fopen("COSPIKE-TRACE.log", "w");
+  if (!cospike_log) {
+    fprintf(stderr, "Unable to open cospike output file\n");
+    exit(1);
+  }
 }
 
 /**
@@ -110,7 +118,9 @@ void cospike_t::init() {
  * This returns the return code of the co-sim functions.
  */
 int cospike_t::invoke_cospike(uint8_t *buf) {
-  bool valid = buf[0];
+  uint64_t time = EXTRACT_ALIGNED(
+      int64_t, uint64_t, buf, this->_time_width, this->_time_offset);
+  bool valid = buf[this->_valid_offset];
   // this crazy to extract the right value then sign extend within the size
   uint64_t iaddr = EXTRACT_ALIGNED(int64_t,
                                    uint64_t,
@@ -131,10 +141,10 @@ int cospike_t::invoke_cospike(uint8_t *buf) {
   uint8_t priv = buf[this->_priv_offset];
 
 #ifdef DEBUG
-  fprintf(stderr,
-          "C[%d] V(%d) PC(0x%lx) Insn(0x%x) EIC(%d:%d:%ld) Wdata(%d:0x%lx) "
-          "Priv(%d)\n",
+  fprintf(cospike_log,
+          "C[%d] %llu V: %d PC: 0x%lx Insn: 0x%x E: %d I: %d C: %d Wdata: %d 0x%lx priv: %d\n",
           this->_hartid,
+          time,
           valid,
           iaddr,
           insn,
@@ -147,17 +157,18 @@ int cospike_t::invoke_cospike(uint8_t *buf) {
 #endif
 
   if (valid || exception || cause) {
-    return cospike_cosim(0, // TODO: No cycle given
-                         this->_hartid,
-                         (this->_wdata_width != 0),
-                         valid,
-                         iaddr,
-                         insn,
-                         exception,
-                         interrupt,
-                         cause,
-                         wdata,
-                         priv);
+    return 0;
+/* return cospike_cosim(0, // TODO: No cycle given */
+/* this->_hartid, */
+/* (this->_wdata_width != 0), */
+/* valid, */
+/* iaddr, */
+/* insn, */
+/* exception, */
+/* interrupt, */
+/* cause, */
+/* wdata, */
+/* priv); */
   } else {
     return 0;
   }
@@ -242,4 +253,9 @@ void cospike_t::flush() {
   // only flush if there wasn't a failure before
   while (!cospike_failed && (this->process_tokens(this->stream_depth, 0) > 0))
     ;
+}
+
+void cospike_t::finish() {
+  this->flush();
+  fclose(this->cospike_log);
 }
