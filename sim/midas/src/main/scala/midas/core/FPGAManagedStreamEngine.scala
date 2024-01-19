@@ -9,7 +9,7 @@ import org.chipsalliance.cde.config.Parameters
 import freechips.rocketchip.diplomacy._
 
 import midas.widgets._
-import midas.targetutils.{BRAMQueue}
+import midas.targetutils.{FireSimQueueHelper}
 
 class WriteMetadata(val numBeatsWidth: Int) extends Bundle {
   val numBeats = Output(UInt(numBeatsWidth.W))
@@ -83,8 +83,9 @@ class FPGAManagedStreamEngine(p: Parameters, val params: StreamEngineParameters)
 
       // This sets up a double buffer that should give full throughput for a
       // single stream system. This queue could be grown under a multi-stream system.
-      val outgoingQueue = Module(new BRAMQueue(2 * pageBeats)(UInt(BridgeStreamConstants.streamWidthBits.W)))
-      outgoingQueue.io.enq <> channel
+      val outgoingQueueIO = FireSimQueueHelper.makeIO(UInt(BridgeStreamConstants.streamWidthBits.W), 2 * pageBeats, isFireSim=true)
+
+      outgoingQueueIO.enq <> channel
 
       val writeCredits       = RegInit(cpuBufferSizeBytes.U(log2Ceil(cpuBufferSizeBytes + 1).W))
       val readCredits        = RegInit(0.U(log2Ceil(cpuBufferSizeBytes + 1).W))
@@ -110,7 +111,7 @@ class FPGAManagedStreamEngine(p: Parameters, val params: StreamEngineParameters)
       // Establish the largest AXI4 write request we can make, by doing a min
       // reduction over the following bounds:
       val writeBounds = Seq(
-        outgoingQueue.io.count,                // Beats available for enqueue in local FPGA buffer
+        outgoingQueueIO.count,                // Beats available for enqueue in local FPGA buffer
         writeCredits >> log2Ceil(beatBytes).U, // Space available in cpu buffer
         beatsToPageBoundary,
       ) // Length to end of page
@@ -145,10 +146,10 @@ class FPGAManagedStreamEngine(p: Parameters, val params: StreamEngineParameters)
       switch(state) {
         is(idle) {
           doFlush := false.B
-          when(doFlush && !inFlush && (outgoingQueue.io.count > 0.U)) {
+          when(doFlush && !inFlush && (outgoingQueueIO.count > 0.U)) {
             inFlush           := true.B
-            flushBeatsToIssue := outgoingQueue.io.count
-            flushBeatsToAck   := outgoingQueue.io.count
+            flushBeatsToIssue := outgoingQueueIO.count
+            flushBeatsToAck   := outgoingQueueIO.count
           }
           val start =
             (inflightBeatCounts.io.enq.ready) &&
@@ -194,11 +195,11 @@ class FPGAManagedStreamEngine(p: Parameters, val params: StreamEngineParameters)
       inflightBeatCounts.io.enq.bits.numBeats := writeableBeats
       inflightBeatCounts.io.enq.bits.isFlush  := flushBeatsToIssue =/= 0.U
 
-      axi4.w.valid               := (state === sendData) && outgoingQueue.io.deq.valid
-      axi4.w.bits.data           := outgoingQueue.io.deq.bits
+      axi4.w.valid               := (state === sendData) && outgoingQueueIO.deq.valid
+      axi4.w.bits.data           := outgoingQueueIO.deq.bits
       axi4.w.bits.strb           := ((BigInt(1) << beatBytes) - 1).U
       axi4.w.bits.last           := beatsToSendMinus1 === 0.U
-      outgoingQueue.io.deq.ready := (state === sendData) && axi4.w.ready
+      outgoingQueueIO.deq.ready := (state === sendData) && axi4.w.ready
 
       // Write Response handling
       axi4.b.ready := true.B
