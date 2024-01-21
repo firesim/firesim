@@ -88,6 +88,7 @@ dependencies:
     - libdwarf-dev==0.0.0.20190110_28_ga81397fc4 # from ucb-bar channel - using mainline libdwarf-feedstock
     - conda-lock=1.4
     - autoconf
+    - jq
 
     # clang-format for driver coding style enforcement.
     - clang-format
