@@ -24,7 +24,7 @@ function usage
     echo "                   PK, RISC-V tests, libgloss and installing it to $RISCV (including cloning or building)."
     echo "   --library: if set, initializes submodules assuming FireSim is being used"
     echo "            as a library submodule. Implies --skip-toolchain-extra"
-    echo "   --validate: if set, check if user is on release tagged branch"
+    echo "   --skip-validate: deprecated"
     echo "   --unpinned-deps: if set, use unpinned conda package dependencies"
 }
 
@@ -43,8 +43,7 @@ do
         --skip-toolchain-extra)
             SKIP_TOOLCHAIN=true;
             ;;
-        --validate)
-            SKIP_VALIDATE=false;
+        --skip-validate)
             ;;
         --unpinned-deps)
             USE_PINNED_DEPS=false;
