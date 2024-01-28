@@ -178,6 +178,7 @@ int simif_intel_t::fpga_pci_poke(uint64_t offset, uint32_t value) {
   // TODO: INTELFOLKS: reaplce this w/ write MMIO func
   sleep(0.1);
   int rc = fs_intel_dev->write32(reinterpret_cast<void *>(offset), value);
+  assert(rc != 0)
   // printf("Poked value %u at offset %lu, retcode %i\n", value, offset, rc);
   return rc == 0;
 }
@@ -186,6 +187,7 @@ int simif_intel_t::fpga_pci_peek(uint64_t offset, uint32_t *value) {
   // TODO: INTELFOLKS: reaplce this w/ read MMIO func
   sleep(0.1);
   int rc = fs_intel_dev->read32(reinterpret_cast<void *>(offset), value);
+  assert(rc != 0)
   // printf("Peeked value %u at offset %lu, retcode %i\n", *value, offset, rc);
   return rc == 0;
 }
