@@ -140,10 +140,11 @@ int cospike_t::invoke_cospike(uint8_t *buf) {
           : 0;
   uint8_t priv = buf[this->_priv_offset];
 
+  if (valid || exception || interrupt) {
 #ifdef DEBUG
   fprintf(cospike_log,
-          "C[%d] %llu V: %d PC: 0x%lx Insn: 0x%x E: %d I: %d C: %d Wdata: %d 0x%lx priv: %d\n",
-          this->_hartid,
+          "%llu %d 0x%lx 0x%x %d %d %d %d 0x%lx %d\n",
+/* this->_hartid, */
           time,
           valid,
           iaddr,
@@ -156,7 +157,6 @@ int cospike_t::invoke_cospike(uint8_t *buf) {
           priv);
 #endif
 
-  if (valid || exception || cause) {
     return 0;
 /* return cospike_cosim(0, // TODO: No cycle given */
 /* this->_hartid, */
@@ -189,18 +189,18 @@ size_t cospike_t::process_tokens(int num_beats, size_t minimum_batch_beats) {
   for (uint32_t offset = 0; offset < bytes_received;
        offset += bytes_per_trace) {
 #ifdef DEBUG
-    fprintf(stderr,
-            "Off(%d/%ld:%lu) token(",
-            offset,
-            bytes_received,
-            offset / bytes_per_trace);
+/* fprintf(stderr, */
+/* "Off(%d/%ld:%lu) token(", */
+/* offset, */
+/* bytes_received, */
+/* offset / bytes_per_trace); */
 
-    for (int32_t i = STREAM_WIDTH_BYTES - 1; i >= 0; --i) {
-      fprintf(stderr, "%02x", (OUTBUF + offset)[i]);
-      if (i == bytes_per_trace)
-        fprintf(stderr, " ");
-    }
-    fprintf(stderr, ")\n");
+/* for (int32_t i = STREAM_WIDTH_BYTES - 1; i >= 0; --i) { */
+/* fprintf(stderr, "%02x", (OUTBUF + offset)[i]); */
+/* if (i == bytes_per_trace) */
+/* fprintf(stderr, " "); */
+/* } */
+/* fprintf(stderr, ")\n"); */
 #endif
 
     // invoke cospike (requires that buffer is aligned properly)
@@ -211,24 +211,24 @@ size_t cospike_t::process_tokens(int num_beats, size_t minimum_batch_beats) {
       printf("[ERROR] Cospike: Errored during simulation with %d\n", rval);
 
 #ifdef DEBUG
-      fprintf(stderr, "Off(%lu) token(", offset / bytes_per_trace);
+/* fprintf(stderr, "Off(%lu) token(", offset / bytes_per_trace); */
 
-      for (int32_t i = STREAM_WIDTH_BYTES - 1; i >= 0; --i) {
-        fprintf(stderr, "%02x", (OUTBUF + offset)[i]);
-        if (i == bytes_per_trace)
-          fprintf(stderr, " ");
-      }
-      fprintf(stderr, ")\n");
+/* for (int32_t i = STREAM_WIDTH_BYTES - 1; i >= 0; --i) { */
+/* fprintf(stderr, "%02x", (OUTBUF + offset)[i]); */
+/* if (i == bytes_per_trace) */
+/* fprintf(stderr, " "); */
+/* } */
+/* fprintf(stderr, ")\n"); */
 
-      fprintf(stderr, "get_next_token token(");
-      auto next_off = offset + STREAM_WIDTH_BYTES;
+/* fprintf(stderr, "get_next_token token("); */
+/* auto next_off = offset + STREAM_WIDTH_BYTES; */
 
-      for (auto i = STREAM_WIDTH_BYTES - 1; i >= 0; --i) {
-        fprintf(stderr, "%02x", (OUTBUF + next_off)[i]);
-        if (i == bytes_per_trace)
-          fprintf(stderr, " ");
-      }
-      fprintf(stderr, ")\n");
+/* for (auto i = STREAM_WIDTH_BYTES - 1; i >= 0; --i) { */
+/* fprintf(stderr, "%02x", (OUTBUF + next_off)[i]); */
+/* if (i == bytes_per_trace) */
+/* fprintf(stderr, " "); */
+/* } */
+/* fprintf(stderr, ")\n"); */
 #endif
 
       break;
