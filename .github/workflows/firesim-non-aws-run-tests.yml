@@ -1,0 +1,272 @@
+name: firesim-non-aws-run-tests
+
+on:
+  # run ci when pring to main (note: ci runs on the merge commit of the pr!)
+  pull_request:
+    branches:
+      - main
+      - stable
+
+defaults:
+  run:
+    shell: bash -leo pipefail {0}
+
+env:
+  PERSONAL_ACCESS_TOKEN: ${{ secrets.BARTENDER_PERSONAL_ACCESS_TOKEN }}
+  GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+  AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID_08012023 }}
+  AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY_08012023 }}
+  AWS_DEFAULT_REGION: ${{ secrets.AWS_DEFAULT_REGION_08012023 }}
+  FIRESIM_PEM: ${{ secrets.FIRESIM_PEM_08012023 }}
+  FIRESIM_PEM_PUBLIC: ${{ secrets.FIRESIM_PEM_PUBLIC }}
+  AZURE_CLIENT_ID: ${{ secrets.AZURE_CLIENT_ID }}
+  AZURE_CLIENT_SECRET: ${{ secrets.AZURE_CLIENT_SECRET }}
+  AZURE_TENANT_ID: ${{ secrets.AZURE_TENANT_ID }}
+  AZURE_SUBSCRIPTION_ID: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
+  AZURE_DEFAULT_REGION: ${{ secrets.AZURE_DEFAULT_REGION }}
+  AZURE_RESOURCE_GROUP: ${{ secrets.AZURE_RESOURCE_GROUP }}
+  AZURE_CI_SUBNET_ID : ${{ secrets.AZURE_CI_SUBNET_ID }}
+  AZURE_CI_NSG_ID : ${{ secrets.AZURE_CI_NSG_ID }}
+  MANAGER_FIRESIM_LOCATION: "~/firesim"
+  LANG: "en_US.UTF-8" # required by SBT when it sees boost directories
+  LANGUAGE: "en_US:en"
+  LC_ALL: "en_US.UTF-8"
+  CI_LABEL_DEBUG: ${{ contains(github.event.pull_request.labels.*.name, 'ci:debug') }}
+  CI_LABEL_PERSIST: ${{ contains(github.event.pull_request.labels.*.name, 'ci:persist-prior-workflows') }}
+  REMOTE_WORK_DIR: /scratch/buildbot/fs-shared/fs-${{ github.sha }}
+  TERM: xterm-256-color
+
+jobs:
+  cancel-prior-workflows:
+    name: cancel-prior-workflows
+    runs-on: ubuntu-20.04
+    steps:
+      - name: Cancel previous workflow runs
+        if: ${{ (env.CI_LABEL_PERSIST != 'true') }}
+        uses: styfle/cancel-workflow-action@0.11.0
+        with:
+          access_token: ${{ github.token }}
+
+  # Set up a set of boolean conditions to control which branches of the CI
+  # workflow will execute This is based off the conditional job execution
+  # example here: https://github.com/dorny/paths-filter#examples
+  change-filters:
+    name: filter-jobs-on-changes
+    runs-on: ubuntu-20.04
+    # Queried by downstream jobs to determine if they should run.
+    outputs:
+      needs-manager: ${{ steps.filter.outputs.all_count != steps.filter.outputs.skip-manager_count }}
+      both-conda-reqs-lock-modified: ${{ ((steps.filter.outputs.conda-reqs == 'false') && (steps.filter.outputs.conda-lock == 'false')) || ((steps.filter.outputs.conda-reqs == 'true') && (steps.filter.outputs.conda-lock == 'true')) }}
+    steps:
+      - uses: actions/checkout@v3
+      - uses: dorny/paths-filter@v2
+        id: filter
+        with:
+          filters: |
+            all:
+              - '**'
+
+            # If any of the files changed match, do a doc build
+            docs: &docs-filter
+              - 'docs/**'
+              - '.readthedocs.yml'
+
+            # If all files match to this filter, skip the main ci pipeline
+            skip-manager:
+              - *docs-filter
+              - '**/*.md'
+              - '**/.gitignore'
+              - '.github/ISSUE_TEMPLATE/**'
+
+            # If conda requirements was modified ensure the lock file is re-generated
+            conda-reqs:
+                - 'conda-reqs/firesim.yaml'
+                - 'conda-reqs/ci-shared.yaml'
+
+            # If conda requirements was modified ensure the lock file is re-generated
+            conda-lock:
+                - 'conda-reqs/conda-reqs.conda-lock.yml'
+
+  # Note: This doesn't check if the lock file is synced/faithful to the requirements file.
+  # This just ensures that both were modified in the same PR (ideally the lock file was regenerated
+  # from the requirements file). This job only runs when that condition is not met and
+  # so always fails.
+  check-conda-lock-modified:
+    name: check-conda-lock-modified
+    needs: change-filters
+    if: needs.change-filters.outputs.both-conda-reqs-lock-modified == 'false'
+    runs-on: ubuntu-20.04
+    steps:
+      - name: Check conda lock file was regenerated with conda requirements file
+        run: |
+          echo "ERROR: Either the conda-reqs/{firesim,ci-shared}.yaml or conda-reqs/conda-reqs.conda-lock.yml was not updated properly. See the developer docs for more information"
+          false
+
+  documentation-check:
+    name: documentation-check
+    runs-on: ubuntu-20.04
+    steps:
+      - uses: actions/checkout@v3
+      - uses: conda-incubator/setup-miniconda@v2
+        with:
+          environment-file: conda-reqs/docs.yaml
+          miniforge-version: latest
+      - name: Check that documentation builds with selective warnings/errors
+        run: |
+          make -C docs html
+          ! grep -v "ERROR: Undefined substitution referenced" warnings.txt
+      - name: Show error log and dump objects.inv from sphinx if failed
+        if: ${{ failure() }}
+        run: |
+          python3 -m sphinx.ext.intersphinx docs/_build/html/objects.inv
+          cat /tmp/sphinx-err*.log
+
+  cpp-lint:
+    name: cpp-lint
+    runs-on: ubuntu-20.04
+    steps:
+      # Clone the repository (shallow to save time).
+      - name: Checkout sources
+        uses: actions/checkout@v3
+        with:
+          fetch-depth: 2
+          submodules: false
+
+      # Checkout chipyard submodules.
+      - name: Checkout chipyard
+        run: |
+          git submodule update --init target-design/chipyard
+          cd target-design/chipyard
+          git submodule update --init generators/testchipip
+      # Install clang linters
+      - name: Install Clang linters
+        run: |
+          sudo apt update
+          sudo apt install clang-format clang-tidy-12 parallel -y
+      # Run 'clang-format', comparing against the base commit hash.
+      # If anything got reformatted, fail and output a patch.
+      - name: Run clang-format
+        run: |
+          git fetch --recurse-submodules=no origin ${{ github.base_ref }}
+          DIFF_COMMIT=$(git rev-parse origin/${{ github.base_ref }})
+          git clang-format $DIFF_COMMIT
+          git diff --ignore-submodules > clang-format.patch
+          if [ -s clang-format.patch ]; then
+            echo "error: clang-format had to fix the following files:"
+            git diff --ignore-submodules --name-only
+            echo "----- 8< ---- PATCH ----- 8< ----"
+            cat clang-format.patch
+            echo "----- 8< ---- PATCH ----- 8< ----"
+            git checkout .
+            exit 1
+          fi
+      # Run clang-tidy on the entire codebase. Error will be logged.
+      - name: Run clang-tidy
+        run: |
+          export FIRESIM_ENV_SOURCED=1
+          export FIRESIM_STANDALONE=1
+          make -C sim clang-tidy
+
+  setup-local-fpga-repo:
+    name: setup-local-fpga-repo
+    runs-on: local-fpga
+    needs: change-filters
+    if: needs.change-filters.outputs.needs-manager == 'true'
+    steps:
+      # This forces a fresh clone of the repo during the `checkout` step
+      # to resolve stale submodule URLs. See https://github.com/ucb-bar/chipyard/pull/1156.
+      - name: Delete old checkout
+        run: |
+            ls -alh .
+            rm -rf ${{ github.workspace }}/* || true
+            rm -rf ${{ github.workspace }}/.* || true
+            ls -alh .
+      - uses: actions/checkout@v3
+      - name: Setup repo copy
+        run: |
+          mkdir -p $(dirname ${{ env.REMOTE_WORK_DIR }})
+          git clone ${{ github.workspace }} ${{ env.REMOTE_WORK_DIR }}
+      - name: Setup repo
+        run: |
+          cd ${{ env.REMOTE_WORK_DIR }}
+          ./build-setup.sh --skip-validate
+          source sourceme-manager.sh --skip-ssh-setup
+          firesim managerinit --platform vitis
+          cd sw/firesim-software && ./init-submodules.sh
+
+  run-vitis-check-docs-generated-components:
+    name: run-vitis-check-docs-generated-components
+    needs: [setup-local-fpga-repo]
+    runs-on: local-fpga
+    steps:
+      - uses: actions/checkout@v3
+      - name: Check Vitis docs components that require manual re-generation (e.g. config_runtime.yaml example)
+        run: ./.github/scripts/check-vitis-docs-generated-components.py
+
+  run-parallel-vcs-metasims-and-vitis-driver:
+    name: run-parallel-vcs-metasims-and-vitis-driver
+    needs: [setup-local-fpga-repo]
+    runs-on: local-fpga
+    steps:
+      # This forces a fresh clone of the repo during the `checkout` step
+      # to resolve stale submodule URLs. See https://github.com/ucb-bar/chipyard/pull/1156.
+      - name: Delete old checkout
+        run: |
+          rm -rf ${{ github.workspace }}/* || true
+          rm -rf ${{ github.workspace }}/.* || true
+      - uses: actions/checkout@v3
+      - name: Run parallel VCS metasims
+        run: .github/scripts/run-parallel-vcs-metasims.py
+      - name: Build Vitis driver
+        run: .github/scripts/build-vitis-driver.py
+
+  run-basic-linux-poweroff-vitis:
+    if: contains(github.event.pull_request.labels.*.name, 'ci:fpga-deploy')
+    needs: [setup-local-fpga-repo]
+    name: run-basic-linux-poweroff-vitis
+    runs-on: local-fpga
+    steps:
+      # This forces a fresh clone of the repo during the `checkout` step
+      # to resolve stale submodule URLs. See https://github.com/ucb-bar/chipyard/pull/1156.
+      - name: Delete old checkout
+        run: |
+          rm -rf ${{ github.workspace }}/* || true
+          rm -rf ${{ github.workspace }}/.* || true
+      - uses: actions/checkout@v3
+      - name: Run simple linux poweroff test w/ vitis
+        run: .github/scripts/run-linux-poweroff-vitis.py
+
+  run-local-fpga-buildbitstream:
+    if: contains(github.event.pull_request.labels.*.name, 'ci:local-fpga-buildbitstream-deploy')
+    needs: [setup-local-fpga-repo]
+    name: run-local-fpga-buildbitstream
+    runs-on: local-fpga
+    timeout-minutes: 1200
+    steps:
+      # This forces a fresh clone of the repo during the `checkout` step
+      # to resolve stale submodule URLs. See https://github.com/ucb-bar/chipyard/pull/1156.
+      - name: Delete old checkout
+        run: |
+          rm -rf ${{ github.workspace }}/* || true
+          rm -rf ${{ github.workspace }}/.* || true
+      - uses: actions/checkout@v3
+      - name: Run buildbitstream command and update sample local bitstreams
+        run: .github/scripts/run-local-buildbitstreams.py
+      - uses: peter-evans/create-pull-request@v5
+        with:
+          base: ${{ github.head_ref }}
+          add-paths: "deploy/sample-backup-configs/sample_config_hwdb.yaml"
+          commit-message: "Update local bitstream(s) [ci skip]"
+          body: "Update local bitstream(s) for PR #${{ github.event.pull_request.number }}"
+          branch-suffix: random
+          title: "Update local bitstream(s) for PR #${{ github.event.pull_request.number }} (`${{ github.head_ref }}`)"
+
+  cleanup-local-fpga-repo:
+    name: cleanup-local-fpga-repo
+    needs: [run-parallel-vcs-metasims-and-vitis-driver, run-basic-linux-poweroff-vitis, run-vitis-check-docs-generated-components, run-local-fpga-buildbitstream]
+    # uses a separate runner to cleanup (irrespective, of other jobs cancelled, running, etc)
+    runs-on: local-fpga-cleanup
+    if: ${{ always() }}
+    steps:
+      - name: Delete repo copy
+        run: rm -rf ${{ env.REMOTE_WORK_DIR }}

@@ -8,7 +8,7 @@ import org.chipsalliance.cde.config.{Parameters, Field}
 import freechips.rocketchip.util._
 
 import midas.widgets._
-import testchipip.StreamChannel
+import testchipip.serdes.StreamChannel
 import icenet.{NICIOvonly, RateLimiterSettings}
 
 object TokenQueueConsts {

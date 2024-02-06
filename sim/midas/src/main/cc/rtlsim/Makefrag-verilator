@@ -54,7 +54,6 @@ $(OUT_DIR)/V$(DRIVER_NAME): $(verilator_v) $(verilator_cc) $(emul_h) $(verilator
 	mkdir -p $(OUT_DIR)
 	rm -rf $(model_dir)
 	$(VERILATOR) $(VERILATOR_FLAGS) -Mdir $(model_dir) \
-		-CFLAGS "-include $(model_header)" \
 		-o $@ $(verilator_v) $(verilator_conf) $(verilator_cc)
 	$(MAKE) -C $(model_dir) -f $(model_mk)
 
@@ -62,6 +61,5 @@ $(OUT_DIR)/V$(DRIVER_NAME)-debug: $(verilator_v) $(verilator_cc) $(emul_h) $(ver
 	mkdir -p $(OUT_DIR)
 	rm -rf $(model_dir_debug)
 	$(VERILATOR) $(VERILATOR_FLAGS) --trace +define+DEBUG -Mdir $(model_dir_debug) \
-		-CFLAGS "-include $(model_header_debug)" \
 		-o $@ $(verilator_v) $(verilator_conf) $(verilator_cc)
 	$(MAKE) -C $(model_dir_debug) -f $(model_mk)

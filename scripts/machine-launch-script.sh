@@ -116,7 +116,6 @@ set -o pipefail
     fi
 
     OS_FLAVOR=$(grep '^ID=' /etc/os-release | awk -F= '{print $2}' | tr -d '"')
-    OS_VERSION=$(grep '^VERSION_ID=' /etc/os-release | awk -F= '{print $2}' | tr -d '"')
 
     echo "machine launch script started" > "$MACHINE_LAUNCH_DIR/machine-launchstatus"
     chmod ugo+r "$MACHINE_LAUNCH_DIR/machine-launchstatus"

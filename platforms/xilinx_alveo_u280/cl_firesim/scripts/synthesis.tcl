@@ -1,1 +1,1 @@
-../../../xilinx_alveo_u250/cl_firesim/scripts/synthesis.tcl
+../../../xilinx_alveo_u200/cl_firesim/scripts/synthesis.tcl
