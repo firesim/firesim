@@ -27,6 +27,8 @@ public:
             uint32_t pmp_regions,
             uint64_t mem0_base,
             uint64_t mem0_size,
+            uint64_t mem1_base,
+            uint64_t mem1_size,
             uint32_t nharts,
             const char *bootrom,
             uint32_t hartid,
@@ -76,6 +78,8 @@ private:
   uint32_t _pmp_regions;
   uint64_t _mem0_base;
   uint64_t _mem0_size;
+  uint64_t _mem1_base;
+  uint64_t _mem1_size;
   uint32_t _nharts;
   const char *_bootrom;
   uint32_t _hartid;
