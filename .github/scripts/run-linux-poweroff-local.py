@@ -1,13 +1,18 @@
 #!/usr/bin/env python3
 
 import sys
+import argparse
 from fabric.api import prefix, run, settings, execute # type: ignore
 
 from ci_variables import ci_env
 from utils import search_match_in_last_workloads_output_file
 
-def run_linux_poweroff_vitis():
-    """ Runs Base Vitis Build """
+parser = argparse.ArgumentParser(description='Run linux poweroff on local FPGAs')
+parser.add_argument('--platform', type=str, required=True, help='vitis or alveo_u250')
+args = parser.parse_args()
+
+def run_linux_poweroff():
+    """ Runs Base Vitis/Alveo250 Build """
 
     # assumptions:
     #   - machine-launch-script requirements are already installed
@@ -64,7 +69,7 @@ def run_linux_poweroff_vitis():
 
                     print(f"Workload run {workload} successful.")
 
-            run_w_timeout(f"{ci_env['GITHUB_WORKSPACE']}/deploy/workloads/ci/vitis", "linux-poweroff-singlenode", "30m", 1)
+            run_w_timeout(f"{ci_env['GITHUB_WORKSPACE']}/deploy/workloads/ci/{args.platform}", "linux-poweroff-singlenode", "30m", 1)
 
 if __name__ == "__main__":
-    execute(run_linux_poweroff_vitis, hosts=["localhost"])
+    execute(run_linux_poweroff, hosts=["localhost"])

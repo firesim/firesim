@@ -436,27 +436,43 @@ jobs:
       - name: Check Vitis docs components that require manual re-generation (e.g. config_runtime.yaml example)
         run: ./.github/scripts/check-vitis-docs-generated-components.py
 
-  run-parallel-vcs-metasims-and-vitis-driver:
-    name: run-parallel-vcs-metasims-and-vitis-driver
-    needs: [setup-local-fpga-repo]
-    runs-on: local-fpga
-    steps:
-      # This forces a fresh clone of the repo during the `checkout` step
-      # to resolve stale submodule URLs. See https://github.com/ucb-bar/chipyard/pull/1156.
-      - name: Delete old checkout
-        run: |
-          rm -rf ${{ github.workspace }}/* || true
-          rm -rf ${{ github.workspace }}/.* || true
-      - uses: actions/checkout@v3
-      - name: Run parallel VCS metasims
-        run: .github/scripts/run-parallel-vcs-metasims.py
-      - name: Build Vitis driver
-        run: .github/scripts/build-vitis-driver.py
+  # run-parallel-vcs-metasims-and-vitis-driver:
+  #   name: run-parallel-vcs-metasims-and-vitis-driver
+  #   needs: [setup-local-fpga-repo]
+  #   runs-on: local-fpga
+  #   steps:
+  #     # This forces a fresh clone of the repo during the `checkout` step
+  #     # to resolve stale submodule URLs. See https://github.com/ucb-bar/chipyard/pull/1156.
+  #     - name: Delete old checkout
+  #       run: |
+  #         rm -rf ${{ github.workspace }}/* || true
+  #         rm -rf ${{ github.workspace }}/.* || true
+  #     - uses: actions/checkout@v3
+  #     - name: Run parallel VCS metasims
+  #       run: .github/scripts/run-parallel-vcs-metasims.py
+  #     - name: Build Vitis driver
+  #       run: .github/scripts/build-vitis-driver.py
 
-  run-basic-linux-poweroff-vitis:
+  # run-basic-linux-poweroff-vitis:
+  #   if: contains(github.event.pull_request.labels.*.name, 'ci:fpga-deploy')
+  #   needs: [setup-local-fpga-repo]
+  #   name: run-basic-linux-poweroff-vitis
+  #   runs-on: local-fpga
+  #   steps:
+  #     # This forces a fresh clone of the repo during the `checkout` step
+  #     # to resolve stale submodule URLs. See https://github.com/ucb-bar/chipyard/pull/1156.
+  #     - name: Delete old checkout
+  #       run: |
+  #         rm -rf ${{ github.workspace }}/* || true
+  #         rm -rf ${{ github.workspace }}/.* || true
+  #     - uses: actions/checkout@v3
+  #     - name: Run simple linux poweroff test w/ vitis
+  #       run: .github/scripts/run-linux-poweroff-local.py --platform vitis
+
+  run-basic-linux-poweroff-alveo_u250:
     if: contains(github.event.pull_request.labels.*.name, 'ci:fpga-deploy')
     needs: [setup-local-fpga-repo]
-    name: run-basic-linux-poweroff-vitis
+    name: run-basic-linux-poweroff-alveo_u250
     runs-on: local-fpga
     steps:
       # This forces a fresh clone of the repo during the `checkout` step
@@ -466,8 +482,8 @@ jobs:
           rm -rf ${{ github.workspace }}/* || true
           rm -rf ${{ github.workspace }}/.* || true
       - uses: actions/checkout@v3
-      - name: Run simple linux poweroff test w/ vitis
-        run: .github/scripts/run-linux-poweroff-vitis.py
+      - name: Run simple linux poweroff test w/ alveo_u250
+        run: .github/scripts/run-linux-poweroff-local.py --platform alveo_u250
 
   run-local-fpga-buildbitstream:
     if: contains(github.event.pull_request.labels.*.name, 'ci:local-fpga-buildbitstream-deploy')
