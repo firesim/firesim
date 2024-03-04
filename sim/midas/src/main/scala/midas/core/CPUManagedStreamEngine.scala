@@ -11,6 +11,7 @@ import freechips.rocketchip.diplomacy._
 import freechips.rocketchip.util.DecoupledHelper
 
 import midas.targetutils.xdc
+import midas.targetutils.{FireSimQueueHelper}
 import midas.widgets._
 
 class StreamAdapterIO(val w: Int) extends Bundle {
@@ -133,18 +134,17 @@ class CPUManagedStreamEngine(p: Parameters, val params: StreamEngineParameters) 
       val streamName = chParams.name
       val grant = (axi4.aw.bits.addr >> addressSpaceBits) === idx.U
 
-      val incomingQueue = Module(new BRAMQueue(chParams.fpgaBufferDepth)(UInt(BridgeStreamConstants.streamWidthBits.W)))
-      xdc.RAMStyleHint(incomingQueue.fq.ram, xdc.RAMStyles.ULTRA)
+      val incomingQueueIO = FireSimQueueHelper.makeIO(UInt(BridgeStreamConstants.streamWidthBits.W), chParams.fpgaBufferDepth, isFireSim=true, overrideStyle=Some(xdc.RAMStyles.ULTRA))
 
-      channel <> incomingQueue.io.deq
+      channel <> incomingQueueIO.deq
 
       // check to see if axi4 is ready to accept data instead of forcing writes
       val countAddr =
-        attach(incomingQueue.io.count, s"${chParams.name}_count", ReadOnly, substruct = false)
+        attach(incomingQueueIO.count, s"${chParams.name}_count", ReadOnly, substruct = false)
 
-      incomingQueue.io.enq.bits := ser_des.io.wide.out.bits
-      incomingQueue.io.enq.valid := ser_des.io.wide.out.valid
-      ser_des.io.wide.out.ready := incomingQueue.io.enq.ready
+      incomingQueueIO.enq.bits := ser_des.io.wide.out.bits
+      incomingQueueIO.enq.valid := ser_des.io.wide.out.valid
+      ser_des.io.wide.out.ready := incomingQueueIO.enq.ready
 
       val writeHelper = DecoupledHelper(
         axi4.aw.valid,
@@ -202,18 +202,17 @@ class CPUManagedStreamEngine(p: Parameters, val params: StreamEngineParameters) 
 
       val grant = (axi4.ar.bits.addr >> addressSpaceBits) === idx.U
 
-      val outgoingQueue = Module(new BRAMQueue(chParams.fpgaBufferDepth)(UInt(BridgeStreamConstants.streamWidthBits.W)))
-      xdc.RAMStyleHint(outgoingQueue.fq.ram, xdc.RAMStyles.ULTRA)
+      val outgoingQueueIO = FireSimQueueHelper.makeIO(UInt(BridgeStreamConstants.streamWidthBits.W), chParams.fpgaBufferDepth, isFireSim=true, overrideStyle=Some(xdc.RAMStyles.ULTRA))
 
-      outgoingQueue.io.enq <> channel
+      outgoingQueueIO.enq <> channel
 
-      ser_des.io.wide.in.bits := outgoingQueue.io.deq.bits
-      ser_des.io.wide.in.valid := outgoingQueue.io.deq.valid
-      outgoingQueue.io.deq.ready := ser_des.io.wide.in.ready
+      ser_des.io.wide.in.bits := outgoingQueueIO.deq.bits
+      ser_des.io.wide.in.valid := outgoingQueueIO.deq.valid
+      outgoingQueueIO.deq.ready := ser_des.io.wide.in.ready
 
       // check to see if axi4 has valid output instead of waiting for timeouts
       val countAddr =
-        attach(outgoingQueue.io.count, s"${chParams.name}_count", ReadOnly, substruct = false)
+        attach(outgoingQueueIO.count, s"${chParams.name}_count", ReadOnly, substruct = false)
 
       val readHelper = DecoupledHelper(
         axi4.ar.valid,

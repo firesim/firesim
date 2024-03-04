@@ -6,7 +6,7 @@ import chisel3.util._
 import org.chipsalliance.cde.config.Parameters
 import freechips.rocketchip.util.DecoupledHelper
 
-import testchipip.{SerializableTileTraceIO, SpikeCosimConfig, TileTraceIO, TraceBundleWidths}
+import testchipip.cosim.{SerializableTileTraceIO, SpikeCosimConfig, TileTraceIO, TraceBundleWidths}
 
 import midas.widgets._
 
@@ -192,6 +192,8 @@ class CospikeBridgeModule(params: CospikeBridgeParams)(implicit p: Parameters)
           UInt32(params.cfg.pmpregions),
           UInt64(params.cfg.mem0_base),
           UInt64(params.cfg.mem0_size),
+          UInt64(params.cfg.mem1_base),
+          UInt64(params.cfg.mem1_size),
           UInt32(params.cfg.nharts),
           CStrLit(params.cfg.bootrom),
           UInt32(params.hartid),

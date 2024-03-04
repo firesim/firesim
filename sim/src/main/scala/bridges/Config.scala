@@ -6,7 +6,7 @@ import firesim.configs.WithDefaultMemModel
 
 import org.chipsalliance.cde.config._
 import freechips.rocketchip.subsystem.{PeripheryBusKey, PeripheryBusParams}
-import testchipip.{BlockDeviceConfig, BlockDeviceKey}
+import testchipip.iceblk.{BlockDeviceConfig, BlockDeviceKey}
 
 class NoConfig extends Config(Parameters.empty)
 

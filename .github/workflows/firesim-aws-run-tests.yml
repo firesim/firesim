@@ -1,4 +1,4 @@
-name: firesim-ci-process
+name: firesim-aws-run-tests
 
 on:
   # run ci when pring to main (note: ci runs on the merge commit of the pr!)
@@ -86,21 +86,6 @@ jobs:
             # If conda requirements was modified ensure the lock file is re-generated
             conda-lock:
                 - 'conda-reqs/conda-reqs.conda-lock.yml'
-
-  # Note: This doesn't check if the lock file is synced/faithful to the requirements file.
-  # This just ensures that both were modified in the same PR (ideally the lock file was regenerated
-  # from the requirements file). This job only runs when that condition is not met and
-  # so always fails.
-  check-conda-lock-modified:
-    name: check-conda-lock-modified
-    needs: change-filters
-    if: needs.change-filters.outputs.both-conda-reqs-lock-modified == 'false'
-    runs-on: ubuntu-20.04
-    steps:
-      - name: Check conda lock file was regenerated with conda requirements file
-        run: |
-          echo "ERROR: Either the conda-reqs/{firesim,ci-shared}.yaml or conda-reqs/conda-reqs.conda-lock.yml was not updated properly. See the developer docs for more information"
-          false
 
   setup-self-hosted-manager:
     name: setup-self-hosted-manager

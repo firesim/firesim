@@ -2,6 +2,56 @@
 
 This changelog follows the format defined here: https://keepachangelog.com/en/1.0.0/
 
+## [1.18.0] - 2024-01-22
+
+## Added
+- Mainline U200 Support (by @abejgonzalez in https://github.com/firesim/firesim/pull/1614)
+- Expand TracerV to support more than 7 IPC with FMR fix (by @abejgonzalez in https://github.com/firesim/firesim/pull/1596)
+- Add default reports for Alveo (by @abejgonzalez in https://github.com/firesim/firesim/pull/1664)
+- Major re-organization of Vivado U2*0 *.tcl + Support for 4 DRAM channels on U250 (by @abejgonzalez in https://github.com/firesim/firesim/pull/1669)
+
+## Changed
+- Bump to chisel3.6 (by @jerryz123 in https://github.com/firesim/firesim/pull/1594)
+- Bump the garnet-submodule to be compatible with Vivado 2023.1 (by @william-lyh in https://github.com/firesim/firesim/pull/1620)
+- TracerV binary mode - Print cycle + insts only (no padding) (by @abejgonzalez in https://github.com/firesim/firesim/pull/1643)
+- Remove Dromajo in favor of Spike cosimulation (by @abejgonzalez in https://github.com/firesim/firesim/pull/1644)
+- Update BlockDevBridge to not use Parameters (by @jerryz123 in https://github.com/firesim/firesim/pull/1651)
+- Move BRAMQueue to `targetutils` (by @abejgonzalez in https://github.com/firesim/firesim/pull/1673)
+- Remove BRAMQueue | Add working FireSimQueueHelper (by @abejgonzalez in https://github.com/firesim/firesim/pull/1679)
+
+## Fixed
+- Bump conda-reqs | Use existing conda for conda-lock (by @abejgonzalez in https://github.com/firesim/firesim/pull/1601)
+- Fix publish scala docs (by @abejgonzalez in https://github.com/firesim/firesim/pull/1631)
+- add missing step for flashing local FPGAs (by @joey0320 in https://github.com/firesim/firesim/pull/1632)
+- Don't translate to json in workflow monitor to prevent error (by @abejgonzalez in https://github.com/firesim/firesim/pull/1640)
+- fix kill pass terminate condition (by @joey0320 in https://github.com/firesim/firesim/pull/1549)
+- Bump Chipyard (by @abejgonzalez in https://github.com/firesim/firesim/pull/1645)
+- Update Configuring-Required-Infrastructure-in-Your-AWS-Account.rst (by @abejgonzalez in https://github.com/firesim/firesim/pull/1647)
+- Remove OS_VERSION in machine-launch-script.sh (by @sagark in https://github.com/firesim/firesim/pull/1662)
+- Detect v/sv files to regen. jars (by @abejgonzalez in https://github.com/firesim/firesim/pull/1665)
+- Update entry.cc to always have loadmem.h available (by @abejgonzalez in https://github.com/firesim/firesim/pull/1687)
+
+### Uncategorized
+- Fix doc substitution (copy #1621) (by @mergify[bot] in https://github.com/firesim/firesim/pull/1624)
+- Revert changes to awstools.py (by @abejgonzalez in https://github.com/firesim/firesim/pull/1626)
+- Update local bitstream(s) for PR #1627 (`whitespace-rebuild-fis`) (by @github-actions[bot] in https://github.com/firesim/firesim/pull/1628)
+- Update AGFI(s) for PR #1627 (`whitespace-rebuild-fis`) (by @github-actions[bot] in https://github.com/firesim/firesim/pull/1629)
+- Update local bitstream(s) for PR #1620 (`garnet-2023-bump`) (by @github-actions[bot] in https://github.com/firesim/firesim/pull/1637)
+- Update local bitstream(s) for PR #1596 (`revamp-wide-tracerv-w-fix`) (by @github-actions[bot] in https://github.com/firesim/firesim/pull/1638)
+- Update AGFI(s) for PR #1596 (`revamp-wide-tracerv-w-fix`) (by @github-actions[bot] in https://github.com/firesim/firesim/pull/1639)
+- Update Cospike.rst (by @raghav-g13 in https://github.com/firesim/firesim/pull/1648)
+- Update local bitstream(s) for PR #1651 (`bdbridge`) (by @github-actions[bot] in https://github.com/firesim/firesim/pull/1652)
+- Update local bitstream(s) for PR #1651 (`bdbridge`) (by @github-actions[bot] in https://github.com/firesim/firesim/pull/1654)
+- Update AGFI(s) for PR #1651 (`bdbridge`) (by @github-actions[bot] in https://github.com/firesim/firesim/pull/1655)
+- Update AGFI(s) for PR #1651 (`bdbridge`) (by @github-actions[bot] in https://github.com/firesim/firesim/pull/1659)
+- Update local bitstream(s) for PR #1651 (`bdbridge`) (by @github-actions[bot] in https://github.com/firesim/firesim/pull/1658)
+- Update AGFI(s) for PR #1651 (`bdbridge`) (by @github-actions[bot] in https://github.com/firesim/firesim/pull/1661)
+- Update local bitstream(s) for PR #1651 (`bdbridge`) (by @github-actions[bot] in https://github.com/firesim/firesim/pull/1660)
+- Update local bitstream(s) for PR #1672 (`sep-ci`) (by @github-actions[bot] in https://github.com/firesim/firesim/pull/1674)
+- Update testchipip imports to match new testchipip packaging (by @jerryz123 in https://github.com/firesim/firesim/pull/1681)
+- Remove extraneous -include flags to verilator (by @jerryz123 in https://github.com/firesim/firesim/pull/1682)
+- Update rocket-chip-blocks naming (by @jerryz123 in https://github.com/firesim/firesim/pull/1685)
+
 ## [1.17.1] - 2023-07-14
 Fix missing mcs file in VCU118 bitstream_tar. Automatically generate release notes for faster releases. CI improvements.
 

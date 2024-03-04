@@ -6,7 +6,7 @@ import chisel3.util._
 import org.chipsalliance.cde.config.Parameters
 import freechips.rocketchip.util._
 
-import testchipip.{SerializableTileTraceIO, TileTraceIO, TraceBundleWidths}
+import testchipip.cosim.{SerializableTileTraceIO, TileTraceIO, TraceBundleWidths}
 
 import midas.targetutils.TriggerSource
 import midas.widgets._

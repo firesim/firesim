@@ -7,7 +7,7 @@ import chisel3._
 import chisel3.util._
 import org.chipsalliance.cde.config.Parameters
 
-import testchipip.{TSIIO, TSI}
+import testchipip.tsi.{TSIIO, TSI}
 
 /**
   * Class which parameterizes the TSIBridge

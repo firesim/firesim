@@ -12,7 +12,7 @@ RDIR=$(pwd)
 FASTINSTALL=false
 IS_LIBRARY=false
 SKIP_TOOLCHAIN=false
-SKIP_VALIDATE=false
+SKIP_VALIDATE=true
 TOOLCHAIN=riscv-tools
 USE_PINNED_DEPS=true
 
@@ -24,7 +24,7 @@ function usage
     echo "                   PK, RISC-V tests, libgloss and installing it to $RISCV (including cloning or building)."
     echo "   --library: if set, initializes submodules assuming FireSim is being used"
     echo "            as a library submodule. Implies --skip-toolchain-extra"
-    echo "   --skip-validate: if set, skips checking if user is on release tagged branch"
+    echo "   --skip-validate: deprecated"
     echo "   --unpinned-deps: if set, use unpinned conda package dependencies"
 }
 
@@ -44,7 +44,6 @@ do
             SKIP_TOOLCHAIN=true;
             ;;
         --skip-validate)
-            SKIP_VALIDATE=true;
             ;;
         --unpinned-deps)
             USE_PINNED_DEPS=false;
