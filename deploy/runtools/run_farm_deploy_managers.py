@@ -931,7 +931,8 @@ class XilinxAlveoInstanceDeployManager(InstanceDeployManager):
         driver = f"{remote_sim_dir}/FireSim-{self.PLATFORM_NAME}"
 
         with cd(remote_sim_dir):
-            run(f"""./scripts/generate-fpga-db.py --bitstream {bitstream} --driver {driver} --out-db-json {self.JSON_DB}""")
+            # Use a system wide installed firesim-generate-fpga-db.py
+            run(f"""firesim-generate-fpga-db.py --bitstream {bitstream} --driver {driver} --out-db-json {self.JSON_DB}""")
 
     def enumerate_fpgas(self, uridir: str) -> None:
         """ Handle fpga setup for this platform. """
