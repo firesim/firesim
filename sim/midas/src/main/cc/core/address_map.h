@@ -4,10 +4,10 @@
 #define __ADDRESS_MAP_H
 
 #include <cassert>
+#include <cstdint>
 #include <map>
 #include <string>
 #include <vector>
-#include <cstdint>
 
 // Maps midas compiler emited arrays to a more useful object, that can be
 // used to read and write to a local set of registers by their names
