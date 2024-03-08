@@ -9,6 +9,7 @@ import org.chipsalliance.cde.config.{Parameters, Field}
 
 import midas.widgets.{PeekPokeBridge}
 import midas.models.{FASEDBridge, BaseParams, LatencyPipeConfig, CompleteConfig}
+import midas.widgets.RationalClockBridge
 
 case object MemSize extends Field[Int]
 case object NMemoryChannels extends Field[Int]
@@ -26,12 +27,12 @@ class PointerChaserDUT(implicit val p: Parameters) extends Module with HasNastiP
     val result = Decoupled(SInt(nastiXDataBits.W))
     val startAddr = Flipped(Decoupled(UInt(nastiXAddrBits.W)))
   })
-  
+
   val memoryIF = io.nasti
   val busy = RegInit(false.B)
   val resultReg = RegInit(0.S)
   val resultValid = RegInit(false.B)
-  
+
   val startFire = io.startAddr.valid && ~busy
   val doneFire =  io.result.valid && io.result.ready
 
@@ -65,7 +66,7 @@ class PointerChaserDUT(implicit val p: Parameters) extends Module with HasNastiP
     resultValid := false.B
     resultReg := 0.S
   }
-  
+
   val arFire = memoryIF.ar.ready && memoryIF.ar.valid
 
   val arRegAddr = RegInit(0.U)
@@ -104,7 +105,7 @@ class PointerChaserDUT(implicit val p: Parameters) extends Module with HasNastiP
 }
 
 class PointerChaser(implicit val p: Parameters) extends RawModule {
-  val clock = IO(Input(Clock()))
+  val clock = RationalClockBridge().io.clocks.head
   val reset = WireInit(false.B)
 
   withClockAndReset(clock, reset) {
@@ -112,6 +113,7 @@ class PointerChaser(implicit val p: Parameters) extends RawModule {
     val fasedInstance =  Module(new FASEDBridge(CompleteConfig(LatencyPipeConfig(BaseParams(16,16)), p(NastiKey))))
     fasedInstance.io.axi4 <> pointerChaser.io.nasti
     fasedInstance.io.reset := reset
+    fasedInstance.io.clock := clock
     val peekPokeBridge = PeekPokeBridge(clock, reset,
                                         ("io_startAddr", pointerChaser.io.startAddr),
                                         ("io_result", pointerChaser.io.result))

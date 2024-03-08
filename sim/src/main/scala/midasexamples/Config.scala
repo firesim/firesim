@@ -4,7 +4,7 @@ package firesim.midasexamples
 
 import midas._
 import org.chipsalliance.cde.config._
-import junctions._
+import junctions.{NastiKey, NastiParameters}
 
 import firesim.configs.{WithDefaultMemModel, WithWiringTransform}
 
