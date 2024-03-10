@@ -29,6 +29,8 @@ lazy val commonSettings = Seq(
   libraryDependencies += "org.json4s" %% "json4s-native" % "3.6.10",
   libraryDependencies += "org.scala-lang" % "scala-reflect" % scalaVersion.value,
   libraryDependencies += "edu.berkeley.cs" %% "chisel3" % chiselVersion,
+  libraryDependencies += "com.lihaoyi" %% "sourcecode" % "0.3.1",
+
   addCompilerPlugin("edu.berkeley.cs" % "chisel3-plugin" % chiselVersion cross CrossVersion.full),
   // Scalafix
   semanticdbEnabled := true,
@@ -68,6 +70,7 @@ lazy val chipyardDir = if(firesimAsLibrary) {
 }
 
 lazy val chipyard      = ProjectRef(chipyardDir, "chipyard")
+lazy val diplomacy     = ProjectRef(chipyardDir, "diplomacy")
 lazy val rocketchip    = ProjectRef(chipyardDir, "rocketchip")
 lazy val icenet        = ProjectRef(chipyardDir, "icenet")
 lazy val testchipip    = ProjectRef(chipyardDir, "testchipip")
