@@ -4,6 +4,7 @@
 #define __ADDRESS_MAP_H
 
 #include <cassert>
+#include <cstdint>
 #include <map>
 #include <string>
 #include <vector>
