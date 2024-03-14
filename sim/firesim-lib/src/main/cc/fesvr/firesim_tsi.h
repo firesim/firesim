@@ -17,6 +17,8 @@ public:
   ~firesim_tsi_t() {}
 
   bool busy() { return is_busy; };
+  bool loaded_in_sw() { return is_loaded_in_sw; };
+  void set_loaded(bool loaded) { is_loaded = loaded; };
 
   void tick();
   void tick(bool out_valid, uint32_t out_bits, bool in_ready) { tick(); };
@@ -30,6 +32,8 @@ public:
 
 protected:
   void idle() override;
+
+  void reset() override;
 
   void load_mem_write(addr_t addr, size_t nbytes, const void *src) override;
   void load_mem_read(addr_t addr, size_t nbytes, void *dst) override;
@@ -48,5 +52,7 @@ protected:
 private:
   size_t idle_counts;
   bool is_busy;
+  bool is_loaded;
+  bool is_loaded_in_sw;
 };
 #endif // __FIRESIM_TSI_H
