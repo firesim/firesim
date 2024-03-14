@@ -158,8 +158,10 @@ size_t simif_emul_t::CPUManagedStreamIOImpl::cpu_managed_axi4_write(
     strb[i] = beat_bytes > 63 ? -1 : ((1LL << beat_bytes) - 1);
   }
 
-  if (remaining == beat_bytes)
+  if (remaining == beat_bytes && len > 0)
     strb[len] = strb[0];
+  else if (remaining == beat_bytes)
+    strb[len] = -1;
   else
     strb[len] = (1LL << remaining) - 1;
 
