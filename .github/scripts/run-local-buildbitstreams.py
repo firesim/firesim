@@ -282,7 +282,7 @@ def run_local_buildbitstreams():
 
 # ("nitefury_firesim_rocket_singlecore_no_nic", "rhsresearch_nitefury_ii", "vitis:2022.1"),
 
-                ("alveo_u250_firesim_rocket_singlecore_no_nic", "xilinx_alveo_u250", "vivado:2021.1"),
+                ("alveo_u250_firesim_rocket_singlecore_no_nic", "xilinx_alveo_u250", "vitis:2021.1"),
 # ("alveo_u250_firesim_gemmini_rocket_singlecore_no_nic", "xilinx_alveo_u250", "vitis:2021.1"),
 # ("alveo_u200_firesim_rocket_singlecore_no_nic", "xilinx_alveo_u200", "vitis:2021.1"),
 # ("alveo_u280_firesim_rocket_singlecore_no_nic", "xilinx_alveo_u280", "vitis:2021.1"),
