@@ -235,7 +235,9 @@ jobs:
           rm -rf ${{ github.workspace }}/.* || true
       - uses: actions/checkout@v3
       - name: Run buildbitstream command and update sample local bitstreams
-        run: .github/scripts/run-local-buildbitstreams.py
+        run: |
+          ssh-add -l
+          .github/scripts/run-local-buildbitstreams.py
       - uses: peter-evans/create-pull-request@v5
         with:
           base: ${{ github.head_ref }}
