@@ -68,8 +68,8 @@ void firesim_tsi_t::load_mem_read(addr_t addr, size_t nbytes, void *dst) {
 void firesim_tsi_t::tick() { switch_to_host(); }
 
 void firesim_tsi_t::reset() {
-  // after program loading, this function is called and spins until the target thread/bridge
-  // has synced/drained all in-flight fesvr xacts
+  // after program loading, this function is called and spins until the target
+  // thread/bridge has synced/drained all in-flight fesvr xacts
   is_loaded_in_host = true;
   while (!is_loaded_in_target)
     switch_to_target();

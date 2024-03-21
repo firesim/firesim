@@ -52,9 +52,12 @@ protected:
 private:
   size_t idle_counts;
   bool is_busy;
-  // program load has completed in the host thread (i.e. all fesvr xacts for program load have been sent by fesvr)
+  // program load has completed in the host thread (i.e. all fesvr xacts for
+  // program load have been sent by fesvr)
   bool is_loaded_in_host;
-  // program load has completed in the target thread (i.e. all in-flight fesvr xacts for program load have been synced/drained by the target thread/bridge)
+  // program load has completed in the target thread (i.e. all in-flight fesvr
+  // xacts for program load have been synced/drained by the target
+  // thread/bridge)
   bool is_loaded_in_target;
 };
 #endif // __FIRESIM_TSI_H
