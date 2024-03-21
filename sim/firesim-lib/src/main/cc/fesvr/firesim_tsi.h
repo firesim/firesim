@@ -17,8 +17,8 @@ public:
   ~firesim_tsi_t() {}
 
   bool busy() { return is_busy; };
-  bool loaded_in_sw() { return is_loaded_in_sw; };
-  void set_loaded(bool loaded) { is_loaded = loaded; };
+  bool loaded_in_host() { return is_loaded_in_host; };
+  void set_loaded_in_target(bool loaded) { is_loaded_in_target = loaded; };
 
   void tick();
   void tick(bool out_valid, uint32_t out_bits, bool in_ready) { tick(); };
@@ -52,7 +52,9 @@ protected:
 private:
   size_t idle_counts;
   bool is_busy;
-  bool is_loaded;
-  bool is_loaded_in_sw;
+  // program load has completed in the host thread (i.e. all fesvr xacts for program load have been sent by fesvr)
+  bool is_loaded_in_host;
+  // program load has completed in the target thread (i.e. all in-flight fesvr xacts for program load have been synced/drained by the target thread/bridge)
+  bool is_loaded_in_target;
 };
 #endif // __FIRESIM_TSI_H

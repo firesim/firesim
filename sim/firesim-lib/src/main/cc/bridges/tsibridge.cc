@@ -29,21 +29,25 @@ tsibridge_t::tsibridge_t(simif_t &simif,
   // This particular selection is vestigial. You may change it freely.
   step_size = 2004765L;
 
-  // Enable switching step-sizes
-  fast_fesvr = true;
+  // During the initial program phase speed up when FESVR is called
+  // (i.e. speed up program loading when loadmem isn't/can't be used)
+  // (disabled by default)
+  fast_fesvr = false;
 
-  // This particular selection is correlated to the amount of reset cycles. It should be larger than the reset period.
+  // This particular selection is correlated to the amount of reset cycles.
+  // It should be larger than the reset period.
   wait_ticks = 8;
 
-  // This particular selection is vestigial. You may change it freely. This * wait_ticks is should be larger than the reset period.
+  // This particular selection is vestigial. You may change it freely.
+  // This * wait_ticks is should be larger than the reset period.
   loading_step_size = fast_fesvr ? 8 : step_size;
 
   for (auto &arg : args) {
     if (arg.find("+fesvr-step-size=") == 0) {
       step_size = atoi(arg.c_str() + 17);
     }
-    if (arg.find("+fesvr-disable-early-fast") == 0) {
-      fast_fesvr = false;
+    if (arg.find("+fesvr-enable-early-fast") == 0) {
+      fast_fesvr = true;
     }
     if (arg.find("+fesvr-wait-ticks=") == 0) {
       wait_ticks = atoi(arg.c_str() + 18);
@@ -100,12 +104,12 @@ void tsibridge_t::init() {
   // than the one it will run on later in meta-simulations.
   fesvr = new firesim_tsi_t(tsi_argc, tsi_argv, has_mem);
   if (fast_fesvr) {
-    printf("tsibridge_t::init set FESVR step-size to %" PRIu32 " initially\n", loading_step_size);
+    printf("tsibridge_t::init set FESVR step-size to %" PRIu32 " initially\n",
+           loading_step_size);
     write(mmio_addrs.step_size, loading_step_size);
-  }
-  else {
+  } else {
     write(mmio_addrs.step_size, step_size);
-    fesvr->set_loaded(true); // pre-set to unblock fs_tsi_t::reset
+    fesvr->set_loaded_in_target(true); // pre-set to unblock fs_tsi_t::reset
   }
   go();
 }
@@ -211,10 +215,11 @@ void tsibridge_t::tick() {
     // Write all the requests to the target
     this->send();
     if (fast_fesvr) {
-      if (fesvr->loaded_in_sw()) {
+      if (fesvr->loaded_in_host()) {
         if (!fesvr->data_available()) {
-          fesvr->set_loaded(true); // done w/ firesim loading
-          printf("tsibridge_t::tick reverting FESVR step-size to %" PRIu32 "\n", step_size);
+          fesvr->set_loaded_in_target(true); // done w/ firesim loading
+          printf("tsibridge_t::tick reverting FESVR step-size to %" PRIu32 "\n",
+                 step_size);
           write(mmio_addrs.step_size, step_size);
           fast_fesvr = false; // only write this user-defined step size once
         }
