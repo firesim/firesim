@@ -260,7 +260,7 @@ object PerfCounter {
     * coutner unless AutoCounter is enabled in your the platform config. See
     * the docs.fires.im for end-to-end usage information.
     *
-    * @param target The number of occurances of the event (in the current cycle) 
+    * @param target The number of occurances of the event (in the current cycle)
     *
     * @param clock The clock to which this event is sychronized.
     *
@@ -306,6 +306,59 @@ object PerfCounter {
           |  $label
           |was ${target.getWidth}b.""".stripMargin)
     emitAnnotation(target, Module.clock, Module.reset, label, description, opType = PerfCounterOps.Identity)
+  }
+}
+
+/**
+  * PlusArgs annotations. Do not emit the FIRRTL annotations unless you are
+  * writing a target transformation, use the Chisel-side [[PlusArgs]] object
+  * instead.
+  */
+case class PlusArgsFirrtlAnnotation(
+  target: ReferenceTarget,
+  clock: ReferenceTarget,
+  reset: ReferenceTarget,
+  name: String,
+  default: BigInt,
+  docstring: String,
+  width: Int)
+    extends firrtl.annotations.Annotation with FAMEAnnotation with DontTouchAllTargets {
+  def update(renames: RenameMap): Seq[firrtl.annotations.Annotation] = {
+    val renamer = new ReferenceTargetRenamer(renames)
+    val renamedTarget = renamer.exactRename(target)
+    val renamedClock  = renamer.exactRename(clock)
+    val renamedReset  = renamer.exactRename(reset)
+    Seq(this.copy(target = renamedTarget, clock = renamedClock, reset = renamedReset))
+  }
+}
+
+object PlusArgs {
+  private def emitAnnotation(
+      target: chisel3.UInt,
+      clock: chisel3.Clock,
+      reset: Reset,
+      name: String,
+      default: BigInt,
+      docstring: String,
+      width: Int
+    ): Unit = {
+    requireIsHardware(target, "Target passed to PlusArgs:")
+    requireIsHardware(clock,  "Clock passed to PlusArgs:")
+    requireIsHardware(reset,  "Reset passed to PlusArgs:")
+    annotate(new ChiselAnnotation {
+      def toFirrtl = PlusArgsFirrtlAnnotation(
+        target.toTarget,
+        clock.toTarget,
+        reset.toTarget,
+        name,
+        default,
+        docstring,
+        width)
+    })
+  }
+
+  def apply(target: chisel3.UInt, name: String, default: BigInt = 0, docstring: String = "", width: Int = 32): Unit = {
+    emitAnnotation(target, Module.clock, Module.reset, name, default, docstring, width)
   }
 }
 
