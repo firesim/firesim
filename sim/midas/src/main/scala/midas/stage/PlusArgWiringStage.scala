@@ -13,7 +13,6 @@ import logger.LazyLogging
 import midas.passes.PlusArgsWiringTransform
 import midas.stage.phases.{CreateParametersInstancePhase, ConfigParametersAnnotation}
 
-
 trait PlusArgsWiringCli { this: Shell =>
   parser.note("PlusArgsWiring Compiler Options")
   Seq(ConfigPackageAnnotation,
@@ -25,7 +24,6 @@ trait PlusArgsWiringCli { this: Shell =>
       )
     .map(_.addOptions(parser))
 }
-
 
 class PlusArgsWiringPhase extends Phase {
   override val prerequisites = Seq(

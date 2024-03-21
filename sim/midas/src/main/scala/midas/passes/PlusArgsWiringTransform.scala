@@ -22,15 +22,6 @@ class PlusArgsWiringTransform extends Transform {
   def outputForm: CircuitForm = MidForm
   override def name = "[Golden Gate] PlusArgs Transform"
 
-// case class PlusArgsFirrtlAnnotation(
-// target: ReferenceTarget,
-// clock: ReferenceTarget,
-// reset: ReferenceTarget,
-// name: String,
-// default: BigInt,
-// docstring: String,
-// width: Int)
-
   private var idx = 0
   def getPlusArgBridgeName(argName: String): String = {
     val ret = s"PlusArgsBridge_${argName}"
