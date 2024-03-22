@@ -65,6 +65,7 @@ class PlusArgsWiringTransformSpec extends LowTransformSpec with FirrtlRunners {
          |    defname = PlusArgBridge_plusarg_flag
          |""".stripMargin
 
+    // TODO: should properly check the output annotation
     it should "do stuff" in {
       executeWithAnnos(input, output, inAnnos, Seq.empty)
     }
