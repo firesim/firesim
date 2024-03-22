@@ -309,21 +309,20 @@ object PerfCounter {
   }
 }
 
-case class PlusArgsFirrtlAnnotation(
+case class PlusArgFirrtlAnnotation(
   target: InstanceTarget) extends SingleTargetAnnotation[InstanceTarget] with FAMEAnnotation {
   def targets = Seq(target)
   def duplicate(n: InstanceTarget) = this.copy(n)
 }
 
-object PlusArgs {
+object PlusArg {
   private def emitAnnotation(
       target: BaseModule
     ): Unit = {
-    //requireIsHardware(target, "Target passed to PlusArgs:")
     annotate(new ChiselAnnotation {
       def toFirrtl = {
         val parent = ModuleTarget(target.toNamed.circuit.name, target.parentModName)
-        PlusArgsFirrtlAnnotation(parent.instOf(target.instanceName, target.name))
+        PlusArgFirrtlAnnotation(parent.instOf(target.instanceName, target.name))
       }
     })
   }

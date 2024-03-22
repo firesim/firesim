@@ -6,14 +6,14 @@ import firrtl.annotations._
 import firrtl.testutils._
 
 import midas.passes.{PlusArgsWiringTransform}
-import midas.targetutils.{PlusArgsFirrtlAnnotation}
+import midas.targetutils.{PlusArgFirrtlAnnotation}
 
 class PlusArgsWiringTransformSpec extends LowTransformSpec with FirrtlRunners {
 
   def transform = PlusArgsWiringTransform
 
   def midMT = ModuleTarget("Top", "Mid")
-  def inAnno = PlusArgsFirrtlAnnotation(midMT.instOf("plusarg_reader_i", "plusarg_reader"))
+  def inAnno = PlusArgFirrtlAnnotation(midMT.instOf("plusarg_reader_i", "plusarg_reader"))
   val inAnnos = Seq(inAnno)
 
   behavior.of("PlusArgsWiringTransform")
@@ -54,15 +54,15 @@ class PlusArgsWiringTransformSpec extends LowTransformSpec with FirrtlRunners {
          |    input clock : Clock
          |    output a : UInt<32>
          |
-         |    inst PlusArgsBridge_plusarg_flag of PlusArgsBridge_plusarg_flag
-         |    node plusarg_reader_i_plusargs_wire = PlusArgsBridge_plusarg_flag.io_out
-         |    a <= plusarg_reader_i_plusargs_wire
-         |    PlusArgsBridge_plusarg_flag.clock <= clock
+         |    inst PlusArgBridge_plusarg_flag of PlusArgBridge_plusarg_flag
+         |    node plusarg_reader_i_plusarg_wire = PlusArgBridge_plusarg_flag.io_out
+         |    a <= plusarg_reader_i_plusarg_wire
+         |    PlusArgBridge_plusarg_flag.clock <= clock
          |
-         |  extmodule PlusArgsBridge_plusarg_flag :
+         |  extmodule PlusArgBridge_plusarg_flag :
          |    input clock : Clock
          |    output io_out : UInt<32>
-         |    defname = PlusArgsBridge_plusarg_flag
+         |    defname = PlusArgBridge_plusarg_flag
          |""".stripMargin
 
     it should "do stuff" in {

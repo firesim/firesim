@@ -25,19 +25,19 @@ object PlusArgsWiringTransform extends Transform {
   private var idx = 0
   def getPlusArgBridgeName(argName: String): String = {
     val trimmedName = argName.replace("=%d", "")
-    val ret = s"PlusArgsBridge_${trimmedName}"
+    val ret = s"PlusArgBridge_${trimmedName}"
     idx += 1
     ret
   }
 
-  case class PlusArgsBridgeInfo(
-    newMod: Module, // New module def
-    bridgeMod: ExtModule, // Bridge module
+  case class PlusArgBridgeInfo(
+    newMod: Module, // new module def
+    bridgeMod: ExtModule, // bridge module
     bridgeAnno: BridgeAnnotation) // bridge anno
 
-  case class PlusArgsInfo(
+  case class PlusArgInfo(
     default: Int,
-    format: String,
+    format: String, // name + '=%d'
     width: Int,
     docstring: String)
 
@@ -61,7 +61,7 @@ object PlusArgsWiringTransform extends Transform {
     bridgeName: String
   ): Module= {
     val ref = plusArgInstanceName
-    val newRef = ref + "_plusargs_wire"
+    val newRef = ref + "_plusarg_wire"
     val argsW = IntWidth(BigInt(plusArgWidth))
     val parentModClockName = "clock"
 
@@ -102,15 +102,14 @@ object PlusArgsWiringTransform extends Transform {
 
   def connectBridgeInsideModule(
     circuitMain: String,
-    plusArgsInfo: PlusArgsInfo,
+    plusArgInfo: PlusArgInfo,
     plusArgInstanceName: String,
     parentMod: Module,
-    extMod: ExtModule,
-  ): PlusArgsBridgeInfo = {
+  ): PlusArgBridgeInfo = {
     val parentModNoExt = removeOrigInstanceInModule(parentMod, plusArgInstanceName)
 
-    val argsW = IntWidth(BigInt(plusArgsInfo.width))
-    val bridgeName = getPlusArgBridgeName(plusArgsInfo.format)
+    val argsW = IntWidth(BigInt(plusArgInfo.width))
+    val bridgeName = getPlusArgBridgeName(plusArgInfo.format)
     val bClkPort  = Port(NoInfo, "clock",   Input,  ClockType)
     val bArgsPort = Port(NoInfo, "io_out", Output, firrtl.ir.UIntType(argsW))
     val bPorts = Seq(bClkPort, bArgsPort)
@@ -129,17 +128,17 @@ object PlusArgsWiringTransform extends Transform {
         )),
       widgetClass = classOf[PlusArgsBridgeModule].getName,
       widgetConstructorKey = Some(PlusArgsBridgeParams(
-        plusArgsInfo.format,
-        plusArgsInfo.default,
-        plusArgsInfo.docstring,
-        plusArgsInfo.width)))
-    val newMod = addBridgeInstanceInModule(parentModNoExt, plusArgInstanceName, plusArgsInfo.width, bridgeName)
-    PlusArgsBridgeInfo(newMod, bModule, bAnno)
+        plusArgInfo.format,
+        plusArgInfo.default,
+        plusArgInfo.docstring,
+        plusArgInfo.width)))
+    val newMod = addBridgeInstanceInModule(parentModNoExt, plusArgInstanceName, plusArgInfo.width, bridgeName)
+    PlusArgBridgeInfo(newMod, bModule, bAnno)
   }
 
   def connectBridgePerAnno(
     state: CircuitState,
-    anno: PlusArgsFirrtlAnnotation
+    anno: PlusArgFirrtlAnnotation
   ): CircuitState = {
     val parentMods = state.circuit.modules.collect({ case m: Module if m.name == anno.target.module => m })
     assert(parentMods.size == 1)
@@ -149,15 +148,15 @@ object PlusArgsWiringTransform extends Transform {
     assert(extMods.size == 1)
     val extMod = extMods.head
 
-    val plusArgsInfo = {
+    val plusArgInfo = {
       val default = extMod.params.collectFirst({ case p: IntParam if p.name == "DEFAULT" => p.value }).get
       val format = extMod.params.collectFirst({ case p: StringParam if p.name == "FORMAT" => p.value.string }).get
       val width = extMod.params.collectFirst({ case p: IntParam if p.name == "WIDTH" => p.value }).get
       // TODO: no docstring given in ExtModule definition, ignore for now
-      PlusArgsInfo(default.toInt, format, width.toInt, "")
+      PlusArgInfo(default.toInt, format, width.toInt, "")
     }
 
-    val info = connectBridgeInsideModule(state.circuit.main, plusArgsInfo, anno.target.instance, parentMod, extMod)
+    val info = connectBridgeInsideModule(state.circuit.main, plusArgInfo, anno.target.instance, parentMod)
     val newAnnos = state.annotations.toSeq :+ info.bridgeAnno
     val newMods = state.circuit.modules.flatMap {
       case m: Module if (m.name == anno.target.module) =>
@@ -172,20 +171,20 @@ object PlusArgsWiringTransform extends Transform {
 
   def connectBridge(
     state: CircuitState,
-    annos: Seq[PlusArgsFirrtlAnnotation]
+    annos: Seq[PlusArgFirrtlAnnotation]
   ): CircuitState = {
     annos.foldLeft(state)((s, a) => connectBridgePerAnno(s, a))
   }
 
   def doTransform(state: CircuitState): CircuitState = {
-    val plusArgsAnnos = state.annotations.collect {
-      case a: PlusArgsFirrtlAnnotation => a
+    val plusArgAnnos = state.annotations.collect {
+      case a: PlusArgFirrtlAnnotation => a
     }
 
-    if (!plusArgsAnnos.isEmpty) {
+    if (!plusArgAnnos.isEmpty) {
       println(s"[PlusArgs] PlusArgs are:")
-      plusArgsAnnos.foreach(println(_))
-      connectBridge(state, plusArgsAnnos.toSeq)
+      plusArgAnnos.foreach(println(_))
+      connectBridge(state, plusArgAnnos.toSeq)
     } else { state }
   }
 
@@ -196,11 +195,14 @@ object PlusArgsWiringTransform extends Transform {
     val emitter = new EmitFirrtl("post-plusargs-transform.fir")
     emitter.runTransform(updatedState)
 
+    val annoEmitter = new fame.EmitFAMEAnnotations("post-plusargs-transform.json")
+    annoEmitter.runTransform(updatedState)
+
     // Clean up annotations so that their ReferenceTargets, which
     // are implicitly marked as DontTouch, can be optimized across
     updatedState.copy(
       annotations = updatedState.annotations.filter {
-        case PlusArgsFirrtlAnnotation(_) => false
+        case PlusArgFirrtlAnnotation(_) => false
         case o => true
       })
   }
