@@ -32,7 +32,7 @@ private[midas] class MidasTransforms extends Transform {
       new firrtl.transforms.DeadCodeElimination,
       new firrtl.transforms.InferResets,
       firrtl.passes.CheckTypes,
-      new PlusArgsWiringTransform,
+      PlusArgsWiringTransform,
       new EmitFirrtl("post-plusargs-wiring.fir"),
       new fame.EmitFAMEAnnotations("post-plusargs-wiring.json"),
       CoerceAsyncToSyncReset,

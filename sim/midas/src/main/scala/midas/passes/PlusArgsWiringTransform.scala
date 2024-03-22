@@ -17,70 +17,106 @@ import firrtl.analyses.InstanceKeyGraph
 /**
   * Take the annotated target and drive with plus args bridge(s)
   */
-class PlusArgsWiringTransform extends Transform {
+object PlusArgsWiringTransform extends Transform {
   def inputForm: CircuitForm = LowForm
   def outputForm: CircuitForm = MidForm
-  override def name = "[Golden Gate] PlusArgs Transform"
+  override def name = "[Golden Gate] PlusArgs Wiring Transform"
 
   private var idx = 0
   def getPlusArgBridgeName(argName: String): String = {
-    val ret = s"PlusArgsBridge_${argName}"
+    val trimmedName = argName.replace("=%d", "")
+    val ret = s"PlusArgsBridge_${trimmedName}"
     idx += 1
     ret
   }
 
-  case class plusArgsBridgeInfo(
+  case class PlusArgsBridgeInfo(
     newMod: Module, // New module def
     bridgeMod: ExtModule, // Bridge module
     bridgeAnno: BridgeAnnotation) // bridge anno
 
-  def onStmt(stmt: Statement, ref: String, newRef: String, argsW: IntWidth): Seq[Statement] = {
+  case class PlusArgsInfo(
+    default: Int,
+    format: String,
+    width: Int,
+    docstring: String)
+
+  def onStmtReplaceWire(stmt: Statement, plusArgInstanceName: String, newRef: String, argsW: IntWidth): Seq[Statement] = {
     stmt match {
-      case DefNode(i, n, v) if (n == ref) =>
-        val wire = DefWire(NoInfo, newRef, firrtl.ir.UIntType(argsW))
-        val newDef = DefNode(i, n, WRef(newRef))
-        Seq(wire, newDef)
+      case c @ Connect(i, l, WSubField(WRef(iN, _, InstanceKind, _), iP, _, _)) =>
+        if (iN == plusArgInstanceName) {
+          val wire = DefWire(NoInfo, newRef, firrtl.ir.UIntType(argsW))
+          Seq(wire, Connect(i, l, WRef(newRef)))
+        } else {
+          Seq(c)
+        }
       case s => Seq(s)
     }
   }
 
   def addBridgeInstanceInModule(
-    mod: Module,
-    anno: PlusArgsFirrtlAnnotation,
+    parentMod: Module,
+    plusArgInstanceName: String,
+    plusArgWidth: Int,
     bridgeName: String
   ): Module= {
-    val ref = anno.target.name
-    val newRef = ref + "_plusargs_"
-    val argsW = IntWidth(BigInt(anno.width))
+    val ref = plusArgInstanceName
+    val newRef = ref + "_plusargs_wire"
+    val argsW = IntWidth(BigInt(plusArgWidth))
+    val parentModClockName = "clock"
 
-    val body = mod.body
+    val body = parentMod.body
     val inst = DefInstance(bridgeName, bridgeName)
-    val clkConn = Connect(NoInfo, WSubField(WRef(bridgeName), "clock"), WRef(anno.clock.name))
+    val clkConn = Connect(NoInfo, WSubField(WRef(bridgeName), "clock"), WRef(parentModClockName))
     val refConn = Connect(NoInfo, WRef(newRef), WSubField(WRef(bridgeName), "io_out"))
 
     val bStmts = Seq(inst, clkConn, refConn)
     val newBody = body match {
       case Block(stmts) =>
-        val newStmts = stmts.flatMap(onStmt(_, ref, newRef, argsW))
+        val newStmts = stmts.flatMap(onStmtReplaceWire(_, plusArgInstanceName, newRef, argsW))
         new Block(newStmts ++ bStmts)
       case _ => throw new Exception("Module body is not a Block")
     }
-    mod.copy(body = newBody)
+    parentMod.copy(body = newBody)
+  }
+
+  def onStmtRemoveDefInstance(stmt: Statement, instName: String): Seq[Statement] = {
+    stmt match {
+      case DefInstance(i, n, m, t) if (n == instName) => Seq.empty
+      case s => Seq(s)
+    }
+  }
+
+  def removeOrigInstanceInModule(
+    parentMod: Module,
+    instName: String
+  ): Module= {
+    val newBody = parentMod.body match {
+      case Block(stmts) =>
+        val newStmts = stmts.flatMap(onStmtRemoveDefInstance(_, instName))
+        new Block(newStmts)
+      case _ => throw new Exception("Module body is not a Block")
+    }
+    parentMod.copy(body = newBody)
   }
 
   def connectBridgeInsideModule(
     circuitMain: String,
-    mod: Module,
-    anno: PlusArgsFirrtlAnnotation
-  ): plusArgsBridgeInfo = {
-    val argsW = IntWidth(BigInt(anno.width))
-    val name = getPlusArgBridgeName(anno.target.name)
+    plusArgsInfo: PlusArgsInfo,
+    plusArgInstanceName: String,
+    parentMod: Module,
+    extMod: ExtModule,
+  ): PlusArgsBridgeInfo = {
+    val parentModNoExt = removeOrigInstanceInModule(parentMod, plusArgInstanceName)
+
+    val argsW = IntWidth(BigInt(plusArgsInfo.width))
+    val bridgeName = getPlusArgBridgeName(plusArgsInfo.format)
     val bClkPort  = Port(NoInfo, "clock",   Input,  ClockType)
     val bArgsPort = Port(NoInfo, "io_out", Output, firrtl.ir.UIntType(argsW))
     val bPorts = Seq(bClkPort, bArgsPort)
-    val bModule = ExtModule(NoInfo, name, bPorts, name, Seq())
+    val bModule = ExtModule(NoInfo, bridgeName, bPorts, bridgeName, Seq())
 
-    val bmt = ModuleTarget(circuitMain, name)
+    val bmt = ModuleTarget(circuitMain, bridgeName)
     val bAnno = BridgeAnnotation(
       target = bmt,
       bridgeChannels = Seq(
@@ -90,41 +126,44 @@ class PlusArgsWiringTransform extends Transform {
           sinks = Seq(bmt.ref("io_out")),
           sources = Seq(),
           latency = 0
-        )
-    ),
+        )),
       widgetClass = classOf[PlusArgsBridgeModule].getName,
       widgetConstructorKey = Some(PlusArgsBridgeParams(
-        anno.name,
-        anno.default,
-        anno.docstring,
-        anno.width)))
-    val newMod = addBridgeInstanceInModule(mod, anno, name)
-    plusArgsBridgeInfo(newMod, bModule, bAnno)
+        plusArgsInfo.format,
+        plusArgsInfo.default,
+        plusArgsInfo.docstring,
+        plusArgsInfo.width)))
+    val newMod = addBridgeInstanceInModule(parentModNoExt, plusArgInstanceName, plusArgsInfo.width, bridgeName)
+    PlusArgsBridgeInfo(newMod, bModule, bAnno)
   }
 
   def connectBridgePerAnno(
     state: CircuitState,
     anno: PlusArgsFirrtlAnnotation
   ): CircuitState = {
-    val iKeyGraph = InstanceKeyGraph(state.circuit)
-    val iKeyPath = iKeyGraph.findInstancesInHierarchy(anno.target.module)
+    val parentMods = state.circuit.modules.collect({ case m: Module if m.name == anno.target.module => m })
+    assert(parentMods.size == 1)
+    val parentMod = parentMods.head
 
-    // Limit the number of instances with modules containing PlusArgs annotations to one.
-    // This isn't a big problem since we use the no-dedup flag for FireSim flows so
-    // big enough modules have separate names anyways.
-    assert(iKeyPath.size == 1, "Should only contain one instance of this module")
-    val ik = iKeyPath(0).last
-    val moduleDefs = state.circuit.modules.collect({
-      case m: Module => OfModule(m.name) -> m
-    }).toMap
-    val mdef = moduleDefs(ik.OfModule)
-    print(iKeyPath(0).last)
+    val extMods = state.circuit.modules.collect({ case m: ExtModule if m.name == anno.target.ofModule => m })
+    assert(extMods.size == 1)
+    val extMod = extMods.head
 
-    val info = connectBridgeInsideModule(state.circuit.main, mdef, anno)
+    val plusArgsInfo = {
+      val default = extMod.params.collectFirst({ case p: IntParam if p.name == "DEFAULT" => p.value }).get
+      val format = extMod.params.collectFirst({ case p: StringParam if p.name == "FORMAT" => p.value.string }).get
+      val width = extMod.params.collectFirst({ case p: IntParam if p.name == "WIDTH" => p.value }).get
+      // TODO: no docstring given in ExtModule definition, ignore for now
+      PlusArgsInfo(default.toInt, format, width.toInt, "")
+    }
+
+    val info = connectBridgeInsideModule(state.circuit.main, plusArgsInfo, anno.target.instance, parentMod, extMod)
     val newAnnos = state.annotations.toSeq :+ info.bridgeAnno
     val newMods = state.circuit.modules.flatMap {
-      case m: Module if (m.name == ik.module) =>
+      case m: Module if (m.name == anno.target.module) =>
         Seq(info.newMod, info.bridgeMod)
+      case m: ExtModule if (m.name == anno.target.ofModule) =>
+        Seq.empty
       case m => Seq(m)
     }
     val newCircuit = state.circuit.copy(modules=newMods)
@@ -145,7 +184,7 @@ class PlusArgsWiringTransform extends Transform {
 
     if (!plusArgsAnnos.isEmpty) {
       println(s"[PlusArgs] PlusArgs are:")
-      plusArgsAnnos.foreach({ case anno => println(s"   Name: ${anno.name} Docstring: ${anno.docstring} DefaultValue: ${anno.default} Width: ${anno.width}") })
+      plusArgsAnnos.foreach(println(_))
       connectBridge(state, plusArgsAnnos.toSeq)
     } else { state }
   }
@@ -161,7 +200,7 @@ class PlusArgsWiringTransform extends Transform {
     // are implicitly marked as DontTouch, can be optimized across
     updatedState.copy(
       annotations = updatedState.annotations.filter {
-        case PlusArgsFirrtlAnnotation(_,_,_,_,_,_,_) => false
+        case PlusArgsFirrtlAnnotation(_) => false
         case o => true
       })
   }
