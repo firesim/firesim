@@ -327,6 +327,13 @@ object PlusArg {
     })
   }
 
+  /**
+    * Labels a Rocket Chip 'plusarg_reader' module to synthesize. Must be
+    * of the type found in
+    * https://github.com/chipsalliance/rocket-chip/blob/master/src/main/scala/util/PlusArg.scala
+    *
+    * @param target The 'plusarg_reader' module to synthesize
+    */
   def apply(target: BaseModule): Unit = {
     emitAnnotation(target)
   }
