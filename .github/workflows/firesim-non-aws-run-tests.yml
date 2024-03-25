@@ -58,7 +58,7 @@ jobs:
       needs-manager: ${{ steps.filter.outputs.all_count != steps.filter.outputs.skip-manager_count }}
       both-conda-reqs-lock-modified: ${{ ((steps.filter.outputs.conda-reqs == 'false') && (steps.filter.outputs.conda-lock == 'false')) || ((steps.filter.outputs.conda-reqs == 'true') && (steps.filter.outputs.conda-lock == 'true')) }}
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
       - uses: dorny/paths-filter@v2
         id: filter
         with:
@@ -106,8 +106,8 @@ jobs:
     name: documentation-check
     runs-on: ubuntu-20.04
     steps:
-      - uses: actions/checkout@v3
-      - uses: conda-incubator/setup-miniconda@v2
+      - uses: actions/checkout@v4
+      - uses: conda-incubator/setup-miniconda@v3
         with:
           environment-file: conda-reqs/docs.yaml
           miniforge-version: latest
@@ -127,7 +127,7 @@ jobs:
     steps:
       # Clone the repository (shallow to save time).
       - name: Checkout sources
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
         with:
           fetch-depth: 2
           submodules: false
@@ -181,7 +181,7 @@ jobs:
             rm -rf ${{ github.workspace }}/* || true
             rm -rf ${{ github.workspace }}/.* || true
             ls -alh .
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
       - name: Setup repo copy
         run: |
           mkdir -p $(dirname ${{ env.REMOTE_WORK_DIR }})
@@ -199,7 +199,7 @@ jobs:
     needs: [setup-local-fpga-repo]
     runs-on: local-fpga
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
       - name: Check Vitis docs components that require manual re-generation (e.g. config_runtime.yaml example)
         run: ./.github/scripts/check-vitis-docs-generated-components.py
 
@@ -214,7 +214,7 @@ jobs:
         run: |
           rm -rf ${{ github.workspace }}/* || true
           rm -rf ${{ github.workspace }}/.* || true
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
       - name: Run parallel VCS metasims
         run: .github/scripts/run-parallel-vcs-metasims.py
       - name: Build Vitis driver
@@ -232,7 +232,7 @@ jobs:
         run: |
           rm -rf ${{ github.workspace }}/* || true
           rm -rf ${{ github.workspace }}/.* || true
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
       - name: Run simple linux poweroff test w/ vitis
         run: .github/scripts/run-linux-poweroff-vitis.py
 
@@ -249,7 +249,7 @@ jobs:
         run: |
           rm -rf ${{ github.workspace }}/* || true
           rm -rf ${{ github.workspace }}/.* || true
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
       - name: Run buildbitstream command and update sample local bitstreams
         run: .github/scripts/run-local-buildbitstreams.py
       - uses: peter-evans/create-pull-request@v5
