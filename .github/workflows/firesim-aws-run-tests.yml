@@ -43,7 +43,7 @@ jobs:
     steps:
       - name: Cancel previous workflow runs
         if: ${{ (env.CI_LABEL_PERSIST != 'true') }}
-        uses: styfle/cancel-workflow-action@0.11.0
+        uses: styfle/cancel-workflow-action@0.12.1
         with:
           access_token: ${{ github.token }}
 
@@ -59,7 +59,7 @@ jobs:
       both-conda-reqs-lock-modified: ${{ ((steps.filter.outputs.conda-reqs == 'false') && (steps.filter.outputs.conda-lock == 'false')) || ((steps.filter.outputs.conda-reqs == 'true') && (steps.filter.outputs.conda-lock == 'true')) }}
     steps:
       - uses: actions/checkout@v4
-      - uses: dorny/paths-filter@v2
+      - uses: dorny/paths-filter@v3
         id: filter
         with:
           filters: |
