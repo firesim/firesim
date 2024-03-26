@@ -7,7 +7,6 @@ import os
 from github import Github
 import base64
 import time
-import argparse
 
 from ci_variables import ci_env
 

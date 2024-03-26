@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 
+import argparse
 from fabric.api import prefix, run, execute # type: ignore
 
 from ci_variables import ci_env
