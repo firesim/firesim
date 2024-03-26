@@ -249,7 +249,7 @@ jobs:
 
   cleanup-local-fpga-repo:
     name: cleanup-local-fpga-repo
-    needs: [run-parallel-vcs-metasims-and-vitis-driver, run-basic-linux-poweroff-vitis, run-vitis-check-docs-generated-components, run-local-fpga-buildbitstream]
+    needs: [run-vitis-check-docs-generated-components, run-basic-linux-poweroff-alveo_u250, run-local-fpga-buildbitstream]
     # uses a separate runner to cleanup (irrespective, of other jobs cancelled, running, etc)
     runs-on: local-fpga-cleanup
     if: ${{ always() }}
