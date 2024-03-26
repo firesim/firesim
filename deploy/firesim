@@ -15,7 +15,7 @@ from datetime import date
 import warnings
 from cryptography.utils import CryptographyDeprecationWarning
 with warnings.catch_warnings():
-    if date.today() < date(2024, 1, 1):
+    if date.today() < date(2025, 1, 1):
         # Temporarily wave CryptographyDeprecationWarning while we wait on a paramiko-ng release
         warnings.filterwarnings('ignore', category=CryptographyDeprecationWarning)
     from fabric.api import local, hide, warn_only, env, execute, parallel # type: ignore
