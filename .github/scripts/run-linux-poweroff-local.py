@@ -10,7 +10,7 @@ from utils import search_match_in_last_workloads_output_file
 
 # vitis not supported since it should be removed eventually
 class FpgaPlatform(Enum):
-    xilinx_alveo_u250 = 'alveo_u250'
+    xilinx_alveo_u250 = 'xilinx_alveo_u250'
 
     def __str__(self):
         return self.value

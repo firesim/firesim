@@ -234,7 +234,7 @@ jobs:
           rm -rf ${{ github.workspace }}/.* || true
       - uses: actions/checkout@v4
       - name: Run simple linux poweroff test w/ Xilinx Alveo U250
-        run: .github/scripts/run-linux-poweroff-local.py --platform alveo_u250
+        run: .github/scripts/run-linux-poweroff-local.py --platform xilinx_alveo_u250
 
   run-local-fpga-buildbitstream:
     if: contains(github.event.pull_request.labels.*.name, 'ci:local-fpga-buildbitstream-deploy')
