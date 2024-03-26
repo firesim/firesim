@@ -88,12 +88,6 @@ class BaseXilinxAlveoU250Config extends Config(
   new midas.XilinxAlveoU250Config
 )
 
-class BaseXilinxAlveoConfig extends Config(
-  new WithWiringTransform ++
-  new WithAsyncResetReplacement ++
-  new midas.XilinxAlveoU250Config
-)
-
 class BaseXilinxAlveoU280Config extends Config(
   new WithWiringTransform ++
   new WithAsyncResetReplacement ++
