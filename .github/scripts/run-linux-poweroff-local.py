@@ -8,8 +8,8 @@ from fabric.api import prefix, run, settings, execute # type: ignore
 from ci_variables import ci_env
 from utils import search_match_in_last_workloads_output_file
 
+# vitis not supported since it should be removed eventually
 class FpgaPlatform(Enum):
-    vitis = 'vitis'
     xilinx_alveo_u250 = 'alveo_u250'
 
     def __str__(self):
@@ -20,7 +20,7 @@ parser.add_argument('--platform', type=FpgaPlatform, choices=list(FpgaPlatform),
 args = parser.parse_args()
 
 def run_linux_poweroff():
-    """ Runs Base Vitis/Alveo250 Build """
+    """ Runs Linux Poweroff """
 
     # assumptions:
     #   - machine-launch-script requirements are already installed
