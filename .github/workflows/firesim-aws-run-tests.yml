@@ -191,7 +191,7 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - name: Check docs components that require manual re-generation (e.g. config_runtime.yaml example, help output)
-        run: ./.github/scripts/check-docs-generated-components.py
+        run: ./.github/scripts/check-docs-generated-components.py --platform f1
 
   build-f1-driver:
     name: build-f1-driver

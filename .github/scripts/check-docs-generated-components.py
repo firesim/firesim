@@ -1,12 +1,18 @@
 #!/usr/bin/env python3
 
 import argparse
+from enum import Enum
 from fabric.api import cd, prefix, run, execute # type: ignore
 
 from common import manager_fsim_dir, set_fabric_firesim_pem
 
+class FpgaPlatform(Enum):
+    vitis = 'vitis'
+    f1 = 'f1'
+    xilinx_alveo_u250 = 'xilinx_alveo_u250'
+
 parser = argparse.ArgumentParser(description='')
-parser.add_argument('--platform', type=str, required=True, help='vitis or xilinx_alveo_u250')
+parser.add_argument('--platform', type=FpgaPlatform.from_value, choices=list(FpgaPlatform), required=True)
 args = parser.parse_args()
 
 def run_docs_generated_components_check():
@@ -16,12 +22,13 @@ def run_docs_generated_components_check():
     with cd(manager_fsim_dir), prefix('source sourceme-manager.sh'):
         with prefix("cd deploy"):
             run("cat config_runtime.yaml")
-            if args.platform == "vitis":
-                path = 'docs/Getting-Started-Guides/AWS-EC2-F1-Getting-Started/Running-Simulations/DOCS_EXAMPLE_config_runtime.yaml'
-            elif args.platform == "xilinx_alveo_u250":
-                path = 'docs/Getting-Started-Guides/On-Premises-FPGA-Getting-Started/Running-Simulations/DOCS_EXAMPLE_config_runtime.yaml'
+            if args.platform == FpgaPlatform.f1:
+                subpath = 'AWS-EC2-F1-Getting-Started'
+            elif args.platform == FpgaPlatform.xilinx_alveo_u250 or args.platform == FpgaPlatform.f1:
+                subpath = 'On-Premises-FPGA-Getting-Started'
             else:
                 assert False
+            path = f'docs/Getting-Started-Guides/{subpath}/Running-Simulations/DOCS_EXAMPLE_config_runtime.yaml'
             run(f"cat ../{path}")
             run(f"diff config_runtime.yaml ../{path}")
             run("firesim --help")

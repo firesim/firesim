@@ -2,13 +2,18 @@
 
 import sys
 import argparse
+from enum import Enum
 from fabric.api import prefix, run, settings, execute # type: ignore
 
 from ci_variables import ci_env
 from utils import search_match_in_last_workloads_output_file
 
-parser = argparse.ArgumentParser(description='Run linux poweroff on local FPGAs')
-parser.add_argument('--platform', type=str, required=True, help='vitis or alveo_u250')
+class FpgaPlatform(Enum):
+    vitis = 'vitis'
+    xilinx_alveo_u250 = 'alveo_u250'
+
+parser = argparse.ArgumentParser(description='')
+parser.add_argument('--platform', type=FpgaPlatform.from_value, choices=list(FpgaPlatform), required=True)
 args = parser.parse_args()
 
 def run_linux_poweroff():
@@ -69,7 +74,7 @@ def run_linux_poweroff():
 
                     print(f"Workload run {workload} successful.")
 
-            run_w_timeout(f"{ci_env['GITHUB_WORKSPACE']}/deploy/workloads/ci/{args.platform}", "linux-poweroff-singlenode", "30m", 1)
+            run_w_timeout(f"{ci_env['GITHUB_WORKSPACE']}/deploy/workloads/ci/{args.platform.value}", "linux-poweroff-singlenode", "30m", 1)
 
 if __name__ == "__main__":
     execute(run_linux_poweroff, hosts=["localhost"])

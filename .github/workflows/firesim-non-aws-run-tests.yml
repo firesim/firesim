@@ -201,7 +201,7 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - name: Check Xilinx Alveo U250 docs components that require manual re-generation (e.g. config_runtime.yaml example)
-        run: ./.github/scripts/check-docs-generated-components.py --platform xilinx_alveo_u250
+        run: ./.github/scripts/check-docs-generated-components-local.py --platform xilinx_alveo_u250
 
   run-parallel-vcs-metasims-and-xilinx_alveo_u250-driver:
     name: run-parallel-vcs-metasims-and-xilinx_alveo_u250-driver
