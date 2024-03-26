@@ -260,7 +260,7 @@ object PerfCounter {
     * coutner unless AutoCounter is enabled in your the platform config. See
     * the docs.fires.im for end-to-end usage information.
     *
-    * @param target The number of occurances of the event (in the current cycle) 
+    * @param target The number of occurances of the event (in the current cycle)
     *
     * @param clock The clock to which this event is sychronized.
     *
@@ -306,6 +306,36 @@ object PerfCounter {
           |  $label
           |was ${target.getWidth}b.""".stripMargin)
     emitAnnotation(target, Module.clock, Module.reset, label, description, opType = PerfCounterOps.Identity)
+  }
+}
+
+case class PlusArgFirrtlAnnotation(
+  target: InstanceTarget) extends SingleTargetAnnotation[InstanceTarget] with FAMEAnnotation {
+  def targets = Seq(target)
+  def duplicate(n: InstanceTarget) = this.copy(n)
+}
+
+object PlusArg {
+  private def emitAnnotation(
+      target: BaseModule
+    ): Unit = {
+    annotate(new ChiselAnnotation {
+      def toFirrtl = {
+        val parent = ModuleTarget(target.toNamed.circuit.name, target.parentModName)
+        PlusArgFirrtlAnnotation(parent.instOf(target.instanceName, target.name))
+      }
+    })
+  }
+
+  /**
+    * Labels a Rocket Chip 'plusarg_reader' module to synthesize. Must be
+    * of the type found in
+    * https://github.com/chipsalliance/rocket-chip/blob/master/src/main/scala/util/PlusArg.scala
+    *
+    * @param target The 'plusarg_reader' module to synthesize
+    */
+  def apply(target: BaseModule): Unit = {
+    emitAnnotation(target)
   }
 }
 

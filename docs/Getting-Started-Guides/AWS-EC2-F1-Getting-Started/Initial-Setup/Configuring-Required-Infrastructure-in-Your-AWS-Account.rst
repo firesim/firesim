@@ -8,11 +8,14 @@ already had an AWS account as these are FireSim-specific.
 Select a region
 ~~~~~~~~~~~~~~~
 
-Head to the `EC2 Management
-Console <https://console.aws.amazon.com/ec2/v2/home>`__. In the top
-right corner, ensure that the correct region is selected. You should
-select one of: ``us-east-1`` (N. Virginia), ``us-west-2`` (Oregon), or ``eu-west-1``
-(Ireland), since F1 instances are only available in those regions.
+Head to the `EC2 Management Console
+<https://console.aws.amazon.com/ec2/v2/home>`__. In the top right corner, ensure
+that the correct region is selected. You should select one of: ``us-east-1`` (N.
+Virginia), ``us-west-2`` (Oregon), ``ap-southeast-2`` (Sydney), ``eu-central-1``
+(Frankfurt), ``eu-west-1`` (Ireland), ``eu-west-2`` (London), since F1 instances
+are only available in those regions. For the most current list of regions
+supporting F1 instance, see `Amazon EC2 instance types by Region
+<https://docs.aws.amazon.com/ec2/latest/instancetypes/ec2-instance-regions.html>`__.
 
 Once you select a region, it's useful to bookmark the link to the EC2
 console, so that you're always sent to the console for the correct

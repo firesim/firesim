@@ -19,3 +19,4 @@ features.
    TracerV-with-FlameGraph.rst
    Cospike.rst
    Debugging-Hanging-Simulators.rst
+   PlusArg-Synthesis.rst

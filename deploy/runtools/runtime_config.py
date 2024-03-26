@@ -574,7 +574,7 @@ class RuntimeBuildRecipeConfig(RuntimeHWConfig):
         self.metasim_host_simulator = default_metasim_host_sim
 
         # currently only f1 metasims supported
-        self.platform = "f1"
+        self.platform = build_recipe_dict.get('PLATFORM', 'f1')
         self.driver_name_prefix = ""
         if self.metasim_host_simulator in ["verilator", "verilator-debug"]:
             self.driver_name_prefix = "V"

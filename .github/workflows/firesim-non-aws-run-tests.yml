@@ -43,7 +43,7 @@ jobs:
     steps:
       - name: Cancel previous workflow runs
         if: ${{ (env.CI_LABEL_PERSIST != 'true') }}
-        uses: styfle/cancel-workflow-action@0.11.0
+        uses: styfle/cancel-workflow-action@0.12.1
         with:
           access_token: ${{ github.token }}
 
@@ -58,8 +58,8 @@ jobs:
       needs-manager: ${{ steps.filter.outputs.all_count != steps.filter.outputs.skip-manager_count }}
       both-conda-reqs-lock-modified: ${{ ((steps.filter.outputs.conda-reqs == 'false') && (steps.filter.outputs.conda-lock == 'false')) || ((steps.filter.outputs.conda-reqs == 'true') && (steps.filter.outputs.conda-lock == 'true')) }}
     steps:
-      - uses: actions/checkout@v3
-      - uses: dorny/paths-filter@v2
+      - uses: actions/checkout@v4
+      - uses: dorny/paths-filter@v3
         id: filter
         with:
           filters: |
@@ -106,8 +106,8 @@ jobs:
     name: documentation-check
     runs-on: ubuntu-20.04
     steps:
-      - uses: actions/checkout@v3
-      - uses: conda-incubator/setup-miniconda@v2
+      - uses: actions/checkout@v4
+      - uses: conda-incubator/setup-miniconda@v3
         with:
           environment-file: conda-reqs/docs.yaml
           miniforge-version: latest
@@ -127,7 +127,7 @@ jobs:
     steps:
       # Clone the repository (shallow to save time).
       - name: Checkout sources
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
         with:
           fetch-depth: 2
           submodules: false
@@ -181,7 +181,7 @@ jobs:
             rm -rf ${{ github.workspace }}/* || true
             rm -rf ${{ github.workspace }}/.* || true
             ls -alh .
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
       - name: Setup repo copy
         run: |
           mkdir -p $(dirname ${{ env.REMOTE_WORK_DIR }})
@@ -223,7 +223,7 @@ jobs:
         run: |
           rm -rf ${{ github.workspace }}/* || true
           rm -rf ${{ github.workspace }}/.* || true
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
       - name: Run buildbitstream command and update sample local bitstreams
         run: .github/scripts/run-local-buildbitstreams.py
       - uses: peter-evans/create-pull-request@v5

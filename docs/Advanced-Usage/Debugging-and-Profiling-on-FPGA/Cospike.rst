@@ -28,7 +28,7 @@ An example configuration with Cospike is shown below:
       new WithDefaultFireSimBridges ++
       new WithDefaultMemModel ++
       new WithFireSimConfigTweaks ++
-      new chipyard.LargeBoomConfig)
+      new chipyard.LargeBoomV3Config)
 
 At this point, you should run the ``firesim buildbitstream`` command for the BOOM config wanted.
 At this point you are ready to run the simulation with Cospike by default enabled.
