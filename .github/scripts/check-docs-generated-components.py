@@ -11,8 +11,11 @@ class FpgaPlatform(Enum):
     f1 = 'f1'
     xilinx_alveo_u250 = 'xilinx_alveo_u250'
 
+    def __str__(self):
+        return self.value
+
 parser = argparse.ArgumentParser(description='')
-parser.add_argument('--platform', type=FpgaPlatform.from_value, choices=list(FpgaPlatform), required=True)
+parser.add_argument('--platform', type=FpgaPlatform, choices=list(FpgaPlatform), required=True)
 args = parser.parse_args()
 
 def run_docs_generated_components_check():
