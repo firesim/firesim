@@ -463,8 +463,12 @@ def run_only_aws(*args, **kwargs):
 def get_md5(file):
     return hashlib.md5(open(file,'rb').read()).hexdigest()
 
-def check_script(remotescriptname):
-    ogscript = f"{get_deploy_dir()}/sudo-scripts/{remotescriptname}"
+def check_script(remotescriptname, ogscriptdiroverride: Option[String] = None):
+    if ogscriptdiroverride is None:
+        ogscriptdir = f"{get_deploy_dir()}/sudo-scripts"
+    else:
+        ogscriptdir = ogscriptdiroverride
+    ogscript = f"{ogscriptdir}/{remotescriptname}"
     with TemporaryDirectory() as tmpdir:
         r = run(f"which {remotescriptname}")
         get(r, tmpdir)

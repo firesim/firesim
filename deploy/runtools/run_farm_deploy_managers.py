@@ -854,6 +854,7 @@ class XilinxAlveoInstanceDeployManager(InstanceDeployManager):
 
                 self.instance_logger(f"""Flashing FPGA Slot: {slotno} ({bdf}) with bitstream: {bit}""")
                 # Use a system wide installed firesim-fpga-util.py
+                check_script("firesim-fpga-util.py", f"{get_deploy_dir()}/../platforms/{self.PLATFORM_NAME}/scripts")
                 run(f"""firesim-fpga-util.py --bitstream {bit} --bdf {bdf}""")
 
     def infrasetup_instance(self, uridir: str) -> None:
@@ -932,6 +933,7 @@ class XilinxAlveoInstanceDeployManager(InstanceDeployManager):
 
         with cd(remote_sim_dir):
             # Use a system wide installed firesim-generate-fpga-db.py
+            check_script("firesim-generate-fpga-db.py", f"{get_deploy_dir()}/../platforms/{self.PLATFORM_NAME}/scripts")
             run(f"""firesim-generate-fpga-db.py --bitstream {bitstream} --driver {driver} --out-db-json {self.JSON_DB}""")
 
     def enumerate_fpgas(self, uridir: str) -> None:
