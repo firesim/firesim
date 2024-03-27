@@ -1,13 +1,26 @@
 #!/usr/bin/env python3
 
 import sys
+import argparse
+from enum import Enum
 from fabric.api import prefix, run, settings, execute # type: ignore
 
 from ci_variables import ci_env
 from utils import search_match_in_last_workloads_output_file
 
-def run_linux_poweroff_vitis():
-    """ Runs Base Vitis Build """
+# vitis not supported since it should be removed eventually
+class FpgaPlatform(Enum):
+    xilinx_alveo_u250 = 'xilinx_alveo_u250'
+
+    def __str__(self):
+        return self.value
+
+parser = argparse.ArgumentParser(description='')
+parser.add_argument('--platform', type=FpgaPlatform, choices=list(FpgaPlatform), required=True)
+args = parser.parse_args()
+
+def run_linux_poweroff():
+    """ Runs Linux Poweroff """
 
     # assumptions:
     #   - machine-launch-script requirements are already installed
@@ -64,7 +77,7 @@ def run_linux_poweroff_vitis():
 
                     print(f"Workload run {workload} successful.")
 
-            run_w_timeout(f"{ci_env['GITHUB_WORKSPACE']}/deploy/workloads/ci/vitis", "linux-poweroff-singlenode", "30m", 1)
+            run_w_timeout(f"{ci_env['GITHUB_WORKSPACE']}/deploy/workloads/ci/{args.platform}", "linux-poweroff-singlenode", "30m", 1)
 
 if __name__ == "__main__":
-    execute(run_linux_poweroff_vitis, hosts=["localhost"])
+    execute(run_linux_poweroff, hosts=["localhost"])

@@ -13,7 +13,8 @@ import os
 
 from util.streamlogger import StreamLogger
 from awstools.awstools import terminate_instances, get_instance_ids_for_instances
-from runtools.utils import has_sudo
+from runtools.utils import has_sudo, run_only_aws, check_script
+from buildtools.bitbuilder import get_deploy_dir
 
 from typing import List, Dict, Optional, Union, Tuple, TYPE_CHECKING
 if TYPE_CHECKING:
@@ -121,8 +122,7 @@ class InstanceDeployManager(metaclass=abc.ABCMeta):
         if self.nbd_tracker is not None and self.parent_node.qcow2_support_required():
             self.instance_logger("""Setting up remote node for qcow2 disk images.""")
             # get qemu-nbd
-            ### XXX Centos Specific
-            run('sudo yum -y install qemu-img')
+            run_only_aws('sudo yum -y install qemu-img')
             # copy over kernel module
             put('../build/nbd.ko', f"/home/{os.environ['USER']}/nbd.ko", mirror_local_mode=True)
 
@@ -133,7 +133,7 @@ class InstanceDeployManager(metaclass=abc.ABCMeta):
         if self.nbd_tracker is not None and self.parent_node.qcow2_support_required():
             self.instance_logger("Loading NBD Kernel Module.")
             self.unload_nbd_module()
-            run(f"""sudo insmod /home/{os.environ['USER']}/nbd.ko nbds_max={self.nbd_tracker.NBDS_MAX}""")
+            run_only_aws(f"""sudo insmod /home/{os.environ['USER']}/nbd.ko nbds_max={self.nbd_tracker.NBDS_MAX}""")
 
     def unload_nbd_module(self) -> None:
         """ If NBD is available and qcow2 support is required, unload the nbd
@@ -144,7 +144,7 @@ class InstanceDeployManager(metaclass=abc.ABCMeta):
             # disconnect all /dev/nbdX devices before rmmod
             self.disconnect_all_nbds_instance()
             with warn_only():
-                run('sudo rmmod nbd')
+                run_only_aws('sudo rmmod nbd')
 
     def disconnect_all_nbds_instance(self) -> None:
         """ If NBD is available and qcow2 support is required, disconnect all
@@ -159,7 +159,7 @@ class InstanceDeployManager(metaclass=abc.ABCMeta):
                 for nbd_index in range(self.nbd_tracker.NBDS_MAX):
                     fullcmd.append("""sudo qemu-nbd -d /dev/nbd{nbdno}""".format(nbdno=nbd_index))
 
-                run("; ".join(fullcmd))
+                run_only_aws("; ".join(fullcmd))
 
     def get_remote_sim_dir_for_slot(self, slotno: int) -> str:
         """ Returns the path on the remote for a given slot number. """
@@ -236,7 +236,7 @@ class InstanceDeployManager(metaclass=abc.ABCMeta):
             assert switchslot < len(self.parent_node.switch_slots)
             switch = self.parent_node.switch_slots[switchslot]
             with cd(remote_switch_dir):
-                run(switch.get_switch_start_command(has_sudo()))
+                run(switch.get_switch_start_command())
 
     def start_sim_slot(self, slotno: int) -> None:
         """ start a simulation. """
@@ -249,7 +249,7 @@ class InstanceDeployManager(metaclass=abc.ABCMeta):
 
             # make the local job results dir for this sim slot
             server.mkdir_and_prep_local_job_results_dir()
-            sim_start_script_local_path = server.write_sim_start_script(slotno, (self.sim_command_requires_sudo() and has_sudo()), f"+slotid={slotno}")
+            sim_start_script_local_path = server.write_sim_start_script(slotno, f"+slotid={slotno}")
             put(sim_start_script_local_path, remote_sim_dir)
 
             with cd(remote_sim_dir):
@@ -264,10 +264,7 @@ class InstanceDeployManager(metaclass=abc.ABCMeta):
             assert switchslot < len(self.parent_node.switch_slots)
             switch = self.parent_node.switch_slots[switchslot]
             with warn_only():
-                if has_sudo():
-                    run("sudo " + switch.get_switch_kill_command())
-                else:
-                    run(switch.get_switch_kill_command())
+                run(switch.get_switch_kill_command())
 
     def kill_sim_slot(self, slotno: int) -> None:
         """ kill the simulation in slot slotno. """
@@ -276,10 +273,7 @@ class InstanceDeployManager(metaclass=abc.ABCMeta):
             assert slotno < len(self.parent_node.sim_slots), f"{slotno} can not index into sim_slots {len(self.parent_node.sim_slots)} on {self.parent_node.host}"
             server = self.parent_node.sim_slots[slotno]
             with warn_only():
-                if has_sudo():
-                    run("sudo " + server.get_sim_kill_command(slotno))
-                else:
-                    run(server.get_sim_kill_command(slotno))
+                run(server.get_sim_kill_command(slotno))
 
     def instance_assigned_simulations(self) -> bool:
         """ return true if this instance has any assigned fpga simulations. """
@@ -290,10 +284,8 @@ class InstanceDeployManager(metaclass=abc.ABCMeta):
         return len(self.parent_node.switch_slots) != 0
 
     def remove_shm_files(self) -> None:
-        if has_sudo():
-            run("sudo rm -rf /dev/shm/*")
-        else:
-            run("find /dev/shm -user $UID -exec rm -rf {} \;")
+        check_script("firesim-remove-dev-shm")
+        run("sudo firesim-remove-dev-shm")
 
     def start_switches_instance(self) -> None:
         """Boot up all the switches on this host in screens."""
@@ -436,7 +428,7 @@ class InstanceDeployManager(metaclass=abc.ABCMeta):
                     completed_jobs.append(jobname)
 
                     # this writes the job monitoring file
-                    sim_slots[slotno].copy_back_job_results_from_run(slotno, has_sudo())
+                    sim_slots[slotno].copy_back_job_results_from_run(slotno)
 
             jobs_complete_dict = {job: job in completed_jobs for job in jobnames}
             now_all_jobs_complete = all(jobs_complete_dict.values())
@@ -768,7 +760,7 @@ class VitisInstanceDeployManager(InstanceDeployManager):
 
             # make the local job results dir for this sim slot
             server.mkdir_and_prep_local_job_results_dir()
-            sim_start_script_local_path = server.write_sim_start_script(slotno, (self.sim_command_requires_sudo() and has_sudo()), extra_args)
+            sim_start_script_local_path = server.write_sim_start_script(slotno, extra_args)
             put(sim_start_script_local_path, remote_sim_dir)
 
             with cd(remote_sim_dir):
@@ -804,9 +796,12 @@ class XilinxAlveoInstanceDeployManager(InstanceDeployManager):
             if run('lsmod | grep -wq xdma', warn_only=True).return_code != 0:
                 self.instance_logger("Loading XDMA Driver Kernel Module.")
                 # must be installed to this path on sim. machine
-                run(f"sudo insmod /lib/modules/$(uname -r)/extra/xdma.ko poll_mode=1", shell=True)
+                check_script("firesim-load-xdma-module")
+                run(f"sudo firesim-load-xdma-module", shell=True)
             else:
                 self.instance_logger("XDMA Driver Kernel Module already loaded.")
+            check_script("firesim-chmod-xdma-perm")
+            run(f"sudo firesim-chmod-xdma-perm")
 
     def unload_xdma(self) -> None:
         """ unload the xdma kernel module. """
@@ -814,7 +809,9 @@ class XilinxAlveoInstanceDeployManager(InstanceDeployManager):
             # unload xdma if loaded
             if run('lsmod | grep -wq xdma', warn_only=True).return_code == 0:
                 self.instance_logger("Unloading XDMA Driver Kernel Module.")
-                run(f"sudo rmmod xdma", shell=True)
+                remotescriptname = "firesim-remove-xdma-module"
+                check_script(remotescriptname)
+                run(f"sudo {remotescriptname}", shell=True)
             else:
                 self.instance_logger("XDMA Driver Kernel Module already unloaded.")
 
@@ -856,7 +853,9 @@ class XilinxAlveoInstanceDeployManager(InstanceDeployManager):
                 bdf = self.slot_to_bdf(slotno)
 
                 self.instance_logger(f"""Flashing FPGA Slot: {slotno} ({bdf}) with bitstream: {bit}""")
-                run(f"""{remote_sim_dir}/scripts/fpga-util.py --bitstream {bit} --bdf {bdf}""")
+                # Use a system wide installed firesim-fpga-util.py
+                check_script("firesim-fpga-util.py", f"{get_deploy_dir()}/../platforms/{self.PLATFORM_NAME}/scripts")
+                run(f"""firesim-fpga-util.py --bitstream {bit} --bdf {bdf}""")
 
     def infrasetup_instance(self, uridir: str) -> None:
         """ Handle infrastructure setup for this platform. """
@@ -933,7 +932,9 @@ class XilinxAlveoInstanceDeployManager(InstanceDeployManager):
         driver = f"{remote_sim_dir}/FireSim-{self.PLATFORM_NAME}"
 
         with cd(remote_sim_dir):
-            run(f"""./scripts/generate-fpga-db.py --bitstream {bitstream} --driver {driver} --out-db-json {self.JSON_DB}""")
+            # Use a system wide installed firesim-generate-fpga-db.py
+            check_script("firesim-generate-fpga-db.py", f"{get_deploy_dir()}/../platforms/{self.PLATFORM_NAME}/scripts")
+            run(f"""firesim-generate-fpga-db.py --bitstream {bitstream} --driver {driver} --out-db-json {self.JSON_DB}""")
 
     def enumerate_fpgas(self, uridir: str) -> None:
         """ Handle fpga setup for this platform. """
@@ -970,7 +971,7 @@ class XilinxAlveoInstanceDeployManager(InstanceDeployManager):
 
             # make the local job results dir for this sim slot
             server.mkdir_and_prep_local_job_results_dir()
-            sim_start_script_local_path = server.write_sim_start_script(slotno, (self.sim_command_requires_sudo() and has_sudo()), extra_args)
+            sim_start_script_local_path = server.write_sim_start_script(slotno, extra_args)
             put(sim_start_script_local_path, remote_sim_dir)
 
             with cd(remote_sim_dir):
@@ -1018,7 +1019,8 @@ class XilinxVCU118InstanceDeployManager(InstanceDeployManager):
             if run('lsmod | grep -wq xdma', warn_only=True).return_code != 0:
                 self.instance_logger("Loading XDMA Driver Kernel Module.")
                 # must be installed to this path on sim. machine
-                run(f"sudo insmod /lib/modules/$(uname -r)/extra/xdma.ko poll_mode=1", shell=True)
+                check_script("firesim-load-xdma-module")
+                run(f"sudo firesim-load-xdma-module", shell=True)
             else:
                 self.instance_logger("XDMA Driver Kernel Module already loaded.")
 
@@ -1028,7 +1030,8 @@ class XilinxVCU118InstanceDeployManager(InstanceDeployManager):
             if run('lsmod | grep -wq xvsec', warn_only=True).return_code != 0:
                 self.instance_logger("Loading XVSEC Driver Kernel Module.")
                 # must be installed to this path on sim. machine
-                run(f"sudo insmod /lib/modules/$(uname -r)/updates/kernel/drivers/xvsec/xvsec.ko", shell=True)
+                check_script("firesim-load-xvsec-module")
+                run(f"sudo firesim-load-xvsec-module", shell=True)
             else:
                 self.instance_logger("XVSEC Driver Kernel Module already loaded.")
 
@@ -1061,7 +1064,8 @@ class XilinxVCU118InstanceDeployManager(InstanceDeployManager):
                 devno = bdf['devno']
                 capno = bdf['capno']
                 self.instance_logger(f"""Flashing FPGA Slot: {slotno} (bus:{busno}, dev:{devno}, cap:{capno}) with bit: {bit}""")
-                run(f"""sudo xvsecctl -b {busno} -F {devno} -c {capno} -p {bit}""")
+                check_script("firesim-xvsecctl-flash-fpga")
+                run(f"""sudo firesim-xvsecctl-flash-fpga {busno} {devno} {capno} {bit}""")
 
     def infrasetup_instance(self, uridir: str) -> None:
         """ Handle infrastructure setup for this platform. """
@@ -1113,10 +1117,9 @@ class XilinxVCU118InstanceDeployManager(InstanceDeployManager):
 
             # make the local job results dir for this sim slot
             server.mkdir_and_prep_local_job_results_dir()
-            sim_start_script_local_path = server.write_sim_start_script(slotno, (self.sim_command_requires_sudo() and has_sudo()), extra_args)
+            sim_start_script_local_path = server.write_sim_start_script(slotno, extra_args)
             put(sim_start_script_local_path, remote_sim_dir)
 
             with cd(remote_sim_dir):
                 run("chmod +x sim-run.sh")
                 run("./sim-run.sh")
-

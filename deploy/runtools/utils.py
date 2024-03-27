@@ -1,4 +1,4 @@
-""" Miscellaneous utils used by other buildtools pieces. """
+""" Miscellaneous utils used by other runtools pieces. """
 
 from __future__ import annotations
 
@@ -7,7 +7,12 @@ import logging
 from os import fspath
 from os.path import realpath
 from pathlib import Path
-from fabric.api import run, warn_only, hide # type: ignore
+from fabric.api import run, warn_only, hide, get # type: ignore
+import hashlib
+from tempfile import TemporaryDirectory
+
+from awstools.awstools import get_localhost_instance_id
+from buildtools.bitbuilder import get_deploy_dir
 
 from typing import List, Tuple, Type
 
@@ -449,4 +454,24 @@ class MacAddress():
         how many entries you need in your switching tables. """
         return cls.next_mac_alloc
 
+def run_only_aws(*args, **kwargs):
+    if get_localhost_instance_id():
+        run(*args, **kwargs)
+    else:
+        sys.exit(1)
 
+def get_md5(file):
+    return hashlib.md5(open(file,'rb').read()).hexdigest()
+
+def check_script(remotescriptname, ogscriptdiroverride: Option[String] = None):
+    if ogscriptdiroverride is None:
+        ogscriptdir = f"{get_deploy_dir()}/sudo-scripts"
+    else:
+        ogscriptdir = ogscriptdiroverride
+    ogscript = f"{ogscriptdir}/{remotescriptname}"
+    with TemporaryDirectory() as tmpdir:
+        r = run(f"which {remotescriptname}")
+        get(r, tmpdir)
+        if get_md5(ogscript) != get_md5(f"{tmpdir}/{remotescriptname}"):
+            raise Exception(f"""{remotescriptname} (on remote) differs from the current FireSim version in {ogscript}. Ensure the proper FireSim scripts are sourced (and are the same version as this FireSim)""")
+            sys.exit(1)
