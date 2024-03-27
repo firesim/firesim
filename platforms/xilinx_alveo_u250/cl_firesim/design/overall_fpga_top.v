@@ -19,8 +19,7 @@ module overall_fpga_top(
     output wire [15:0] pci_express_x16_txn,
     output wire [15:0] pci_express_x16_txp,
     input wire pcie_perstn,
-    input wire pcie_refclk_clk_n,
-    input wire pcie_refclk_clk_p,
+    `DIFF_CLK_PDEF(pcie_refclk),
 
     input wire resetn
 );
