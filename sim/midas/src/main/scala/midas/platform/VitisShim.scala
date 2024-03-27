@@ -31,6 +31,9 @@ class VitisShim(implicit p: Parameters) extends PlatformShim {
     .copy(addrBits = VitisConstants.axi4MAddressBits)
 
   lazy val module             = new LazyRawModuleImp(this) {
+    // drive all {Lazy}Modules with a default clock/reset (defaults to an incorrect clock/reset)
+    override def provideImplicitClockToLazyChildren = true
+
     val ap_rst_n   = IO(Input(AsyncReset()))
     val ap_clk     = IO(Input(Clock()))
     val s_axi_lite = IO(Flipped(new XilinxAXI4Bundle(ctrlAXI4BundleParams, isAXI4Lite = true)))
@@ -51,6 +54,7 @@ class VitisShim(implicit p: Parameters) extends PlatformShim {
 
     val hostClock     = firesimMMCM.io.clk_out1
     val hostSyncReset = ResetSynchronizer(ap_rst || !firesimMMCM.io.locked, hostClock, initValue = true)
+    // overrides the implicit clock/reset given
     top.module.reset := hostSyncReset
     top.module.clock := hostClock
 
