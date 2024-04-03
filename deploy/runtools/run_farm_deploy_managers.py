@@ -832,16 +832,23 @@ class XilinxAlveoInstanceDeployManager(InstanceDeployManager):
 
                 bdf = self.slot_to_bdf(slotno)
 
-                self.instance_logger(f"""Changing permissions on FPGA Slot: {slotno} (bdf:{bdf})""")
-                cmd = "/usr/local/bin/firesim-change-pcie-perms"
-                check_script(cmd)
-                run(f"""sudo {cmd} 0000:{bdf}""")
-
                 self.instance_logger(f"""Flashing FPGA Slot: {slotno} ({bdf}) with bitstream: {bit}""")
                 # Use a system wide installed firesim-fpga-util.py
                 cmd = "/usr/local/bin/firesim-fpga-util.py"
                 check_script(cmd, f"{get_deploy_dir()}/../platforms/{self.PLATFORM_NAME}/scripts")
                 run(f"""{cmd} --bitstream {bit} --bdf {bdf}""")
+
+    def change_pcie_perms(self) -> None:
+        if self.instance_assigned_simulations():
+            self.instance_logger("""Change permissions on FPGA slot""")
+
+            for slotno, firesimservernode in enumerate(self.parent_node.sim_slots):
+                bdf = self.slot_to_bdf(slotno)
+
+                self.instance_logger(f"""Changing permissions on FPGA Slot: {slotno} (bdf:{bdf})""")
+                cmd = "/usr/local/bin/firesim-change-pcie-perms"
+                check_script(cmd)
+                run(f"""sudo {cmd} 0000:{bdf}""")
 
     def infrasetup_instance(self, uridir: str) -> None:
         """ Handle infrastructure setup for this platform. """
@@ -862,6 +869,8 @@ class XilinxAlveoInstanceDeployManager(InstanceDeployManager):
                 self.flash_fpgas()
                 # load xdma driver
                 self.load_xdma()
+                # change pcie permissions
+                self.change_pcie_perms()
 
         if self.instance_assigned_switches():
             # all nodes could have a switch
@@ -1048,15 +1057,32 @@ class XilinxVCU118InstanceDeployManager(InstanceDeployManager):
                 devno = bdf['devno']
                 capno = bdf['capno']
 
-                self.instance_logger(f"""Changing permissions on FPGA Slot: {slotno} (bus:{busno}, dev:{devno}, cap:{capno})""")
-                cmd = "/usr/local/bin/firesim-change-pcie-perms"
-                check_script(cmd)
-                run(f"""sudo {cmd} 0000:{busno[2:]}:{devno[2:]}:{capno[2:]}""")
-
                 self.instance_logger(f"""Flashing FPGA Slot: {slotno} (bus:{busno}, dev:{devno}, cap:{capno}) with bit: {bit}""")
                 cmd = "/usr/local/bin/firesim-xvsecctl-flash-fpga"
                 check_script(cmd)
                 run(f"""sudo {cmd} {busno} {devno} {capno} {bit}""")
+
+    def change_pcie_perms(self) -> None:
+        if self.instance_assigned_simulations():
+            self.instance_logger("""Change permissions on FPGA slot""")
+
+            for slotno, firesimservernode in enumerate(self.parent_node.sim_slots):
+                self.instance_logger(f"""Determine BDF for {slotno}""")
+                collect = run('lspci | grep -i xilinx')
+
+                # TODO: is hardcoded cap 0x1 correct?
+                # TODO: is "Partial Reconfig Clear File" useful (see xvsecctl help)?
+                bdfs = [ { "busno": "0x" + i[:2], "devno": "0x" + i[3:5], "capno": "0x1" } for i in collect.splitlines() if len(i.strip()) >= 0 ]
+                bdf = bdfs[slotno]
+
+                busno = bdf['busno']
+                devno = bdf['devno']
+                capno = bdf['capno']
+
+                self.instance_logger(f"""Changing permissions on FPGA Slot: {slotno} (bus:{busno}, dev:{devno}, cap:{capno})""")
+                cmd = "/usr/local/bin/firesim-change-pcie-perms"
+                check_script(cmd)
+                run(f"""sudo {cmd} 0000:{busno[2:]}:{devno[2:]}:{capno[2:]}""")
 
     def infrasetup_instance(self, uridir: str) -> None:
         """ Handle infrastructure setup for this platform. """
@@ -1074,6 +1100,8 @@ class XilinxVCU118InstanceDeployManager(InstanceDeployManager):
                 self.load_xvsec()
                 # flash fpgas
                 self.flash_fpgas()
+                # change pcie permissions
+                self.change_pcie_perms()
 
         if self.instance_assigned_switches():
             # all nodes could have a switch

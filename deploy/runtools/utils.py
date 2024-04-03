@@ -465,17 +465,22 @@ def get_md5(file):
     """ For a local file, get the md5 hash as a string. """
     return hashlib.md5(open(file,'rb').read()).hexdigest()
 
-def check_script(remote_script: Path, search_dir: Path = Path(f"{get_deploy_dir()}/sudo-scripts")) -> None:
+def check_script(remote_script_str: str, search_dir: Option[Path] = None) -> None:
     """ Given a remote_script (absolute or relative path), search for the
     script in a known location (based on it's name) in the local FireSim
     repo and compare it's contents to ensure they are the same.
     """
+    if search_dir is None:
+        search_dir = Path(f"{get_deploy_dir()}/sudo-scripts")
+
+    remote_script = Path(remote_script_str)
+
     with TemporaryDirectory() as tmp_dir:
         if remote_script.is_absolute():
             r = remote_script
         else:
             r = run(f"which {remote_script}")
-        get(r, tmp_dir)
+        get(str(r), tmp_dir)
         local_script = f"{search_dir}/{remote_script.name}"
         if get_md5(local_script) != get_md5(f"{tmp_dir}/{remote_script.name}"):
             raise Exception(f"""{remote_script} (on remote) differs from the current FireSim version of {local_script}. Ensure the proper FireSim scripts are sourced (and are the same version as this FireSim)""")
