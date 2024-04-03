@@ -1,0 +1,7 @@
+#!/bin/bash
+
+set -ex
+
+chmod a+rwX /sys/bus/pci/devices/$1/vendor
+chmod a+rwX /sys/bus/pci/devices/$1/device
+chmod a+rwX /sys/bus/pci/devices/$1/xdma/*_h2c_0

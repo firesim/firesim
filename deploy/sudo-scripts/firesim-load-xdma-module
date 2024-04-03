@@ -2,4 +2,4 @@
 
 set -ex
 
-insmod /lib/modules/$(uname -r)/extra/xdma.ko poll_mode=1
+insmod $(find /lib/modules/$(uname -r) -name "xdma.ko") poll_mode=1

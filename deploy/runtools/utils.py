@@ -454,24 +454,29 @@ class MacAddress():
         how many entries you need in your switching tables. """
         return cls.next_mac_alloc
 
-def run_only_aws(*args, **kwargs):
+def run_only_aws(*args, **kwargs) -> None:
+    """ Enforce that the Fabric run command is only run on AWS. """
     if get_localhost_instance_id():
         run(*args, **kwargs)
     else:
         sys.exit(1)
 
 def get_md5(file):
+    """ For a local file, get the md5 hash as a string. """
     return hashlib.md5(open(file,'rb').read()).hexdigest()
 
-def check_script(remotescriptname, ogscriptdiroverride: Option[String] = None):
-    if ogscriptdiroverride is None:
-        ogscriptdir = f"{get_deploy_dir()}/sudo-scripts"
-    else:
-        ogscriptdir = ogscriptdiroverride
-    ogscript = f"{ogscriptdir}/{remotescriptname}"
-    with TemporaryDirectory() as tmpdir:
-        r = run(f"which {remotescriptname}")
-        get(r, tmpdir)
-        if get_md5(ogscript) != get_md5(f"{tmpdir}/{remotescriptname}"):
-            raise Exception(f"""{remotescriptname} (on remote) differs from the current FireSim version in {ogscript}. Ensure the proper FireSim scripts are sourced (and are the same version as this FireSim)""")
+def check_script(remote_script: Path, search_dir: Path = Path(f"{get_deploy_dir()}/sudo-scripts")) -> None:
+    """ Given a remote_script (absolute or relative path), search for the
+    script in a known location (based on it's name) in the local FireSim
+    repo and compare it's contents to ensure they are the same.
+    """
+    with TemporaryDirectory() as tmp_dir:
+        if remote_script.is_absolute():
+            r = remote_script
+        else:
+            r = run(f"which {remote_script}")
+        get(r, tmp_dir)
+        local_script = f"{search_dir}/{remote_script.name}"
+        if get_md5(local_script) != get_md5(f"{tmp_dir}/{remote_script.name}"):
+            raise Exception(f"""{remote_script} (on remote) differs from the current FireSim version of {local_script}. Ensure the proper FireSim scripts are sourced (and are the same version as this FireSim)""")
             sys.exit(1)

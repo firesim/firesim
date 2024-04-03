@@ -5,7 +5,7 @@ Copy the required scripts to  `/usr/local/bin`
 ----------------------------------------------
 
 ```bash
-sudo cp firesim/deploy/sudo-scripts /usr/local/bin
+sudo cp firesim/deploy/sudo-scripts/* /usr/local/bin
 sudo cp firesim/platform/xilinx_alveo_u250/scripts/* /usr/local/bin
 ```
 
@@ -24,12 +24,13 @@ Allow the  `firesim` group to run the pre-installed commands
 Enter/create the following file with `sudo`:
 
 ```bash
-sudo vi /etc/sudoers.d/firesim```
+sudo visudo /etc/sudoers.d/firesim```
 ```
 
 Add the following lines:
 
 ```bash
+%firesim ALL=(ALL) NOPASSWD: /usr/local/bin/firesim-change-pcie-perms
 %firesim ALL=(ALL) NOPASSWD: /usr/local/bin/firesim-chmod-xdma-perm
 %firesim ALL=(ALL) NOPASSWD: /usr/local/bin/firesim-load-xdma-module
 %firesim ALL=(ALL) NOPASSWD: /usr/local/bin/firesim-load-xvsec-module
@@ -39,7 +40,22 @@ Add the following lines:
 %firesim ALL=(ALL) NOPASSWD: /usr/local/bin/firesim-unmount
 %firesim ALL=(ALL) NOPASSWD: /usr/local/bin/firesim-xvsecctl-flash-fpga
 %firesim ALL=(ALL) NOPASSWD: /usr/local/bin/firesim-fpga-util.py
-%firesim ALL=(ALL) NOPASSWD: /usr/bin/firesim-generate-fpga-db.py
+%firesim ALL=(ALL) NOPASSWD: /usr/local/bin/firesim-generate-fpga-db.py
+```
+
+Then you can change the permissions of the file:
+
+```bash
+sudo chmod 400 /etc/sudoers.d/firesim
+```
+
+Add the user to the `firesim` group
+-----------------------------------
+
+Make sure to replace `<user_name>` with the user to run simulations with:
+
+```bash
+sudo usermod -a -G firesim <user_name>
 ```
 
 Verify that a non-sudo account can run the commands
@@ -50,17 +66,3 @@ Enter a non-sudo enabled account that has access to the `firesim` group.
 ```bash
 sudo -l
 ```
-
-Have PCIe devices be `sudo` enabled
------------------------------------
-
-Must also do (sudo all things along the sim/midas/src/main/cc/simif*.cc path).
-Replace <PCIE_EBDF> with the EBDF of the card to be used.
-
-```bash
-sudo chmod a+rwX /sys/bus/pcie/devices/<PCIE_EBDF>/vendor
-sudo chmod a+rwX /sys/bus/pcie/devices/<PCIE_EBDF>/device
-sudo chmod a+rwX /sys/bus/pcie/devices/<PCIE_EBDF>/xdma/*_h2c_0
-```
-
-Note: You can do the same for AWS so you don't need the same for driver/switches

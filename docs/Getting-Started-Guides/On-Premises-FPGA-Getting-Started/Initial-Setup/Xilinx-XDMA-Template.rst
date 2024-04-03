@@ -129,7 +129,7 @@ Now, test that the module can be inserted:
 
 .. code-block:: bash
 
-   sudo insmod /lib/modules/$(uname -r)/extra/xdma.ko poll_mode=1
+   sudo insmod $(find /lib/modules/$(uname -r) -name "xdma.ko") poll_mode=1
    lsmod | grep -i xdma
 
 

@@ -101,12 +101,6 @@ class InstanceDeployManager(metaclass=abc.ABCMeta):
         """
         raise NotImplementedError
 
-    @classmethod
-    @abc.abstractmethod
-    def sim_command_requires_sudo(cls) -> bool:
-        """ Set when the sim start command must be launched with sudo. """
-        raise NotImplementedError
-
     def instance_logger(self, logstr: str, debug: bool = False) -> None:
         """ Log with this host's info as prefix. """
         if debug:
@@ -256,7 +250,6 @@ class InstanceDeployManager(metaclass=abc.ABCMeta):
                 run("chmod +x sim-run.sh")
                 run("./sim-run.sh")
 
-
     def kill_switch_slot(self, switchslot: int) -> None:
         """ kill the switch in slot switchslot. """
         if self.instance_assigned_switches():
@@ -388,7 +381,6 @@ class InstanceDeployManager(metaclass=abc.ABCMeta):
             # this node has sims attached
             self.instance_logger(f"Polling node with simulations (and potentially switches)", debug=True)
 
-
             sim_slots = self.parent_node.sim_slots
             jobnames = [slot.get_job_name() for slot in sim_slots]
             all_jobs_completed = all([(job in prior_completed_jobs) for job in jobnames])
@@ -474,11 +466,6 @@ class EC2InstanceDeployManager(InstanceDeployManager):
 
     This is in charge of managing the locations of stuff on remote nodes.
     """
-
-    @classmethod
-    def sim_command_requires_sudo(cls) -> bool:
-        """ This sim requires sudo. """
-        return True
 
     def __init__(self, parent_node: Inst) -> None:
         super().__init__(parent_node)
@@ -672,11 +659,6 @@ class VitisInstanceDeployManager(InstanceDeployManager):
     """ This class manages a Vitis-enabled instance """
     PLATFORM_NAME: str = "vitis"
 
-    @classmethod
-    def sim_command_requires_sudo(cls) -> bool:
-        """ This sim does not require sudo. """
-        return False
-
     def __init__(self, parent_node: Inst) -> None:
         super().__init__(parent_node)
 
@@ -780,11 +762,6 @@ class XilinxAlveoInstanceDeployManager(InstanceDeployManager):
     PLATFORM_NAME: Optional[str]
     JSON_DB: str = "/opt/firesim-db.json"
 
-    @classmethod
-    def sim_command_requires_sudo(cls) -> bool:
-        """ This sim does requires sudo. """
-        return True
-
     def __init__(self, parent_node: Inst) -> None:
         super().__init__(parent_node)
         self.PLATFORM_NAME = None
@@ -851,6 +828,10 @@ class XilinxAlveoInstanceDeployManager(InstanceDeployManager):
                 rootLogger.debug(rsync_cap.stderr)
 
                 bdf = self.slot_to_bdf(slotno)
+
+                self.instance_logger(f"""Changing permissions on FPGA Slot: {slotno} (bdf:{bdf})""")
+                check_script("firesim-change-pcie-perms")
+                run(f"""sudo firesim-change-pcie-perms 0000:{bdf}""")
 
                 self.instance_logger(f"""Flashing FPGA Slot: {slotno} ({bdf}) with bitstream: {bit}""")
                 # Use a system wide installed firesim-fpga-util.py
@@ -1003,11 +984,6 @@ class XilinxVCU118InstanceDeployManager(InstanceDeployManager):
     garnet shell. """
     PLATFORM_NAME: Optional[str]
 
-    @classmethod
-    def sim_command_requires_sudo(cls) -> bool:
-        """ This sim does requires sudo. """
-        return True
-
     def __init__(self, parent_node: Inst) -> None:
         super().__init__(parent_node)
         self.PLATFORM_NAME = "xilinx_vcu118"
@@ -1063,6 +1039,11 @@ class XilinxVCU118InstanceDeployManager(InstanceDeployManager):
                 busno = bdf['busno']
                 devno = bdf['devno']
                 capno = bdf['capno']
+
+                self.instance_logger(f"""Changing permissions on FPGA Slot: {slotno} (bus:{busno}, dev:{devno}, cap:{capno})""")
+                check_script("firesim-change-pcie-perms")
+                run(f"""sudo firesim-change-pcie-perms 0000:{busno[2:]}:{devno[2:]}:{capno[2:]}""")
+
                 self.instance_logger(f"""Flashing FPGA Slot: {slotno} (bus:{busno}, dev:{devno}, cap:{capno}) with bit: {bit}""")
                 check_script("firesim-xvsecctl-flash-fpga")
                 run(f"""sudo firesim-xvsecctl-flash-fpga {busno} {devno} {capno} {bit}""")
