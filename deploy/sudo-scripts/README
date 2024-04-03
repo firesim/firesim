@@ -6,7 +6,7 @@ Copy the required scripts to  `/usr/local/bin`
 
 ```bash
 sudo cp firesim/deploy/sudo-scripts/* /usr/local/bin
-sudo cp firesim/platform/xilinx_alveo_u250/scripts/* /usr/local/bin
+sudo cp firesim/platforms/xilinx_alveo_u250/scripts/* /usr/local/bin
 ```
 
 Change permissions / add the  `firesim` group
