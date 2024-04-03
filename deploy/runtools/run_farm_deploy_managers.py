@@ -850,6 +850,21 @@ class XilinxAlveoInstanceDeployManager(InstanceDeployManager):
                 check_script(cmd)
                 run(f"""sudo {cmd} 0000:{bdf}""")
 
+    def change_all_pcie_perms(self) -> None:
+        collect = run('lspci | grep -i xilinx')
+
+        bdfs = [ { "busno": "0x" + i[:2], "devno": "0x" + i[3:5], "capno": "0x" + i[6:7] } for i in collect.splitlines() if len(i.strip()) >= 0 ]
+        bdf = bdfs[slotno]
+
+        busno = bdf['busno']
+        devno = bdf['devno']
+        capno = bdf['capno']
+
+        self.instance_logger(f"""Changing permissions on FPGA: bus:{busno}, dev:{devno}, cap:{capno}""")
+        cmd = "/usr/local/bin/firesim-change-pcie-perms"
+        check_script(cmd)
+        run(f"""sudo {cmd} 0000:{busno[2:]}:{devno[2:]}:{capno[2:]}""")
+
     def infrasetup_instance(self, uridir: str) -> None:
         """ Handle infrastructure setup for this platform. """
         metasim_enabled = self.parent_node.metasimulation_enabled
@@ -942,6 +957,9 @@ class XilinxAlveoInstanceDeployManager(InstanceDeployManager):
             self.unload_xdma()
             # load xdma driver
             self.load_xdma()
+
+            # change all pcie permissions
+            self.change_all_pcie_perms()
 
             # run the passes
             self.create_fpga_database(uridir)
