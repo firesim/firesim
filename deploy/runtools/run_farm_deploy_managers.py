@@ -277,8 +277,9 @@ class InstanceDeployManager(metaclass=abc.ABCMeta):
         return len(self.parent_node.switch_slots) != 0
 
     def remove_shm_files(self) -> None:
-        check_script("firesim-remove-dev-shm")
-        run("sudo firesim-remove-dev-shm")
+        cmd = "/usr/local/bin/firesim-remove-dev-shm"
+        check_script(cmd)
+        run(f"sudo {cmd}")
 
     def start_switches_instance(self) -> None:
         """Boot up all the switches on this host in screens."""
@@ -773,12 +774,14 @@ class XilinxAlveoInstanceDeployManager(InstanceDeployManager):
             if run('lsmod | grep -wq xdma', warn_only=True).return_code != 0:
                 self.instance_logger("Loading XDMA Driver Kernel Module.")
                 # must be installed to this path on sim. machine
-                check_script("firesim-load-xdma-module")
-                run(f"sudo firesim-load-xdma-module", shell=True)
+                cmd = "/usr/local/bin/firesim-load-xdma-module"
+                check_script(cmd)
+                run(f"sudo {cmd}", shell=True)
             else:
                 self.instance_logger("XDMA Driver Kernel Module already loaded.")
-            check_script("firesim-chmod-xdma-perm")
-            run(f"sudo firesim-chmod-xdma-perm")
+            cmd = "/usr/local/bin/firesim-chmod-xdma-perm"
+            check_script(cmd)
+            run(f"sudo {cmd}")
 
     def unload_xdma(self) -> None:
         """ unload the xdma kernel module. """
@@ -786,9 +789,9 @@ class XilinxAlveoInstanceDeployManager(InstanceDeployManager):
             # unload xdma if loaded
             if run('lsmod | grep -wq xdma', warn_only=True).return_code == 0:
                 self.instance_logger("Unloading XDMA Driver Kernel Module.")
-                remotescriptname = "firesim-remove-xdma-module"
-                check_script(remotescriptname)
-                run(f"sudo {remotescriptname}", shell=True)
+                cmd = "/usr/local/bin/firesim-remove-xdma-module"
+                check_script(cmd)
+                run(f"sudo {cmd}", shell=True)
             else:
                 self.instance_logger("XDMA Driver Kernel Module already unloaded.")
 
@@ -830,13 +833,15 @@ class XilinxAlveoInstanceDeployManager(InstanceDeployManager):
                 bdf = self.slot_to_bdf(slotno)
 
                 self.instance_logger(f"""Changing permissions on FPGA Slot: {slotno} (bdf:{bdf})""")
-                check_script("firesim-change-pcie-perms")
-                run(f"""sudo firesim-change-pcie-perms 0000:{bdf}""")
+                cmd = "/usr/local/bin/firesim-change-pcie-perms"
+                check_script(cmd)
+                run(f"""sudo {cmd} 0000:{bdf}""")
 
                 self.instance_logger(f"""Flashing FPGA Slot: {slotno} ({bdf}) with bitstream: {bit}""")
                 # Use a system wide installed firesim-fpga-util.py
-                check_script("firesim-fpga-util.py", f"{get_deploy_dir()}/../platforms/{self.PLATFORM_NAME}/scripts")
-                run(f"""firesim-fpga-util.py --bitstream {bit} --bdf {bdf}""")
+                cmd = "/usr/local/bin/firesim-fpga-util.py"
+                check_script(cmd, f"{get_deploy_dir()}/../platforms/{self.PLATFORM_NAME}/scripts")
+                run(f"""{cmd} --bitstream {bit} --bdf {bdf}""")
 
     def infrasetup_instance(self, uridir: str) -> None:
         """ Handle infrastructure setup for this platform. """
@@ -914,8 +919,9 @@ class XilinxAlveoInstanceDeployManager(InstanceDeployManager):
 
         with cd(remote_sim_dir):
             # Use a system wide installed firesim-generate-fpga-db.py
-            check_script("firesim-generate-fpga-db.py", f"{get_deploy_dir()}/../platforms/{self.PLATFORM_NAME}/scripts")
-            run(f"""firesim-generate-fpga-db.py --bitstream {bitstream} --driver {driver} --out-db-json {self.JSON_DB}""")
+            cmd = "/usr/local/bin/firesim-generate-fpga-db.py"
+            check_script(cmd, f"{get_deploy_dir()}/../platforms/{self.PLATFORM_NAME}/scripts")
+            run(f"""{cmd} --bitstream {bitstream} --driver {driver} --out-db-json {self.JSON_DB}""")
 
     def enumerate_fpgas(self, uridir: str) -> None:
         """ Handle fpga setup for this platform. """
@@ -995,8 +1001,9 @@ class XilinxVCU118InstanceDeployManager(InstanceDeployManager):
             if run('lsmod | grep -wq xdma', warn_only=True).return_code != 0:
                 self.instance_logger("Loading XDMA Driver Kernel Module.")
                 # must be installed to this path on sim. machine
-                check_script("firesim-load-xdma-module")
-                run(f"sudo firesim-load-xdma-module", shell=True)
+                cmd = "/usr/local/bin/firesim-load-xdma-module"
+                check_script(cmd)
+                run(f"sudo {cmd}", shell=True)
             else:
                 self.instance_logger("XDMA Driver Kernel Module already loaded.")
 
@@ -1006,8 +1013,9 @@ class XilinxVCU118InstanceDeployManager(InstanceDeployManager):
             if run('lsmod | grep -wq xvsec', warn_only=True).return_code != 0:
                 self.instance_logger("Loading XVSEC Driver Kernel Module.")
                 # must be installed to this path on sim. machine
-                check_script("firesim-load-xvsec-module")
-                run(f"sudo firesim-load-xvsec-module", shell=True)
+                cmd = "/usr/local/bin/firesim-load-xvsec-module"
+                check_script(cmd)
+                run(f"sudo {cmd}", shell=True)
             else:
                 self.instance_logger("XVSEC Driver Kernel Module already loaded.")
 
@@ -1041,12 +1049,14 @@ class XilinxVCU118InstanceDeployManager(InstanceDeployManager):
                 capno = bdf['capno']
 
                 self.instance_logger(f"""Changing permissions on FPGA Slot: {slotno} (bus:{busno}, dev:{devno}, cap:{capno})""")
-                check_script("firesim-change-pcie-perms")
-                run(f"""sudo firesim-change-pcie-perms 0000:{busno[2:]}:{devno[2:]}:{capno[2:]}""")
+                cmd = "/usr/local/bin/firesim-change-pcie-perms"
+                check_script(cmd)
+                run(f"""sudo {cmd} 0000:{busno[2:]}:{devno[2:]}:{capno[2:]}""")
 
                 self.instance_logger(f"""Flashing FPGA Slot: {slotno} (bus:{busno}, dev:{devno}, cap:{capno}) with bit: {bit}""")
-                check_script("firesim-xvsecctl-flash-fpga")
-                run(f"""sudo firesim-xvsecctl-flash-fpga {busno} {devno} {capno} {bit}""")
+                cmd = "/usr/local/bin/firesim-xvsecctl-flash-fpga"
+                check_script(cmd)
+                run(f"""sudo {cmd} {busno} {devno} {capno} {bit}""")
 
     def infrasetup_instance(self, uridir: str) -> None:
         """ Handle infrastructure setup for this platform. """
