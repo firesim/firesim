@@ -39,6 +39,7 @@ Add the following lines:
 %firesim ALL=(ALL) NOPASSWD: /usr/local/bin/firesim-unmount
 %firesim ALL=(ALL) NOPASSWD: /usr/local/bin/firesim-xvsecctl-flash-fpga
 %firesim ALL=(ALL) NOPASSWD: /usr/local/bin/firesim-fpga-util.py
+%firesim ALL=(ALL) NOPASSWD: /usr/bin/firesim-generate-fpga-db.py
 ```
 
 Verify that a non-sudo account can run the commands
