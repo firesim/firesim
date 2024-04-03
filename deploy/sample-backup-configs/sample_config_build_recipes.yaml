@@ -286,6 +286,20 @@ alveo_u250_firesim_rocket_singlecore_no_nic:
     metasim_customruntimeconfig: null
     bit_builder_recipe: bit-builder-recipes/xilinx_alveo_u250.yaml
 
+alveo_u250_firesim_rocket_quadcore_no_nic:
+    PLATFORM: xilinx_alveo_u250
+    TARGET_PROJECT: firesim
+    DESIGN: FireSim
+    TARGET_CONFIG: FireSimQuadRocketConfig
+    PLATFORM_CONFIG: BaseXilinxAlveoU250Config
+    deploy_quintuplet: null
+    platform_config_args:
+        fpga_frequency: 60
+        build_strategy: TIMING
+    post_build_hook: null
+    metasim_customruntimeconfig: null
+    bit_builder_recipe: bit-builder-recipes/xilinx_alveo_u250.yaml
+
 # Additional Tutorial Config
 # Additional Xilinx Alveo U250-only Config
 alveo_u250_firesim_gemmini_rocket_singlecore_no_nic:

@@ -47,6 +47,7 @@ builds_to_run:
 
     # Configs for Xilinx Alveo U250/U280
     # - alveo_u250_firesim_rocket_singlecore_no_nic
+    # - alveo_u250_firesim_rocket_quadcore_no_nic
     # - alveo_u250_firesim_gemmini_rocket_singlecore_no_nic
     # - alveo_u200_firesim_rocket_singlecore_no_nic
     # - alveo_u280_firesim_rocket_singlecore_no_nic
