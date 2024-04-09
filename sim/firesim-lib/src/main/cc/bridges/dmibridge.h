@@ -7,7 +7,6 @@
 
 class loadmem_t;
 class firesim_dtm_t;
-// shcho: added firesim_loadmm
 class firesim_loadmem_t;
 
 struct DMIBRIDGEMODULE_struct {
@@ -45,7 +44,6 @@ public:
 
 private:
   const DMIBRIDGEMODULE_struct mmio_addrs;
-  // shcho: add loadmem widget as a class attr
   loadmem_t &loadmem_widget;
 
   firesim_dtm_t *fesvr;
@@ -54,6 +52,14 @@ private:
   int64_t mem_host_offset;
   // Number of target cycles between fesvr interactions
   uint32_t step_size;
+  // Same as step_size but value during initial programing phase
+  uint32_t loading_step_size;
+  // During the initial program phase speed up when FESVR is called
+  // (i.e. speed up program loading when loadmem isn't/can't be used)
+  bool fast_fesvr;
+  // Delay n ticks to avoid race-condition where target reset resets the bridge
+  // state and drops xacts
+  uint32_t wait_ticks;
 
   // Arguments passed to firesim_dtm.
   char **dmi_argv = nullptr;
@@ -61,10 +67,6 @@ private:
 
   // Tell the widget to start enqueuing tokens
   void go();
-
-  // shcho: add fsver <-> widget data interactions and loadmem helpers
-  void send();
-  void recv();
 
   void handle_loadmem_read(firesim_loadmem_t loadmem);
   void handle_loadmem_write(firesim_loadmem_t loadmem);

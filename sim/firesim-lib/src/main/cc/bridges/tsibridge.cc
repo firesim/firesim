@@ -163,9 +163,9 @@ void tsibridge_t::handle_loadmem_read(firesim_loadmem_t loadmem) {
 }
 
 void tsibridge_t::handle_loadmem_write(firesim_loadmem_t loadmem) {
-  assert(loadmem.size <= 1024);
+  assert(loadmem.size <= 4096);
   assert(has_mem);
-  static char buf[1024];
+  static char buf[4096]; // size chosen empirically based on chunk sizes
   fesvr->recv_loadmem_data(buf, loadmem.size);
   mpz_t data;
   mpz_init(data);
