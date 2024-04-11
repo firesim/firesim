@@ -222,9 +222,9 @@ def run_local_buildbitstreams():
             # priority == roughly the more powerful and available
             # ipaddr, buildtool:version, use unique build dir, unique build dir path, priority (0 is highest)(unused by code but used to track which machine has most resources)
             hosts = [
-                (          "as4",  "vivado:2023.1", False, "", 0),
-                ("buildbot1@as4",  "vivado:2023.1",  True, "/scratch/buildbot1/FIRESIM_BUILD_DIR", 0),
-                ("buildbot2@as4",  "vivado:2023.1",  True, "/scratch/buildbot2/FIRESIM_BUILD_DIR", 0),
+                (          "as4",  "vivado:2022.1", False, "", 0),
+                ("buildbot1@as4",  "vivado:2022.1",  True, "/scratch/buildbot1/FIRESIM_BUILD_DIR", 0),
+                ("buildbot2@as4",  "vivado:2022.1",  True, "/scratch/buildbot2/FIRESIM_BUILD_DIR", 0),
                 (    "localhost",   "vitis:2022.1", False, "", 0),
                 ("buildbot1@a17",   "vitis:2022.1",  True, "/scratch/buildbot1/FIRESIM_BUILD_DIR", 0),
                 ("buildbot2@a17",   "vitis:2021.1",  True, "/scratch/buildbot2/FIRESIM_BUILD_DIR", 0),
