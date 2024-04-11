@@ -50,7 +50,7 @@ To do so, edit your ``~/.bashrc`` file so that the following section is removed:
    esac
 
 2. Install/enable FireSim scripts to new ``firesim`` Linux group
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 **Machines:** Manager Machine, Run Farm Machines, Build Farm Machines.
 
@@ -120,7 +120,7 @@ Then change the permissions of the file:
 This allows only users in the ``firesim`` group to execute the scripts.
 
 3. Add your user to the `firesim` group
----------------------------------------
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 **Machines:** Manager Machine, Run Farm Machines, Build Farm Machines.
 
