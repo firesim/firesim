@@ -56,7 +56,7 @@ firesim_supernode_rocket_singlecore_nic_l2_lbp:
     deploy_quintuplet_override: null
     custom_runtime_config: null
 vitis_firesim_rocket_singlecore_no_nic:
-    bitstream_tar: https://raw.githubusercontent.com/firesim/firesim-public-bitstreams/2221393acf06347d25deaa4356e820fce4f746aa/vitis/vitis_firesim_rocket_singlecore_no_nic.tar.gz
+    bitstream_tar: https://raw.githubusercontent.com/firesim/firesim-public-bitstreams/5ebccd57c6a17bb11efea8562012a4ad9c7ee52a/vitis/vitis_firesim_rocket_singlecore_no_nic.tar.gz
     deploy_quintuplet_override: null
     custom_runtime_config: null
 vitis_firesim_gemmini_rocket_singlecore_no_nic:
@@ -64,38 +64,38 @@ vitis_firesim_gemmini_rocket_singlecore_no_nic:
     deploy_quintuplet_override: null
     custom_runtime_config: null
 alveo_u250_firesim_rocket_singlecore_no_nic:
-    bitstream_tar: https://raw.githubusercontent.com/firesim/firesim-public-bitstreams/ead9295e9c76a5026df89b0087cdbe1dc5b07a4b/xilinx_alveo_u250/alveo_u250_firesim_rocket_singlecore_no_nic.tar.gz
+    bitstream_tar: https://raw.githubusercontent.com/firesim/firesim-public-bitstreams/38fa408e6ee5dc8c51c16db3d7c52d1568e5568b/xilinx_alveo_u250/alveo_u250_firesim_rocket_singlecore_no_nic.tar.gz
     deploy_quintuplet_override: null
     custom_runtime_config: null
 alveo_u250_firesim_rocket_quadcore_no_nic:
-    bitstream_tar: https://raw.githubusercontent.com/firesim/firesim-public-bitstreams/ead9295e9c76a5026df89b0087cdbe1dc5b07a4b/xilinx_alveo_u250/alveo_u250_firesim_rocket_quadcore_no_nic.tar.gz
+    bitstream_tar: https://raw.githubusercontent.com/firesim/firesim-public-bitstreams/ba9b6455d4ac75ff6a77cec50f9a7e7d3cf3bd90/xilinx_alveo_u250/alveo_u250_firesim_rocket_quadcore_no_nic.tar.gz
     deploy_quintuplet_override: null
     custom_runtime_config: null
 alveo_u250_firesim_boom_singlecore_no_nic:
-    bitstream_tar: https://raw.githubusercontent.com/firesim/firesim-public-bitstreams/ead9295e9c76a5026df89b0087cdbe1dc5b07a4b/xilinx_alveo_u250/alveo_u250_firesim_boom_singlecore_no_nic.tar.gz
+    bitstream_tar: https://raw.githubusercontent.com/firesim/firesim-public-bitstreams/42b2aa2d19312d72cb6e8dc6e5cd32924d0a21a4/xilinx_alveo_u250/alveo_u250_firesim_boom_singlecore_no_nic.tar.gz
     deploy_quintuplet_override: null
     custom_runtime_config: null
 alveo_u250_firesim_rocket_singlecore_nic:
-    bitstream_tar: https://raw.githubusercontent.com/firesim/firesim-public-bitstreams/ead9295e9c76a5026df89b0087cdbe1dc5b07a4b/xilinx_alveo_u250/alveo_u250_firesim_rocket_singlecore_nic.tar.gz
+    bitstream_tar: https://raw.githubusercontent.com/firesim/firesim-public-bitstreams/fcc00481735141f6d0daaf571297bcc3bf921f8f/xilinx_alveo_u250/alveo_u250_firesim_rocket_singlecore_nic.tar.gz
     deploy_quintuplet_override: null
     custom_runtime_config: null
 alveo_u250_firesim_gemmini_rocket_singlecore_no_nic:
-    bitstream_tar: https://raw.githubusercontent.com/firesim/firesim-public-bitstreams/1b9d4386f2d078d68bc57dc12b24d5b37e4677b1/xilinx_alveo_u250/alveo_u250_firesim_gemmini_rocket_singlecore_no_nic.tar.gz
+    bitstream_tar: https://raw.githubusercontent.com/firesim/firesim-public-bitstreams/120a20a084288364456a90e55c466dbcccaab4fd/xilinx_alveo_u250/alveo_u250_firesim_gemmini_rocket_singlecore_no_nic.tar.gz
     deploy_quintuplet_override: null
     custom_runtime_config: null
 alveo_u200_firesim_rocket_singlecore_no_nic:
-    bitstream_tar: https://raw.githubusercontent.com/firesim/firesim-public-bitstreams/4c650dfb9813af75cdd20bd4887d14072ad1d4c2/xilinx_alveo_u200/alveo_u200_firesim_rocket_singlecore_no_nic.tar.gz
+    bitstream_tar: https://raw.githubusercontent.com/firesim/firesim-public-bitstreams/f259c610cfdae0b8242e5c3151cc536023701ba4/xilinx_alveo_u200/alveo_u200_firesim_rocket_singlecore_no_nic.tar.gz
     deploy_quintuplet_override: null
     custom_runtime_config: null
 alveo_u280_firesim_rocket_singlecore_no_nic:
-    bitstream_tar: https://raw.githubusercontent.com/firesim/firesim-public-bitstreams/45eff43095aba01f012a5908e0fdd6f5b899f4b8/xilinx_alveo_u280/alveo_u280_firesim_rocket_singlecore_no_nic.tar.gz
+    bitstream_tar: https://raw.githubusercontent.com/firesim/firesim-public-bitstreams/31b1591f5f80ad8025e4a5bdec4fd8a9c9d19244/xilinx_alveo_u280/alveo_u280_firesim_rocket_singlecore_no_nic.tar.gz
     deploy_quintuplet_override: null
     custom_runtime_config: null
 xilinx_vcu118_firesim_rocket_singlecore_4GB_no_nic:
-    bitstream_tar: https://raw.githubusercontent.com/firesim/firesim-public-bitstreams/ccb839e3ccf02f94505e5a2786466d665d415659/xilinx_vcu118/xilinx_vcu118_firesim_rocket_singlecore_4GB_no_nic.tar.gz
+    bitstream_tar: https://raw.githubusercontent.com/firesim/firesim-public-bitstreams/843fcadeec940f9f97c0692aa9c42faefd37eb04/xilinx_vcu118/xilinx_vcu118_firesim_rocket_singlecore_4GB_no_nic.tar.gz
     deploy_quintuplet_override: null
     custom_runtime_config: null
 nitefury_firesim_rocket_singlecore_no_nic:
-    bitstream_tar: https://raw.githubusercontent.com/firesim/firesim-public-bitstreams/c4a87572102e86f06da0cf86bcf2d88bb1a52552/rhsresearch_nitefury_ii/nitefury_firesim_rocket_singlecore_no_nic.tar.gz
+    bitstream_tar: https://raw.githubusercontent.com/firesim/firesim-public-bitstreams/0632546b290de80a5b3a773ed017c2e8d4eef24b/rhsresearch_nitefury_ii/nitefury_firesim_rocket_singlecore_no_nic.tar.gz
     deploy_quintuplet_override: null
     custom_runtime_config: null
