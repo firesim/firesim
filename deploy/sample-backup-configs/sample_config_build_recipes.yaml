@@ -280,7 +280,7 @@ alveo_u250_firesim_rocket_singlecore_no_nic:
     PLATFORM_CONFIG: BaseXilinxAlveoU250Config
     deploy_quintuplet: null
     platform_config_args:
-        fpga_frequency: 10 #60
+        fpga_frequency: 60
         build_strategy: TIMING
     post_build_hook: null
     metasim_customruntimeconfig: null
@@ -294,7 +294,7 @@ alveo_u250_firesim_rocket_quadcore_no_nic:
     PLATFORM_CONFIG: BaseXilinxAlveoU250Config
     deploy_quintuplet: null
     platform_config_args:
-        fpga_frequency: 10 #60
+        fpga_frequency: 60
         build_strategy: TIMING
     post_build_hook: null
     metasim_customruntimeconfig: null
@@ -308,7 +308,7 @@ alveo_u250_firesim_boom_singlecore_no_nic:
     PLATFORM_CONFIG: BaseXilinxAlveoU250Config
     deploy_quintuplet: null
     platform_config_args:
-        fpga_frequency: 10 #60
+        fpga_frequency: 60
         build_strategy: TIMING
     post_build_hook: null
     metasim_customruntimeconfig: null
@@ -322,7 +322,7 @@ alveo_u250_firesim_rocket_singlecore_nic:
     PLATFORM_CONFIG: BaseXilinxAlveoU250Config
     deploy_quintuplet: null
     platform_config_args:
-        fpga_frequency: 10 #60
+        fpga_frequency: 60
         build_strategy: TIMING
     post_build_hook: null
     metasim_customruntimeconfig: null

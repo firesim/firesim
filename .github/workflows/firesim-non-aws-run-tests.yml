@@ -194,36 +194,18 @@ jobs:
           firesim managerinit --platform xilinx_alveo_u250
           cd sw/firesim-software && ./init-submodules.sh
 
-  #run-xilinx_alveo_u250-check-docs-generated-components:
-  #  name: run-xilinx_alveo_u250-check-docs-generated-components
-  #  needs: [setup-local-fpga-repo]
-  #  runs-on: local-fpga
-  #  steps:
-  #    - uses: actions/checkout@v4
-  #    - name: Check Xilinx Alveo U250 docs components that require manual re-generation (e.g. config_runtime.yaml example)
-  #      run: ./.github/scripts/check-docs-generated-components-local.py --platform xilinx_alveo_u250
-
-  #run-parallel-vcs-metasims-and-xilinx_alveo_u250-driver:
-  #  name: run-parallel-vcs-metasims-and-xilinx_alveo_u250-driver
-  #  needs: [setup-local-fpga-repo]
-  #  runs-on: local-fpga
-  #  steps:
-  #    # This forces a fresh clone of the repo during the `checkout` step
-  #    # to resolve stale submodule URLs. See https://github.com/ucb-bar/chipyard/pull/1156.
-  #    - name: Delete old checkout
-  #      run: |
-  #        rm -rf ${{ github.workspace }}/* || true
-  #        rm -rf ${{ github.workspace }}/.* || true
-  #    - uses: actions/checkout@v4
-  #    - name: Run parallel VCS metasims
-  #      run: .github/scripts/run-parallel-vcs-metasims.py
-  #    - name: Build Xilinx Alveo U250 driver
-  #      run: .github/scripts/build-driver.py --platform xilinx_alveo_u250
-
-  run-basic-linux-poweroff-xilinx_alveo_u250:
-    if: contains(github.event.pull_request.labels.*.name, 'ci:fpga-deploy')
+  run-xilinx_alveo_u250-check-docs-generated-components:
+    name: run-xilinx_alveo_u250-check-docs-generated-components
     needs: [setup-local-fpga-repo]
-    name: run-basic-linux-poweroff-xilinx_alveo_u250
+    runs-on: local-fpga
+    steps:
+      - uses: actions/checkout@v4
+      - name: Check Xilinx Alveo U250 docs components that require manual re-generation (e.g. config_runtime.yaml example)
+        run: ./.github/scripts/check-docs-generated-components-local.py --platform xilinx_alveo_u250
+
+  run-parallel-vcs-metasims-and-xilinx_alveo_u250-driver:
+    name: run-parallel-vcs-metasims-and-xilinx_alveo_u250-driver
+    needs: [setup-local-fpga-repo]
     runs-on: local-fpga
     steps:
       # This forces a fresh clone of the repo during the `checkout` step
@@ -233,7 +215,25 @@ jobs:
           rm -rf ${{ github.workspace }}/* || true
           rm -rf ${{ github.workspace }}/.* || true
       - uses: actions/checkout@v4
-      - name: Run simple linux poweroff test w/ Xilinx Alveo U250
+      - name: Run parallel VCS metasims
+        run: .github/scripts/run-parallel-vcs-metasims.py
+      - name: Build Xilinx Alveo U250 driver
+        run: .github/scripts/build-driver.py --platform xilinx_alveo_u250
+
+  run-basic-linux-poweroffs-xilinx_alveo_u250:
+    if: contains(github.event.pull_request.labels.*.name, 'ci:fpga-deploy')
+    needs: [setup-local-fpga-repo]
+    name: run-basic-linux-poweroffs-xilinx_alveo_u250
+    runs-on: local-fpga
+    steps:
+      # This forces a fresh clone of the repo during the `checkout` step
+      # to resolve stale submodule URLs. See https://github.com/ucb-bar/chipyard/pull/1156.
+      - name: Delete old checkout
+        run: |
+          rm -rf ${{ github.workspace }}/* || true
+          rm -rf ${{ github.workspace }}/.* || true
+      - uses: actions/checkout@v4
+      - name: Run non-networked single-node Linux poweroff tests (single-core Rocket/BOOM, multi-core Rocket) w/ Xilinx Alveo U250
         run: .github/scripts/run-linux-poweroff-local.py --platform xilinx_alveo_u250
 
   run-local-fpga-buildbitstream:
@@ -263,8 +263,7 @@ jobs:
 
   cleanup-local-fpga-repo:
     name: cleanup-local-fpga-repo
-    #needs: [run-xilinx_alveo_u250-check-docs-generated-components, run-parallel-vcs-metasims-and-xilinx_alveo_u250-driver, run-basic-linux-poweroff-xilinx_alveo_u250, run-local-fpga-buildbitstream]
-    needs: [run-basic-linux-poweroff-xilinx_alveo_u250, run-local-fpga-buildbitstream]
+    needs: [run-xilinx_alveo_u250-check-docs-generated-components, run-parallel-vcs-metasims-and-xilinx_alveo_u250-driver, run-basic-linux-poweroff-xilinx_alveo_u250, run-local-fpga-buildbitstream]
     # uses a separate runner to cleanup (irrespective, of other jobs cancelled, running, etc)
     runs-on: local-fpga-cleanup
     if: ${{ always() }}
