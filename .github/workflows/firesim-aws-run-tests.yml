@@ -311,7 +311,7 @@ jobs:
       - uses: actions/checkout@v4
       - name: Run buildbitstream command and update sample AGFIs
         run: .github/scripts/run-agfi-buildbitstream.py
-      - uses: peter-evans/create-pull-request@v5
+      - uses: peter-evans/create-pull-request@v6
         with:
           base: ${{ github.head_ref }}
           add-paths: "deploy/sample-backup-configs/sample_config_hwdb.yaml"
