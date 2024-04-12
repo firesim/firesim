@@ -19,7 +19,7 @@ target_config:
     switching_latency: 10
     net_bandwidth: 200
     profile_interval: -1
-    default_hw_config: alveo_u250_firesim_rocket_singlecore_no_nic
+    default_hw_config: alveo_u250_firesim_boom_singlecore_no_nic
     plusarg_passthrough: ""
 
 tracing:
