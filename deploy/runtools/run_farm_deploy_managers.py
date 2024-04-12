@@ -854,16 +854,15 @@ class XilinxAlveoInstanceDeployManager(InstanceDeployManager):
         collect = run('lspci | grep -i xilinx')
 
         bdfs = [ { "busno": "0x" + i[:2], "devno": "0x" + i[3:5], "capno": "0x" + i[6:7] } for i in collect.splitlines() if len(i.strip()) >= 0 ]
-        bdf = bdfs[slotno]
+        for bdf in bdfs:
+            busno = bdf['busno']
+            devno = bdf['devno']
+            capno = bdf['capno']
 
-        busno = bdf['busno']
-        devno = bdf['devno']
-        capno = bdf['capno']
-
-        self.instance_logger(f"""Changing permissions on FPGA: bus:{busno}, dev:{devno}, cap:{capno}""")
-        cmd = "/usr/local/bin/firesim-change-pcie-perms"
-        check_script(cmd)
-        run(f"""sudo {cmd} 0000:{busno[2:]}:{devno[2:]}:{capno[2:]}""")
+            self.instance_logger(f"""Changing permissions on FPGA: bus:{busno}, dev:{devno}, cap:{capno}""")
+            cmd = "/usr/local/bin/firesim-change-pcie-perms"
+            check_script(cmd)
+            run(f"""sudo {cmd} 0000:{busno[2:]}:{devno[2:]}:{capno[2:]}""")
 
     def infrasetup_instance(self, uridir: str) -> None:
         """ Handle infrastructure setup for this platform. """
