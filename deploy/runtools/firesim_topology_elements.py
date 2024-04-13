@@ -10,7 +10,7 @@ from fabric.api import run, local, warn_only, get, put, cd, hide # type: ignore
 from fabric.exceptions import CommandTimeout # type: ignore
 
 from runtools.switch_model_config import AbstractSwitchToSwitchConfig
-from runtools.utils import get_local_shared_libraries, run_only_aws, check_script
+from runtools.utils import get_local_shared_libraries, run_only_aws, check_script, is_on_aws
 from runtools.simulation_data_classes import TracerVConfig, AutoCounterConfig, HostDebugConfig, SynthPrintConfig
 
 from runtools.run_farm_deploy_managers import InstanceDeployManager
@@ -401,14 +401,21 @@ class FireSimServerNode(FireSimNode):
             return hash(o) % ((sys.maxsize + 1) * 2)
 
         def mount(img: str, mnt: str, tmp_dir: str) -> None:
-            cmd = "/usr/local/bin/firesim-mount"
-            check_script(cmd)
-            run(f"sudo {cmd} {img} {mnt}")
+            if is_on_aws():
+                run(f"sudo mount -o loop {img} {mnt}")
+                run(f"sudo chown -R $(whoami) {mnt}")
+            else:
+                cmd = "/usr/local/bin/firesim-mount"
+                check_script(cmd)
+                run(f"sudo {cmd} {img} {mnt}")
 
         def umount(mnt: str, tmp_dir: str) -> None:
-            cmd = "/usr/local/bin/firesim-unmount"
-            check_script(cmd)
-            run(f"sudo {cmd} {mnt}")
+            if is_on_aws():
+                run(f"sudo umount {mnt}")
+            else:
+                cmd = "/usr/local/bin/firesim-unmount"
+                check_script(cmd)
+                run(f"sudo {cmd} {mnt}")
 
         # mount rootfs, copy files from it back to local system
         rfsname = self.get_rootfs_name()

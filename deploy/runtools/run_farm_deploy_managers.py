@@ -13,7 +13,7 @@ import os
 
 from util.streamlogger import StreamLogger
 from awstools.awstools import terminate_instances, get_instance_ids_for_instances
-from runtools.utils import has_sudo, run_only_aws, check_script
+from runtools.utils import has_sudo, run_only_aws, check_script, is_on_aws
 from buildtools.bitbuilder import get_deploy_dir
 
 from typing import List, Dict, Optional, Union, Tuple, TYPE_CHECKING
@@ -277,9 +277,12 @@ class InstanceDeployManager(metaclass=abc.ABCMeta):
         return len(self.parent_node.switch_slots) != 0
 
     def remove_shm_files(self) -> None:
-        cmd = "/usr/local/bin/firesim-remove-dev-shm"
-        check_script(cmd)
-        run(f"sudo {cmd}")
+        if is_on_aws():
+            run("sudo rm -rf /dev/shm/*")
+        else:
+            cmd = "/usr/local/bin/firesim-remove-dev-shm"
+            check_script(cmd)
+            run(f"sudo {cmd}")
 
     def start_switches_instance(self) -> None:
         """Boot up all the switches on this host in screens."""
