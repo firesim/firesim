@@ -21,7 +21,7 @@ parser.add_argument('-bry', '--build_recipe_yaml', type=Path, help='build_recipe
 parser.add_argument('-by', '--build_yaml', type=Path, help='build.yaml (must specify all build machines, must have 1 recipe to sweep on)', required=True)
 parser.add_argument('-sf', '--start_freq', type=int, help='min. freq. to sweep (inclusive)', required=True)
 parser.add_argument('-ef', '--end_freq', type=int, help='max. freq. to sweep (exclusive)', required=True)
-parser.add_argument('-n', '--max_build_parallelism', type=int, help='max # of build machines to use (must be < amount specified in build_recipe.yaml)', required=True)
+parser.add_argument('-n', '--max_build_parallelism', type=int, help='max # of build machines to use (must be <= amount specified in build_recipe.yaml)', required=True)
 
 args = parser.parse_args()
 
@@ -163,19 +163,9 @@ assert len(bry.keys()) == 1, "Must have only 1 recipe in the build recipe"
 
 br_name_to_sweep = list(bry.items())[0][0]
 
-build_farm_parallelism = 0
-if 'aws_ec2.yaml' in by['build_farm']['base_recipe']:
-  build_farm_parallelism = 100 # arb. large number representing inf
-elif 'externally_provisioned.yaml' in by['build_farm']['base_recipe']:
-  # TODO: expects that the key exists (what about when there are no overrides)
-  build_farm_parallelism = len(by['build_farm']['recipe_arg_overrides']['build_farm_hosts'])
-else:
-  raise ValueError("Unsupported build farm type")
-
-print(f"Found build_farm_parallelism of {build_farm_parallelism} from build farm")
-assert args.max_build_parallelism <= build_farm_parallelism, "Cannot use more build parallelism than build machines available"
-parallelism = min(args.max_build_parallelism, build_farm_parallelism)
+parallelism = args.max_build_parallelism
 assert parallelism >= 1
+print(f"Using {parallelism} build machines for sweeping")
 
 # this is where the recursion happens
 
