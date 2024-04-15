@@ -76,6 +76,13 @@ Next, copy the required scripts to  ``/usr/local/bin``:
    sudo cp deploy/sudo-scripts/* /usr/local/bin
    sudo cp platforms/xilinx_alveo_u250/scripts/* /usr/local/bin
 
+Now we can delete the temporary clone:
+
+.. code-block:: bash
+   :substitutions:
+
+   rm -rf ~/firesim-script-installs    # or the temp. dir. created previously
+
 Next, lets change the permissions of the scripts and them to a new ``firesim`` Linux group.
 
 .. code-block:: bash
