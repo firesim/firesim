@@ -9,6 +9,8 @@ import string
 import logging
 from fabric.api import local # type: ignore
 
+from runtools.utils import is_on_aws
+
 from typing import TYPE_CHECKING
 if TYPE_CHECKING:
     from runtools.firesim_topology_elements import FireSimSwitchNode
@@ -176,7 +178,8 @@ class AbstractSwitchToSwitchConfig:
 
     def kill_switch_simulation_command(self) -> str:
         """ Return the command to kill the switch. """
-        return """pkill -f -SIGKILL {}""".format(self.switch_binary_name())
+        need_sudo = "sudo" if is_on_aws() else ""
+        return f"""{need_sudo} pkill -f -SIGKILL {self.switch_binary_name()}"""
 
     def switch_build_local_dir(self) -> str:
         """ get local build dir of the switch. """

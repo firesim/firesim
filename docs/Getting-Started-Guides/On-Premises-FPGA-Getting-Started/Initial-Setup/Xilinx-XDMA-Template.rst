@@ -89,7 +89,7 @@ Next, lets change the permissions of the scripts and them to a new ``firesim`` L
    :substitutions:
 
    sudo addgroup firesim
-   sudo chmod 775 /usr/local/bin/firesim*
+   sudo chmod 755 /usr/local/bin/firesim*
    sudo chgrp firesim /usr/local/bin/firesim*
 
 Next, lets allow the ``firesim`` Linux group to run the pre-installed commands.
@@ -105,17 +105,7 @@ Then add the following lines:
 .. code-block:: bash
    :substitutions:
 
-   %firesim ALL=(ALL) NOPASSWD: /usr/local/bin/firesim-change-pcie-perms
-   %firesim ALL=(ALL) NOPASSWD: /usr/local/bin/firesim-chmod-xdma-perm
-   %firesim ALL=(ALL) NOPASSWD: /usr/local/bin/firesim-load-xdma-module
-   %firesim ALL=(ALL) NOPASSWD: /usr/local/bin/firesim-load-xvsec-module
-   %firesim ALL=(ALL) NOPASSWD: /usr/local/bin/firesim-mount
-   %firesim ALL=(ALL) NOPASSWD: /usr/local/bin/firesim-remove-dev-shm
-   %firesim ALL=(ALL) NOPASSWD: /usr/local/bin/firesim-remove-xdma-module
-   %firesim ALL=(ALL) NOPASSWD: /usr/local/bin/firesim-unmount
-   %firesim ALL=(ALL) NOPASSWD: /usr/local/bin/firesim-xvsecctl-flash-fpga
-   %firesim ALL=(ALL) NOPASSWD: /usr/local/bin/firesim-fpga-util.py
-   %firesim ALL=(ALL) NOPASSWD: /usr/local/bin/firesim-generate-fpga-db.py
+   %firesim ALL=(ALL) NOPASSWD: /usr/local/bin/firesim-*
 
 Then change the permissions of the file:
 
@@ -152,17 +142,7 @@ The output should look similar to this:
    :substitutions:
 
    User YOUR_USER_NAME may run the following commands on MACHINE_NAME:
-       (ALL) NOPASSWD: /usr/local/bin/firesim-change-pcie-perms
-       (ALL) NOPASSWD: /usr/local/bin/firesim-chmod-xdma-perm
-       (ALL) NOPASSWD: /usr/local/bin/firesim-load-xdma-module
-       (ALL) NOPASSWD: /usr/local/bin/firesim-load-xvsec-module
-       (ALL) NOPASSWD: /usr/local/bin/firesim-mount
-       (ALL) NOPASSWD: /usr/local/bin/firesim-remove-dev-shm
-       (ALL) NOPASSWD: /usr/local/bin/firesim-remove-xdma-module
-       (ALL) NOPASSWD: /usr/local/bin/firesim-unmount
-       (ALL) NOPASSWD: /usr/local/bin/firesim-xvsecctl-flash-fpga
-       (ALL) NOPASSWD: /usr/local/bin/firesim-generate-fpga-db.py
-       (ALL) NOPASSWD: /usr/local/bin/firesim-fpga-util.py
+       (ALL) NOPASSWD: /usr/local/bin/firesim-*
 
 4. Install Vivado Lab and Cable Drivers
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^

@@ -2,7 +2,7 @@
 
 set -ex
 
-BDF_ESC=$(echo "$1" | sed -r 's/\:/\\\:/g')
+BDF_ESC=$(echo "$1" | sed -r 's/\:/*/g')
 
 chmod a+rwX /sys/bus/pci/devices/$BDF_ESC/vendor
 chmod a+rwX /sys/bus/pci/devices/$BDF_ESC/device

@@ -454,9 +454,12 @@ class MacAddress():
         how many entries you need in your switching tables. """
         return cls.next_mac_alloc
 
+def is_on_aws() -> bool:
+    return get_localhost_instance_id()
+
 def run_only_aws(*args, **kwargs) -> None:
     """ Enforce that the Fabric run command is only run on AWS. """
-    if get_localhost_instance_id():
+    if is_on_aws():
         run(*args, **kwargs)
     else:
         sys.exit(1)
