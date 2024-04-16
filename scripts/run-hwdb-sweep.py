@@ -92,15 +92,16 @@ def change_name(initial_dict, old_name, new_name):
   del d[old_name]
   return d
 
-def run_grep_subprocess(directory, pattern):
+def run_grep_subprocess(directory, scope, pattern):
   """Runs grep on a directory using the subprocess module."""
-  grep_command = f"grep -rn {pattern} {directory}"  # Construct the grep command
+  grep_command = f"find {directory} -type d -path '*{scope}*' -exec grep -rn '{pattern}' {{}} \\+"
+  print(f"Running {grep_command}")
   try:
     output = subprocess.check_output(grep_command, shell=True, text=True)
     return output.strip()  # Remove trailing newlines
   except subprocess.CalledProcessError as exc:
     print(f"Grep command failed: {exc}")
-    return None
+    return ""
 
 def find_latest_directory_with_string(directory_path, string):
   """
@@ -167,6 +168,20 @@ parallelism = args.max_build_parallelism
 assert parallelism >= 1
 print(f"Using {parallelism} build machines for sweeping")
 
+# TODO: make this more programmatic?
+# find path to grep for violated in depending on platform (string must exist in the path of the file to be grepped)
+platform = bry[br_name_to_sweep]['PLATFORM']
+if 'xilinx_alveo' in platform:
+  report_path = 'vivado_proj/reports'
+elif 'xilinx_vcu118' in platform:
+  report_path = 'build/reports'
+elif 'vitis' in platform:
+  report_path = '' # TODO: get actual path of reports (low-pri since vitis shouldn't be used)
+elif 'rhsresearch_nitefury_ii' in platform:
+  report_path = '' # TODO: no reports dumped for this (search everything)
+elif 'f1' in platform:
+  report_path = 'build/reports'
+
 # this is where the recursion happens
 
 def do_builds(freq_to_search):
@@ -219,7 +234,7 @@ def do_builds(freq_to_search):
       print(f"{br_name} exists... checking for VIOLATED in logs...")
       # get most recent run that has br_name in it
       latest_dir = find_latest_directory_with_string(f"{script_dir}/../deploy/results-build", br_name)
-      results = run_grep_subprocess(latest_dir, "VIOLATED")
+      results = run_grep_subprocess(latest_dir, report_path, "VIOLATED")
       if results == "":
         fp_d[br_name] = True
       else:
