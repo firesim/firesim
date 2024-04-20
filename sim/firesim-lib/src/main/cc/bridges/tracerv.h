@@ -103,7 +103,7 @@ private:
 
 public:
   void flush();
-  static constexpr uint64_t valid_mask = (1ULL << 40);
+  static constexpr uint64_t valid_mask = (1ULL << 63); // valid bit is 64th bit
 };
 
 #endif // __TRACERV_H
