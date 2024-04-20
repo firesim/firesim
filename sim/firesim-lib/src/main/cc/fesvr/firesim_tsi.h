@@ -30,6 +30,8 @@ public:
 
   void send_loadmem_word(uint32_t word);
 
+  void load_program() override;
+
 protected:
   void idle() override;
 
