@@ -118,7 +118,8 @@ case class BridgeAnnotation(
   }
 
   def typeHints = bridgeChannels.map(_.getClass) ++ (widgetConstructorKey match {
-    // If the key has extra type hints too, grab them as well
+    // Since midas only traverse down 1 layer searching for typeHints,
+    // the BridgeKey must provide a recursive definition of typeHints if non-serializable objects are embedded deeper
     case Some(key: HasSerializationHints) => key.getClass +: key.typeHints
     case Some(key) => Seq(key.getClass)
     case None => Seq()
