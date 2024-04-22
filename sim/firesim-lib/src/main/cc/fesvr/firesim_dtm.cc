@@ -59,10 +59,12 @@ void firesim_dtm_t::load_mem_read(addr_t addr, size_t nbytes, void *dst) {
 void firesim_dtm_t::tick() { switch_to_host(); }
 
 bool firesim_dtm_t::has_loadmem_reqs() {
+  printf("check if loadmem_req eixsts");
   return (!loadmem_write_reqs.empty() || !loadmem_read_reqs.empty());
 }
 
 bool firesim_dtm_t::recv_loadmem_write_req(firesim_loadmem_t &loadmem) {
+  printf("write req recevied on server side");
   if (loadmem_write_reqs.empty())
     return false;
   auto r = loadmem_write_reqs.front();
@@ -73,6 +75,7 @@ bool firesim_dtm_t::recv_loadmem_write_req(firesim_loadmem_t &loadmem) {
 }
 
 bool firesim_dtm_t::recv_loadmem_read_req(firesim_loadmem_t &loadmem) {
+  printf("read req recevied on server side");
   if (loadmem_read_reqs.empty())
     return false;
   auto r = loadmem_read_reqs.front();

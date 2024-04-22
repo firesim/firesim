@@ -94,6 +94,7 @@ void dmibridge_t::go() { write(mmio_addrs.start, 1); }
 
 // shcho: added loadmem read handling
 void dmibridge_t::handle_loadmem_read(firesim_loadmem_t loadmem) {
+  printf("loadmem read has been accesssed");
   assert(loadmem.size % sizeof(uint32_t) == 0);
   assert(has_mem);
   // Loadmem reads are in granularities of the width of the FPGA-DRAM bus
@@ -112,8 +113,10 @@ void dmibridge_t::handle_loadmem_read(firesim_loadmem_t loadmem) {
         NULL, &non_zero_beats, -1, sizeof(uint32_t), 0, 0, buf);
     for (size_t j = 0; j < beats_requested; j++) {
       if (j < non_zero_beats) {
+        printf("send word to fesvr");
         fesvr->send_loadmem_word(data[j]);
       } else {
+        printf("send word to fesvr");
         fesvr->send_loadmem_word(0);
       }
     }
@@ -122,11 +125,13 @@ void dmibridge_t::handle_loadmem_read(firesim_loadmem_t loadmem) {
   mpz_clear(buf);
   
   // Switch back to fesvr for it to process read data
+  printf("tick and switch to server thread");
   fesvr->tick();
 }
 
 // shcho: added loadmem write handling
 void dmibridge_t::handle_loadmem_write(firesim_loadmem_t loadmem) {
+  printf("write requested");
   assert(loadmem.size <= 1024);
   assert(has_mem);
   static char buf[1024];
@@ -149,6 +154,7 @@ void dmibridge_t::handle_loadmem_write(firesim_loadmem_t loadmem) {
 void dmibridge_t::dmi_bypass_via_loadmem() {
   firesim_loadmem_t loadmem;                                                     
   
+  printf("loadmem bypassing for dmi");
   while (fesvr->has_loadmem_reqs()) {
     // Check for reads first as they preceed a narrow write;
     if (fesvr->recv_loadmem_read_req(loadmem))                                       
@@ -157,8 +163,6 @@ void dmibridge_t::dmi_bypass_via_loadmem() {
       handle_loadmem_write(loadmem);
   }
 }
-// TODO (shcho): add loadmem_read and loadmem_write
-
 
 void dmibridge_t::tick() {
   // First, check to see step_size tokens have been enqueued
