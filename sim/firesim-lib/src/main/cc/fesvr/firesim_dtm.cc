@@ -56,7 +56,7 @@ void firesim_dtm_t::load_mem_read(addr_t addr, size_t nbytes, void *dst) {
   }
 }
 
-// void firesim_dtm_t::tick() { switch_to_host(); }
+void firesim_dtm_t::tick() { switch_to_host(); }
 
 bool firesim_dtm_t::has_loadmem_reqs() {
   return (!loadmem_write_reqs.empty() || !loadmem_read_reqs.empty());
@@ -76,7 +76,7 @@ bool firesim_dtm_t::recv_loadmem_read_req(firesim_loadmem_t &loadmem) {
   if (loadmem_read_reqs.empty())
     return false;
   auto r = loadmem_read_reqs.front();
-  loadmem.addr = r.adr;
+  loadmem.addr = r.addr;
   loadmem.size = r.size;
   loadmem_read_reqs.pop_front();
   return true;

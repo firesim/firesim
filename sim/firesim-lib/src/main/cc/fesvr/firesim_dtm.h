@@ -20,13 +20,15 @@ public:
   bool busy() { return is_busy; };
   
   // shcho: copied from tsi (need to check which function is requried)
-  // void tick();
+  void tick();
   // void tick(bool out_valid, uint32_t out_bits, bool in_ready) { tick(); };
 
   bool recv_loadmem_write_req(firesim_loadmem_t &loadmem);
   bool recv_loadmem_read_req(firesim_loadmem_t &loadmem);
   void recv_loadmem_data(void *buf, size_t len);
   bool has_loadmem_reqs();
+
+  void send_loadmem_word(uint32_t word);
 protected:
   void idle() override;
 

@@ -1,377 +1,4 @@
 Running with RISCV=/scratch/shcho/chipyard/.conda-env/riscv-tools
-cd /scratch/shcho/chipyard && java -jar /scratch/shcho/chipyard/scripts/sbt-launch.jar -Dsbt.ivy.home=/scratch/shcho/chipyard/.ivy2 -Dsbt.global.base=/scratch/shcho/chipyard/.sbt -Dsbt.boot.directory=/scratch/shcho/chipyard/.sbt/boot/ -Dsbt.color=always -Dsbt.supershell=false -Dsbt.server.forcestart=true ";project {file:/scratch/shcho/chipyard}firechip; set assembly / assemblyOutputPath := file(\"/scratch/shcho/chipyard/sims/firesim/sim/generated-src/target.jar\"); assembly" && touch /scratch/shcho/chipyard/sims/firesim/sim/generated-src/target.jar
-Picked up JAVA_TOOL_OPTIONS: -Xmx8G -Xss8M -Djava.io.tmpdir=/scratch/shcho/chipyard/.java_tmp
-[0m[[0m[0minfo[0m] [0m[0mwelcome to sbt 1.8.2 (N/A Java 20.0.2-internal)[0m
-[0m[[0m[0minfo[0m] [0m[0mloading settings for project chipyard-build from plugins.sbt ...[0m
-[0m[[0m[0minfo[0m] [0m[0mloading project definition from /scratch/shcho/chipyard/project[0m
-[0m[[0m[0minfo[0m] [0m[0mloading settings for project chipyardRoot from build.sbt ...[0m
-[0m[[0m[0minfo[0m] [0m[0mloading settings for project testchipip from build.sbt ...[0m
-[0m[[0m[0minfo[0m] [0m[0mloading settings for project barf from build.sbt ...[0m
-[0m[[0m[0minfo[0m] [0m[0mloading settings for project constellation from build.sbt ...[0m
-[0m[[0m[0minfo[0m] [0m[0mloading settings for project icenet from build.sbt ...[0m
-[0m[[0m[0minfo[0m] [0m[0mloading settings for project hwacha from build.sbt ...[0m
-[0m[[0m[0minfo[0m] [0m[0mloading settings for project cva6 from build.sbt ...[0m
-[0m[[0m[0minfo[0m] [0m[0mloading settings for project ibex from build.sbt ...[0m
-[0m[[0m[0minfo[0m] [0m[0mloading settings for project sodor from build.sbt ...[0m
-[0m[[0m[0minfo[0m] [0m[0mloading settings for project gemmini from build.sbt ...[0m
-[0m[[0m[0minfo[0m] [0m[0mloading settings for project tapeout from build.sbt ...[0m
-[0m[[0m[0minfo[0m] [0m[0mloading settings for project fixedpoint from build.sbt ...[0m
-[0m[[0m[0minfo[0m] [0m[0mloading settings for project sim-build from plugins.sbt ...[0m
-[0m[[0m[0minfo[0m] [0m[0mloading project definition from /scratch/shcho/chipyard/sims/firesim/sim/project[0m
-[0m[[0m[0minfo[0m] [0m[0mloading settings for project firesim from build.sbt ...[0m
-[0m[[0m[0minfo[0m] [0m[0mloading settings for project targetutils from build.sbt ...[0m
-[0m[[0m[0minfo[0m] [0m[0mloading settings for project midas from build.sbt ...[0m
-[0m[[0m[0minfo[0m] [0m[0mresolving key references (42699 settings) ...[0m
-[0m[[0m[0minfo[0m] [0m[0mset current project to chipyardRoot (in build file:/scratch/shcho/chipyard/)[0m
-[0m[[0m[0minfo[0m] [0m[0mset current project to firechip (in build file:/scratch/shcho/chipyard/)[0m
-[0m[[0m[0minfo[0m] [0m[0mDefining assembly / assemblyOutputPath[0m
-[0m[[0m[0minfo[0m] [0m[0mThe new value will be used by assembly[0m
-[0m[[0m[0minfo[0m] [0m[0mReapplying settings...[0m
-[0m[[0m[0minfo[0m] [0m[0mset current project to firechip (in build file:/scratch/shcho/chipyard/)[0m
-[0m[[0m[33mwarn[0m] [0m[0mmultiple main classes detected: run 'show discoveredMainClasses' to see the list[0m
-[0m[[0m[33mwarn[0m] [0m[0mmultiple main classes detected: run 'show discoveredMainClasses' to see the list[0m
-[0m[[0m[0minfo[0m] [0m[0mcompiling 3 Scala sources to /scratch/shcho/chipyard/generators/firechip/target/scala-2.13/classes ...[0m
-[0m[[0m[33mwarn[0m] [0m[0m/scratch/shcho/chipyard/generators/firechip/src/main/scala/BridgeBinders.scala:74:26: value LazyModule in package diplomacy is deprecated (since rocketchip 2.0.0): Diplomacy has been split to a standalone library[0m
-[0m[[0m[33mwarn[0m] [0m[0m        val ram = Module(LazyModule(new SerialRAM(port.serdesser, port.params)(port.serdesser.p)).module)[0m
-[0m[[0m[33mwarn[0m] [0m[0m                         ^[0m
-[0m[[0m[33mwarn[0m] [0m[0m/scratch/shcho/chipyard/generators/firechip/src/main/scala/TargetConfigs.scala:38:5: method apply in class View is deprecated (since CDE 0.1): up(XYZ, site) is no longer necessary; remove the superfluous site argument[0m
-[0m[[0m[33mwarn[0m] [0m[0m    up(BootROMLocated(x), site).map(_.copy(contentFileName = bootROMPath))[0m
-[0m[[0m[33mwarn[0m] [0m[0m    ^[0m
-[0m[[0m[33mwarn[0m] [0m[0m/scratch/shcho/chipyard/generators/firechip/src/main/scala/TargetConfigs.scala:44:26: method apply in class View is deprecated (since CDE 0.1): up(XYZ, site) is no longer necessary; remove the superfluous site argument[0m
-[0m[[0m[33mwarn[0m] [0m[0m  case DebugModuleKey => up(DebugModuleKey, site).map(_.copy(clockGate = false))[0m
-[0m[[0m[33mwarn[0m] [0m[0m                         ^[0m
-[0m[[0m[33mwarn[0m] [0m[0m/scratch/shcho/chipyard/generators/firechip/src/main/scala/TargetConfigs.scala:45:34: method apply in class View is deprecated (since CDE 0.1): up(XYZ, site) is no longer necessary; remove the superfluous site argument[0m
-[0m[[0m[33mwarn[0m] [0m[0m  case ChipyardPRCIControlKey => up(ChipyardPRCIControlKey, site).copy(enableTileClockGating = false)[0m
-[0m[[0m[33mwarn[0m] [0m[0m                                 ^[0m
-[0m[[0m[33mwarn[0m] [0m[0m/scratch/shcho/chipyard/generators/firechip/src/main/scala/TargetConfigs.scala:56:24: method apply in class View is deprecated (since CDE 0.1): up(XYZ, site) is no longer necessary; remove the superfluous site argument[0m
-[0m[[0m[33mwarn[0m] [0m[0m  case TracePortKey => up(TracePortKey, site).map(_.copy(print = true))[0m
-[0m[[0m[33mwarn[0m] [0m[0m                       ^[0m
-[0m[[0m[33mwarn[0m] [0m[0m7 feature warnings; re-run with -feature for details[0m
-[0m[[0m[33mwarn[0m] [0m[0m6 warnings found[0m
-[0m[[0m[0minfo[0m] [0m[0mdone compiling[0m
-[0m[[0m[0minfo[0m] [0m[0m61 file(s) merged using strategy 'Rename' (Run the task at debug level to see the details)[0m
-[0m[[0m[0minfo[0m] [0m[0m185 file(s) merged using strategy 'Rename (Custom)' (Run the task at debug level to see the details)[0m
-[0m[[0m[0minfo[0m] [0m[0m173 file(s) merged using strategy 'Discard' (Run the task at debug level to see the details)[0m
-[0m[[0m[0minfo[0m] [0m[0m3 file(s) merged using strategy 'FilterDistinctLines' (Run the task at debug level to see the details)[0m
-[0m[[0m[0minfo[0m] [0m[0mBuilt: /scratch/shcho/chipyard/sims/firesim/sim/generated-src/target.jar[0m
-[0m[[0m[0minfo[0m] [0m[0mJar hash: 01707cce8a7606006d59556589a3861669a6abd5[0m
-[0m[[0m[32msuccess[0m] [0m[0mTotal time: 33 s, completed Apr 16, 2024, 11:51:00 AM[0m
-[0Jcd /scratch/shcho/chipyard && java -cp /scratch/shcho/chipyard/sims/firesim/sim/generated-src/target.jar chipyard.Generator  --target-dir /scratch/shcho/chipyard/sims/firesim/sim/generated-src/f1/f1-firesim-FireSim-FireSimDmiRocketConfig-BaseF1Config --name firesim.firesim.FireSim.FireSimDmiRocketConfig --top-module firesim.firesim.FireSim --legacy-configs firesim.firesim:FireSimDmiRocketConfig
-Picked up JAVA_TOOL_OPTIONS: -Xmx8G -Xss8M -Djava.io.tmpdir=/scratch/shcho/chipyard/.java_tmp
-L2 InclusiveCache Client Map:
-	0 <= debug
-	1 <= blkdev-tracker0
-	2 <= serial_tl_0_0
-	3 <= serial_tl_0_1
-	4 <= serial_tl_0_2
-	5 <= serial_tl_0_3
-	6 <= Core 0 DCache
-	7 <= Core 0 ICache
-
-Interrupt map (2 harts 2 interrupts):
-  [1, 1] => frontend
-  [2, 2] => uart_0
-
-<stdin>:88.18-93.5: Warning (simple_bus_reg): /soc/cbus_clock: missing or empty reg/ranges property
-<stdin>:111.18-116.5: Warning (simple_bus_reg): /soc/fbus_clock: missing or empty reg/ranges property
-<stdin>:127.18-132.5: Warning (simple_bus_reg): /soc/mbus_clock: missing or empty reg/ranges property
-<stdin>:133.18-138.5: Warning (simple_bus_reg): /soc/pbus_clock: missing or empty reg/ranges property
-<stdin>:144.18-149.5: Warning (simple_bus_reg): /soc/sbus_clock: missing or empty reg/ranges property
-<stdin>:42.29-46.6: Warning (interrupt_provider): /cpus/cpu@0/interrupt-controller: Missing #address-cells in interrupt provider
-<stdin>:117.37-126.5: Warning (interrupt_provider): /soc/interrupt-controller@c000000: Missing #address-cells in interrupt provider
-Clock sbus_0: using diplomatically specified frequency of 1000.0.
-Clock pbus_0: using diplomatically specified frequency of 1000.0.
-Clock fbus_0: using diplomatically specified frequency of 1000.0.
-Clock mbus_0: using diplomatically specified frequency of 1000.0.
-Clock cbus_0: using diplomatically specified frequency of 1000.0.
-/dts-v1/;
-
-/ {
-	#address-cells = <2>;
-	#size-cells = <2>;
-	compatible = "ucb-bar,chipyard-dev";
-	model = "ucb-bar,chipyard";
-	L28: aliases {
-		serial0 = &L23;
-	};
-	L14: chosen {
-		stdout-path = &L23;
-	};
-	L27: cpus {
-		#address-cells = <1>;
-		#size-cells = <0>;
-		timebase-frequency = <1000000>;
-		L9: cpu@0 {
-			clock-frequency = <0>;
-			compatible = "sifive,rocket0", "riscv";
-			d-cache-block-size = <64>;
-			d-cache-sets = <64>;
-			d-cache-size = <16384>;
-			d-tlb-sets = <1>;
-			d-tlb-size = <32>;
-			device_type = "cpu";
-			hardware-exec-breakpoint-count = <1>;
-			i-cache-block-size = <64>;
-			i-cache-sets = <64>;
-			i-cache-size = <16384>;
-			i-tlb-sets = <1>;
-			i-tlb-size = <32>;
-			mmu-type = "riscv,sv39";
-			next-level-cache = <&L6>;
-			reg = <0x0>;
-			riscv,isa = "rv64imafdczicsr_zifencei_zihpm_xrocket";
-			riscv,pmpgranularity = <4>;
-			riscv,pmpregions = <8>;
-			status = "okay";
-			timebase-frequency = <1000000>;
-			tlb-split;
-			L7: interrupt-controller {
-				#interrupt-cells = <1>;
-				compatible = "riscv,cpu-intc";
-				interrupt-controller;
-			};
-		};
-	};
-	L29: htif {
-		compatible = "ucb,htif0";
-	};
-	L21: memory@8000000 {
-		device_type = "memory";
-		reg = <0x0 0x8000000 0x0 0x10000>;
-	};
-	L17: memory@80000000 {
-		device_type = "memory";
-		reg = <0x0 0x80000000 0x4 0x0>;
-	};
-	L26: soc {
-		#address-cells = <2>;
-		#size-cells = <2>;
-		compatible = "ucb-bar,chipyard-soc", "simple-bus";
-		ranges;
-		L22: blkdev-controller@10015000 {
-			compatible = "ucb-bar,blkdev";
-			interrupt-parent = <&L11>;
-			interrupts = <1>;
-			reg = <0x0 0x10015000 0x0 0x1000>;
-			reg-names = "control";
-		};
-		L20: boot-address-reg@1000 {
-			reg = <0x0 0x1000 0x0 0x1000>;
-			reg-names = "control";
-		};
-		L6: cache-controller@2010000 {
-			cache-block-size = <64>;
-			cache-level = <2>;
-			cache-sets = <1024>;
-			cache-size = <524288>;
-			cache-unified;
-			compatible = "sifive,inclusivecache0", "cache";
-			next-level-cache = <&L17 &L21>;
-			reg = <0x0 0x2010000 0x0 0x1000>;
-			reg-names = "control";
-			sifive,mshr-count = <7>;
-		};
-		L3: cbus_clock {
-			#clock-cells = <0>;
-			clock-frequency = <1000000000>;
-			clock-output-names = "cbus_clock";
-			compatible = "fixed-clock";
-		};
-		L10: clint@2000000 {
-			compatible = "riscv,clint0";
-			interrupts-extended = <&L7 3 &L7 7>;
-			reg = <0x0 0x2000000 0x0 0x10000>;
-			reg-names = "control";
-		};
-		L12: debug-controller@0 {
-			compatible = "sifive,debug-013", "riscv,debug-013";
-			debug-attach = "dmi";
-			interrupts-extended = <&L7 65535>;
-			reg = <0x0 0x0 0x0 0x1000>;
-			reg-names = "control";
-		};
-		L4: error-device@3000 {
-			compatible = "sifive,error0";
-			reg = <0x0 0x3000 0x0 0x1000>;
-		};
-		L2: fbus_clock {
-			#clock-cells = <0>;
-			clock-frequency = <1000000000>;
-			clock-output-names = "fbus_clock";
-			compatible = "fixed-clock";
-		};
-		L11: interrupt-controller@c000000 {
-			#interrupt-cells = <1>;
-			compatible = "riscv,plic0";
-			interrupt-controller;
-			interrupts-extended = <&L7 11 &L7 9>;
-			reg = <0x0 0xc000000 0x0 0x4000000>;
-			reg-names = "control";
-			riscv,max-priority = <3>;
-			riscv,ndev = <2>;
-		};
-		L5: mbus_clock {
-			#clock-cells = <0>;
-			clock-frequency = <1000000000>;
-			clock-output-names = "mbus_clock";
-			compatible = "fixed-clock";
-		};
-		L1: pbus_clock {
-			#clock-cells = <0>;
-			clock-frequency = <1000000000>;
-			clock-output-names = "pbus_clock";
-			compatible = "fixed-clock";
-		};
-		L19: rom@10000 {
-			compatible = "sifive,rom0";
-			reg = <0x0 0x10000 0x0 0x10000>;
-			reg-names = "mem";
-		};
-		L0: sbus_clock {
-			#clock-cells = <0>;
-			clock-frequency = <1000000000>;
-			clock-output-names = "sbus_clock";
-			compatible = "fixed-clock";
-		};
-		L23: serial@10020000 {
-			clocks = <&L1>;
-			compatible = "sifive,uart0";
-			interrupt-parent = <&L11>;
-			interrupts = <2>;
-			reg = <0x0 0x10020000 0x0 0x1000>;
-			reg-names = "control";
-		};
-		L24: tile-reset-setter@110000 {
-			reg = <0x0 0x110000 0x0 0x1000>;
-			reg-names = "control";
-		};
-	};
-};
-
-Generated Address Map
-	        0 -      1000 ARWX  debug-controller@0
-	     1000 -      2000 ARW   boot-address-reg@1000
-	     3000 -      4000 ARWX  error-device@3000
-	    10000 -     20000  R X  rom@10000
-	   110000 -    111000 ARW   tile-reset-setter@110000
-	  2000000 -   2010000 ARW   clint@2000000
-	  2010000 -   2011000 ARW   cache-controller@2010000
-	  8000000 -   8010000 ARWXC memory@8000000
-	  c000000 -  10000000 ARW   interrupt-controller@c000000
-	 10015000 -  10016000 ARW   blkdev-controller@10015000
-	 10020000 -  10021000 ARW   serial@10020000
-	 80000000 - 480000000 ARWXC memory@80000000
-
-IOCells generated by IOBinders:
-  IOBinder for interface sifive.blocks.devices.uart.HasPeripheryUART generated:
-    1 X FireSimDigitalOutIOCell
-    1 X FireSimDigitalInIOCell
-  IOBinder for interface testchipip.boot.CanHavePeripheryCustomBootPin generated:
-    1 X FireSimDigitalInIOCell
-  IOBinder for interface freechips.rocketchip.devices.debug.HasPeripheryDebug generated:
-    36 X FireSimDigitalOutIOCell
-    45 X FireSimDigitalInIOCell
-  IOBinder for interface testchipip.serdes.CanHavePeripheryTLSerial generated:
-    6 X FireSimDigitalOutIOCell
-    7 X FireSimDigitalInIOCell
-
-  Total generated 97 IOCells:
-    43 X FireSimDigitalOutIOCell
-    54 X FireSimDigitalInIOCell
-Harness binder clock is 1000.0
-
-firesimRationalClockBridge Frequency Summary
-  Input Reference Frequency: 1000.0 MHz
-  Output clock uart_clock, requested: 1000.0 MHz, actual: 1000.0 MHz (division of 1)
-  Output clock clock_1000.0MHz, requested: 1000.0 MHz, actual: 1000.0 MHz (division of 1)
-  Output clock harnessbinder_clock, requested: 1000.0 MHz, actual: 1000.0 MHz (division of 1)
-[[33mwarn[0m] generators/rocket-chip-inclusive-cache/design/craft/inclusivecache/src/SinkC.scala:160:43: Dynamic index with width 6 is too large for extractee of width 2
-[[33mwarn[0m]     io.rel_pop.ready := putbuffer.io.valid(io.rel_pop.bits.index)
-[[33mwarn[0m]                                           ^
-[[33mwarn[0m] generators/rocket-chip/src/main/scala/rocket/ICache.scala:507:25: Dynamic index with width 7 is too small for extractee of width 256
-[[33mwarn[0m]     val s1_vb = vb_array(Cat(i.U, s1_idx)) && !s1_slaveValid
-[[33mwarn[0m]                         ^
-[[33mwarn[0m] generators/rocket-chip/src/main/scala/rocket/CSR.scala:960:100: Dynamic index with width 8 is too large for extractee of width 64
-[[33mwarn[0m]   val delegate = usingSupervisor.B && reg_mstatus.prv <= PRV.S.U && Mux(cause(xLen-1), read_mideleg(cause_lsbs), read_medeleg(cause_lsbs))
-[[33mwarn[0m]                                                                                                    ^
-[[33mwarn[0m] generators/rocket-chip/src/main/scala/rocket/CSR.scala:960:126: Dynamic index with width 8 is too large for extractee of width 64
-[[33mwarn[0m]   val delegate = usingSupervisor.B && reg_mstatus.prv <= PRV.S.U && Mux(cause(xLen-1), read_mideleg(cause_lsbs), read_medeleg(cause_lsbs))
-[[33mwarn[0m]                                                                                                                              ^
-[[33mwarn[0m] generators/rocket-chip/src/main/scala/rocket/CSR.scala:961:80: Dynamic index with width 8 is too large for extractee of width 64
-[[33mwarn[0m]   val delegateVS = reg_mstatus.v && delegate && Mux(cause(xLen-1), read_hideleg(cause_lsbs), read_hedeleg(cause_lsbs))
-[[33mwarn[0m]                                                                                ^
-[[33mwarn[0m] generators/rocket-chip/src/main/scala/rocket/CSR.scala:961:106: Dynamic index with width 8 is too large for extractee of width 64
-[[33mwarn[0m]   val delegateVS = reg_mstatus.v && delegate && Mux(cause(xLen-1), read_hideleg(cause_lsbs), read_hedeleg(cause_lsbs))
-[[33mwarn[0m]                                                                                                          ^
-[[33mwarn[0m] generators/rocket-chip/src/main/scala/devices/debug/Debug.scala:1733:37: Dynamic index with width 1 is too large for extractee of width 1
-[[33mwarn[0m]     val hartHalted   = haltedBitRegs(selectedHartReg)
-[[33mwarn[0m]                                     ^
-[[33mwarn[0m] There were [33m7 warning(s)[0m during hardware elaboration.
-cd /scratch/shcho/chipyard && java -cp /scratch/shcho/chipyard/sims/firesim/sim/generated-src/firesim-main.jar midas.stage.GoldenGateMain  -i /scratch/shcho/chipyard/sims/firesim/sim/generated-src/f1/f1-firesim-FireSim-FireSimDmiRocketConfig-BaseF1Config/firesim.firesim.FireSim.FireSimDmiRocketConfig.fir -td /scratch/shcho/chipyard/sims/firesim/sim/generated-src/f1/f1-firesim-FireSim-FireSimDmiRocketConfig-BaseF1Config -faf /scratch/shcho/chipyard/sims/firesim/sim/generated-src/f1/f1-firesim-FireSim-FireSimDmiRocketConfig-BaseF1Config/firesim.firesim.FireSim.FireSimDmiRocketConfig.anno.json -ggcp firesim.firesim -ggcs BaseF1Config --output-filename-base FireSim-generated --no-dedup
-Picked up JAVA_TOOL_OPTIONS: -Xmx8G -Xss8M -Djava.io.tmpdir=/scratch/shcho/chipyard/.java_tmp
-Instantiating bridge peekPokeBridge of type midas.widgets.PeekPokeBridgeModule
-  With constructor arguments: PeekPokeKey(List(),List(SerializableField(reset,SerializableType(UInt),1)),2)
-Instantiating bridge resetBridge of type midas.widgets.ResetPulseBridgeModule
-  With constructor arguments: ResetPulseBridgeParameters(true,50,1023)
-Instantiating bridge ep of type firesim.bridges.BlockDevBridgeModule
-  With constructor arguments: BlockDeviceConfig(1)
-Instantiating bridge ep_1 of type firesim.bridges.UARTBridgeModule
-  With constructor arguments: UARTKey(UARTParams(268566528,8,2,16,4,3,256,256,false,false,false,3686400),271)
-Instantiating bridge ep_2 of type midas.models.FASEDMemoryTimingModel
-  With constructor arguments: CompleteConfig(LatencyPipeConfig(BaseParams(16,16,None,None,None,None,256,None,256,None,false,false,false,false,None,true,true,false,List(0, 2, 4, 8),0)),NastiParameters(64,35,4),Some(AXI4EdgeSummary(8,8,Some(1),Some(10),List(AddressSet(0x80000000, 0x7fffffff), AddressSet(0x100000000, 0xffffffff), AddressSet(0x200000000, 0x1ffffffff), AddressSet(0x400000000, 0x7fffffff)))),Some(MainMemory_0))
-Instantiating bridge ep_3 of type firesim.bridges.DMIBridgeModule
-  With constructor arguments: DMIBridgeParams(Some(MainMemory_0),7)
-Instantiating bridge tracerv of type firesim.bridges.TracerVBridgeModule
-  With constructor arguments: TraceBundleWidths(1,40,32,None,64,40,None)
-Instantiating bridge ep_4 of type firesim.bridges.TSIBridgeModule
-  With constructor arguments: TSIBridgeParams(Some(MainMemory_0))
-Instantiating bridge clockBridge of type midas.widgets.ClockBridgeModule
-  With constructor arguments: ClockParameters(List(RationalClock(uart_clock,clock_1000.0MHz,harnessbinder_clock,reference,1,1)))
-Generating a Midas Memory Model
-  Max Read Requests: 10
-  Max Write Requests: 10
-  Max Read Length: 8
-  Max Write Length: 8
-  Max Read ID Reuse: 1
-  Max Write ID Reuse: 1
-
-Timing Model Parameters
-  Timing Model Class: Latency Bandwidth Pipe
-  No LLC Model Instantiated
-
-
-Default Settings
-  +mm_relaxFunctionalModel_0=0
-  +mm_writeMaxReqs_0=10
-  +mm_readMaxReqs_0=10
-  +mm_writeLatency_0=30
-  +mm_readLatency_0=30
-
-FireSimQueueHelper: 3145728 bits in queue, using Some(ULTRA) style
-Bridge Streams To CPU:
-  Name: TRACERVBRIDGEMODULE_0_to_cpu_stream, Idx: 0, FPGA Buffer Depth: 6144, FPGA Buffer Width: 64
-Bridge Streams From CPU:
-  None
-Simulator Memory Map:
-  [   0,   7f]: BlockDevBridgeModule_0
-  [  80,   ff]: FASEDMemoryTimingModel_0
-  [ 100,  13f]: DMIBridgeModule_0
-  [ 140,  17f]: TracerVBridgeModule_0
-  [ 180,  1bf]: TSIBridgeModule_0
-  [ 1c0,  1ff]: LoadMemWidget_0
-  [ 200,  21f]: PeekPokeBridgeModule_0
-  [ 220,  23f]: UARTBridgeModule_0
-  [ 240,  25f]: ClockBridgeModule_0
-  [ 260,  26f]: SimulationMaster_0
-  [ 270,  277]: ResetPulseBridgeModule_0
-  [ 278,  27b]: CPUManagedStreamEngine_0
-Total Host-FPGA DRAM Allocated: 16.000 GiB of 64.000 GiB available.
-Host-FPGA DRAM Allocation Map:
-  MainMemory_0 -> [0x0, 0x3FFFFFFFF]
-    Associated bridges: FASEDMemoryTimingModel_0
-Auto ILA: p(EnableAutoILA) unset. Skipping AutoILATransform
-grep -sh ^ /scratch/shcho/chipyard/sims/firesim/sim/generated-src/f1/f1-firesim-FireSim-FireSimDmiRocketConfig-BaseF1Config/firrtl_black_box_resource_files.f | \
-	xargs cat >> /scratch/shcho/chipyard/sims/firesim/sim/generated-src/f1/f1-firesim-FireSim-FireSimDmiRocketConfig-BaseF1Config/FireSim-generated.sv # Append blackboxes to FPGA wrapper, if any
 make -C /scratch/shcho/chipyard/sims/firesim/sim/midas/src/main/cc  vcs PLATFORM=f1 DRIVER_NAME=FireSim GEN_FILE_BASENAME=FireSim-generated GEN_DIR=/scratch/shcho/chipyard/sims/firesim/sim/generated-src/f1/f1-firesim-FireSim-FireSimDmiRocketConfig-BaseF1Config DRIVER="/scratch/shcho/chipyard/sims/firesim/sim/src/main/cc/firesim/firesim_top.cc /scratch/shcho/chipyard/sims/firesim/sim/firesim-lib/src/main/cc/bridges/blockdev.cc /scratch/shcho/chipyard/sims/firesim/sim/firesim-lib/src/main/cc/bridges/cospike.cc /scratch/shcho/chipyard/sims/firesim/sim/firesim-lib/src/main/cc/bridges/dmibridge.cc /scratch/shcho/chipyard/sims/firesim/sim/firesim-lib/src/main/cc/bridges/groundtest.cc /scratch/shcho/chipyard/sims/firesim/sim/firesim-lib/src/main/cc/bridges/simplenic.cc /scratch/shcho/chipyard/sims/firesim/sim/firesim-lib/src/main/cc/bridges/tracerv.cc /scratch/shcho/chipyard/sims/firesim/sim/firesim-lib/src/main/cc/bridges/tsibridge.cc /scratch/shcho/chipyard/sims/firesim/sim/firesim-lib/src/main/cc/bridges/uart.cc /scratch/shcho/chipyard/sims/firesim/sim/firesim-lib/src/main/cc/fesvr/firesim_dtm.cc /scratch/shcho/chipyard/sims/firesim/sim/firesim-lib/src/main/cc/fesvr/firesim_tsi.cc /scratch/shcho/chipyard/sims/firesim/sim/firesim-lib/src/main/cc/bridges/tracerv/tracerv_dwarf.cc /scratch/shcho/chipyard/sims/firesim/sim/firesim-lib/src/main/cc/bridges/tracerv/tracerv_elf.cc /scratch/shcho/chipyard/sims/firesim/sim/firesim-lib/src/main/cc/bridges/tracerv/tracerv_processing.cc /scratch/shcho/chipyard/sims/firesim/sim/firesim-lib/src/main/cc/bridges/tracerv/trace_tracker.cc /scratch/shcho/chipyard/.conda-env/riscv-tools/lib/libfesvr.a /scratch/shcho/chipyard/generators/testchipip/src/main/resources/testchipip/csrc/cospike_impl.cc /scratch/shcho/chipyard/generators/testchipip/src/main/resources/testchipip/csrc/testchip_tsi.cc /scratch/shcho/chipyard/generators/testchipip/src/main/resources/testchipip/csrc/testchip_dtm.cc /scratch/shcho/chipyard/generators/testchipip/src/main/resources/testchipip/csrc/testchip_htif.cc" TOP_DIR=/scratch/shcho/chipyard DESIGN_V=/scratch/shcho/chipyard/sims/firesim/sim/generated-src/f1/f1-firesim-FireSim-FireSimDmiRocketConfig-BaseF1Config/FireSim-generated.sv
 make[1]: Entering directory '/scratch/shcho/chipyard/sims/firesim/sim/midas/src/main/cc'
 mkdir -p /scratch/shcho/chipyard/sims/firesim/sim/generated-src/f1/f1-firesim-FireSim-FireSimDmiRocketConfig-BaseF1Config
@@ -3285,30 +2912,58 @@ g++ -w  -fPIC -g -isystem /scratch/shcho/chipyard/.conda-env/riscv-tools/include
 g++ -w  -fPIC -g -isystem /scratch/shcho/chipyard/.conda-env/riscv-tools/include -isystem /scratch/shcho/chipyard/generators/testchipip/src/main/resources/testchipip/csrc -I/scratch/shcho/chipyard/sims/firesim/sim/src/main/cc/firesim -I/scratch/shcho/chipyard/sims/firesim/sim/firesim-lib/src/main/cc -I/scratch/shcho/chipyard/sims/firesim/sim/generated-src/f1/f1-firesim-FireSim-FireSimDmiRocketConfig-BaseF1Config -Wno-inconsistent-missing-override -Wno-unused-variable -DFIRESIM -I/ecad/tools/synopsys/vcs/current/include -D RTLSIM -Wall -I/scratch/shcho/chipyard/sims/firesim/sim/midas/src/main/cc -I/scratch/shcho/chipyard/sims/firesim/sim/generated-src/f1/f1-firesim-FireSim-FireSimDmiRocketConfig-BaseF1Config -std=c++20 -D_GNU_SOURCE -DVCS -I/ecad/tools/synopsys/vcs/current/include -O2 -I/ecad/tools/synopsys/vcs/current/include    -c /scratch/shcho/chipyard/sims/firesim/sim/firesim-lib/src/main/cc/bridges/blockdev.cc
 g++ -w  -fPIC -g -isystem /scratch/shcho/chipyard/.conda-env/riscv-tools/include -isystem /scratch/shcho/chipyard/generators/testchipip/src/main/resources/testchipip/csrc -I/scratch/shcho/chipyard/sims/firesim/sim/src/main/cc/firesim -I/scratch/shcho/chipyard/sims/firesim/sim/firesim-lib/src/main/cc -I/scratch/shcho/chipyard/sims/firesim/sim/generated-src/f1/f1-firesim-FireSim-FireSimDmiRocketConfig-BaseF1Config -Wno-inconsistent-missing-override -Wno-unused-variable -DFIRESIM -I/ecad/tools/synopsys/vcs/current/include -D RTLSIM -Wall -I/scratch/shcho/chipyard/sims/firesim/sim/midas/src/main/cc -I/scratch/shcho/chipyard/sims/firesim/sim/generated-src/f1/f1-firesim-FireSim-FireSimDmiRocketConfig-BaseF1Config -std=c++20 -D_GNU_SOURCE -DVCS -I/ecad/tools/synopsys/vcs/current/include -O2 -I/ecad/tools/synopsys/vcs/current/include    -c /scratch/shcho/chipyard/sims/firesim/sim/firesim-lib/src/main/cc/bridges/cospike.cc
 g++ -w  -fPIC -g -isystem /scratch/shcho/chipyard/.conda-env/riscv-tools/include -isystem /scratch/shcho/chipyard/generators/testchipip/src/main/resources/testchipip/csrc -I/scratch/shcho/chipyard/sims/firesim/sim/src/main/cc/firesim -I/scratch/shcho/chipyard/sims/firesim/sim/firesim-lib/src/main/cc -I/scratch/shcho/chipyard/sims/firesim/sim/generated-src/f1/f1-firesim-FireSim-FireSimDmiRocketConfig-BaseF1Config -Wno-inconsistent-missing-override -Wno-unused-variable -DFIRESIM -I/ecad/tools/synopsys/vcs/current/include -D RTLSIM -Wall -I/scratch/shcho/chipyard/sims/firesim/sim/midas/src/main/cc -I/scratch/shcho/chipyard/sims/firesim/sim/generated-src/f1/f1-firesim-FireSim-FireSimDmiRocketConfig-BaseF1Config -std=c++20 -D_GNU_SOURCE -DVCS -I/ecad/tools/synopsys/vcs/current/include -O2 -I/ecad/tools/synopsys/vcs/current/include    -c /scratch/shcho/chipyard/sims/firesim/sim/firesim-lib/src/main/cc/bridges/dmibridge.cc
-/scratch/shcho/chipyard/sims/firesim/sim/firesim-lib/src/main/cc/bridges/dmibridge.cc: In member function 'void dmibridge_t::handle_loadmem_read(firesim_loadmem_t)':
-/scratch/shcho/chipyard/sims/firesim/sim/firesim-lib/src/main/cc/bridges/dmibridge.cc:111:16: error: 'non_zero_beats' was not declared in this scope
-  111 |         NULL, &non_zero_beats, -1, sizeof(uint32_t), 0, 0, buf);
-      |                ^~~~~~~~~~~~~~
-/scratch/shcho/chipyard/sims/firesim/sim/firesim-lib/src/main/cc/bridges/dmibridge.cc:114:16: error: 'class firesim_dtm_t' has no member named 'send_loadmem_word'
-  114 |         fesvr->send_loadmem_word(data[j]);
-      |                ^~~~~~~~~~~~~~~~~
-/scratch/shcho/chipyard/sims/firesim/sim/firesim-lib/src/main/cc/bridges/dmibridge.cc:116:16: error: 'class firesim_dtm_t' has no member named 'send_loadmem_word'
-  116 |         fesvr->send_loadmem_word(0);
-      |                ^~~~~~~~~~~~~~~~~
-/scratch/shcho/chipyard/sims/firesim/sim/firesim-lib/src/main/cc/bridges/dmibridge.cc:124:14: error: no matching function for call to 'firesim_dtm_t::tick()'
-  124 |   fesvr->tick();
-      |   ~~~~~~~~~~~^~
-In file included from /scratch/shcho/chipyard/generators/testchipip/src/main/resources/testchipip/csrc/testchip_dtm.h:5,
-                 from /scratch/shcho/chipyard/sims/firesim/sim/firesim-lib/src/main/cc/fesvr/firesim_dtm.h:5,
-                 from /scratch/shcho/chipyard/sims/firesim/sim/firesim-lib/src/main/cc/bridges/dmibridge.cc:6:
-/scratch/shcho/chipyard/.conda-env/riscv-tools/include/fesvr/dtm.h:31:8: note: candidate: 'void dtm_t::tick(bool, bool, resp)'
-   31 |   void tick(
-      |        ^~~~
-/scratch/shcho/chipyard/.conda-env/riscv-tools/include/fesvr/dtm.h:31:8: note:   candidate expects 3 arguments, 0 provided
-At global scope:
-cc1plus: note: unrecognized command-line option '-Wno-inconsistent-missing-override' may have been intended to silence earlier diagnostics
-make[3]: *** [filelist:19: dmibridge.o] Error 1
-make[2]: *** [Makefile:112: product_clean_order] Error 2
+g++ -w  -fPIC -g -isystem /scratch/shcho/chipyard/.conda-env/riscv-tools/include -isystem /scratch/shcho/chipyard/generators/testchipip/src/main/resources/testchipip/csrc -I/scratch/shcho/chipyard/sims/firesim/sim/src/main/cc/firesim -I/scratch/shcho/chipyard/sims/firesim/sim/firesim-lib/src/main/cc -I/scratch/shcho/chipyard/sims/firesim/sim/generated-src/f1/f1-firesim-FireSim-FireSimDmiRocketConfig-BaseF1Config -Wno-inconsistent-missing-override -Wno-unused-variable -DFIRESIM -I/ecad/tools/synopsys/vcs/current/include -D RTLSIM -Wall -I/scratch/shcho/chipyard/sims/firesim/sim/midas/src/main/cc -I/scratch/shcho/chipyard/sims/firesim/sim/generated-src/f1/f1-firesim-FireSim-FireSimDmiRocketConfig-BaseF1Config -std=c++20 -D_GNU_SOURCE -DVCS -I/ecad/tools/synopsys/vcs/current/include -O2 -I/ecad/tools/synopsys/vcs/current/include    -c /scratch/shcho/chipyard/sims/firesim/sim/firesim-lib/src/main/cc/bridges/groundtest.cc
+g++ -w  -fPIC -g -isystem /scratch/shcho/chipyard/.conda-env/riscv-tools/include -isystem /scratch/shcho/chipyard/generators/testchipip/src/main/resources/testchipip/csrc -I/scratch/shcho/chipyard/sims/firesim/sim/src/main/cc/firesim -I/scratch/shcho/chipyard/sims/firesim/sim/firesim-lib/src/main/cc -I/scratch/shcho/chipyard/sims/firesim/sim/generated-src/f1/f1-firesim-FireSim-FireSimDmiRocketConfig-BaseF1Config -Wno-inconsistent-missing-override -Wno-unused-variable -DFIRESIM -I/ecad/tools/synopsys/vcs/current/include -D RTLSIM -Wall -I/scratch/shcho/chipyard/sims/firesim/sim/midas/src/main/cc -I/scratch/shcho/chipyard/sims/firesim/sim/generated-src/f1/f1-firesim-FireSim-FireSimDmiRocketConfig-BaseF1Config -std=c++20 -D_GNU_SOURCE -DVCS -I/ecad/tools/synopsys/vcs/current/include -O2 -I/ecad/tools/synopsys/vcs/current/include    -c /scratch/shcho/chipyard/sims/firesim/sim/firesim-lib/src/main/cc/bridges/simplenic.cc
+g++ -w  -fPIC -g -isystem /scratch/shcho/chipyard/.conda-env/riscv-tools/include -isystem /scratch/shcho/chipyard/generators/testchipip/src/main/resources/testchipip/csrc -I/scratch/shcho/chipyard/sims/firesim/sim/src/main/cc/firesim -I/scratch/shcho/chipyard/sims/firesim/sim/firesim-lib/src/main/cc -I/scratch/shcho/chipyard/sims/firesim/sim/generated-src/f1/f1-firesim-FireSim-FireSimDmiRocketConfig-BaseF1Config -Wno-inconsistent-missing-override -Wno-unused-variable -DFIRESIM -I/ecad/tools/synopsys/vcs/current/include -D RTLSIM -Wall -I/scratch/shcho/chipyard/sims/firesim/sim/midas/src/main/cc -I/scratch/shcho/chipyard/sims/firesim/sim/generated-src/f1/f1-firesim-FireSim-FireSimDmiRocketConfig-BaseF1Config -std=c++20 -D_GNU_SOURCE -DVCS -I/ecad/tools/synopsys/vcs/current/include -O2 -I/ecad/tools/synopsys/vcs/current/include    -c /scratch/shcho/chipyard/sims/firesim/sim/firesim-lib/src/main/cc/bridges/tracerv.cc
+g++ -w  -fPIC -g -isystem /scratch/shcho/chipyard/.conda-env/riscv-tools/include -isystem /scratch/shcho/chipyard/generators/testchipip/src/main/resources/testchipip/csrc -I/scratch/shcho/chipyard/sims/firesim/sim/src/main/cc/firesim -I/scratch/shcho/chipyard/sims/firesim/sim/firesim-lib/src/main/cc -I/scratch/shcho/chipyard/sims/firesim/sim/generated-src/f1/f1-firesim-FireSim-FireSimDmiRocketConfig-BaseF1Config -Wno-inconsistent-missing-override -Wno-unused-variable -DFIRESIM -I/ecad/tools/synopsys/vcs/current/include -D RTLSIM -Wall -I/scratch/shcho/chipyard/sims/firesim/sim/midas/src/main/cc -I/scratch/shcho/chipyard/sims/firesim/sim/generated-src/f1/f1-firesim-FireSim-FireSimDmiRocketConfig-BaseF1Config -std=c++20 -D_GNU_SOURCE -DVCS -I/ecad/tools/synopsys/vcs/current/include -O2 -I/ecad/tools/synopsys/vcs/current/include    -c /scratch/shcho/chipyard/sims/firesim/sim/firesim-lib/src/main/cc/bridges/tsibridge.cc
+g++ -w  -fPIC -g -isystem /scratch/shcho/chipyard/.conda-env/riscv-tools/include -isystem /scratch/shcho/chipyard/generators/testchipip/src/main/resources/testchipip/csrc -I/scratch/shcho/chipyard/sims/firesim/sim/src/main/cc/firesim -I/scratch/shcho/chipyard/sims/firesim/sim/firesim-lib/src/main/cc -I/scratch/shcho/chipyard/sims/firesim/sim/generated-src/f1/f1-firesim-FireSim-FireSimDmiRocketConfig-BaseF1Config -Wno-inconsistent-missing-override -Wno-unused-variable -DFIRESIM -I/ecad/tools/synopsys/vcs/current/include -D RTLSIM -Wall -I/scratch/shcho/chipyard/sims/firesim/sim/midas/src/main/cc -I/scratch/shcho/chipyard/sims/firesim/sim/generated-src/f1/f1-firesim-FireSim-FireSimDmiRocketConfig-BaseF1Config -std=c++20 -D_GNU_SOURCE -DVCS -I/ecad/tools/synopsys/vcs/current/include -O2 -I/ecad/tools/synopsys/vcs/current/include    -c /scratch/shcho/chipyard/sims/firesim/sim/firesim-lib/src/main/cc/bridges/uart.cc
+g++ -w  -fPIC -g -isystem /scratch/shcho/chipyard/.conda-env/riscv-tools/include -isystem /scratch/shcho/chipyard/generators/testchipip/src/main/resources/testchipip/csrc -I/scratch/shcho/chipyard/sims/firesim/sim/src/main/cc/firesim -I/scratch/shcho/chipyard/sims/firesim/sim/firesim-lib/src/main/cc -I/scratch/shcho/chipyard/sims/firesim/sim/generated-src/f1/f1-firesim-FireSim-FireSimDmiRocketConfig-BaseF1Config -Wno-inconsistent-missing-override -Wno-unused-variable -DFIRESIM -I/ecad/tools/synopsys/vcs/current/include -D RTLSIM -Wall -I/scratch/shcho/chipyard/sims/firesim/sim/midas/src/main/cc -I/scratch/shcho/chipyard/sims/firesim/sim/generated-src/f1/f1-firesim-FireSim-FireSimDmiRocketConfig-BaseF1Config -std=c++20 -D_GNU_SOURCE -DVCS -I/ecad/tools/synopsys/vcs/current/include -O2 -I/ecad/tools/synopsys/vcs/current/include    -c /scratch/shcho/chipyard/sims/firesim/sim/firesim-lib/src/main/cc/fesvr/firesim_dtm.cc
+g++ -w  -fPIC -g -isystem /scratch/shcho/chipyard/.conda-env/riscv-tools/include -isystem /scratch/shcho/chipyard/generators/testchipip/src/main/resources/testchipip/csrc -I/scratch/shcho/chipyard/sims/firesim/sim/src/main/cc/firesim -I/scratch/shcho/chipyard/sims/firesim/sim/firesim-lib/src/main/cc -I/scratch/shcho/chipyard/sims/firesim/sim/generated-src/f1/f1-firesim-FireSim-FireSimDmiRocketConfig-BaseF1Config -Wno-inconsistent-missing-override -Wno-unused-variable -DFIRESIM -I/ecad/tools/synopsys/vcs/current/include -D RTLSIM -Wall -I/scratch/shcho/chipyard/sims/firesim/sim/midas/src/main/cc -I/scratch/shcho/chipyard/sims/firesim/sim/generated-src/f1/f1-firesim-FireSim-FireSimDmiRocketConfig-BaseF1Config -std=c++20 -D_GNU_SOURCE -DVCS -I/ecad/tools/synopsys/vcs/current/include -O2 -I/ecad/tools/synopsys/vcs/current/include    -c /scratch/shcho/chipyard/sims/firesim/sim/firesim-lib/src/main/cc/fesvr/firesim_tsi.cc
+g++ -w  -fPIC -g -isystem /scratch/shcho/chipyard/.conda-env/riscv-tools/include -isystem /scratch/shcho/chipyard/generators/testchipip/src/main/resources/testchipip/csrc -I/scratch/shcho/chipyard/sims/firesim/sim/src/main/cc/firesim -I/scratch/shcho/chipyard/sims/firesim/sim/firesim-lib/src/main/cc -I/scratch/shcho/chipyard/sims/firesim/sim/generated-src/f1/f1-firesim-FireSim-FireSimDmiRocketConfig-BaseF1Config -Wno-inconsistent-missing-override -Wno-unused-variable -DFIRESIM -I/ecad/tools/synopsys/vcs/current/include -D RTLSIM -Wall -I/scratch/shcho/chipyard/sims/firesim/sim/midas/src/main/cc -I/scratch/shcho/chipyard/sims/firesim/sim/generated-src/f1/f1-firesim-FireSim-FireSimDmiRocketConfig-BaseF1Config -std=c++20 -D_GNU_SOURCE -DVCS -I/ecad/tools/synopsys/vcs/current/include -O2 -I/ecad/tools/synopsys/vcs/current/include    -c /scratch/shcho/chipyard/sims/firesim/sim/firesim-lib/src/main/cc/bridges/tracerv/tracerv_dwarf.cc
+g++ -w  -fPIC -g -isystem /scratch/shcho/chipyard/.conda-env/riscv-tools/include -isystem /scratch/shcho/chipyard/generators/testchipip/src/main/resources/testchipip/csrc -I/scratch/shcho/chipyard/sims/firesim/sim/src/main/cc/firesim -I/scratch/shcho/chipyard/sims/firesim/sim/firesim-lib/src/main/cc -I/scratch/shcho/chipyard/sims/firesim/sim/generated-src/f1/f1-firesim-FireSim-FireSimDmiRocketConfig-BaseF1Config -Wno-inconsistent-missing-override -Wno-unused-variable -DFIRESIM -I/ecad/tools/synopsys/vcs/current/include -D RTLSIM -Wall -I/scratch/shcho/chipyard/sims/firesim/sim/midas/src/main/cc -I/scratch/shcho/chipyard/sims/firesim/sim/generated-src/f1/f1-firesim-FireSim-FireSimDmiRocketConfig-BaseF1Config -std=c++20 -D_GNU_SOURCE -DVCS -I/ecad/tools/synopsys/vcs/current/include -O2 -I/ecad/tools/synopsys/vcs/current/include    -c /scratch/shcho/chipyard/sims/firesim/sim/firesim-lib/src/main/cc/bridges/tracerv/tracerv_elf.cc
+g++ -w  -fPIC -g -isystem /scratch/shcho/chipyard/.conda-env/riscv-tools/include -isystem /scratch/shcho/chipyard/generators/testchipip/src/main/resources/testchipip/csrc -I/scratch/shcho/chipyard/sims/firesim/sim/src/main/cc/firesim -I/scratch/shcho/chipyard/sims/firesim/sim/firesim-lib/src/main/cc -I/scratch/shcho/chipyard/sims/firesim/sim/generated-src/f1/f1-firesim-FireSim-FireSimDmiRocketConfig-BaseF1Config -Wno-inconsistent-missing-override -Wno-unused-variable -DFIRESIM -I/ecad/tools/synopsys/vcs/current/include -D RTLSIM -Wall -I/scratch/shcho/chipyard/sims/firesim/sim/midas/src/main/cc -I/scratch/shcho/chipyard/sims/firesim/sim/generated-src/f1/f1-firesim-FireSim-FireSimDmiRocketConfig-BaseF1Config -std=c++20 -D_GNU_SOURCE -DVCS -I/ecad/tools/synopsys/vcs/current/include -O2 -I/ecad/tools/synopsys/vcs/current/include    -c /scratch/shcho/chipyard/sims/firesim/sim/firesim-lib/src/main/cc/bridges/tracerv/tracerv_processing.cc
+g++ -w  -fPIC -g -isystem /scratch/shcho/chipyard/.conda-env/riscv-tools/include -isystem /scratch/shcho/chipyard/generators/testchipip/src/main/resources/testchipip/csrc -I/scratch/shcho/chipyard/sims/firesim/sim/src/main/cc/firesim -I/scratch/shcho/chipyard/sims/firesim/sim/firesim-lib/src/main/cc -I/scratch/shcho/chipyard/sims/firesim/sim/generated-src/f1/f1-firesim-FireSim-FireSimDmiRocketConfig-BaseF1Config -Wno-inconsistent-missing-override -Wno-unused-variable -DFIRESIM -I/ecad/tools/synopsys/vcs/current/include -D RTLSIM -Wall -I/scratch/shcho/chipyard/sims/firesim/sim/midas/src/main/cc -I/scratch/shcho/chipyard/sims/firesim/sim/generated-src/f1/f1-firesim-FireSim-FireSimDmiRocketConfig-BaseF1Config -std=c++20 -D_GNU_SOURCE -DVCS -I/ecad/tools/synopsys/vcs/current/include -O2 -I/ecad/tools/synopsys/vcs/current/include    -c /scratch/shcho/chipyard/sims/firesim/sim/firesim-lib/src/main/cc/bridges/tracerv/trace_tracker.cc
+g++ -w  -fPIC -g -isystem /scratch/shcho/chipyard/.conda-env/riscv-tools/include -isystem /scratch/shcho/chipyard/generators/testchipip/src/main/resources/testchipip/csrc -I/scratch/shcho/chipyard/sims/firesim/sim/src/main/cc/firesim -I/scratch/shcho/chipyard/sims/firesim/sim/firesim-lib/src/main/cc -I/scratch/shcho/chipyard/sims/firesim/sim/generated-src/f1/f1-firesim-FireSim-FireSimDmiRocketConfig-BaseF1Config -Wno-inconsistent-missing-override -Wno-unused-variable -DFIRESIM -I/ecad/tools/synopsys/vcs/current/include -D RTLSIM -Wall -I/scratch/shcho/chipyard/sims/firesim/sim/midas/src/main/cc -I/scratch/shcho/chipyard/sims/firesim/sim/generated-src/f1/f1-firesim-FireSim-FireSimDmiRocketConfig-BaseF1Config -std=c++20 -D_GNU_SOURCE -DVCS -I/ecad/tools/synopsys/vcs/current/include -O2 -I/ecad/tools/synopsys/vcs/current/include    -c /scratch/shcho/chipyard/generators/testchipip/src/main/resources/testchipip/csrc/cospike_impl.cc
+g++ -w  -fPIC -g -isystem /scratch/shcho/chipyard/.conda-env/riscv-tools/include -isystem /scratch/shcho/chipyard/generators/testchipip/src/main/resources/testchipip/csrc -I/scratch/shcho/chipyard/sims/firesim/sim/src/main/cc/firesim -I/scratch/shcho/chipyard/sims/firesim/sim/firesim-lib/src/main/cc -I/scratch/shcho/chipyard/sims/firesim/sim/generated-src/f1/f1-firesim-FireSim-FireSimDmiRocketConfig-BaseF1Config -Wno-inconsistent-missing-override -Wno-unused-variable -DFIRESIM -I/ecad/tools/synopsys/vcs/current/include -D RTLSIM -Wall -I/scratch/shcho/chipyard/sims/firesim/sim/midas/src/main/cc -I/scratch/shcho/chipyard/sims/firesim/sim/generated-src/f1/f1-firesim-FireSim-FireSimDmiRocketConfig-BaseF1Config -std=c++20 -D_GNU_SOURCE -DVCS -I/ecad/tools/synopsys/vcs/current/include -O2 -I/ecad/tools/synopsys/vcs/current/include    -c /scratch/shcho/chipyard/generators/testchipip/src/main/resources/testchipip/csrc/testchip_tsi.cc
+g++ -w  -fPIC -g -isystem /scratch/shcho/chipyard/.conda-env/riscv-tools/include -isystem /scratch/shcho/chipyard/generators/testchipip/src/main/resources/testchipip/csrc -I/scratch/shcho/chipyard/sims/firesim/sim/src/main/cc/firesim -I/scratch/shcho/chipyard/sims/firesim/sim/firesim-lib/src/main/cc -I/scratch/shcho/chipyard/sims/firesim/sim/generated-src/f1/f1-firesim-FireSim-FireSimDmiRocketConfig-BaseF1Config -Wno-inconsistent-missing-override -Wno-unused-variable -DFIRESIM -I/ecad/tools/synopsys/vcs/current/include -D RTLSIM -Wall -I/scratch/shcho/chipyard/sims/firesim/sim/midas/src/main/cc -I/scratch/shcho/chipyard/sims/firesim/sim/generated-src/f1/f1-firesim-FireSim-FireSimDmiRocketConfig-BaseF1Config -std=c++20 -D_GNU_SOURCE -DVCS -I/ecad/tools/synopsys/vcs/current/include -O2 -I/ecad/tools/synopsys/vcs/current/include    -c /scratch/shcho/chipyard/generators/testchipip/src/main/resources/testchipip/csrc/testchip_dtm.cc
+g++ -w  -fPIC -g -isystem /scratch/shcho/chipyard/.conda-env/riscv-tools/include -isystem /scratch/shcho/chipyard/generators/testchipip/src/main/resources/testchipip/csrc -I/scratch/shcho/chipyard/sims/firesim/sim/src/main/cc/firesim -I/scratch/shcho/chipyard/sims/firesim/sim/firesim-lib/src/main/cc -I/scratch/shcho/chipyard/sims/firesim/sim/generated-src/f1/f1-firesim-FireSim-FireSimDmiRocketConfig-BaseF1Config -Wno-inconsistent-missing-override -Wno-unused-variable -DFIRESIM -I/ecad/tools/synopsys/vcs/current/include -D RTLSIM -Wall -I/scratch/shcho/chipyard/sims/firesim/sim/midas/src/main/cc -I/scratch/shcho/chipyard/sims/firesim/sim/generated-src/f1/f1-firesim-FireSim-FireSimDmiRocketConfig-BaseF1Config -std=c++20 -D_GNU_SOURCE -DVCS -I/ecad/tools/synopsys/vcs/current/include -O2 -I/ecad/tools/synopsys/vcs/current/include    -c /scratch/shcho/chipyard/generators/testchipip/src/main/resources/testchipip/csrc/testchip_htif.cc
+g++ -w  -fPIC -g -isystem /scratch/shcho/chipyard/.conda-env/riscv-tools/include -isystem /scratch/shcho/chipyard/generators/testchipip/src/main/resources/testchipip/csrc -I/scratch/shcho/chipyard/sims/firesim/sim/src/main/cc/firesim -I/scratch/shcho/chipyard/sims/firesim/sim/firesim-lib/src/main/cc -I/scratch/shcho/chipyard/sims/firesim/sim/generated-src/f1/f1-firesim-FireSim-FireSimDmiRocketConfig-BaseF1Config -Wno-inconsistent-missing-override -Wno-unused-variable -DFIRESIM -I/ecad/tools/synopsys/vcs/current/include -D RTLSIM -Wall -I/scratch/shcho/chipyard/sims/firesim/sim/midas/src/main/cc -I/scratch/shcho/chipyard/sims/firesim/sim/generated-src/f1/f1-firesim-FireSim-FireSimDmiRocketConfig-BaseF1Config -std=c++20 -D_GNU_SOURCE -DVCS -I/ecad/tools/synopsys/vcs/current/include -O2 -I/ecad/tools/synopsys/vcs/current/include    -c /scratch/shcho/chipyard/sims/firesim/sim/midas/src/main/cc/bridges/autocounter.cc
+g++ -w  -fPIC -g -isystem /scratch/shcho/chipyard/.conda-env/riscv-tools/include -isystem /scratch/shcho/chipyard/generators/testchipip/src/main/resources/testchipip/csrc -I/scratch/shcho/chipyard/sims/firesim/sim/src/main/cc/firesim -I/scratch/shcho/chipyard/sims/firesim/sim/firesim-lib/src/main/cc -I/scratch/shcho/chipyard/sims/firesim/sim/generated-src/f1/f1-firesim-FireSim-FireSimDmiRocketConfig-BaseF1Config -Wno-inconsistent-missing-override -Wno-unused-variable -DFIRESIM -I/ecad/tools/synopsys/vcs/current/include -D RTLSIM -Wall -I/scratch/shcho/chipyard/sims/firesim/sim/midas/src/main/cc -I/scratch/shcho/chipyard/sims/firesim/sim/generated-src/f1/f1-firesim-FireSim-FireSimDmiRocketConfig-BaseF1Config -std=c++20 -D_GNU_SOURCE -DVCS -I/ecad/tools/synopsys/vcs/current/include -O2 -I/ecad/tools/synopsys/vcs/current/include    -c /scratch/shcho/chipyard/sims/firesim/sim/midas/src/main/cc/bridges/clock.cc
+g++ -w  -fPIC -g -isystem /scratch/shcho/chipyard/.conda-env/riscv-tools/include -isystem /scratch/shcho/chipyard/generators/testchipip/src/main/resources/testchipip/csrc -I/scratch/shcho/chipyard/sims/firesim/sim/src/main/cc/firesim -I/scratch/shcho/chipyard/sims/firesim/sim/firesim-lib/src/main/cc -I/scratch/shcho/chipyard/sims/firesim/sim/generated-src/f1/f1-firesim-FireSim-FireSimDmiRocketConfig-BaseF1Config -Wno-inconsistent-missing-override -Wno-unused-variable -DFIRESIM -I/ecad/tools/synopsys/vcs/current/include -D RTLSIM -Wall -I/scratch/shcho/chipyard/sims/firesim/sim/midas/src/main/cc -I/scratch/shcho/chipyard/sims/firesim/sim/generated-src/f1/f1-firesim-FireSim-FireSimDmiRocketConfig-BaseF1Config -std=c++20 -D_GNU_SOURCE -DVCS -I/ecad/tools/synopsys/vcs/current/include -O2 -I/ecad/tools/synopsys/vcs/current/include    -c /scratch/shcho/chipyard/sims/firesim/sim/midas/src/main/cc/bridges/cpu_managed_stream.cc
+g++ -w  -fPIC -g -isystem /scratch/shcho/chipyard/.conda-env/riscv-tools/include -isystem /scratch/shcho/chipyard/generators/testchipip/src/main/resources/testchipip/csrc -I/scratch/shcho/chipyard/sims/firesim/sim/src/main/cc/firesim -I/scratch/shcho/chipyard/sims/firesim/sim/firesim-lib/src/main/cc -I/scratch/shcho/chipyard/sims/firesim/sim/generated-src/f1/f1-firesim-FireSim-FireSimDmiRocketConfig-BaseF1Config -Wno-inconsistent-missing-override -Wno-unused-variable -DFIRESIM -I/ecad/tools/synopsys/vcs/current/include -D RTLSIM -Wall -I/scratch/shcho/chipyard/sims/firesim/sim/midas/src/main/cc -I/scratch/shcho/chipyard/sims/firesim/sim/generated-src/f1/f1-firesim-FireSim-FireSimDmiRocketConfig-BaseF1Config -std=c++20 -D_GNU_SOURCE -DVCS -I/ecad/tools/synopsys/vcs/current/include -O2 -I/ecad/tools/synopsys/vcs/current/include    -c /scratch/shcho/chipyard/sims/firesim/sim/midas/src/main/cc/bridges/fased_memory_timing_model.cc
+g++ -w  -fPIC -g -isystem /scratch/shcho/chipyard/.conda-env/riscv-tools/include -isystem /scratch/shcho/chipyard/generators/testchipip/src/main/resources/testchipip/csrc -I/scratch/shcho/chipyard/sims/firesim/sim/src/main/cc/firesim -I/scratch/shcho/chipyard/sims/firesim/sim/firesim-lib/src/main/cc -I/scratch/shcho/chipyard/sims/firesim/sim/generated-src/f1/f1-firesim-FireSim-FireSimDmiRocketConfig-BaseF1Config -Wno-inconsistent-missing-override -Wno-unused-variable -DFIRESIM -I/ecad/tools/synopsys/vcs/current/include -D RTLSIM -Wall -I/scratch/shcho/chipyard/sims/firesim/sim/midas/src/main/cc -I/scratch/shcho/chipyard/sims/firesim/sim/generated-src/f1/f1-firesim-FireSim-FireSimDmiRocketConfig-BaseF1Config -std=c++20 -D_GNU_SOURCE -DVCS -I/ecad/tools/synopsys/vcs/current/include -O2 -I/ecad/tools/synopsys/vcs/current/include    -c /scratch/shcho/chipyard/sims/firesim/sim/midas/src/main/cc/bridges/fpga_managed_stream.cc
+g++ -w  -fPIC -g -isystem /scratch/shcho/chipyard/.conda-env/riscv-tools/include -isystem /scratch/shcho/chipyard/generators/testchipip/src/main/resources/testchipip/csrc -I/scratch/shcho/chipyard/sims/firesim/sim/src/main/cc/firesim -I/scratch/shcho/chipyard/sims/firesim/sim/firesim-lib/src/main/cc -I/scratch/shcho/chipyard/sims/firesim/sim/generated-src/f1/f1-firesim-FireSim-FireSimDmiRocketConfig-BaseF1Config -Wno-inconsistent-missing-override -Wno-unused-variable -DFIRESIM -I/ecad/tools/synopsys/vcs/current/include -D RTLSIM -Wall -I/scratch/shcho/chipyard/sims/firesim/sim/midas/src/main/cc -I/scratch/shcho/chipyard/sims/firesim/sim/generated-src/f1/f1-firesim-FireSim-FireSimDmiRocketConfig-BaseF1Config -std=c++20 -D_GNU_SOURCE -DVCS -I/ecad/tools/synopsys/vcs/current/include -O2 -I/ecad/tools/synopsys/vcs/current/include    -c /scratch/shcho/chipyard/sims/firesim/sim/midas/src/main/cc/bridges/heartbeat.cc
+g++ -w  -fPIC -g -isystem /scratch/shcho/chipyard/.conda-env/riscv-tools/include -isystem /scratch/shcho/chipyard/generators/testchipip/src/main/resources/testchipip/csrc -I/scratch/shcho/chipyard/sims/firesim/sim/src/main/cc/firesim -I/scratch/shcho/chipyard/sims/firesim/sim/firesim-lib/src/main/cc -I/scratch/shcho/chipyard/sims/firesim/sim/generated-src/f1/f1-firesim-FireSim-FireSimDmiRocketConfig-BaseF1Config -Wno-inconsistent-missing-override -Wno-unused-variable -DFIRESIM -I/ecad/tools/synopsys/vcs/current/include -D RTLSIM -Wall -I/scratch/shcho/chipyard/sims/firesim/sim/midas/src/main/cc -I/scratch/shcho/chipyard/sims/firesim/sim/generated-src/f1/f1-firesim-FireSim-FireSimDmiRocketConfig-BaseF1Config -std=c++20 -D_GNU_SOURCE -DVCS -I/ecad/tools/synopsys/vcs/current/include -O2 -I/ecad/tools/synopsys/vcs/current/include    -c /scratch/shcho/chipyard/sims/firesim/sim/midas/src/main/cc/bridges/loadmem.cc
+g++ -w  -fPIC -g -isystem /scratch/shcho/chipyard/.conda-env/riscv-tools/include -isystem /scratch/shcho/chipyard/generators/testchipip/src/main/resources/testchipip/csrc -I/scratch/shcho/chipyard/sims/firesim/sim/src/main/cc/firesim -I/scratch/shcho/chipyard/sims/firesim/sim/firesim-lib/src/main/cc -I/scratch/shcho/chipyard/sims/firesim/sim/generated-src/f1/f1-firesim-FireSim-FireSimDmiRocketConfig-BaseF1Config -Wno-inconsistent-missing-override -Wno-unused-variable -DFIRESIM -I/ecad/tools/synopsys/vcs/current/include -D RTLSIM -Wall -I/scratch/shcho/chipyard/sims/firesim/sim/midas/src/main/cc -I/scratch/shcho/chipyard/sims/firesim/sim/generated-src/f1/f1-firesim-FireSim-FireSimDmiRocketConfig-BaseF1Config -std=c++20 -D_GNU_SOURCE -DVCS -I/ecad/tools/synopsys/vcs/current/include -O2 -I/ecad/tools/synopsys/vcs/current/include    -c /scratch/shcho/chipyard/sims/firesim/sim/midas/src/main/cc/bridges/master.cc
+g++ -w  -fPIC -g -isystem /scratch/shcho/chipyard/.conda-env/riscv-tools/include -isystem /scratch/shcho/chipyard/generators/testchipip/src/main/resources/testchipip/csrc -I/scratch/shcho/chipyard/sims/firesim/sim/src/main/cc/firesim -I/scratch/shcho/chipyard/sims/firesim/sim/firesim-lib/src/main/cc -I/scratch/shcho/chipyard/sims/firesim/sim/generated-src/f1/f1-firesim-FireSim-FireSimDmiRocketConfig-BaseF1Config -Wno-inconsistent-missing-override -Wno-unused-variable -DFIRESIM -I/ecad/tools/synopsys/vcs/current/include -D RTLSIM -Wall -I/scratch/shcho/chipyard/sims/firesim/sim/midas/src/main/cc -I/scratch/shcho/chipyard/sims/firesim/sim/generated-src/f1/f1-firesim-FireSim-FireSimDmiRocketConfig-BaseF1Config -std=c++20 -D_GNU_SOURCE -DVCS -I/ecad/tools/synopsys/vcs/current/include -O2 -I/ecad/tools/synopsys/vcs/current/include    -c /scratch/shcho/chipyard/sims/firesim/sim/midas/src/main/cc/bridges/peek_poke.cc
+g++ -w  -fPIC -g -isystem /scratch/shcho/chipyard/.conda-env/riscv-tools/include -isystem /scratch/shcho/chipyard/generators/testchipip/src/main/resources/testchipip/csrc -I/scratch/shcho/chipyard/sims/firesim/sim/src/main/cc/firesim -I/scratch/shcho/chipyard/sims/firesim/sim/firesim-lib/src/main/cc -I/scratch/shcho/chipyard/sims/firesim/sim/generated-src/f1/f1-firesim-FireSim-FireSimDmiRocketConfig-BaseF1Config -Wno-inconsistent-missing-override -Wno-unused-variable -DFIRESIM -I/ecad/tools/synopsys/vcs/current/include -D RTLSIM -Wall -I/scratch/shcho/chipyard/sims/firesim/sim/midas/src/main/cc -I/scratch/shcho/chipyard/sims/firesim/sim/generated-src/f1/f1-firesim-FireSim-FireSimDmiRocketConfig-BaseF1Config -std=c++20 -D_GNU_SOURCE -DVCS -I/ecad/tools/synopsys/vcs/current/include -O2 -I/ecad/tools/synopsys/vcs/current/include    -c /scratch/shcho/chipyard/sims/firesim/sim/midas/src/main/cc/bridges/plusargs.cc
+g++ -w  -fPIC -g -isystem /scratch/shcho/chipyard/.conda-env/riscv-tools/include -isystem /scratch/shcho/chipyard/generators/testchipip/src/main/resources/testchipip/csrc -I/scratch/shcho/chipyard/sims/firesim/sim/src/main/cc/firesim -I/scratch/shcho/chipyard/sims/firesim/sim/firesim-lib/src/main/cc -I/scratch/shcho/chipyard/sims/firesim/sim/generated-src/f1/f1-firesim-FireSim-FireSimDmiRocketConfig-BaseF1Config -Wno-inconsistent-missing-override -Wno-unused-variable -DFIRESIM -I/ecad/tools/synopsys/vcs/current/include -D RTLSIM -Wall -I/scratch/shcho/chipyard/sims/firesim/sim/midas/src/main/cc -I/scratch/shcho/chipyard/sims/firesim/sim/generated-src/f1/f1-firesim-FireSim-FireSimDmiRocketConfig-BaseF1Config -std=c++20 -D_GNU_SOURCE -DVCS -I/ecad/tools/synopsys/vcs/current/include -O2 -I/ecad/tools/synopsys/vcs/current/include    -c /scratch/shcho/chipyard/sims/firesim/sim/midas/src/main/cc/bridges/reset_pulse.cc
+g++ -w  -fPIC -g -isystem /scratch/shcho/chipyard/.conda-env/riscv-tools/include -isystem /scratch/shcho/chipyard/generators/testchipip/src/main/resources/testchipip/csrc -I/scratch/shcho/chipyard/sims/firesim/sim/src/main/cc/firesim -I/scratch/shcho/chipyard/sims/firesim/sim/firesim-lib/src/main/cc -I/scratch/shcho/chipyard/sims/firesim/sim/generated-src/f1/f1-firesim-FireSim-FireSimDmiRocketConfig-BaseF1Config -Wno-inconsistent-missing-override -Wno-unused-variable -DFIRESIM -I/ecad/tools/synopsys/vcs/current/include -D RTLSIM -Wall -I/scratch/shcho/chipyard/sims/firesim/sim/midas/src/main/cc -I/scratch/shcho/chipyard/sims/firesim/sim/generated-src/f1/f1-firesim-FireSim-FireSimDmiRocketConfig-BaseF1Config -std=c++20 -D_GNU_SOURCE -DVCS -I/ecad/tools/synopsys/vcs/current/include -O2 -I/ecad/tools/synopsys/vcs/current/include    -c /scratch/shcho/chipyard/sims/firesim/sim/midas/src/main/cc/bridges/synthesized_assertions.cc
+g++ -w  -fPIC -g -isystem /scratch/shcho/chipyard/.conda-env/riscv-tools/include -isystem /scratch/shcho/chipyard/generators/testchipip/src/main/resources/testchipip/csrc -I/scratch/shcho/chipyard/sims/firesim/sim/src/main/cc/firesim -I/scratch/shcho/chipyard/sims/firesim/sim/firesim-lib/src/main/cc -I/scratch/shcho/chipyard/sims/firesim/sim/generated-src/f1/f1-firesim-FireSim-FireSimDmiRocketConfig-BaseF1Config -Wno-inconsistent-missing-override -Wno-unused-variable -DFIRESIM -I/ecad/tools/synopsys/vcs/current/include -D RTLSIM -Wall -I/scratch/shcho/chipyard/sims/firesim/sim/midas/src/main/cc -I/scratch/shcho/chipyard/sims/firesim/sim/generated-src/f1/f1-firesim-FireSim-FireSimDmiRocketConfig-BaseF1Config -std=c++20 -D_GNU_SOURCE -DVCS -I/ecad/tools/synopsys/vcs/current/include -O2 -I/ecad/tools/synopsys/vcs/current/include    -c /scratch/shcho/chipyard/sims/firesim/sim/midas/src/main/cc/bridges/synthesized_prints.cc
+g++ -w  -fPIC -g -isystem /scratch/shcho/chipyard/.conda-env/riscv-tools/include -isystem /scratch/shcho/chipyard/generators/testchipip/src/main/resources/testchipip/csrc -I/scratch/shcho/chipyard/sims/firesim/sim/src/main/cc/firesim -I/scratch/shcho/chipyard/sims/firesim/sim/firesim-lib/src/main/cc -I/scratch/shcho/chipyard/sims/firesim/sim/generated-src/f1/f1-firesim-FireSim-FireSimDmiRocketConfig-BaseF1Config -Wno-inconsistent-missing-override -Wno-unused-variable -DFIRESIM -I/ecad/tools/synopsys/vcs/current/include -D RTLSIM -Wall -I/scratch/shcho/chipyard/sims/firesim/sim/midas/src/main/cc -I/scratch/shcho/chipyard/sims/firesim/sim/generated-src/f1/f1-firesim-FireSim-FireSimDmiRocketConfig-BaseF1Config -std=c++20 -D_GNU_SOURCE -DVCS -I/ecad/tools/synopsys/vcs/current/include -O2 -I/ecad/tools/synopsys/vcs/current/include    -c /scratch/shcho/chipyard/sims/firesim/sim/midas/src/main/cc/bridges/termination.cc
+g++ -w  -fPIC -g -isystem /scratch/shcho/chipyard/.conda-env/riscv-tools/include -isystem /scratch/shcho/chipyard/generators/testchipip/src/main/resources/testchipip/csrc -I/scratch/shcho/chipyard/sims/firesim/sim/src/main/cc/firesim -I/scratch/shcho/chipyard/sims/firesim/sim/firesim-lib/src/main/cc -I/scratch/shcho/chipyard/sims/firesim/sim/generated-src/f1/f1-firesim-FireSim-FireSimDmiRocketConfig-BaseF1Config -Wno-inconsistent-missing-override -Wno-unused-variable -DFIRESIM -I/ecad/tools/synopsys/vcs/current/include -D RTLSIM -Wall -I/scratch/shcho/chipyard/sims/firesim/sim/midas/src/main/cc -I/scratch/shcho/chipyard/sims/firesim/sim/generated-src/f1/f1-firesim-FireSim-FireSimDmiRocketConfig-BaseF1Config -std=c++20 -D_GNU_SOURCE -DVCS -I/ecad/tools/synopsys/vcs/current/include -O2 -I/ecad/tools/synopsys/vcs/current/include    -c /scratch/shcho/chipyard/sims/firesim/sim/midas/src/main/cc/core/address_map.cc
+g++ -w  -fPIC -g -isystem /scratch/shcho/chipyard/.conda-env/riscv-tools/include -isystem /scratch/shcho/chipyard/generators/testchipip/src/main/resources/testchipip/csrc -I/scratch/shcho/chipyard/sims/firesim/sim/src/main/cc/firesim -I/scratch/shcho/chipyard/sims/firesim/sim/firesim-lib/src/main/cc -I/scratch/shcho/chipyard/sims/firesim/sim/generated-src/f1/f1-firesim-FireSim-FireSimDmiRocketConfig-BaseF1Config -Wno-inconsistent-missing-override -Wno-unused-variable -DFIRESIM -I/ecad/tools/synopsys/vcs/current/include -D RTLSIM -Wall -I/scratch/shcho/chipyard/sims/firesim/sim/midas/src/main/cc -I/scratch/shcho/chipyard/sims/firesim/sim/generated-src/f1/f1-firesim-FireSim-FireSimDmiRocketConfig-BaseF1Config -std=c++20 -D_GNU_SOURCE -DVCS -I/ecad/tools/synopsys/vcs/current/include -O2 -I/ecad/tools/synopsys/vcs/current/include    -c /scratch/shcho/chipyard/sims/firesim/sim/midas/src/main/cc/core/bridge_driver.cc
+g++ -w  -fPIC -g -isystem /scratch/shcho/chipyard/.conda-env/riscv-tools/include -isystem /scratch/shcho/chipyard/generators/testchipip/src/main/resources/testchipip/csrc -I/scratch/shcho/chipyard/sims/firesim/sim/src/main/cc/firesim -I/scratch/shcho/chipyard/sims/firesim/sim/firesim-lib/src/main/cc -I/scratch/shcho/chipyard/sims/firesim/sim/generated-src/f1/f1-firesim-FireSim-FireSimDmiRocketConfig-BaseF1Config -Wno-inconsistent-missing-override -Wno-unused-variable -DFIRESIM -I/ecad/tools/synopsys/vcs/current/include -D RTLSIM -Wall -I/scratch/shcho/chipyard/sims/firesim/sim/midas/src/main/cc -I/scratch/shcho/chipyard/sims/firesim/sim/generated-src/f1/f1-firesim-FireSim-FireSimDmiRocketConfig-BaseF1Config -std=c++20 -D_GNU_SOURCE -DVCS -I/ecad/tools/synopsys/vcs/current/include -O2 -I/ecad/tools/synopsys/vcs/current/include    -c /scratch/shcho/chipyard/sims/firesim/sim/midas/src/main/cc/core/simif.cc
+g++ -w  -fPIC -g -isystem /scratch/shcho/chipyard/.conda-env/riscv-tools/include -isystem /scratch/shcho/chipyard/generators/testchipip/src/main/resources/testchipip/csrc -I/scratch/shcho/chipyard/sims/firesim/sim/src/main/cc/firesim -I/scratch/shcho/chipyard/sims/firesim/sim/firesim-lib/src/main/cc -I/scratch/shcho/chipyard/sims/firesim/sim/generated-src/f1/f1-firesim-FireSim-FireSimDmiRocketConfig-BaseF1Config -Wno-inconsistent-missing-override -Wno-unused-variable -DFIRESIM -I/ecad/tools/synopsys/vcs/current/include -D RTLSIM -Wall -I/scratch/shcho/chipyard/sims/firesim/sim/midas/src/main/cc -I/scratch/shcho/chipyard/sims/firesim/sim/generated-src/f1/f1-firesim-FireSim-FireSimDmiRocketConfig-BaseF1Config -std=c++20 -D_GNU_SOURCE -DVCS -I/ecad/tools/synopsys/vcs/current/include -O2 -I/ecad/tools/synopsys/vcs/current/include    -c /scratch/shcho/chipyard/sims/firesim/sim/midas/src/main/cc/core/simulation.cc
+g++ -w  -fPIC -g -isystem /scratch/shcho/chipyard/.conda-env/riscv-tools/include -isystem /scratch/shcho/chipyard/generators/testchipip/src/main/resources/testchipip/csrc -I/scratch/shcho/chipyard/sims/firesim/sim/src/main/cc/firesim -I/scratch/shcho/chipyard/sims/firesim/sim/firesim-lib/src/main/cc -I/scratch/shcho/chipyard/sims/firesim/sim/generated-src/f1/f1-firesim-FireSim-FireSimDmiRocketConfig-BaseF1Config -Wno-inconsistent-missing-override -Wno-unused-variable -DFIRESIM -I/ecad/tools/synopsys/vcs/current/include -D RTLSIM -Wall -I/scratch/shcho/chipyard/sims/firesim/sim/midas/src/main/cc -I/scratch/shcho/chipyard/sims/firesim/sim/generated-src/f1/f1-firesim-FireSim-FireSimDmiRocketConfig-BaseF1Config -std=c++20 -D_GNU_SOURCE -DVCS -I/ecad/tools/synopsys/vcs/current/include -O2 -I/ecad/tools/synopsys/vcs/current/include    -c /scratch/shcho/chipyard/sims/firesim/sim/midas/src/main/cc/core/stream_engine.cc
+g++ -w  -fPIC -g -isystem /scratch/shcho/chipyard/.conda-env/riscv-tools/include -isystem /scratch/shcho/chipyard/generators/testchipip/src/main/resources/testchipip/csrc -I/scratch/shcho/chipyard/sims/firesim/sim/src/main/cc/firesim -I/scratch/shcho/chipyard/sims/firesim/sim/firesim-lib/src/main/cc -I/scratch/shcho/chipyard/sims/firesim/sim/generated-src/f1/f1-firesim-FireSim-FireSimDmiRocketConfig-BaseF1Config -Wno-inconsistent-missing-override -Wno-unused-variable -DFIRESIM -I/ecad/tools/synopsys/vcs/current/include -D RTLSIM -Wall -I/scratch/shcho/chipyard/sims/firesim/sim/midas/src/main/cc -I/scratch/shcho/chipyard/sims/firesim/sim/generated-src/f1/f1-firesim-FireSim-FireSimDmiRocketConfig-BaseF1Config -std=c++20 -D_GNU_SOURCE -DVCS -I/ecad/tools/synopsys/vcs/current/include -O2 -I/ecad/tools/synopsys/vcs/current/include    -c /scratch/shcho/chipyard/sims/firesim/sim/midas/src/main/cc/core/systematic_scheduler.cc
+g++ -w  -fPIC -g -isystem /scratch/shcho/chipyard/.conda-env/riscv-tools/include -isystem /scratch/shcho/chipyard/generators/testchipip/src/main/resources/testchipip/csrc -I/scratch/shcho/chipyard/sims/firesim/sim/src/main/cc/firesim -I/scratch/shcho/chipyard/sims/firesim/sim/firesim-lib/src/main/cc -I/scratch/shcho/chipyard/sims/firesim/sim/generated-src/f1/f1-firesim-FireSim-FireSimDmiRocketConfig-BaseF1Config -Wno-inconsistent-missing-override -Wno-unused-variable -DFIRESIM -I/ecad/tools/synopsys/vcs/current/include -D RTLSIM -Wall -I/scratch/shcho/chipyard/sims/firesim/sim/midas/src/main/cc -I/scratch/shcho/chipyard/sims/firesim/sim/generated-src/f1/f1-firesim-FireSim-FireSimDmiRocketConfig-BaseF1Config -std=c++20 -D_GNU_SOURCE -DVCS -I/ecad/tools/synopsys/vcs/current/include -O2 -I/ecad/tools/synopsys/vcs/current/include    -c /scratch/shcho/chipyard/sims/firesim/sim/midas/src/main/cc/core/timing.cc
+g++ -w  -fPIC -g -isystem /scratch/shcho/chipyard/.conda-env/riscv-tools/include -isystem /scratch/shcho/chipyard/generators/testchipip/src/main/resources/testchipip/csrc -I/scratch/shcho/chipyard/sims/firesim/sim/src/main/cc/firesim -I/scratch/shcho/chipyard/sims/firesim/sim/firesim-lib/src/main/cc -I/scratch/shcho/chipyard/sims/firesim/sim/generated-src/f1/f1-firesim-FireSim-FireSimDmiRocketConfig-BaseF1Config -Wno-inconsistent-missing-override -Wno-unused-variable -DFIRESIM -I/ecad/tools/synopsys/vcs/current/include -D RTLSIM -Wall -I/scratch/shcho/chipyard/sims/firesim/sim/midas/src/main/cc -I/scratch/shcho/chipyard/sims/firesim/sim/generated-src/f1/f1-firesim-FireSim-FireSimDmiRocketConfig-BaseF1Config -std=c++20 -D_GNU_SOURCE -DVCS -I/ecad/tools/synopsys/vcs/current/include -O2 -I/ecad/tools/synopsys/vcs/current/include    -c /scratch/shcho/chipyard/sims/firesim/sim/midas/src/main/cc/core/widget.cc
+g++ -w  -fPIC -g -isystem /scratch/shcho/chipyard/.conda-env/riscv-tools/include -isystem /scratch/shcho/chipyard/generators/testchipip/src/main/resources/testchipip/csrc -I/scratch/shcho/chipyard/sims/firesim/sim/src/main/cc/firesim -I/scratch/shcho/chipyard/sims/firesim/sim/firesim-lib/src/main/cc -I/scratch/shcho/chipyard/sims/firesim/sim/generated-src/f1/f1-firesim-FireSim-FireSimDmiRocketConfig-BaseF1Config -Wno-inconsistent-missing-override -Wno-unused-variable -DFIRESIM -I/ecad/tools/synopsys/vcs/current/include -D RTLSIM -Wall -I/scratch/shcho/chipyard/sims/firesim/sim/midas/src/main/cc -I/scratch/shcho/chipyard/sims/firesim/sim/generated-src/f1/f1-firesim-FireSim-FireSimDmiRocketConfig-BaseF1Config -std=c++20 -D_GNU_SOURCE -DVCS -I/ecad/tools/synopsys/vcs/current/include -O2 -I/ecad/tools/synopsys/vcs/current/include    -c /scratch/shcho/chipyard/sims/firesim/sim/midas/src/main/cc/core/widget_registry.cc
+g++ -w  -fPIC -g -isystem /scratch/shcho/chipyard/.conda-env/riscv-tools/include -isystem /scratch/shcho/chipyard/generators/testchipip/src/main/resources/testchipip/csrc -I/scratch/shcho/chipyard/sims/firesim/sim/src/main/cc/firesim -I/scratch/shcho/chipyard/sims/firesim/sim/firesim-lib/src/main/cc -I/scratch/shcho/chipyard/sims/firesim/sim/generated-src/f1/f1-firesim-FireSim-FireSimDmiRocketConfig-BaseF1Config -Wno-inconsistent-missing-override -Wno-unused-variable -DFIRESIM -I/ecad/tools/synopsys/vcs/current/include -D RTLSIM -Wall -I/scratch/shcho/chipyard/sims/firesim/sim/midas/src/main/cc -I/scratch/shcho/chipyard/sims/firesim/sim/generated-src/f1/f1-firesim-FireSim-FireSimDmiRocketConfig-BaseF1Config -std=c++20 -D_GNU_SOURCE -DVCS -I/ecad/tools/synopsys/vcs/current/include -O2 -I/ecad/tools/synopsys/vcs/current/include    -c /scratch/shcho/chipyard/sims/firesim/sim/midas/src/main/cc/emul/simif_emul.cc
+g++ -w  -fPIC -g -isystem /scratch/shcho/chipyard/.conda-env/riscv-tools/include -isystem /scratch/shcho/chipyard/generators/testchipip/src/main/resources/testchipip/csrc -I/scratch/shcho/chipyard/sims/firesim/sim/src/main/cc/firesim -I/scratch/shcho/chipyard/sims/firesim/sim/firesim-lib/src/main/cc -I/scratch/shcho/chipyard/sims/firesim/sim/generated-src/f1/f1-firesim-FireSim-FireSimDmiRocketConfig-BaseF1Config -Wno-inconsistent-missing-override -Wno-unused-variable -DFIRESIM -I/ecad/tools/synopsys/vcs/current/include -D RTLSIM -Wall -I/scratch/shcho/chipyard/sims/firesim/sim/midas/src/main/cc -I/scratch/shcho/chipyard/sims/firesim/sim/generated-src/f1/f1-firesim-FireSim-FireSimDmiRocketConfig-BaseF1Config -std=c++20 -D_GNU_SOURCE -DVCS -I/ecad/tools/synopsys/vcs/current/include -O2 -I/ecad/tools/synopsys/vcs/current/include    -c /scratch/shcho/chipyard/sims/firesim/sim/midas/src/main/cc/emul/mmio.cc
+g++ -w  -fPIC -g -isystem /scratch/shcho/chipyard/.conda-env/riscv-tools/include -isystem /scratch/shcho/chipyard/generators/testchipip/src/main/resources/testchipip/csrc -I/scratch/shcho/chipyard/sims/firesim/sim/src/main/cc/firesim -I/scratch/shcho/chipyard/sims/firesim/sim/firesim-lib/src/main/cc -I/scratch/shcho/chipyard/sims/firesim/sim/generated-src/f1/f1-firesim-FireSim-FireSimDmiRocketConfig-BaseF1Config -Wno-inconsistent-missing-override -Wno-unused-variable -DFIRESIM -I/ecad/tools/synopsys/vcs/current/include -D RTLSIM -Wall -I/scratch/shcho/chipyard/sims/firesim/sim/midas/src/main/cc -I/scratch/shcho/chipyard/sims/firesim/sim/generated-src/f1/f1-firesim-FireSim-FireSimDmiRocketConfig-BaseF1Config -std=c++20 -D_GNU_SOURCE -DVCS -I/ecad/tools/synopsys/vcs/current/include -O2 -I/ecad/tools/synopsys/vcs/current/include    -c /scratch/shcho/chipyard/sims/firesim/sim/midas/src/main/cc/emul/mm.cc
+g++ -w  -fPIC -g -isystem /scratch/shcho/chipyard/.conda-env/riscv-tools/include -isystem /scratch/shcho/chipyard/generators/testchipip/src/main/resources/testchipip/csrc -I/scratch/shcho/chipyard/sims/firesim/sim/src/main/cc/firesim -I/scratch/shcho/chipyard/sims/firesim/sim/firesim-lib/src/main/cc -I/scratch/shcho/chipyard/sims/firesim/sim/generated-src/f1/f1-firesim-FireSim-FireSimDmiRocketConfig-BaseF1Config -Wno-inconsistent-missing-override -Wno-unused-variable -DFIRESIM -I/ecad/tools/synopsys/vcs/current/include -D RTLSIM -Wall -I/scratch/shcho/chipyard/sims/firesim/sim/midas/src/main/cc -I/scratch/shcho/chipyard/sims/firesim/sim/generated-src/f1/f1-firesim-FireSim-FireSimDmiRocketConfig-BaseF1Config -std=c++20 -D_GNU_SOURCE -DVCS -I/ecad/tools/synopsys/vcs/current/include -O2 -I/ecad/tools/synopsys/vcs/current/include    -c /scratch/shcho/chipyard/sims/firesim/sim/midas/src/main/cc/emul/dpi.cc
+g++ -w  -fPIC -g -isystem /scratch/shcho/chipyard/.conda-env/riscv-tools/include -isystem /scratch/shcho/chipyard/generators/testchipip/src/main/resources/testchipip/csrc -I/scratch/shcho/chipyard/sims/firesim/sim/src/main/cc/firesim -I/scratch/shcho/chipyard/sims/firesim/sim/firesim-lib/src/main/cc -I/scratch/shcho/chipyard/sims/firesim/sim/generated-src/f1/f1-firesim-FireSim-FireSimDmiRocketConfig-BaseF1Config -Wno-inconsistent-missing-override -Wno-unused-variable -DFIRESIM -I/ecad/tools/synopsys/vcs/current/include -D RTLSIM -Wall -I/scratch/shcho/chipyard/sims/firesim/sim/midas/src/main/cc -I/scratch/shcho/chipyard/sims/firesim/sim/generated-src/f1/f1-firesim-FireSim-FireSimDmiRocketConfig-BaseF1Config -std=c++20 -D_GNU_SOURCE -DVCS -I/ecad/tools/synopsys/vcs/current/include -O2 -I/ecad/tools/synopsys/vcs/current/include    -c /scratch/shcho/chipyard/sims/firesim/sim/midas/src/main/cc/entry.cc
+g++ -w  -fPIC -g -isystem /scratch/shcho/chipyard/.conda-env/riscv-tools/include -isystem /scratch/shcho/chipyard/generators/testchipip/src/main/resources/testchipip/csrc -I/scratch/shcho/chipyard/sims/firesim/sim/src/main/cc/firesim -I/scratch/shcho/chipyard/sims/firesim/sim/firesim-lib/src/main/cc -I/scratch/shcho/chipyard/sims/firesim/sim/generated-src/f1/f1-firesim-FireSim-FireSimDmiRocketConfig-BaseF1Config -Wno-inconsistent-missing-override -Wno-unused-variable -DFIRESIM -I/ecad/tools/synopsys/vcs/current/include -D RTLSIM -Wall -I/scratch/shcho/chipyard/sims/firesim/sim/midas/src/main/cc -I/scratch/shcho/chipyard/sims/firesim/sim/generated-src/f1/f1-firesim-FireSim-FireSimDmiRocketConfig-BaseF1Config -std=c++20 -D_GNU_SOURCE -DVCS -I/ecad/tools/synopsys/vcs/current/include -O2 -I/ecad/tools/synopsys/vcs/current/include    -c /scratch/shcho/chipyard/sims/firesim/sim/midas/src/main/cc/simif_emul_all.cc
+cc1: warning: command-line option '-std=c++20' is valid for C++/ObjC++ but not for C
+cc1: note: unrecognized command-line option '-Wno-inconsistent-missing-override' may have been intended to silence earlier diagnostics
+/scratch/shcho/chipyard/.conda-env/bin/../lib/gcc/x86_64-conda-linux-gnu/13.2.0/../../../../x86_64-conda-linux-gnu/bin/ld: warning: rmar_nd.o: missing .note.GNU-stack section implies executable stack
+/scratch/shcho/chipyard/.conda-env/bin/../lib/gcc/x86_64-conda-linux-gnu/13.2.0/../../../../x86_64-conda-linux-gnu/bin/ld: NOTE: This behaviour is deprecated and will be removed in a future version of the linker
+/scratch/shcho/chipyard/.conda-env/bin/../lib/gcc/x86_64-conda-linux-gnu/13.2.0/../../../../x86_64-conda-linux-gnu/bin/ld: dmibridge.o: in function `dmibridge_t::handle_loadmem_write(firesim_loadmem_t)':
+/scratch/shcho/chipyard/sims/firesim/sim/firesim-lib/src/main/cc/bridges/dmibridge.cc:133: undefined reference to `firesim_dtm_t::recv_loadmem_data(void*, unsigned long)'
+collect2: error: ld returned 1 exit status
+make[2]: *** [Makefile:118: product_timestamp] Error 1
 make[2]: Leaving directory '/scratch/shcho/chipyard/sims/firesim/sim/generated-src/f1/f1-firesim-FireSim-FireSimDmiRocketConfig-BaseF1Config/FireSim-debug.csrc'
 Make exited with status 2
 make[1]: *** [rtlsim/Makefrag-vcs:51: /scratch/shcho/chipyard/sims/firesim/sim/generated-src/f1/f1-firesim-FireSim-FireSimDmiRocketConfig-BaseF1Config/FireSim] Error 2

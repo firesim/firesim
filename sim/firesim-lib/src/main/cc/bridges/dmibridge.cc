@@ -106,8 +106,9 @@ void dmibridge_t::handle_loadmem_read(firesim_loadmem_t loadmem) {
         (loadmem.size / sizeof(uint32_t) > loadmem_widget.get_mem_data_chunk()) ? loadmem_widget.get_mem_data_chunk()
             : loadmem.size / sizeof(uint32_t);
 
-    // The number of beats exported from buf; may be less than beats requested.    size_t non_zero_beats;
-    uint32_t *data = (uint32_t *)mpz_export(
+    // The number of beats exported from buf; may be less than beats requested.    
+    size_t non_zero_beats;
+    uint32_t *data = (uint32_t *) mpz_export(
         NULL, &non_zero_beats, -1, sizeof(uint32_t), 0, 0, buf);
     for (size_t j = 0; j < beats_requested; j++) {
       if (j < non_zero_beats) {
@@ -177,7 +178,8 @@ void dmibridge_t::tick() {
     write(mmio_addrs.out_ready, 1);
   }
 
-  fesvr->tick(read(mmio_addrs.in_ready), resp_valid, out_resp);
+  // no need to call the tick here
+  // fesvr->tick(read(mmio_addrs.in_ready), resp_valid, out_resp);
 
   // shcho: add loadmem bypassing
   if (fesvr->has_loadmem_reqs()) {
