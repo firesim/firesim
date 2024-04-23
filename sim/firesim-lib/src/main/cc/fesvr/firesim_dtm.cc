@@ -84,3 +84,11 @@ bool firesim_dtm_t::recv_loadmem_read_req(firesim_loadmem_t &loadmem) {
   loadmem_read_reqs.pop_front();
   return true;
 }
+
+void firesim_dtm_t::recv_loadmem_data(void *buf, size_t len) {
+  std::copy(loadmem_write_data.begin(),
+            loadmem_write_data.begin() + len,
+            (char *)buf);
+  loadmem_write_data.erase(loadmem_write_data.begin(),
+                           loadmem_write_data.begin() + len);
+}
