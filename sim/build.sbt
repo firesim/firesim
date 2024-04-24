@@ -69,13 +69,10 @@ lazy val chipyardDir = if(firesimAsLibrary) {
   file("../target-design/chipyard")
 }
 
-lazy val chipyard      = ProjectRef(chipyardDir, "chipyard")
-lazy val diplomacy     = ProjectRef(chipyardDir, "diplomacy")
 lazy val rocketchip    = ProjectRef(chipyardDir, "rocketchip")
 lazy val icenet        = ProjectRef(chipyardDir, "icenet")
 lazy val testchipip    = ProjectRef(chipyardDir, "testchipip")
 lazy val rocketchip_blocks = ProjectRef(chipyardDir, "rocketchip_blocks")
-lazy val firechip      = ProjectRef(chipyardDir, "firechip")
 
 lazy val targetutils   = (project in file("midas/targetutils"))
   .settings(commonSettings)
@@ -117,4 +114,4 @@ lazy val firesim    = (project in file("."))
     addMappingsToSiteDir(ScalaUnidoc / packageDoc / mappings, ScalaUnidoc / siteSubdirName),
     concurrentRestrictions += Tags.limit(Tags.Test, 1)
   )
-  .dependsOn(rocketchip, midas, firesimLib % "test->test;compile->compile", chipyard)
+  .dependsOn(rocketchip, midas, firesimLib % "test->test;compile->compile")
