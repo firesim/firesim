@@ -111,8 +111,6 @@ $(FIRESIM_MAIN_CP): $(SCALA_BUILDTOOL_DEPS) $(firesim_main_srcs) $(firesim_test_
 	@mkdir -p $(@D)
 	$(call run_sbt_assembly,$(firesim_base_dir),$(FIRESIM_SBT_PROJECT),$(FIRESIM_MAIN_CP))
 
-ifneq ($(FIRESIM_SBT_PROJECT),$(TARGET_SBT_PROJECT))
-
 target_srcs = \
 	$(call fs_lookup_srcs_by_multiple_type, $(TARGET_SOURCE_DIRS), 'src/main/scala', $(SCALA_EXT)) \
 	$(call fs_lookup_srcs_by_multiple_type, $(TARGET_SOURCE_DIRS), 'src/main/resources', $(VLOG_EXT))
@@ -124,11 +122,6 @@ $(TARGET_CP): $(target_srcs) | $(FIRESIM_MAIN_CP)
 	@mkdir -p $(@D)
 	$(call run_sbt_assembly,$(chipyard_dir),$(TARGET_SBT_PROJECT),$(TARGET_CP))
 
-else
-
-TARGET_CP := $(FIRESIM_MAIN_CP)
-
-endif
 
 .PHONY: firesim-main-classpath target-classpath
 firesim-main-classpath: $(FIRESIM_MAIN_CP)
