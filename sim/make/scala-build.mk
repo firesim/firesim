@@ -32,7 +32,7 @@
 SBT_COMMAND ?= shell
 .PHONY: sbt
 sbt:
-	cd $(base_dir) && $(SBT) ";project $(FIRESIM_SBT_PROJECT); $(SBT_COMMAND)"
+	cd $(firesim_base_dir) && $(SBT) ";project $(FIRESIM_SBT_PROJECT); $(SBT_COMMAND)"
 
 # Scala invocation options
 JAVA_HEAP_SIZE ?= 16G
