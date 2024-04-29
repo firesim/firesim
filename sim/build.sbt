@@ -54,6 +54,24 @@ lazy val commonSettings = Seq(
   }
 )
 
+lazy val chiselSettings = Seq(
+  libraryDependencies ++= Seq(
+    "edu.berkeley.cs" %% "chisel3" % "3.6.0",
+    "org.apache.commons" % "commons-lang3" % "3.12.0",
+    "org.apache.commons" % "commons-text" % "1.9"
+  ),
+  addCompilerPlugin("edu.berkeley.cs" % "chisel3-plugin" % "3.6.0" cross CrossVersion.full)
+)
+
+lazy val firesimAsLibrary = sys.env.get("FIRESIM_STANDALONE") == None
+
+lazy val chipyardDir = if(firesimAsLibrary) {
+  file("./chipyard-symlink")
+} else {
+  file("./target-rtl/chipyard")
+}
+
+
 // Fork each scala test for now, to work around persistent mutable state
 // in Rocket-Chip based generators
 def isolateAllTests(tests: Seq[TestDefinition]) = tests map { test =>
@@ -61,21 +79,59 @@ def isolateAllTests(tests: Seq[TestDefinition]) = tests map { test =>
       new Group(test.name, Seq(test), SubProcess(options))
   } toSeq
 
-lazy val firesimAsLibrary = sys.env.get("FIRESIM_STANDALONE") == None
 
-lazy val chipyardDir = if(firesimAsLibrary) {
-  file("../../../")
-} else {
-  file("../target-design/chipyard")
-}
+lazy val cde = (project in chipyardDir / "tools" / "cde")
+  .settings(commonSettings)
+  .settings(chiselSettings)
+  .settings(Compile / scalaSource := baseDirectory.value / "cde/src/chipsalliance/rocketchip")
 
-lazy val chipyard      = ProjectRef(chipyardDir, "chipyard")
-lazy val diplomacy     = ProjectRef(chipyardDir, "diplomacy")
-lazy val rocketchip    = ProjectRef(chipyardDir, "rocketchip")
-lazy val icenet        = ProjectRef(chipyardDir, "icenet")
-lazy val testchipip    = ProjectRef(chipyardDir, "testchipip")
-lazy val rocketchip_blocks = ProjectRef(chipyardDir, "rocketchip_blocks")
-lazy val firechip      = ProjectRef(chipyardDir, "firechip")
+lazy val hardfloat = (project in chipyardDir / "generators" / "hardfloat" / "hardfloat")
+  .settings(commonSettings)
+  .settings(chiselSettings)
+
+lazy val rocketMacros  = (project in chipyardDir / "generators" / "rocket-chip" / "macros")
+  .settings(commonSettings)
+  .settings(chiselSettings)
+
+lazy val diplomacy = (project in chipyardDir / "generators" / "diplomacy" / "diplomacy")
+  .dependsOn(cde)
+  .settings(commonSettings)
+  .settings(chiselSettings)
+  .settings(Compile / scalaSource := baseDirectory.value / "src" / "diplomacy")
+
+
+lazy val rocketchip = (project in chipyardDir / "generators" / "rocket-chip")
+  .dependsOn(hardfloat, rocketMacros, diplomacy, cde)
+  .settings(commonSettings)
+  .settings(chiselSettings)
+  .settings(
+    libraryDependencies ++= Seq(
+      "com.lihaoyi" %% "mainargs" % "0.5.0",
+      "org.scala-lang" % "scala-reflect" % scalaVersion.value,
+      "org.json4s" %% "json4s-jackson" % "4.0.5",
+      "org.scalatest" %% "scalatest" % "3.2.0" % "test",
+      "org.scala-graph" %% "graph-core" % "1.13.5",
+      "com.lihaoyi" %% "sourcecode" % "0.3.1"
+    )
+  )
+
+lazy val icenet = (project in chipyardDir / "generators" / "icenet")
+  .dependsOn(rocketchip)
+  .settings(commonSettings)
+  .settings(chiselSettings)
+
+lazy val testchipip = (project in chipyardDir / "generators" / "testchipip" / "src")
+  .dependsOn(rocketchip, rocketchip_blocks)
+  .settings(commonSettings)
+  .settings(chiselSettings)
+  .settings(Compile / scalaSource := baseDirectory.value / "main" / "scala")
+  .settings(Compile / resourceDirectory := baseDirectory.value / "main" / "resources")
+
+
+lazy val rocketchip_blocks = (project in chipyardDir / "generators" / "rocket-chip-blocks")
+  .dependsOn(rocketchip)
+  .settings(commonSettings)
+  .settings(chiselSettings)
 
 lazy val targetutils   = (project in file("midas/targetutils"))
   .settings(commonSettings)
@@ -86,7 +142,7 @@ lazy val targetutils   = (project in file("midas/targetutils"))
 lazy val firesimRef = ProjectRef(file("."), "firesim")
 
 lazy val midas = (project in file("midas"))
-  .dependsOn(rocketchip)
+  .dependsOn(rocketchip, targetutils)
   .settings(libraryDependencies ++= Seq(
     "org.scalatestplus" %% "scalacheck-1-14" % "3.1.3.0" % "test"))
   .settings(commonSettings)
@@ -117,4 +173,4 @@ lazy val firesim    = (project in file("."))
     addMappingsToSiteDir(ScalaUnidoc / packageDoc / mappings, ScalaUnidoc / siteSubdirName),
     concurrentRestrictions += Tags.limit(Tags.Test, 1)
   )
-  .dependsOn(rocketchip, midas, firesimLib % "test->test;compile->compile", chipyard)
+  .dependsOn(rocketchip, midas, firesimLib % "test->test;compile->compile")

@@ -28,7 +28,7 @@ $(simulator_verilog) $(simulator_xdc) $(header) $(fame_annos): $(simulator_veril
 # Run the 1.3 version instead (checked-in). If dedup must be completely disabled,
 # pass --no-legacy-dedup as well
 $(simulator_verilog).intermediate: $(FIRRTL_FILE) $(ANNO_FILE) $(FIRESIM_MAIN_CP)
-	$(call run_jar_scala_main,$(FIRESIM_MAIN_CP),midas.stage.GoldenGateMain,\
+	$(call run_jar_scala_main,$(firesim_base_dir),$(FIRESIM_MAIN_CP),midas.stage.GoldenGateMain,\
 		-i $(FIRRTL_FILE) \
 		-td $(GENERATED_DIR) \
 		-faf $(ANNO_FILE) \
@@ -50,7 +50,7 @@ $(simulator_verilog).intermediate: $(FIRRTL_FILE) $(ANNO_FILE) $(FIRESIM_MAIN_CP
 .PHONY: conf
 conf: $(fame_annos) $(FIRESIM_MAIN_CP)
 	mkdir -p $(GENERATED_DIR)
-	$(call run_jar_scala_main,$(FIRESIM_MAIN_CP),midas.stage.RuntimeConfigGeneratorMain,\
+	$(call run_jar_scala_main,$(firesim_base_dir),$(FIRESIM_MAIN_CP),midas.stage.RuntimeConfigGeneratorMain,\
 		-td $(GENERATED_DIR) \
 		-faf $(fame_annos) \
 		-ggcp $(PLATFORM_CONFIG_PACKAGE) \
