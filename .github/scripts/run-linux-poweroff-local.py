@@ -36,7 +36,7 @@ def run_linux_poweroff():
                 run("./marshal -v install test/outputs.yaml")
 
             def run_w_timeout(workload_path, config_runtime, workload, timeout, num_passes):
-                print(f"Staring workload run {workload}.")
+                print(f"Starting workload run {workload}.")
                 log_tail_length = 300
                 rc = 0
                 with settings(warn_only=True):
