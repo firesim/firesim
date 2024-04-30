@@ -24,8 +24,8 @@ module custom_logic(
     `AMBA_AXI_SLAVE_PORT(PCIE_M_AXI_LITE, unused, 32, 32)
     `undef AMBA_AXI_PROT
 
-    , input wire PCIE_axi_aclk
-    , input wire PCIE_axi_aresetn
+    , input wire xdma_axi_aclk
+    , input wire xdma_axi_aresetn
 );
 
     `define AMBA_AXI4
@@ -183,8 +183,8 @@ module custom_logic(
         `undef AMBA_AXI_REGION
         `undef AMBA_AXI_ID
 
-        , .s_axi_aclk(PCIE_axi_aclk)
-        , .s_axi_aresetn(PCIE_axi_aresetn)
+        , .s_axi_aclk(xdma_axi_aclk)
+        , .s_axi_aresetn(xdma_axi_aresetn)
 
         `define AMBA_AXI4
         `define AMBA_AXI_CACHE
@@ -209,8 +209,8 @@ module custom_logic(
         `AMBA_AXI_PORT_CONNECTION(m_axi, axi_clock_converter_1_M_AXI_LITE)
         `undef AMBA_AXI_PROT
 
-        , .s_axi_aclk(PCIE_axi_aclk)
-        , .s_axi_aresetn(PCIE_axi_aresetn)
+        , .s_axi_aclk(xdma_axi_aclk)
+        , .s_axi_aresetn(xdma_axi_aresetn)
 
         `define AMBA_AXI_PROT
         `AMBA_AXI_PORT_CONNECTION(s_axi, PCIE_M_AXI_LITE)

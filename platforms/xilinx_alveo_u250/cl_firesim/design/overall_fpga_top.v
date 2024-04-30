@@ -18,6 +18,9 @@ module overall_fpga_top(
     input wire resetn
 );
 
+    wire xdma_axi_aclk;
+    wire xdma_axi_aresetn;
+
     `define AMBA_AXI4
     `define AMBA_AXI_CACHE
     `define AMBA_AXI_PROT
@@ -32,17 +35,13 @@ module overall_fpga_top(
     `AMBA_AXI_WIRE(PCIE_M_AXI_LITE, unused, 32, 32)
     `undef AMBA_AXI_PROT
 
-    wire PCIE_axi_aclk;
-    wire PCIE_axi_aresetn;
-
     shell shell_i (
           .pci_express_x16_rxn(pci_express_x16_rxn)
         , .pci_express_x16_rxp(pci_express_x16_rxp)
         , .pci_express_x16_txn(pci_express_x16_txn)
         , .pci_express_x16_txp(pci_express_x16_txp)
         , .pcie_perstn(pcie_perstn)
-        , .pcie_refclk_clk_n(pcie_refclk_clk_n)
-        , .pcie_refclk_clk_p(pcie_refclk_clk_p)
+        `DIFF_CLK_CONNECT(pcie_refclk, pcie_refclk)
 
         `define AMBA_AXI4
         `define AMBA_AXI_CACHE
@@ -58,8 +57,8 @@ module overall_fpga_top(
         `AMBA_AXI_PORT_CONNECTION(PCIE_M_AXI_LITE, PCIE_M_AXI_LITE)
         `undef AMBA_AXI_PROT
 
-        , .axi_aclk_0(PCIE_axi_aclk)
-        , .axi_aresetn_0(PCIE_axi_aresetn)
+        , .axi_aclk_0(xdma_axi_aclk)
+        , .axi_aresetn_0(xdma_axi_aresetn)
     );
 
     custom_logic custom_logic_i (
@@ -85,8 +84,8 @@ module overall_fpga_top(
         `AMBA_AXI_PORT_CONNECTION(PCIE_M_AXI_LITE, PCIE_M_AXI_LITE)
         `undef AMBA_AXI_PROT
 
-        , .PCIE_axi_aclk(PCIE_axi_aclk)
-        , .PCIE_axi_aresetn(PCIE_axi_aresetn)
+        , .xdma_axi_aclk(xdma_axi_aclk)
+        , .xdma_axi_aresetn(xdma_axi_aresetn)
     );
 
 endmodule
