@@ -1,0 +1,9 @@
+#!/bin/bash
+
+set -ex
+
+BDF_ESC=$(echo "$1" | sed -r 's/\:/*/g')
+
+chmod a+rwX /sys/bus/pci/devices/$BDF_ESC/vendor
+chmod a+rwX /sys/bus/pci/devices/$BDF_ESC/device
+chmod a+rwX /sys/bus/pci/devices/$BDF_ESC/xdma/*_h2c_0

@@ -1,0 +1,5 @@
+#!/bin/bash
+
+set -ex
+
+chmod a+rw /dev/xdma*

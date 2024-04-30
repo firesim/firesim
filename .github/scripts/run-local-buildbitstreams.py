@@ -7,7 +7,6 @@ import os
 from github import Github
 import base64
 import time
-import argparse
 
 from ci_variables import ci_env
 
@@ -223,12 +222,16 @@ def run_local_buildbitstreams():
             # priority == roughly the more powerful and available
             # ipaddr, buildtool:version, use unique build dir, unique build dir path, priority (0 is highest)(unused by code but used to track which machine has most resources)
             hosts = [
+                (          "as4",  "vivado:2022.1", False, "", 0),
+                ("buildbot1@as4",  "vivado:2022.1",  True, "/scratch/buildbot1/FIRESIM_BUILD_DIR", 0),
+                ("buildbot2@as4",  "vivado:2022.1",  True, "/scratch/buildbot2/FIRESIM_BUILD_DIR", 0),
+                (    "localhost",   "vitis:2022.1", False, "", 0),
                 ("buildbot1@a17",   "vitis:2022.1",  True, "/scratch/buildbot1/FIRESIM_BUILD_DIR", 0),
-                (         "harp",   "vitis:2022.1", False, "", 2),
                 ("buildbot2@a17",   "vitis:2021.1",  True, "/scratch/buildbot2/FIRESIM_BUILD_DIR", 0),
                 ("buildbot3@a17",   "vitis:2021.1",  True, "/scratch/buildbot3/FIRESIM_BUILD_DIR", 0),
                 ("buildbot4@a17",   "vitis:2021.1",  True, "/scratch/buildbot4/FIRESIM_BUILD_DIR", 0),
                 (     "firesim1",   "vitis:2021.1", False, "", 1),
+                (         "harp",   "vitis:2022.1", False, "", 2),
                 (        "jktgz",  "vivado:2023.1", False, "", 3),
                 (       "jktqos",  "vivado:2023.1", False, "", 3),
             ]
@@ -278,16 +281,21 @@ def run_local_buildbitstreams():
 
             # hwdb_entry_name, platform_name, buildtool:version
             batch_hwdbs_in = [
+                # hwdb's to verify FPGA builds
                 ("vitis_firesim_rocket_singlecore_no_nic", "vitis", "vitis:2022.1"),
-
                 ("nitefury_firesim_rocket_singlecore_no_nic", "rhsresearch_nitefury_ii", "vitis:2022.1"),
-
-                ("alveo_u250_firesim_rocket_singlecore_no_nic", "xilinx_alveo_u250", "vitis:2021.1"),
-                ("alveo_u250_firesim_gemmini_rocket_singlecore_no_nic", "xilinx_alveo_u250", "vitis:2021.1"),
                 ("alveo_u200_firesim_rocket_singlecore_no_nic", "xilinx_alveo_u200", "vitis:2021.1"),
+                ("alveo_u250_firesim_rocket_singlecore_no_nic", "xilinx_alveo_u250", "vitis:2021.1"),
                 ("alveo_u280_firesim_rocket_singlecore_no_nic", "xilinx_alveo_u280", "vitis:2021.1"),
-
                 ("xilinx_vcu118_firesim_rocket_singlecore_4GB_no_nic", "xilinx_vcu118", "vivado:2023.1"),
+
+                # extra hwdb's to run CI with
+                ("alveo_u250_firesim_rocket_quadcore_no_nic", "xilinx_alveo_u250", "vivado:2022.1"),
+                ("alveo_u250_firesim_boom_singlecore_no_nic", "xilinx_alveo_u250", "vivado:2022.1"),
+                ("alveo_u250_firesim_rocket_singlecore_nic", "xilinx_alveo_u250", "vivado:2022.1"),
+
+                # extra hwdb's
+                ("alveo_u250_firesim_gemmini_rocket_singlecore_no_nic", "xilinx_alveo_u250", "vitis:2021.1"),
             ]
 
             do_builds(batch_hwdbs_in)

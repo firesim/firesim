@@ -6,7 +6,7 @@ run_farm:
   recipe_arg_overrides:
     # REQUIRED: default platform used for run farm hosts. this is a class specifying
     # how to run simulations on a run farm host.
-    default_platform: VitisInstanceDeployManager
+    default_platform: XilinxAlveoU250InstanceDeployManager
 
     # REQUIRED: default directory where simulations are run out of on the run farm hosts
     default_simulation_dir: /home/buildbot/FIRESIM_RUNS_DIR

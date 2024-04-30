@@ -191,7 +191,7 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - name: Check docs components that require manual re-generation (e.g. config_runtime.yaml example, help output)
-        run: ./.github/scripts/check-docs-generated-components.py
+        run: ./.github/scripts/check-docs-generated-components.py --platform f1
 
   build-f1-driver:
     name: build-f1-driver
@@ -311,7 +311,7 @@ jobs:
       - uses: actions/checkout@v4
       - name: Run buildbitstream command and update sample AGFIs
         run: .github/scripts/run-agfi-buildbitstream.py
-      - uses: peter-evans/create-pull-request@v5
+      - uses: peter-evans/create-pull-request@v6
         with:
           base: ${{ github.head_ref }}
           add-paths: "deploy/sample-backup-configs/sample_config_hwdb.yaml"

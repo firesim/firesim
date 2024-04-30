@@ -1,4 +1,4 @@
-""" Miscellaneous utils used by other buildtools pieces. """
+""" Miscellaneous utils used by other runtools pieces. """
 
 from __future__ import annotations
 
@@ -7,7 +7,12 @@ import logging
 from os import fspath
 from os.path import realpath
 from pathlib import Path
-from fabric.api import run, warn_only, hide # type: ignore
+from fabric.api import run, warn_only, hide, get # type: ignore
+import hashlib
+from tempfile import TemporaryDirectory
+
+from awstools.awstools import get_localhost_instance_id
+from buildtools.bitbuilder import get_deploy_dir
 
 from typing import List, Tuple, Type
 
@@ -449,4 +454,41 @@ class MacAddress():
         how many entries you need in your switching tables. """
         return cls.next_mac_alloc
 
+def is_on_aws() -> bool:
+    return get_localhost_instance_id()
 
+def run_only_aws(*args, **kwargs) -> None:
+    """ Enforce that the Fabric run command is only run on AWS. """
+    if is_on_aws():
+        run(*args, **kwargs)
+    else:
+        sys.exit(1)
+
+def get_md5(file):
+    """ For a local file, get the md5 hash as a string. """
+    return hashlib.md5(open(file,'rb').read()).hexdigest()
+
+# firesim scripts that require sudo access are stored here
+# must be updated at the same time as the documentation/installation instructions
+script_path = Path("/usr/local/bin")
+
+def check_script(remote_script_str: str, search_dir: Option[Path] = None) -> None:
+    """ Given a remote_script (absolute or relative path), search for the
+    script in a known location (based on it's name) in the local FireSim
+    repo and compare it's contents to ensure they are the same.
+    """
+    if search_dir is None:
+        search_dir = Path(f"{get_deploy_dir()}/sudo-scripts")
+
+    remote_script = Path(remote_script_str)
+
+    with TemporaryDirectory() as tmp_dir:
+        if remote_script.is_absolute():
+            r = remote_script
+        else:
+            r = run(f"which {remote_script}")
+        get(str(r), tmp_dir)
+        local_script = f"{search_dir}/{remote_script.name}"
+        if get_md5(local_script) != get_md5(f"{tmp_dir}/{remote_script.name}"):
+            raise Exception(f"""{remote_script} (on remote) differs from the current FireSim version of {local_script}. Ensure the proper FireSim scripts are sourced (and are the same version as this FireSim)""")
+            sys.exit(1)

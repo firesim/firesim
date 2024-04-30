@@ -1,0 +1,5 @@
+#!/bin/bash
+
+set -ex
+
+insmod $(find /lib/modules/$(uname -r) -name "xdma.ko") poll_mode=1
