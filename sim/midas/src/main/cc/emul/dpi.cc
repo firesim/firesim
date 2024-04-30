@@ -281,14 +281,17 @@ void simulator_tick(
         exit(exit_code);
     }
   } catch (std::exception &e) {
-    fprintf(
-        stderr, "Caught Exception headed for the simulator: %s.\n", e.what());
+    fprintf(stderr,
+            "Caught Exception headed for the simulator (in DPI thread): %s.\n",
+            e.what());
     abort();
   } catch (...) {
     // seriously, VCS will give you an unhelpful message if you let an exception
-    // propagate catch it here and if we hit this, I can go rememeber how to
+    // propagate catch it here and if we hit this, I can go remember how to
     // unwind the stack to print a trace
-    fprintf(stderr, "Caught non std::exception headed for the simulator\n");
+    fprintf(
+        stderr,
+        "Caught non std::exception headed for the simulator (in DPI thread)\n");
     abort();
   }
 }

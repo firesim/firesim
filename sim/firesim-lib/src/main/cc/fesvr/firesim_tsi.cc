@@ -111,3 +111,31 @@ void firesim_tsi_t::recv_loadmem_data(void *buf, size_t len) {
   loadmem_write_data.erase(loadmem_write_data.begin(),
                            loadmem_write_data.begin() + len);
 }
+
+// re-enable fprintfs in file
+#undef fprintf
+
+// try to catch exceptions in the htif thread (specifically from program
+// loading)
+// TODO: ideally you override the htif_t::run function but currently
+// un-overrideable
+void firesim_tsi_t::load_program() {
+  try {
+    testchip_tsi_t::load_program();
+  } catch (std::exception &e) {
+    fprintf(stderr,
+            "Caught Exception headed for the simulator (in TSI thread): %s.\n",
+            e.what());
+    throw std::runtime_error(
+        e.what()); // runtime_error used here to throw exception in main thread
+  } catch (...) {
+    // seriously, VCS will give you an unhelpful message if you let an exception
+    // propagate catch it here and if we hit this, I can go remember how to
+    // unwind the stack to print a trace
+    fprintf(
+        stderr,
+        "Caught non std::exception headed for the simulator (in TSI thread)\n");
+    throw std::runtime_error(
+        "unknown"); // runtime_error used here to throw exception in main thread
+  }
+}
