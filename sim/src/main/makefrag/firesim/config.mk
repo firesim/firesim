@@ -19,7 +19,7 @@ PLATFORM_CONFIG ?= BaseF1Config
 TARGET_SRC_DIRS ?= $(chipyard_dir)/generators/
 
 # Project for the target.
-TARGET_SBT_PROJECT := {file:${chipyard_dir}}firechip
+TARGET_SBT_PROJECT := firechip
 
 # Directory where sources are located.
 TARGET_SOURCE_DIRS = $(chipyard_dir)/generators

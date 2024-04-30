@@ -41,19 +41,6 @@ object PlusArgsWiringTransform extends Transform {
     width: Int,
     docstring: String)
 
-  def onStmtReplaceWire(stmt: Statement, plusArgInstanceName: String, newRef: String, argsW: IntWidth): Seq[Statement] = {
-    stmt match {
-      case c @ Connect(i, l, WSubField(WRef(iN, _, InstanceKind, _), iP, _, _)) =>
-        if (iN == plusArgInstanceName) {
-          val wire = DefWire(NoInfo, newRef, firrtl.ir.UIntType(argsW))
-          Seq(wire, Connect(i, l, WRef(newRef)))
-        } else {
-          Seq(c)
-        }
-      case s => Seq(s)
-    }
-  }
-
   def addBridgeInstanceInModule(
     parentMod: Module,
     plusArgInstanceName: String,
@@ -69,12 +56,36 @@ object PlusArgsWiringTransform extends Transform {
     val inst = DefInstance(bridgeName, bridgeName)
     val clkConn = Connect(NoInfo, WSubField(WRef(bridgeName), "clock"), WRef(parentModClockName))
     val refConn = Connect(NoInfo, WRef(newRef), WSubField(WRef(bridgeName), "io_out"))
+    var replaced = false
+
+    def swapRefs(e: Expression): Expression = {
+      e match {
+        // TODO: could match a bit stronger to the specific 'out' field
+        case wsf @ WSubField(WRef(iN, _, InstanceKind, _), iP, _, _) =>
+          if (iN == plusArgInstanceName) {
+            replaced = true
+            WRef(newRef)
+          } else {
+            wsf
+          }
+        case other =>
+          other.mapExpr(swapRefs)
+      }
+    }
 
     val bStmts = Seq(inst, clkConn, refConn)
     val newBody = body match {
       case Block(stmts) =>
-        val newStmts = stmts.flatMap(onStmtReplaceWire(_, plusArgInstanceName, newRef, argsW))
-        new Block(newStmts ++ bStmts)
+        val newStmts = stmts.map(s => s.mapExpr(swapRefs))
+
+        val initialWireDef = if (replaced) {
+          val wire = DefWire(NoInfo, newRef, firrtl.ir.UIntType(argsW))
+          Seq(wire)
+        } else {
+          Seq.empty
+        }
+
+        new Block(initialWireDef ++ newStmts ++ bStmts)
       case _ => throw new Exception("Module body is not a Block")
     }
     parentMod.copy(body = newBody)
