@@ -10,7 +10,7 @@ from fabric.api import run, local, warn_only, get, put, cd, hide # type: ignore
 from fabric.exceptions import CommandTimeout # type: ignore
 
 from runtools.switch_model_config import AbstractSwitchToSwitchConfig
-from runtools.utils import get_local_shared_libraries, run_only_aws, check_script, is_on_aws
+from runtools.utils import get_local_shared_libraries, run_only_aws, check_script, is_on_aws, script_path
 from runtools.simulation_data_classes import TracerVConfig, AutoCounterConfig, HostDebugConfig, SynthPrintConfig
 
 from runtools.run_farm_deploy_managers import InstanceDeployManager
@@ -405,7 +405,7 @@ class FireSimServerNode(FireSimNode):
                 run(f"sudo mount -o loop {img} {mnt}")
                 run(f"sudo chown -R $(whoami) {mnt}")
             else:
-                cmd = "/usr/local/bin/firesim-mount"
+                cmd = f"{script_path}/firesim-mount"
                 check_script(cmd)
                 run(f"sudo {cmd} {img} {mnt}")
 
@@ -413,7 +413,7 @@ class FireSimServerNode(FireSimNode):
             if is_on_aws():
                 run(f"sudo umount {mnt}")
             else:
-                cmd = "/usr/local/bin/firesim-unmount"
+                cmd = f"{script_path}/firesim-unmount"
                 check_script(cmd)
                 run(f"sudo {cmd} {mnt}")
 

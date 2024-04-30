@@ -13,7 +13,7 @@ import os
 
 from util.streamlogger import StreamLogger
 from awstools.awstools import terminate_instances, get_instance_ids_for_instances
-from runtools.utils import has_sudo, run_only_aws, check_script, is_on_aws
+from runtools.utils import has_sudo, run_only_aws, check_script, is_on_aws, script_path
 from buildtools.bitbuilder import get_deploy_dir
 
 from typing import List, Dict, Optional, Union, Tuple, TYPE_CHECKING
@@ -280,7 +280,7 @@ class InstanceDeployManager(metaclass=abc.ABCMeta):
         if is_on_aws():
             run("sudo rm -rf /dev/shm/*")
         else:
-            cmd = "/usr/local/bin/firesim-remove-dev-shm"
+            cmd = f"{script_path}/firesim-remove-dev-shm"
             check_script(cmd)
             run(f"sudo {cmd}")
 
@@ -777,12 +777,12 @@ class XilinxAlveoInstanceDeployManager(InstanceDeployManager):
             if run('lsmod | grep -wq xdma', warn_only=True).return_code != 0:
                 self.instance_logger("Loading XDMA Driver Kernel Module.")
                 # must be installed to this path on sim. machine
-                cmd = "/usr/local/bin/firesim-load-xdma-module"
+                cmd = f"{script_path}/firesim-load-xdma-module"
                 check_script(cmd)
                 run(f"sudo {cmd}", shell=True)
             else:
                 self.instance_logger("XDMA Driver Kernel Module already loaded.")
-            cmd = "/usr/local/bin/firesim-chmod-xdma-perm"
+            cmd = f"{script_path}/firesim-chmod-xdma-perm"
             check_script(cmd)
             run(f"sudo {cmd}")
 
@@ -792,7 +792,7 @@ class XilinxAlveoInstanceDeployManager(InstanceDeployManager):
             # unload xdma if loaded
             if run('lsmod | grep -wq xdma', warn_only=True).return_code == 0:
                 self.instance_logger("Unloading XDMA Driver Kernel Module.")
-                cmd = "/usr/local/bin/firesim-remove-xdma-module"
+                cmd = f"{script_path}/firesim-remove-xdma-module"
                 check_script(cmd)
                 run(f"sudo {cmd}", shell=True)
             else:
@@ -837,7 +837,7 @@ class XilinxAlveoInstanceDeployManager(InstanceDeployManager):
 
                 self.instance_logger(f"""Flashing FPGA Slot: {slotno} ({bdf}) with bitstream: {bit}""")
                 # Use a system wide installed firesim-fpga-util.py
-                cmd = "/usr/local/bin/firesim-fpga-util.py"
+                cmd = f"{script_path}/firesim-fpga-util.py"
                 check_script(cmd, f"{get_deploy_dir()}/../platforms/{self.PLATFORM_NAME}/scripts")
                 run(f"""{cmd} --bitstream {bit} --bdf {bdf}""")
 
@@ -849,7 +849,7 @@ class XilinxAlveoInstanceDeployManager(InstanceDeployManager):
                 bdf = self.slot_to_bdf(slotno)
 
                 self.instance_logger(f"""Changing permissions on FPGA Slot: {slotno} (bdf:{bdf})""")
-                cmd = "/usr/local/bin/firesim-change-pcie-perms"
+                cmd = f"{script_path}/firesim-change-pcie-perms"
                 check_script(cmd)
                 run(f"""sudo {cmd} 0000:{bdf}""")
 
@@ -863,7 +863,7 @@ class XilinxAlveoInstanceDeployManager(InstanceDeployManager):
             capno = bdf['capno']
 
             self.instance_logger(f"""Changing permissions on FPGA: bus:{busno}, dev:{devno}, cap:{capno}""")
-            cmd = "/usr/local/bin/firesim-change-pcie-perms"
+            cmd = f"{script_path}/firesim-change-pcie-perms"
             check_script(cmd)
             run(f"""sudo {cmd} 0000:{busno[2:]}:{devno[2:]}:{capno[2:]}""")
 
@@ -945,7 +945,7 @@ class XilinxAlveoInstanceDeployManager(InstanceDeployManager):
 
         with cd(remote_sim_dir):
             # Use a system wide installed firesim-generate-fpga-db.py
-            cmd = "/usr/local/bin/firesim-generate-fpga-db.py"
+            cmd = f"{script_path}/firesim-generate-fpga-db.py"
             check_script(cmd, f"{get_deploy_dir()}/../platforms/{self.PLATFORM_NAME}/scripts")
             run(f"""{cmd} --bitstream {bitstream} --driver {driver} --out-db-json {self.JSON_DB}""")
 
@@ -1030,7 +1030,7 @@ class XilinxVCU118InstanceDeployManager(InstanceDeployManager):
             if run('lsmod | grep -wq xdma', warn_only=True).return_code != 0:
                 self.instance_logger("Loading XDMA Driver Kernel Module.")
                 # must be installed to this path on sim. machine
-                cmd = "/usr/local/bin/firesim-load-xdma-module"
+                cmd = f"{script_path}/firesim-load-xdma-module"
                 check_script(cmd)
                 run(f"sudo {cmd}", shell=True)
             else:
@@ -1042,7 +1042,7 @@ class XilinxVCU118InstanceDeployManager(InstanceDeployManager):
             if run('lsmod | grep -wq xvsec', warn_only=True).return_code != 0:
                 self.instance_logger("Loading XVSEC Driver Kernel Module.")
                 # must be installed to this path on sim. machine
-                cmd = "/usr/local/bin/firesim-load-xvsec-module"
+                cmd = f"{script_path}/firesim-load-xvsec-module"
                 check_script(cmd)
                 run(f"sudo {cmd}", shell=True)
             else:
@@ -1078,7 +1078,7 @@ class XilinxVCU118InstanceDeployManager(InstanceDeployManager):
                 capno = bdf['capno']
 
                 self.instance_logger(f"""Flashing FPGA Slot: {slotno} (bus:{busno}, dev:{devno}, cap:{capno}) with bit: {bit}""")
-                cmd = "/usr/local/bin/firesim-xvsecctl-flash-fpga"
+                cmd = f"{script_path}/firesim-xvsecctl-flash-fpga"
                 check_script(cmd)
                 run(f"""sudo {cmd} {busno} {devno} {capno} {bit}""")
 
@@ -1100,7 +1100,7 @@ class XilinxVCU118InstanceDeployManager(InstanceDeployManager):
                 capno = bdf['capno']
 
                 self.instance_logger(f"""Changing permissions on FPGA Slot: {slotno} (bus:{busno}, dev:{devno}, cap:{capno})""")
-                cmd = "/usr/local/bin/firesim-change-pcie-perms"
+                cmd = f"{script_path}/firesim-change-pcie-perms"
                 check_script(cmd)
                 run(f"""sudo {cmd} 0000:{busno[2:]}:{devno[2:]}:{capno[2:]}""")
 

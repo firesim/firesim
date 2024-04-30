@@ -468,6 +468,10 @@ def get_md5(file):
     """ For a local file, get the md5 hash as a string. """
     return hashlib.md5(open(file,'rb').read()).hexdigest()
 
+# firesim scripts that require sudo access are stored here
+# must be updated at the same time as the documentation/installation instructions
+script_path = Path("/usr/local/bin")
+
 def check_script(remote_script_str: str, search_dir: Option[Path] = None) -> None:
     """ Given a remote_script (absolute or relative path), search for the
     script in a known location (based on it's name) in the local FireSim
