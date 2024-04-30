@@ -33,7 +33,7 @@ create_project -force firesim ${root_dir}/vivado_proj -part $part
 set_property board_part $board_part [current_project]
 
 # Loading all the verilog files
-foreach addFile [list ${root_dir}/design/axi_tieoff_master.v ${root_dir}/design/axi.vh ${root_dir}/design/helpers.vh ${root_dir}/design/overall_fpga_top.v ${root_dir}/design/FireSim-generated.sv ${root_dir}/design/FireSim-generated.defines.vh] {
+foreach addFile [list ${root_dir}/design/axi.vh ${root_dir}/design/helpers.vh ${root_dir}/design/overall_fpga_top.v ${root_dir}/design/custom_logic.v ${root_dir}/design/FireSim-generated.sv ${root_dir}/design/FireSim-generated.defines.vh] {
   set addFile [retrieveVersionedFile $addFile $vivado_version]
   check_file_exists $addFile
   add_files $addFile
@@ -50,11 +50,15 @@ check_file_exists [set sourceFile ${root_dir}/scripts/create_bd.tcl]
 source $sourceFile
 
 # Making wrapper around bd
-generate_target all [get_files ${root_dir}/vivado_proj/firesim.srcs/sources_1/bd/design_1/design_1.bd]
+generate_target all [get_files ${root_dir}/vivado_proj/firesim.srcs/sources_1/bd/shell/shell.bd]
 update_compile_order -fileset sources_1
 
 # Mark top-level name for future steps/cmds
 set top_level_name overall_fpga_top
+
+# Add extra IPs
+check_file_exists [set sourceFile ${root_dir}/scripts/create_non_bd_ips.tcl]
+source $sourceFile
 
 # Report if any IPs need to be updated
 report_ip_status
@@ -71,7 +75,7 @@ if {[file exists [set constrFile [retrieveVersionedFile ${root_dir}/design/FireS
 
 if {[file exists [set constrFile [retrieveVersionedFile ${root_dir}/design/FireSim-generated.implementation.xdc $vivado_version]]]} {
     # add impl clock to top of xdc
-    add_line_to_file 1 $constrFile "create_generated_clock -name host_clock \[get_pins design_1_i/clk_wiz_0/inst/mmcme4_adv_inst/CLKOUT0\]"
+    add_line_to_file 1 $constrFile "create_generated_clock -name host_clock \[get_pins custom_logic_i/clk_wiz_0/inst/mmcme4_adv_inst/CLKOUT0\]"
     add_files -fileset impl_fileset -norecurse $constrFile
 }
 
@@ -114,7 +118,7 @@ file mkdir ${rpt_dir}
 check_file_exists [set sourceFile ${root_dir}/scripts/strategies/strategy_${strategy}.tcl]
 source $sourceFile
 
-# Run synth/impl and generate collateral
+# Run synth/impl and generate collateral (order of *.tcl files in list)
 foreach sourceFile [list ${root_dir}/scripts/synthesis.tcl ${root_dir}/scripts/post_synth.tcl ${root_dir}/scripts/implementation.tcl ${root_dir}/scripts/post_impl.tcl] {
   set sourceFile [retrieveVersionedFile $sourceFile $vivado_version]
   check_file_exists $sourceFile
