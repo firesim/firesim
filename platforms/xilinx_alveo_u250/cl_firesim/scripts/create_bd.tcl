@@ -155,9 +155,7 @@ proc create_root_design { script_folder parentCell firesim_freq_mhz current_viva
    source $sourceFile
    check_file_exists [set sourceFile [get_bd_lib_file $script_folder create_bd_instances.tcl $current_vivado_version]]
    source $sourceFile
-   check_file_exists [set sourceFile [get_bd_lib_file $script_folder create_bd_interface_connections.tcl $current_vivado_version]]
-   source $sourceFile
-   check_file_exists [set sourceFile [get_bd_lib_file $script_folder create_bd_port_connections.tcl $current_vivado_version]]
+   check_file_exists [set sourceFile [get_bd_lib_file $script_folder create_bd_connections.tcl $current_vivado_version]]
    source $sourceFile
 
    # Restore current instance
