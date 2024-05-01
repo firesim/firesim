@@ -51,6 +51,7 @@ private:
   std::vector<std::string> args;
 
   // in bytes
+  uint32_t _time_width;
   uint32_t _valid_width;
   uint32_t _iaddr_width;
   uint32_t _insn_width;
@@ -62,6 +63,7 @@ private:
   uint32_t _tval_width;
 
   // in bytes
+  uint32_t _time_offset;
   uint32_t _valid_offset;
   uint32_t _iaddr_offset;
   uint32_t _insn_offset;

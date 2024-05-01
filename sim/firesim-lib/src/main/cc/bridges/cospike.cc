@@ -53,6 +53,7 @@ cospike_t::cospike_t(simif_t &sim,
       _hartid(hartid), _num_commit_insts(num_commit_insts),
       _bits_per_trace(bits_per_trace), stream_idx(stream_idx),
       stream_depth(stream_depth) {
+  this->_time_width = 8;
   this->_valid_width = 1;
   this->_iaddr_width = TO_BYTES(iaddr_width);
   this->_insn_width = TO_BYTES(insn_width);
@@ -63,7 +64,8 @@ cospike_t::cospike_t(simif_t &sim,
   this->_priv_width = 1;
 
   // must align with how the trace is composed
-  this->_valid_offset = 0;
+  this->_time_offset = 0;
+  this->_valid_offset = this->_time_offset + this->_time_width;
   this->_iaddr_offset = this->_valid_offset + this->_valid_width;
   this->_insn_offset = this->_iaddr_offset + this->_iaddr_width;
   this->_priv_offset = this->_insn_offset + this->_insn_width;
@@ -115,7 +117,9 @@ void cospike_t::init() {
  * This returns the return code of the co-sim functions.
  */
 int cospike_t::invoke_cospike(uint8_t *buf) {
-  bool valid = buf[0];
+   uint64_t time = EXTRACT_ALIGNED(
+    int64_t, uint64_t, buf, this->_time_width, this->_time_offset);
+  bool valid = buf[this->_valid_offset];
   // this crazy to extract the right value then sign extend within the size
   uint64_t iaddr = EXTRACT_ALIGNED(int64_t,
                                    uint64_t,
