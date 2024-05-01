@@ -25,13 +25,15 @@ class AbstractSwitchToSwitchConfig:
     This assumes that the switch has already been assigned to a host."""
     fsimswitchnode: FireSimSwitchNode
     build_disambiguate: str
+    addExternalNetworkPort: bool
 
-    def __init__(self, fsimswitchnode: FireSimSwitchNode) -> None:
+    def __init__(self, fsimswitchnode: FireSimSwitchNode, addExternalNetworkPort: bool = False) -> None:
         """ Construct the switch's config file """
         self.fsimswitchnode = fsimswitchnode
         # this lets us run many builds in parallel without conflict across
         # parallel experiments which may have overlapping switch ids
         self.build_disambiguate = ''.join(random.choice(string.ascii_uppercase + string.digits) for _ in range(64))
+        self.addExternalNetworkPort = addExternalNetworkPort
 
     def emit_init_for_uplink(self, uplinkno: int) -> str:
         """ Emit an init for a switch to talk to it's uplink."""
@@ -80,7 +82,9 @@ class AbstractSwitchToSwitchConfig:
 
         mac2port_pythonarray = self.fsimswitchnode.switch_table
         assert mac2port_pythonarray is not None
-
+        if self.addExternalNetworkPort:
+            port_num = len(self.fsimswitchnode.downlinks) + len(self.fsimswitchnode.uplinks)
+            mac2port_pythonarray[port_num] = port_num + 1
         commaseparated = ""
         for elem in mac2port_pythonarray:
             commaseparated += str(elem) + ", "
@@ -107,7 +111,9 @@ class AbstractSwitchToSwitchConfig:
         numdownlinks = len(self.fsimswitchnode.downlinks)
         numuplinks = len(self.fsimswitchnode.uplinks)
         totalports = numdownlinks + numuplinks
-
+        if self.addExternalNetworkPort:
+            totalports += 1
+            numdownlinks += 1
         retstr = """
     #ifdef NUMCLIENTSCONFIG
     #define NUMPORTS {}
@@ -122,10 +128,13 @@ class AbstractSwitchToSwitchConfig:
         for downlinkno in range(len(self.fsimswitchnode.downlinks)):
             initstring += "ports[" + str(downlinkno) + "] = " + \
                     self.emit_init_for_downlink(downlinkno)
-
+        if self.addExternalNetworkPort:
+            initstring += "ports[" + str(len(self.fsimswitchnode.downlinks)) + \
+                    "] = new SSHPort(" + str(len(self.fsimswitchnode.downlinks)) + ");\n"
         for uplinkno in range(len(self.fsimswitchnode.uplinks)):
             initstring += "ports[" + str(len(self.fsimswitchnode.downlinks) + \
-                        uplinkno) + "] = " + self.emit_init_for_uplink(uplinkno)
+                    (1 if self.addExternalNetworkPort else  0) + uplinkno) + \
+                    "] = " + self.emit_init_for_uplink(uplinkno)
 
         retstr = """
     #ifdef PORTSETUPCONFIG
