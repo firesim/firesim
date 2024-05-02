@@ -238,6 +238,31 @@ class InstanceDeployManager(metaclass=abc.ABCMeta):
             with cd(remote_switch_dir):
                 run(switch.get_switch_start_command(has_sudo()))
 
+    def copy_pipe_slot_infrastructure(self, pipeslot: int) -> None:
+        """ copy all the pipe infrastructure to the remote node. """
+        if self.instance_assigned_pipes():
+            self.instance_logger("""Copying pipe simulation infrastructure for pipe slot: {}.""".format(pipeslot))
+            remote_home_dir = self.parent_node.get_sim_dir()
+            remote_pipe_dir = """{}/pipe_slot_{}/""".format(remote_home_dir, pipeslot)
+            run("""mkdir -p {}""".format(remote_pipe_dir))
+
+            assert pipeslot < len(self.parent_node.pipe_slots)
+            pipe = self.parent_node.pipe_slots[pipeslot]
+            files_to_copy = pipe.get_required_files_local_paths()
+            for local_path, remote_path in files_to_copy:
+                put(local_path, pjoin(remote_pipe_dir, remote_path), mirror_local_mode=True)
+
+    def start_pipe_slot(self, pipeslot: int) -> None:
+        """ start a pipe simulation. """
+        if self.instance_assigned_pipes():
+            self.instance_logger("""Starting pipe simulation for pipe slot: {}.""".format(pipeslot))
+            remote_home_dir = self.parent_node.get_sim_dir()
+            remote_pipe_dir = """{}/pipe_slot_{}/""".format(remote_home_dir, pipeslot)
+            assert pipeslot < len(self.parent_node.pipe_slots)
+            pipe = self.parent_node.pipe_slots[pipeslot]
+            with cd(remote_pipe_dir):
+                run(pipe.get_pipe_start_command(has_sudo()))
+
     def start_sim_slot(self, slotno: int) -> None:
         """ start a simulation. """
         if self.instance_assigned_simulations():
@@ -246,6 +271,7 @@ class InstanceDeployManager(metaclass=abc.ABCMeta):
             remote_sim_dir = f"""{remote_home_dir}/sim_slot_{slotno}/"""
             assert slotno < len(self.parent_node.sim_slots), f"{slotno} can not index into sim_slots {len(self.parent_node.sim_slots)} on {self.parent_node.host}"
             server = self.parent_node.sim_slots[slotno]
+            rootLogger.info(f"start_sim_slot slotno: {slotno} server_id {server.server_id_internal} remote_sim_dir {remote_sim_dir} {remote_home_dir}")
 
             # make the local job results dir for this sim slot
             server.mkdir_and_prep_local_job_results_dir()
@@ -269,6 +295,18 @@ class InstanceDeployManager(metaclass=abc.ABCMeta):
                 else:
                     run(switch.get_switch_kill_command())
 
+    def kill_pipe_slot(self, pipeslot: int) -> None:
+        """ kill the pipe in slot pipeslot. """
+        if self.instance_assigned_pipes():
+            self.instance_logger("""Killing pipe simulation for pipeslot: {}.""".format(pipeslot))
+            assert pipeslot < len(self.parent_node.pipe_slots)
+            pipe = self.parent_node.pipe_slots[pipeslot]
+            with warn_only():
+                if has_sudo():
+                    run("sudo " + pipe.get_pipe_kill_command())
+                else:
+                    run(pipe.get_pipe_kill_command())
+
     def kill_sim_slot(self, slotno: int) -> None:
         """ kill the simulation in slot slotno. """
         if self.instance_assigned_simulations():
@@ -289,24 +327,43 @@ class InstanceDeployManager(metaclass=abc.ABCMeta):
         """ return true if this instance has any assigned switch simulations. """
         return len(self.parent_node.switch_slots) != 0
 
+    def instance_assigned_pipes(self) -> bool:
+        """ return true if this instance has any assigned pipe simulations. """
+        return len(self.parent_node.pipe_slots) != 0
+
     def remove_shm_files(self) -> None:
         if has_sudo():
             run("sudo rm -rf /dev/shm/*")
         else:
             run("find /dev/shm -user $UID -exec rm -rf {} \;")
 
-    def start_switches_instance(self) -> None:
-        """Boot up all the switches on this host in screens."""
-        # remove shared mem pages used by switches
-        if self.instance_assigned_switches():
+    def start_pipe_slots(self) -> None:
+        for slotno in range(len(self.parent_node.pipe_slots)):
+            self.start_pipe_slot(slotno)
+
+    def start_switch_slots(self) -> None:
+        for slotno in range(len(self.parent_node.switch_slots)):
+            self.start_switch_slot(slotno)
+
+    def start_switches_and_pipes_instance(self) -> None:
+        """Boot up all the switches and pipes on this host in screens."""
+        if self.instance_assigned_pipes() or self.instance_assigned_switches():
             self.remove_shm_files()
-            for slotno in range(len(self.parent_node.switch_slots)):
-                self.start_switch_slot(slotno)
+
+        if self.instance_assigned_pipes() and self.instance_assigned_switches():
+            self.start_switch_slots()
+            self.start_pipe_slots()
+        elif self.instance_assigned_pipes():
+            self.start_pipe_slots()
+        elif self.instance_assigned_switches():
+            self.start_switch_slots()
+
 
     def start_simulations_instance(self) -> None:
         """ Boot up all the sims on this host in screens. """
         if self.instance_assigned_simulations():
             # only on sim nodes
+            rootLogger.info(f"start_simulations_instance {len(self.parent_node.sim_slots)}")
             for slotno in range(len(self.parent_node.sim_slots)):
                 self.start_sim_slot(slotno)
 
@@ -316,6 +373,12 @@ class InstanceDeployManager(metaclass=abc.ABCMeta):
             for slotno in range(len(self.parent_node.switch_slots)):
                 self.kill_switch_slot(slotno)
             self.remove_shm_files()
+
+    def kill_pipes_instance(self) -> None:
+        if self.instance_assigned_pipes():
+            for slotno in range(len(self.parent_node.pipe_slots)):
+                self.kill_pipe_slot(slotno)
+            self.remove_shm_files() # TODO : remove shm files for only this instance
 
     def kill_simulations_instance(self, disconnect_all_nbds: bool = True) -> None:
         """ Kill all simulations on this host. """
@@ -332,6 +395,7 @@ class InstanceDeployManager(metaclass=abc.ABCMeta):
         """
         simdrivers = []
         switches = []
+        pipes = []
         with settings(warn_only=True), hide('everything'):
             collect = run('screen -ls')
             for line in collect.splitlines():
@@ -348,7 +412,12 @@ class InstanceDeployManager(metaclass=abc.ABCMeta):
                         assert re_search_results is not None
                         line_stripped = re_search_results.group(0)
                         switches.append(line_stripped)
-        return {'switches': switches, 'simdrivers': simdrivers}
+                    elif "pipe" in line:
+                        re_search_results = re.search('pipe([0-9][0-9]*)', line_stripped)
+                        assert re_search_results is not None
+                        line_stripped = re_search_results.group(0)
+                        pipes.append(line_stripped)
+        return {'switches': switches, 'simdrivers': simdrivers, 'pipes': pipes}
 
     def monitor_jobs_instance(self,
             prior_completed_jobs: List[str],
@@ -366,8 +435,8 @@ class InstanceDeployManager(metaclass=abc.ABCMeta):
                     self.terminate_instance()
 
 
-        if not self.instance_assigned_simulations() and self.instance_assigned_switches():
-            self.instance_logger(f"Polling switch-only node", debug=True)
+        if not self.instance_assigned_simulations() and (self.instance_assigned_switches() or self.instance_assigned_pipes()):
+            self.instance_logger(f"Polling switch/pipe-only node", debug=True)
 
             # just confirm that our switches are still running
             # switches will never trigger shutdown in the cycle-accurate -
@@ -378,6 +447,10 @@ class InstanceDeployManager(metaclass=abc.ABCMeta):
                 for counter in range(len(self.parent_node.switch_slots)):
                     switchsim = self.parent_node.switch_slots[counter]
                     switchsim.copy_back_switchlog_from_run(job_results_dir, counter)
+
+                for counter in range(len(self.parent_node.pipe_slots)):
+                    pipesim = self.parent_node.pipe_slots[counter]
+                    pipesim.copy_back_pipelog_from_run(job_results_dir, counter)
 
                 do_terminate()
 
@@ -390,7 +463,13 @@ class InstanceDeployManager(metaclass=abc.ABCMeta):
                     if swname not in switchescompleteddict.keys():
                         switchescompleteddict[swname] = True
 
-                return {'switches': switchescompleteddict, 'sims': {}}
+                pipescompleteddict = {k: False for k in self.running_simulations()['pipes']}
+                for pipesim in self.parent_node.pipe_slots:
+                    pipename = pipesim.pipe_builder.pipe_binary_name()
+                    if pipename not in pipescompleteddict.keys():
+                        pipescompleteddict[pipename] = True
+
+                return {'switches': switchescompleteddict, 'sims': {}, 'pipes': pipescompleteddict}
 
         if self.instance_assigned_simulations():
             # this node has sims attached
@@ -417,8 +496,10 @@ class InstanceDeployManager(metaclass=abc.ABCMeta):
             instance_screen_status = self.running_simulations()
 
             switchescompleteddict = {k: False for k in instance_screen_status['switches']}
+            pipescompleteddict = {k: False for k in instance_screen_status['pipes']}
             slotsrunning = [x for x in instance_screen_status['simdrivers']]
             self.instance_logger(f"Switch Slots running: {switchescompleteddict}", debug=True)
+            self.instance_logger(f"pipe Slots running: {pipescompleteddict}", debug=True)
             self.instance_logger(f"Sim Slots running: {slotsrunning}", debug=True)
 
             if self.instance_assigned_switches():
@@ -427,6 +508,12 @@ class InstanceDeployManager(metaclass=abc.ABCMeta):
                     sw_name = switchsim.switch_builder.switch_binary_name()
                     if sw_name not in switchescompleteddict.keys():
                         switchescompleteddict[sw_name] = True
+
+            if self.instance_assigned_pipes():
+                for pipesim in self.parent_node.pipe_slots:
+                    pipename = pipesim.pipe_builder.pipe_binary_name()
+                    if pipename not in pipescompleteddict.keys():
+                        pipescompleteddict[pipename] = True
 
             # fill in whether sims have terminated
             completed_jobs = prior_completed_jobs.copy() # create local copy to append to
@@ -462,9 +549,14 @@ class InstanceDeployManager(metaclass=abc.ABCMeta):
                     for counter, switch_slot in enumerate(self.parent_node.switch_slots):
                         switch_slot.copy_back_switchlog_from_run(job_results_dir, counter)
 
+                if self.instance_assigned_pipes():
+                    self.kill_pipes_instance()
+                    for counter, pipe_slot in enumerate(self.parent_node.pipe_slots):
+                        pipe_slot.copy_back_pipelog_from_run(job_results_dir, counter)
+
                 do_terminate()
 
-            return {'switches': switchescompleteddict, 'sims': jobs_complete_dict}
+            return {'switches': switchescompleteddict, 'sims': jobs_complete_dict, 'pipes': pipescompleteddict}
 
         assert False
 
@@ -668,6 +760,10 @@ class EC2InstanceDeployManager(InstanceDeployManager):
             for slotno in range(len(self.parent_node.switch_slots)):
                 self.copy_switch_slot_infrastructure(slotno)
 
+        if self.instance_assigned_pipes():
+            for slotno in range(len(self.parent_node.pipe_slots)):
+                self.copy_pipe_slot_infrastructure(slotno)
+
     def enumerate_fpgas(self, uridir: str) -> None:
         """ FPGAs are enumerated already with F1 """
         return
@@ -748,6 +844,10 @@ class VitisInstanceDeployManager(InstanceDeployManager):
             # all nodes could have a switch
             for slotno in range(len(self.parent_node.switch_slots)):
                 self.copy_switch_slot_infrastructure(slotno)
+
+        if self.instance_assigned_pipes():
+            for slotno in range(len(self.parent_node.pipe_slots)):
+                self.copy_pipe_slot_infrastructure(slotno)
 
     def start_sim_slot(self, slotno: int) -> None:
         """ start a simulation. (same as default except that you pass in the bitstream file)"""
@@ -836,8 +936,8 @@ class XilinxAlveoInstanceDeployManager(InstanceDeployManager):
 
                 bitstream_tar = hwcfg.get_bitstream_tar_filename()
                 remote_sim_dir = self.get_remote_sim_dir_for_slot(slotno)
-                bitstream_tar_unpack_dir = f"{remote_sim_dir}/{self.PLATFORM_NAME}"
-                bit = f"{remote_sim_dir}/{self.PLATFORM_NAME}/firesim.bit"
+                bitstream_tar_unpack_dir = os.path.join(remote_sim_dir, str(self.PLATFORM_NAME))
+                bit = os.path.join(bitstream_tar_unpack_dir, "firesim.bit")
 
                 # at this point the tar file is in the sim slot
                 run(f"rm -rf {bitstream_tar_unpack_dir}")
@@ -856,7 +956,8 @@ class XilinxAlveoInstanceDeployManager(InstanceDeployManager):
                 bdf = self.slot_to_bdf(slotno)
 
                 self.instance_logger(f"""Flashing FPGA Slot: {slotno} ({bdf}) with bitstream: {bit}""")
-                run(f"""{remote_sim_dir}/scripts/fpga-util.py --bitstream {bit} --bdf {bdf}""")
+                fpga_util = os.path.join(remote_sim_dir, "scripts/fpga-util.py")
+                run(f"""{fpga_util} --bitstream {bit} --bdf {bdf}""")
 
     def infrasetup_instance(self, uridir: str) -> None:
         """ Handle infrastructure setup for this platform. """
@@ -882,6 +983,10 @@ class XilinxAlveoInstanceDeployManager(InstanceDeployManager):
             # all nodes could have a switch
             for slotno in range(len(self.parent_node.switch_slots)):
                 self.copy_switch_slot_infrastructure(slotno)
+
+        if self.instance_assigned_pipes():
+            for slotno in range(len(self.parent_node.pipe_slots)):
+                self.copy_pipe_slot_infrastructure(slotno)
 
     def create_fpga_database(self, uridir: str) -> None:
         self.instance_logger(f"""Creating FPGA database""")
@@ -1084,6 +1189,11 @@ class XilinxVCU118InstanceDeployManager(InstanceDeployManager):
             # all nodes could have a switch
             for slotno in range(len(self.parent_node.switch_slots)):
                 self.copy_switch_slot_infrastructure(slotno)
+
+        if self.instance_assigned_pipes():
+            # all nodes could have a switch
+            for slotno in range(len(self.parent_node.pipe_slots)):
+                self.copy_pipe_slot_infrastructure(slotno)
 
     def enumerate_fpgas(self, uridir: str) -> None:
         """ FPGAs are enumerated already with VCU118's """

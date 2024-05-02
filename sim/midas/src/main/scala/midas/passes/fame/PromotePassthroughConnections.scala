@@ -81,6 +81,7 @@ object PromotePassthroughConnections extends Transform with DependencyAPIMigrati
         .filterNot(_.tpe == ClockType)
         .map(p => p.direction -> LogicNode(p.name, inst = Some(instName)))
     }
+
     val modelSources = modelNodes.collect { case (Output, ln) => ln }
     val modelSinks   = modelNodes.collect { case (Input, ln) => ln }
 
@@ -103,7 +104,6 @@ object PromotePassthroughConnections extends Transform with DependencyAPIMigrati
       assert(source.size == 1)
       sink -> source.head
     }).toMap
-
 
     def onStmt(s: Statement): Statement = s.map(onStmt) match {
       case c@Connect(_, lhs, _) =>
@@ -128,6 +128,7 @@ object PromotePassthroughConnections extends Transform with DependencyAPIMigrati
     }
 
     val updatedTopModule = topModule.map(onStmt)
+
     state.copy(circuit = state.circuit.copy(modules =
       updatedTopModule +: state.circuit.modules.filterNot(_.name == state.circuit.main)))
   }

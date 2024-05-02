@@ -1,0 +1,8 @@
+{
+	"benchmark_name": "riscv-tests-baremetal",
+	"common_simulation_outputs": [
+		"uartlog"
+	],
+	"common_bootbinary": "qsort.riscv",
+	"common_rootfs": "../../../sw/firesim-software/boards/default/installers/firesim/dummy.rootfs"
+}

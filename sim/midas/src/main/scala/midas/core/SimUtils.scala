@@ -133,12 +133,12 @@ object SimUtils {
       case _ => throw new RuntimeException("ReferenceTargets should point at the channel's bundle.")
     }
     // Reject all nested fields not referenced by a target. This is used to remove the
-    // valid field of decoupled ready-valid channels (or any other fields pointing in 
+    // valid field of decoupled ready-valid channels (or any other fields pointing in
     // the other direction) from channelized bundles.
     val targetLeafNames = refTargets.map(_.component.tail).toSet
 
     // Recursively map the FIRRTL type to chisel types representing the payload.
-    // This method traverses the type recursively, matching its fields with the ones 
+    // This method traverses the type recursively, matching its fields with the ones
     // referenced by the annotation. A bundle type is built, excluding all filtered
     // fields and flattening single-element structures. Additionally, "bits_" prefixes
     // are dropped to generate names expected by ready-valid channels.

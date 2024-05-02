@@ -3,7 +3,7 @@ run_farm:
   recipe_arg_overrides:
     run_farm_tag: helloworldlocalhost
     default_platform: VitisInstanceDeployManager
-    default_simulation_dir: /scratch/buildbot/RUN_DIR
+    default_simulation_dir: /scratch/buildbot
     run_farm_hosts_to_use:
       - localhost: four_metasims_spec
 

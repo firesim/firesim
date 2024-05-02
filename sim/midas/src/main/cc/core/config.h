@@ -34,6 +34,11 @@ struct AXI4Config {
   uint64_t get_data_size() const { return beat_bytes() / sizeof(uint32_t); }
 };
 
+struct FPGATopQSFPConfig {
+  const uint64_t data_bits;
+  const int num_channels;
+};
+
 /**
  * Structure carrying the configuration of a target.
  */
@@ -46,6 +51,8 @@ struct TargetConfig {
   const std::optional<AXI4Config> cpu_managed;
 
   const std::optional<AXI4Config> fpga_managed;
+
+  const FPGATopQSFPConfig qsfp;
 
   const char *target_name;
 };

@@ -2,9 +2,14 @@ run_farm:
     base_recipe: run-farm-recipes/externally_provisioned.yaml
     recipe_arg_overrides:
         default_platform: VitisInstanceDeployManager
-        default_simulation_dir: /scratch/buildbot/RUN_DIR
+        default_simulation_dir: /scratch/buildbot
         run_farm_hosts_to_use:
-            - harp: one_fpga_spec
+            - localhost: four_fpgas_spec
+        run_farm_host_specs:
+            - four_fpgas_spec:
+                num_fpgas: 4
+                num_metasims: 0
+                use_for_switch_only: false
 
 metasimulation:
   metasimulation_enabled: false

@@ -10,7 +10,14 @@ import junctions.NastiParameters
 import org.chipsalliance.cde.config.{Parameters, Config, Field}
 import freechips.rocketchip.diplomacy.{TransferSizes}
 
+import firrtl.options.Dependency
+
 import java.io.{File}
+
+case object FPGATopQSFPBitWidth extends Field[Int](256)
+case object QSFPStreamBitWidth extends Field[Int](QSFPBridgeStreamConstants.streamWidthBits)
+case object FPGATopQSFPBRAMQueueDepth extends Field[Int](256)
+case object MetasimPrintfEnable extends Field[Boolean](false)
 
 // Provides a function to elaborate the top-level platform shim
 case object Platform extends Field[(Parameters) => PlatformShim]
@@ -117,7 +124,7 @@ class F1Config extends Config(new Config((site, here, up) => {
 }) ++ new SimConfig)
 
 class XilinxAlveoU250Config extends Config(new Config((site, here, up) => {
-  case HostMemNumChannels => 4
+  case HostMemNumChannels => 1
   case PreLinkCircuitPath => Some("firesim_top")
   case PostLinkCircuitPath => Some("firesim_top")
 }) ++ new F1Config ++ new SimConfig)
@@ -212,3 +219,85 @@ class VitisConfig extends Config(new Config((site, here, up) => {
 class HostDebugFeatures extends Config((site, here, up) => {
   case GenerateTokenIrrevocabilityAssertions => true
 })
+
+class WithWiringTransform extends Config((site, here, up) => {
+  case TargetTransforms => Dependency[firrtl.passes.wiring.WiringTransform] +: up(TargetTransforms, site)
+})
+
+class BaseF1Config extends Config(
+  new WithWiringTransform ++
+  new F1Config
+)
+class WithModelMultiThreading extends Config((site, here, up) => {
+  case midas.EnableModelMultiThreading => true
+})
+
+class WithMultiCycleRams extends Config((site, here, up) => {
+  case midas.GenerateMultiCycleRamModels => true
+})
+
+class MTModels extends WithModelMultiThreading
+class MCRams extends WithMultiCycleRams
+
+case object FireAxeExtractPass extends Field[Boolean](false)
+case object FireAxeRemovePass extends Field[Boolean](false)
+case object FireAxeNoCPartitionPass extends Field[Boolean](false)
+case object FireAxeQSFPConnections extends Field[Boolean](false)
+case object FireAxePCISConnections extends Field[Boolean](false)
+case object FireAxePreserveTarget extends Field[Boolean](false)
+case object FireAxePartitionInfo extends Field[String]
+
+class WithFireAxePreserveTarget extends Config((site, here, up) => {
+  case midas.FireAxePreserveTarget => true
+})
+
+class WithFireAxeExtract extends Config((site, here, up) => {
+  case midas.FireAxeExtractPass => true
+})
+
+class WithFireAxeRemove extends Config((site, here, up) => {
+  case midas.FireAxeRemovePass => true
+})
+
+class WithFireAxeNoCPart extends Config((site, here, up) => {
+  case midas.FireAxeNoCPartitionPass => true
+})
+
+class WithQSFP extends Config((site, here, up) => {
+  case midas.FireAxeQSFPConnections => true
+})
+
+class WithPCIS extends Config((site, here, up) => {
+  case midas.FireAxePCISConnections => true
+})
+
+class WithPartitionConfig(info: String) extends Config((site, here, up) => {
+  case midas.FireAxePartitionInfo => info
+})
+
+class WithFireAxeQSFPConfig(info: String) extends Config(
+  new WithQSFP ++
+  new WithPartitionConfig(info)
+)
+
+class WithFireAxePCISConfig(info: String) extends Config(
+  new WithPCIS ++
+  new WithPartitionConfig(info))
+
+class WithFireAxeQSFPNoCConfig(info: String) extends Config(
+  new WithFireAxeNoCPart ++
+  new WithFireAxeQSFPConfig(info))
+
+class WithFireAxePCISNoCConfig(info: String) extends Config(
+  new WithFireAxeNoCPart ++
+  new WithFireAxePCISConfig(info))
+
+class Extract extends WithFireAxeExtract
+class Remove extends WithFireAxeRemove
+class Preserve extends WithFireAxePreserveTarget
+
+/* Example config for just running midas using sbt */
+// class QuadTileRingNoCTopoQSFPXilinxAlveoConfig extends Config(
+// new WithWiringTransform ++
+// new WithFireAxeQSFPNoCConfig("0~1+2~3+4~9") ++
+// new XilinxAlveoConfig)

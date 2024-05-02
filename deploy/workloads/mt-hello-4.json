@@ -1,0 +1,8 @@
+{
+	"benchmark_name": "mt-hello-4",
+	"common_simulation_outputs": [
+		"uartlog"
+	],
+	"common_bootbinary": "mt-hello-4.riscv",
+	"common_rootfs": "../../../../../software/firemarshal/boards/default/installers/firesim/dummy.rootfs"
+}

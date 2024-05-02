@@ -1,4 +1,5 @@
 #include <cassert>
+#include <cinttypes>
 
 #include <dirent.h>
 #include <fcntl.h>
@@ -85,22 +86,27 @@ simif_xilinx_alveo_u250_t::simif_xilinx_alveo_u250_t(
 
   for (auto &arg : args) {
     if (arg.find("+domain=") == 0) {
+      printf("+domain found: %s\n", arg.c_str() + 8);
       domain_id = strtoul(arg.c_str() + 8, NULL, 16);
       continue;
     }
     if (arg.find("+bus=") == 0) {
+      printf("+bus found: %s\n", arg.c_str() + 5);
       bus_id = strtoul(arg.c_str() + 5, NULL, 16);
       continue;
     }
     if (arg.find("+device=") == 0) {
+      printf("+device found: %s\n", arg.c_str() + 8);
       device_id = strtoul(arg.c_str() + 8, NULL, 16);
       continue;
     }
     if (arg.find("+function=") == 0) {
+      printf("+function found: %s\n", arg.c_str() + 10);
       pf_id = strtoul(arg.c_str() + 10, NULL, 16);
       continue;
     }
     if (arg.find("+bar=") == 0) {
+      printf("+bar found: %s\n", arg.c_str() + 5);
       bar_id = strtoul(arg.c_str() + 5, NULL, 16);
       continue;
     }

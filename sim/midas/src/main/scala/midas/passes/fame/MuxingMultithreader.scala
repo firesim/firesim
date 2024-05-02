@@ -65,17 +65,21 @@ object MuxingMultiThreader {
     case s => s.map(onStmt(newResets, nThreads, tIdx)).map(onExprRHS)
   }
 
-  def apply(threadedModuleNames: Map[String, String])(module: Module, n: BigInt): Module = {
+  def apply(threadedModuleNames: Map[String, String])(module: Module, n: BigInt, useTargetClock: Boolean = false): Module = {
     // Simplify all memories first
     val ns = Namespace(module)
 
     val hostClock = WRef(WrapTop.hostClockName)
     val hostReset = WRef(WrapTop.hostResetName)
 
+    val clockPort = module.ports.filter(p => p.name == "clock")
+    val targetClock = if (clockPort.size > 0) WRef(clockPort.head) else hostClock
+    val threadIdxClock = if (useTargetClock) targetClock else hostClock
+
     val tIdxMax = UIntLiteral(n-1)
     val tIdxType = UIntType(tIdxMax.width)
     val tIdxRef = WRef(ns.newName("threadIdx"), tIdxType, RegKind)
-    val tIdxDecl = DefRegister(FAME5Info.info, tIdxRef.name, tIdxType, hostClock, UIntLiteral(0), tIdxRef)
+    val tIdxDecl = DefRegister(FAME5Info.info, tIdxRef.name, tIdxType, threadIdxClock, UIntLiteral(0), tIdxRef)
     val tIdxUpdate = Mux(
       DoPrim(PrimOps.Eq, Seq(tIdxRef, tIdxMax), Nil, BoolType),
       UIntLiteral(0),

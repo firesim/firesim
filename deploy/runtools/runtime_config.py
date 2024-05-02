@@ -28,7 +28,7 @@ from runtools.firesim_topology_with_passes import FireSimTopologyWithPasses
 from runtools.run_farm_deploy_managers import VitisInstanceDeployManager
 from runtools.workload import WorkloadConfig
 from runtools.run_farm import RunFarm
-from runtools.simulation_data_classes import TracerVConfig, AutoCounterConfig, HostDebugConfig, SynthPrintConfig
+from runtools.simulation_data_classes import TracerVConfig, AutoCounterConfig, HostDebugConfig, SynthPrintConfig, PartitionConfig
 from util.inheritors import inheritors
 from util.deepmerge import deep_merge
 from util.streamlogger import InfoStreamLogger
@@ -40,9 +40,9 @@ import argparse # this is not within a if TYPE_CHECKING: scope so the `register_
 if TYPE_CHECKING:
     from runtools.utils import MacAddress
 
-LOCAL_DRIVERS_BASE = "../sim/output/"
-LOCAL_DRIVERS_GENERATED_SRC = "../sim/generated-src/"
-CUSTOM_RUNTIMECONFS_BASE = "../sim/custom-runtime-configs/"
+LOCAL_DRIVERS_BASE = "../sim/output"
+LOCAL_DRIVERS_GENERATED_SRC = "../sim/generated-src"
+CUSTOM_RUNTIMECONFS_BASE = "../sim/custom-runtime-configs"
 
 rootLogger = logging.getLogger()
 
@@ -177,6 +177,10 @@ class RuntimeHWConfig:
     """ A list of URIContainer objects, one for each URI that is able to be specified """
     uri_list: list[URIContainer]
 
+
+    """ Split Stuff """
+    split_config: str
+
     # Members that are initialized here also need to be initialized in
     # RuntimeBuildRecipeConfig.__init__
     def __init__(self, name: str, hwconfig_dict: Dict[str, Any]) -> None:
@@ -198,6 +202,8 @@ class RuntimeHWConfig:
         self.local_driver_base_dir = LOCAL_DRIVERS_BASE
 
         self.uri_list = []
+
+        self.split_config = ""
 
         if self.agfi is not None:
             self.platform = "f1"
@@ -228,6 +234,7 @@ class RuntimeHWConfig:
         self.additional_required_files = []
 
         self.uri_list.append(URIContainer('driver_tar', self.get_driver_tar_filename()))
+        rootLogger.debug(f"RuntimeHWConfig self.platform {self.platform}")
 
     def get_deploytriplet_for_config(self) -> str:
         """ Get the deploytriplet for this configuration. """
@@ -267,6 +274,7 @@ class RuntimeHWConfig:
     def get_deployquintuplet_for_config(self) -> str:
         """ Get the deployquintuplet for this configuration. This memoizes the request
         to the AWS AGFI API."""
+        rootLogger.debug(f"get_deployquintuplet_for_config {self.deploy_quintuplet} {self.get_platform}")
         if self.deploy_quintuplet is not None:
             return self.deploy_quintuplet
 
@@ -289,6 +297,7 @@ class RuntimeHWConfig:
     def get_local_driver_dir(self) -> str:
         """ Get the relative local directory that contains the driver used to
         run this sim. """
+        print(f"get_local_driver_dir {self.get_deployquintuplet_for_config()}")
         return self.local_driver_base_dir + "/" + self.get_platform() + "/" + self.get_deployquintuplet_for_config() + "/"
 
     def get_local_driver_path(self) -> str:
@@ -336,6 +345,8 @@ class RuntimeHWConfig:
             autocounter_config: AutoCounterConfig,
             hostdebug_config: HostDebugConfig,
             synthprint_config: SynthPrintConfig,
+            partition_config: PartitionConfig,
+            cutbridge_idxs: List[int],
             sudo: bool,
             extra_plusargs: str,
             extra_args: str) -> str:
@@ -348,6 +359,7 @@ class RuntimeHWConfig:
         # TODO: supernode support
         tracefile = "+tracefile=TRACEFILE" if tracerv_config.enable else ""
         autocounterfile = "+autocounter-filename-base=AUTOCOUNTERFILE"
+
 
         # this monstrosity boots the simulator, inside screen, inside script
         # the sed is in there to get rid of newlines in runtime confs
@@ -380,6 +392,8 @@ class RuntimeHWConfig:
         disable_asserts = "+disable-asserts" if (hostdebug_config.disable_synth_asserts) else ""
         print_cycle_prefix = "+print-no-cycle-prefix" if not synthprint_config.cycle_prefix else ""
 
+        command_cutbridgeidxs = array_to_plusargs(cutbridge_idxs, "+cutbridgeidx")
+
         # TODO supernode support
         dwarf_file_name = "+dwarf-file-name=" + all_bootbinaries[0] + "-dwarf"
 
@@ -402,6 +416,15 @@ class RuntimeHWConfig:
         permissive_driver_args += command_linklatencies
         permissive_driver_args += command_netbws
         permissive_driver_args += command_shmemportnames
+        permissive_driver_args += [f"+batch-size={self.get_init_token_cnts(partition_config)}"]
+        permissive_driver_args += command_cutbridgeidxs
+
+        # For QSFP metasims, assume that the partitions are connected in a ring-topology.
+        # Then, when you know your FPGA idx & the total number of FPGAs, you know
+        # your lhs & rhs neighbors to communicate with.
+        permissive_driver_args += [f"+partition-fpga-cnt={self.get_partition_fpga_cnt()}"]
+        permissive_driver_args += [f"+partition-fpga-idx={self.get_partition_fpga_idx()}"]
+
         driver_call = f"""{"sudo" if sudo else ""} ./{driver} +permissive {" ".join(permissive_driver_args)} {extra_plusargs} +permissive-off {" ".join(command_bootbinaries)} {extra_args} """
         base_command = f"""script -f -c 'stty intr ^] && {driver_call} && stty intr ^c' uartlog"""
         screen_wrapped = f"""screen -S {screen_name} -d -m bash -c "{base_command}"; sleep 1"""
@@ -460,13 +483,31 @@ class RuntimeHWConfig:
                     local(f"tar xvf {destination} -C {temp_dir}")
 
                     # read string from metadata
-                    cap = local(f"cat {temp_dir}/*/metadata", capture=True)
+                    cap = local(f"cat {temp_dir}/xilinx_alveo_u250/metadata", capture=True)
                     metadata = firesim_description_to_tags(cap)
 
                     self.set_platform(metadata['firesim-deployquintuplet'].split("-")[0])
                     self.set_deploy_quintuplet(metadata['firesim-deployquintuplet'])
 
                     break
+
+    def get_partition_fpga_cnt(self) -> int:
+        quintuplet_pieces = self.get_deployquintuplet_for_config().split("-")
+        target_split_fpga_cnt  = quintuplet_pieces[5]
+        return int(target_split_fpga_cnt)
+
+    def get_partition_fpga_idx(self) -> int:
+        quintuplet_pieces = self.get_deployquintuplet_for_config().split("-")
+        target_split_fpga_idx = quintuplet_pieces[6]
+        if (target_split_fpga_idx.isnumeric()):
+            return int(target_split_fpga_idx)
+        else:
+            rootLogger.warning(f'FPGA index {target_split_fpga_idx} is not a number')
+            return self.get_partition_fpga_cnt() - 1
+
+    # HACK : for target preserving...
+    def get_init_token_cnts(self, partition_config: PartitionConfig) -> int:
+      return partition_config.batch_size
 
     def build_sim_driver(self) -> None:
         """ Build driver for running simulation """
@@ -481,6 +522,8 @@ class RuntimeHWConfig:
         design = quintuplet_pieces[2]
         target_config = quintuplet_pieces[3]
         platform_config = quintuplet_pieces[4]
+        target_split_fpga_cnt  = quintuplet_pieces[5]
+        target_split_idx = quintuplet_pieces[6]
 
         rootLogger.info(f"Building {self.driver_type_message} driver for {str(self.get_deployquintuplet_for_config())}")
 
@@ -490,7 +533,7 @@ class RuntimeHWConfig:
             prefix(f'export LD_LIBRARY_PATH={os.getenv("LD_LIBRARY_PATH", "")}'), \
             prefix('source sourceme-manager.sh --skip-ssh-setup'), \
             prefix('cd sim/'):
-            driverbuildcommand = f"make PLATFORM={self.get_platform()} TARGET_PROJECT={target_project} DESIGN={design} TARGET_CONFIG={target_config} PLATFORM_CONFIG={platform_config} {self.get_driver_build_target()}"
+            driverbuildcommand = f"make PLATFORM={self.get_platform()} TARGET_PROJECT={target_project} DESIGN={design} TARGET_CONFIG={target_config} PLATFORM_CONFIG={platform_config} TARGET_SPLIT_FPGA_CNT={target_split_fpga_cnt} TARGET_SPLIT_IDX={target_split_idx} {self.get_driver_build_target()}"
             buildresult = run(driverbuildcommand)
             self.handle_failure(buildresult, 'driver build', 'firesim/sim', driverbuildcommand)
 
@@ -567,7 +610,9 @@ class RuntimeBuildRecipeConfig(RuntimeHWConfig):
 
         self.uri_list = []
 
-        self.deploy_quintuplet = build_recipe_dict.get('PLATFORM', 'f1') + "-" + build_recipe_dict.get('TARGET_PROJECT', 'firesim') + "-" + build_recipe_dict['DESIGN'] + "-" + build_recipe_dict['TARGET_CONFIG'] + "-" + build_recipe_dict['PLATFORM_CONFIG']
+        self.split_config = str(build_recipe_dict.get('TARGET_SPLIT_CONFIG'))
+
+        self.deploy_quintuplet = build_recipe_dict.get('PLATFORM', 'f1') + "-" + build_recipe_dict.get('TARGET_PROJECT', 'firesim') + "-" + build_recipe_dict['DESIGN'] + "-" + build_recipe_dict['TARGET_CONFIG'] + "-" + build_recipe_dict['PLATFORM_CONFIG'] + "-" + self.split_config
 
         self.customruntimeconfig = build_recipe_dict['metasim_customruntimeconfig']
         # note whether we've built a copy of the simulation driver for this hwconf
@@ -614,6 +659,8 @@ class RuntimeBuildRecipeConfig(RuntimeHWConfig):
             autocounter_config: AutoCounterConfig,
             hostdebug_config: HostDebugConfig,
             synthprint_config: SynthPrintConfig,
+            partition_config: PartitionConfig,
+            cutbridge_idxs: List[int],
             sudo: bool,
             extra_plusargs: str,
             extra_args: str) -> str:
@@ -640,6 +687,8 @@ class RuntimeBuildRecipeConfig(RuntimeHWConfig):
             autocounter_config,
             hostdebug_config,
             synthprint_config,
+            partition_config,
+            cutbridge_idxs,
             sudo,
             full_extra_plusargs,
             full_extra_args)
@@ -711,6 +760,7 @@ class InnerRuntimeConfiguration:
     autocounter_config: AutoCounterConfig
     hostdebug_config: HostDebugConfig
     synthprint_config: SynthPrintConfig
+    partition_config: PartitionConfig
     workload_name: str
     suffixtag: str
     terminateoncompletion: bool
@@ -787,6 +837,7 @@ class InnerRuntimeConfiguration:
         self.autocounter_config = AutoCounterConfig(runtime_dict.get('autocounter', {}))
         self.hostdebug_config = HostDebugConfig(runtime_dict.get('host_debug', {}))
         self.synthprint_config = SynthPrintConfig(runtime_dict.get('synth_print', {}))
+        self.partition_config = PartitionConfig(runtime_dict.get('partitioning', {}))
 
         dict_assert('plusarg_passthrough', runtime_dict['target_config'])
         self.default_plusarg_passthrough = runtime_dict['target_config']['plusarg_passthrough']
@@ -852,6 +903,7 @@ class RuntimeConfig:
             self.innerconf.autocounter_config,
             self.innerconf.hostdebug_config,
             self.innerconf.synthprint_config,
+            self.innerconf.partition_config,
             self.innerconf.terminateoncompletion,
             self.runtime_build_recipes,
             self.innerconf.metasimulation_enabled,

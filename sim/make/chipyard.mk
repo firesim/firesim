@@ -7,7 +7,7 @@ chipyard_dir := $(abspath ..)/target-design/chipyard
 rocketchip_dir := $(chipyard_dir)/generators/rocket-chip
 
 # Scala invocation options
-JAVA_HEAP_SIZE ?= 16G
+JAVA_HEAP_SIZE ?= 256G
 # Disable the SBT supershell as interacts poorly with scalatest output and breaks
 # the runtime config generator.
 export JAVA_TOOL_OPTIONS ?= -Xmx$(JAVA_HEAP_SIZE) -Xss8M -Djava.io.tmpdir=$(base_dir)/.java_tmp

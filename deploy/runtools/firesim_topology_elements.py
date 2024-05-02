@@ -10,11 +10,12 @@ from fabric.api import run, local, warn_only, get, put, cd, hide # type: ignore
 from fabric.exceptions import CommandTimeout # type: ignore
 
 from runtools.switch_model_config import AbstractSwitchToSwitchConfig
+from runtools.pipe_model_config import AbstractPipeToPipeConfig
 from runtools.utils import get_local_shared_libraries
-from runtools.simulation_data_classes import TracerVConfig, AutoCounterConfig, HostDebugConfig, SynthPrintConfig
+from runtools.simulation_data_classes import PartitionConfig, TracerVConfig, AutoCounterConfig, HostDebugConfig, SynthPrintConfig
 
 from runtools.run_farm_deploy_managers import InstanceDeployManager
-from typing import Optional, List, Tuple, Sequence, Union, Any, TYPE_CHECKING
+from typing import Optional, List, Dict, Tuple, Sequence, Union, Any, TYPE_CHECKING
 if TYPE_CHECKING:
     from runtools.workload import JobConfig
     from runtools.run_farm import Inst
@@ -181,10 +182,14 @@ class FireSimServerNode(FireSimNode):
     autocounter_config: Optional[AutoCounterConfig]
     hostdebug_config: Optional[HostDebugConfig]
     synthprint_config: Optional[SynthPrintConfig]
+    partition_config: Optional[PartitionConfig]
     job: Optional[JobConfig]
     server_id_internal: int
     mac_address: Optional[MacAddress]
     plusarg_passthrough: Optional[str]
+    partitioned: bool
+    base_partition: bool
+
 
     def __init__(self,
             server_hardware_config: Optional[Union[RuntimeHWConfig, str]] = None,
@@ -195,7 +200,10 @@ class FireSimServerNode(FireSimNode):
             autocounter_config: Optional[AutoCounterConfig] = None,
             hostdebug_config: Optional[HostDebugConfig] = None,
             synthprint_config: Optional[SynthPrintConfig] = None,
-            plusarg_passthrough: Optional[str] = None):
+            partition_config: Optional[PartitionConfig] = None,
+            plusarg_passthrough: Optional[str] = None,
+            partitioned: bool = False,
+            base_partition: bool = False):
         super().__init__()
         self.server_hardware_config = server_hardware_config
         self.server_link_latency = server_link_latency
@@ -205,13 +213,26 @@ class FireSimServerNode(FireSimNode):
         self.autocounter_config = autocounter_config
         self.hostdebug_config = hostdebug_config
         self.synthprint_config = synthprint_config
+        self.partition_config = partition_config
         self.job = None
         self.server_id_internal = FireSimServerNode.SERVERS_CREATED
         self.mac_address = None
         self.plusarg_passthrough = plusarg_passthrough
+        self.partitioned = partitioned
+        self.base_partition = base_partition
         FireSimServerNode.SERVERS_CREATED += 1
 
+    def mac_address_assignable(self) -> bool:
+        return (not self.partitioned) or (self.partitioned and self.base_partition)
+
+    def is_leaf_partition(self) -> bool:
+        return self.partitioned and (not self.base_partition)
+
+    def is_partition(self) -> bool:
+        return self.partitioned
+
     def set_server_hardware_config(self, server_hardware_config: RuntimeHWConfig) -> None:
+        rootLogger.info(f"set_server_hardware_config {self.server_id_internal} {self.server_hardware_config}")
         self.server_hardware_config = server_hardware_config
 
     def get_server_hardware_config(self) -> Optional[Union[RuntimeHWConfig, str]]:
@@ -225,7 +246,7 @@ class FireSimServerNode(FireSimNode):
         self.mac_address = macaddr
 
     def get_mac_address(self) -> MacAddress:
-        assert self.mac_address is not None
+# assert self.mac_address is not None
         return self.mac_address
 
     def process_qcow2_rootfses(self, rootfses_list: List[Optional[str]]) -> List[Optional[str]]:
@@ -277,8 +298,17 @@ class FireSimServerNode(FireSimNode):
         called in a directory where its required_files are already located.
         """
         shmemportname = "default"
+        cutbridge_idxs = []
         if self.uplinks:
             shmemportname = self.uplinks[0].get_global_link_id()
+
+            for ul in self.uplinks:
+                rootLogger.info(f"ul {ul}, ul.uplink_size {ul.uplink_side}")
+                uplink_node = ul.uplink_side
+                if isinstance(uplink_node, FireSimPipeNode):
+                    uplink_node.pipe_builder.collect_partition_boundary_params()
+                    cutbridge_idxs.append(uplink_node.get_cutbridge_global_idx(self))
+            rootLogger.info(f"self {self} id_internal {self.server_id_internal}  {cutbridge_idxs} slotno {slotno}")
 
         assert self.server_link_latency is not None
         assert self.server_bw_max is not None
@@ -287,6 +317,7 @@ class FireSimServerNode(FireSimNode):
         assert self.autocounter_config is not None
         assert self.hostdebug_config is not None
         assert self.synthprint_config is not None
+        assert self.partition_config is not None
         assert self.plusarg_passthrough is not None
 
         all_macs = [self.get_mac_address()]
@@ -313,9 +344,13 @@ class FireSimServerNode(FireSimNode):
             self.autocounter_config,
             self.hostdebug_config,
             self.synthprint_config,
+            self.partition_config,
+            cutbridge_idxs,
             sudo,
             plusargs,
             "")
+
+        rootLogger.debug(f"runcommand {runcommand}")
 
         return runcommand
 
@@ -652,6 +687,7 @@ class FireSimSuperNodeServerNode(FireSimServerNode):
         assert self.autocounter_config is not None
         assert self.hostdebug_config is not None
         assert self.synthprint_config is not None
+        assert self.partition_config is not None
         assert self.plusarg_passthrough is not None
 
         all_macs = [self.get_mac_address()] + [self.supernode_get_sibling(x).get_mac_address() for x in range(1, num_siblings)]
@@ -689,6 +725,8 @@ class FireSimSuperNodeServerNode(FireSimServerNode):
             self.autocounter_config,
             self.hostdebug_config,
             self.synthprint_config,
+            self.partition_config,
+            [], # TODO : cutbridge_idxs, set this later
             sudo,
             plusargs,
             "")
@@ -831,4 +869,71 @@ class FireSimSwitchNode(FireSimNode):
         msg += f"---------\n"
         msg += f"""downlinks: {", ".join(map(str, self.downlinkmacs))}\n"""
         msg += f"""switchingtable: {", ".join(map(str, self.switch_table))}"""
+        return msg
+
+class FireSimPipeNode(FireSimNode):
+
+    PIPES_CREATED: int = 0
+    pipe_id_internal: int
+    partition_config: Optional[PartitionConfig]
+    pipe_builder: AbstractPipeToPipeConfig
+    partition_edge: List[FireSimServerNode]
+
+    def __init__(self, partition_config: Optional[PartitionConfig] = None):
+        super().__init__()
+        self.pipe_builder = AbstractPipeToPipeConfig(self)
+        self.partition_edge = []
+        self.partition_config = partition_config
+        self.pipe_id_internal = FireSimPipeNode.PIPES_CREATED
+        FireSimPipeNode.PIPES_CREATED += 1
+
+    def get_cutbridge_global_idx(self, server: FireSimServerNode) -> int:
+        return self.pipe_builder.server_cutbridge_idx_map[server]
+
+    def add_downlink_partition(self, server_edge: List[FireSimServerNode]) -> None:
+        for server in server_edge:
+            self.add_downlink(server)
+        self.partition_edge = server_edge
+
+    def build_pipe_sim_binary(self) -> None:
+        self.pipe_builder.buildpipe()
+
+    def get_pipe_start_command(self, sudo: bool) -> str:
+        assert self.partition_config is not None
+        return self.pipe_builder.get_pipe_simulation_command(sudo)
+
+    def get_pipe_kill_command(self) -> str:
+        return self.pipe_builder.kill_pipe_simulation_command()
+
+    def get_required_files_local_paths(self) -> List[Tuple[str, str]]:
+        """ Return local paths of all stuff needed to run this simulation as
+        array. """
+        all_paths = []
+        bin = self.pipe_builder.pipe_binary_local_path()
+        all_paths.append((bin, ''))
+        all_paths += get_local_shared_libraries(bin)
+        return all_paths
+
+    def copy_back_pipelog_from_run(self, job_results_dir: str, pipe_slot_no: int) -> None:
+        """
+        Copy back the pipe log for this pipe
+        """
+        job_dir = """{}/pipe{}/""".format(job_results_dir, self.pipe_id_internal)
+
+        localcap = local("""mkdir -p {}""".format(job_dir), capture=True)
+        rootLogger.debug("[localhost] " + str(localcap))
+        rootLogger.debug("[localhost] " + str(localcap.stderr))
+
+        dest_sim_dir = self.get_host_instance().get_sim_dir()
+
+        ## copy output files generated by the simulator that live on the host:
+        ## e.g. uartlog, memory_stats.csv, etc
+        remote_sim_run_dir = """{}/pipe_slot_{}/""".format(dest_sim_dir, pipe_slot_no)
+        for simoutputfile in ["pipelog"]:
+            get(remote_path=remote_sim_run_dir + simoutputfile, local_path=job_dir)
+
+    def diagramstr(self) -> str:
+        msg =  f"FireSimPipeNode:{self.pipe_id_internal}\n"
+        msg += f"---------\n"
+        msg += f"""downlinks: {", ".join(map(str, self.downlinkmacs))}\n"""
         return msg

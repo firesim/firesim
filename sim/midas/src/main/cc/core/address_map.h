@@ -8,6 +8,7 @@
 #include <map>
 #include <string>
 #include <vector>
+#include <inttypes.h>
 
 // Maps midas compiler emited arrays to a more useful object, that can be
 // used to read and write to a local set of registers by their names

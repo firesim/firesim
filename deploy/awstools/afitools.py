@@ -109,7 +109,8 @@ def share_agfi_in_all_regions(agfi_id, useridlist):
 def firesim_tags_to_description(build_quintuplet, deploy_quintuplet, build_triplet, deploy_triplet, commit):
     """ Serialize the tags we want to set for storage in the AGFI description """
     # note: the serialized rep still includes "triplets" for future manager versions to be compatible with old agfis
-    return f"""firesim-buildquintuplet:{build_quintuplet},firesim-deployquintuplet:{deploy_quintuplet},firesim-buildtriplet:{build_triplet},firesim-deploytriplet:{deploy_triplet},firesim-commit:{commit}"""
+# return f"""firesim-buildquintuplet:{build_quintuplet},firesim-deployquintuplet:{deploy_quintuplet},firesim-buildtriplet:{build_triplet},firesim-deploytriplet:{deploy_triplet},firesim-commit:{commit}"""
+    return f"""firesim-buildquintuplet:{build_quintuplet},firesim-deployquintuplet:{deploy_quintuplet},firesim-commit:{commit}"""
 
 def firesim_description_to_tags(description):
     """ Deserialize the tags we want to read from the AGFI description string.

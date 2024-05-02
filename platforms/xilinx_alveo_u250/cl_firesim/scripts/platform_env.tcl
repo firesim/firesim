@@ -1,1 +1,1 @@
-set jobs 8
+set jobs 32

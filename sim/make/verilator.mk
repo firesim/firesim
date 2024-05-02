@@ -5,7 +5,7 @@
 ####################################
 
 VERILATOR_CXXOPTS ?= -O2
-VERILATOR_MAKEFLAGS ?= -j8 VM_PARALLEL_BUILDS=1
+VERILATOR_MAKEFLAGS ?= -j72 VM_PARALLEL_BUILDS=1
 
 verilator = $(GENERATED_DIR)/V$(DESIGN)
 verilator_debug = $(GENERATED_DIR)/V$(DESIGN)-debug

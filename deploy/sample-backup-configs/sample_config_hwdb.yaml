@@ -63,6 +63,7 @@ vitis_firesim_gemmini_rocket_singlecore_no_nic:
     bitstream_tar: https://raw.githubusercontent.com/firesim/firesim-public-bitstreams/0af81b912264abbe3f90f8140987814291090560/vitis/vitis_firesim_gemmini_rocket_singlecore_no_nic.tar.gz
     deploy_quintuplet_override: null
     custom_runtime_config: null
+# DOCREF START: Xilinx Alveo HWDB Entries
 alveo_u250_firesim_rocket_singlecore_no_nic:
     bitstream_tar: https://raw.githubusercontent.com/firesim/firesim-public-bitstreams/b1c480bf10b2b25c950981ad5aca2bb041e0b4bc/xilinx_alveo_u250/alveo_u250_firesim_rocket_singlecore_no_nic.tar.gz
     deploy_quintuplet_override: null
@@ -79,6 +80,7 @@ alveo_u280_firesim_rocket_singlecore_no_nic:
     bitstream_tar: https://raw.githubusercontent.com/firesim/firesim-public-bitstreams/45eff43095aba01f012a5908e0fdd6f5b899f4b8/xilinx_alveo_u280/alveo_u280_firesim_rocket_singlecore_no_nic.tar.gz
     deploy_quintuplet_override: null
     custom_runtime_config: null
+# DOCREF END: Xilinx Alveo HWDB Entries
 xilinx_vcu118_firesim_rocket_singlecore_4GB_no_nic:
     bitstream_tar: https://raw.githubusercontent.com/firesim/firesim-public-bitstreams/ccb839e3ccf02f94505e5a2786466d665d415659/xilinx_vcu118/xilinx_vcu118_firesim_rocket_singlecore_4GB_no_nic.tar.gz
     deploy_quintuplet_override: null

@@ -1,9 +1,13 @@
 // See LICENSE for license details
+#include <stdio.h>
+#include <inttypes.h>
 #include "firesim_tsi.h"
 #include <inttypes.h>
 #include <stdio.h>
 
 #define fprintf(stdout, fmt, ...) (0)
+
+//#define fprintf(stdout, fmt, ...) (0)
 
 firesim_tsi_t::firesim_tsi_t(int argc, char **argv, bool can_have_loadmem)
     : testchip_tsi_t(argc, argv, can_have_loadmem), is_busy(false),

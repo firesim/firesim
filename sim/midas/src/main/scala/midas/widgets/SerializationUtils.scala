@@ -33,4 +33,3 @@ object SerializationUtils {
     override val elements = immutable.ListMap((inputPorts ++ outputPorts):_*)
   }
 }
-

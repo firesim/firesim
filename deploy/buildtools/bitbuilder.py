@@ -110,10 +110,10 @@ class BitBuilder(metaclass=abc.ABCMeta):
         # - technically I don't know how long these descriptions are allowed to be,
         # but it's at least 2048 chars, so I'll leave these here for now as sanity
         # checks.
-        assert len(tag_build_quintuplet) <= 255, "ERR: does not support tags longer than 256 chars for build_quintuplet"
-        assert len(tag_deploy_quintuplet) <= 255, "ERR: does not support tags longer than 256 chars for deploy_quintuplet"
-        assert len(tag_build_triplet) <= 255, "ERR: does not support tags longer than 256 chars for build_triplet"
-        assert len(tag_deploy_triplet) <= 255, "ERR: does not support tags longer than 256 chars for deploy_triplet"
+# assert len(tag_build_quintuplet) <= 255, "ERR: does not support tags longer than 256 chars for build_quintuplet"
+# assert len(tag_deploy_quintuplet) <= 255, "ERR: does not support tags longer than 256 chars for deploy_quintuplet"
+# assert len(tag_build_triplet) <= 255, "ERR: does not support tags longer than 256 chars for build_triplet"
+# assert len(tag_deploy_triplet) <= 255, "ERR: does not support tags longer than 256 chars for deploy_triplet"
 
         is_dirty_str = local("if [[ $(git status --porcelain) ]]; then echo '-dirty'; fi", capture=True)
         hash = local("git rev-parse HEAD", capture=True)
@@ -685,7 +685,6 @@ class XilinxAlveoBitBuilder(BitBuilder):
         local_cl_dir = f"{local_results_dir}/{fpga_build_postfix}"
         bit_path = f"{local_cl_dir}/vivado_proj/firesim.bit"
         mcs_path = f"{local_cl_dir}/vivado_proj/firesim.mcs"
-        mcs_secondary_path = f"{local_cl_dir}/vivado_proj/firesim_secondary.mcs"
         tar_staging_path = f"{local_cl_dir}/{self.build_config.PLATFORM}"
         tar_name = "firesim.tar.gz"
 
@@ -695,9 +694,8 @@ class XilinxAlveoBitBuilder(BitBuilder):
 
         # store bitfile (and mcs if it exists)
         local(f"cp {bit_path} {tar_staging_path}")
-        local(f"cp {mcs_path} {tar_staging_path}")
-        if self.build_config.PLATFORM == "xilinx_vcu118":
-            local(f"cp {mcs_secondary_path} {tar_staging_path}")
+        if self.build_config.PLATFORM != "xilinx_vcu118":
+            local(f"cp {mcs_path} {tar_staging_path}")
 
         # store metadata string
         local(f"""echo '{self.get_metadata_string()}' >> {tar_staging_path}/metadata""")

@@ -1,0 +1,4 @@
+This workload was generated using FireMarshal. See the following config
+and workload directory for details:
+../../../../../generators/sha3/software/marshal-configs/sha3-bare-rocc.yaml
+../../../../../generators/sha3/software

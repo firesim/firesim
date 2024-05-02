@@ -1,0 +1,8 @@
+{
+	"benchmark_name": "gemmini-conv-baremetal",
+	"common_simulation_outputs": [
+		"uartlog"
+	],
+	"common_bootbinary": "conv-baremetal",
+	"common_rootfs": "../../../sw/firesim-software/boards/default/installers/firesim/dummy.rootfs"
+}

@@ -20,6 +20,7 @@ public:
   bool simulation_timed_out() override { return !terminated; }
 
 private:
+  simif_t& simif;
   /// Reference to the peek-poke bridge.
   peek_poke_t &peek_poke;
   /// Flag to indicate that the simulation was terminated.
@@ -30,7 +31,7 @@ firesim_top_t::firesim_top_t(simif_t &simif,
                              widget_registry_t &registry,
                              const std::vector<std::string> &args)
     : systematic_scheduler_t(args), simulation_t(registry, args),
-      peek_poke(registry.get_widget<peek_poke_t>()) {
+      peek_poke(registry.get_widget<peek_poke_t>()), simif(simif) {
 
   // Cycles to advance before profiling instrumentation registers in models.
   std::optional<uint64_t> profile_interval;
@@ -68,6 +69,7 @@ int firesim_top_t::simulation_run() {
     run_scheduled_tasks();
     peek_poke.step(get_largest_stepsize(), false);
     while (!peek_poke.is_done() && !terminated) {
+      //simif.sync_sockets();
       for (auto *bridge : registry.get_all_bridges()) {
         bridge->tick();
         if (bridge->terminate()) {

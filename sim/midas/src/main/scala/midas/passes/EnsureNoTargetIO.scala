@@ -2,8 +2,10 @@
 
 package midas.passes
 
+
 import firrtl._
 import firrtl.ir._
+
 
 // Ensures that there are no dangling IO on the target. All I/O coming off the DUT must be bound
 // to an Bridge BlackBox

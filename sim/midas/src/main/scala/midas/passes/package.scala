@@ -9,6 +9,8 @@ import annotations._
 import firrtl.Utils.BoolType
 import firrtl.transforms.BlackBoxInlineAnno
 
+
+
 package object passes {
   /**
     * A utility for keeping statements defining and connecting signals to a piece of hardware
@@ -32,9 +34,9 @@ package object passes {
   /**
     * This pass ensures that the AbstractClockGate blackbox is defined in a circuit, so that it can
     * later be instantiated. The blackbox clock gate has the following signature:
-    *
+    * 
     * module AbstractClockGate(input I, input CE, output O);
-    *
+    * 
     * I and O are the input and output clocks, respectively, while CE is the enable signal.
     */
   object DefineAbstractClockGate extends Transform with FunctionalPass[CircuitName] {
@@ -88,7 +90,7 @@ package object passes {
     /**
       * Transforms a partial function with matching input and output types into a total function. In
       * cases where the partial function is not defined, the identity function is used.
-      *
+      * 
       * @tparam T The type for both the input and output of the partial function
       * @param f The partial function to transform
       * @return Returns a total function (T) => T
@@ -153,7 +155,7 @@ package object passes {
       * Recursively replace expressions in a Statement tree according to a map. Since the keys are
       * of type WrappedExpression, the matching is based on "WrappedExpression equality," which
       * ignores metadata that may be present in the nodes, like info, type, or kind.
-      *
+      * 
       * @param repls A map defining how each expression (in wrapped form) is replaced by a matching value, if any
       * @param s The input statement to transform
       * @return Returns a statement tree transformed by substitution according to the replacement map
@@ -163,7 +165,7 @@ package object passes {
 
   /**
     * A pass that is described as a chain of pure function calls.
-    *
+    * 
     * @tparam T The type of the analysis object returned by the analysis phase.
     */
   trait FunctionalPass[T] {

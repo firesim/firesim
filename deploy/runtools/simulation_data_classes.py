@@ -45,3 +45,12 @@ class SynthPrintConfig:
         self.start = args.get("start", "0")
         self.end = args.get("end", "-1")
         self.cycle_prefix = args.get("cycle_prefix", True) == True
+
+@dataclass
+class PartitionConfig:
+    batch_size: int
+    preserve_target: int
+
+    def __init__(self, args: Dict[str, Any]) -> None:
+        self.batch_size = args.get("batch_size", 1)
+        self.preserve_target = args.get("preserve_target", 0)

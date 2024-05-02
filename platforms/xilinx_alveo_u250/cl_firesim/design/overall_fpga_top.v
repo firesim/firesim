@@ -15,56 +15,55 @@ module overall_fpga_top (
     ddr4_sdram_c0_odt,
     ddr4_sdram_c0_par,
     ddr4_sdram_c0_reset_n,
-    ddr4_sdram_c1_act_n,
-    ddr4_sdram_c1_adr,
-    ddr4_sdram_c1_ba,
-    ddr4_sdram_c1_bg,
-    ddr4_sdram_c1_ck_c,
-    ddr4_sdram_c1_ck_t,
-    ddr4_sdram_c1_cke,
-    ddr4_sdram_c1_cs_n,
-    ddr4_sdram_c1_dq,
-    ddr4_sdram_c1_dqs_c,
-    ddr4_sdram_c1_dqs_t,
-    ddr4_sdram_c1_odt,
-    ddr4_sdram_c1_par,
-    ddr4_sdram_c1_reset_n,
-    ddr4_sdram_c2_act_n,
-    ddr4_sdram_c2_adr,
-    ddr4_sdram_c2_ba,
-    ddr4_sdram_c2_bg,
-    ddr4_sdram_c2_ck_c,
-    ddr4_sdram_c2_ck_t,
-    ddr4_sdram_c2_cke,
-    ddr4_sdram_c2_cs_n,
-    ddr4_sdram_c2_dq,
-    ddr4_sdram_c2_dqs_c,
-    ddr4_sdram_c2_dqs_t,
-    ddr4_sdram_c2_odt,
-    ddr4_sdram_c2_par,
-    ddr4_sdram_c2_reset_n,
-    ddr4_sdram_c3_act_n,
-    ddr4_sdram_c3_adr,
-    ddr4_sdram_c3_ba,
-    ddr4_sdram_c3_bg,
-    ddr4_sdram_c3_ck_c,
-    ddr4_sdram_c3_ck_t,
-    ddr4_sdram_c3_cke,
-    ddr4_sdram_c3_cs_n,
-    ddr4_sdram_c3_dq,
-    ddr4_sdram_c3_dqs_c,
-    ddr4_sdram_c3_dqs_t,
-    ddr4_sdram_c3_odt,
-    ddr4_sdram_c3_par,
-    ddr4_sdram_c3_reset_n,
-    default_300mhz_clk0_clk_n,
+    //ddr4_sdram_c1_act_n,
+    //ddr4_sdram_c1_adr,
+    //ddr4_sdram_c1_ba,
+    //ddr4_sdram_c1_bg,
+    //ddr4_sdram_c1_ck_c,
+    //ddr4_sdram_c1_ck_t,
+    //ddr4_sdram_c1_cke,
+    //ddr4_sdram_c1_cs_n,
+    //ddr4_sdram_c1_dq,
+    //ddr4_sdram_c1_dqs_c,
+    //ddr4_sdram_c1_dqs_t,
+    //ddr4_sdram_c1_odt,
+    //ddr4_sdram_c1_par,
+    //ddr4_sdram_c1_reset_n,
+    //ddr4_sdram_c2_act_n,
+    //ddr4_sdram_c2_adr,
+    //ddr4_sdram_c2_ba,
+    //ddr4_sdram_c2_bg,
+    //ddr4_sdram_c2_ck_c,
+    //ddr4_sdram_c2_ck_t,
+    //ddr4_sdram_c2_cke,
+    //ddr4_sdram_c2_cs_n,
+    //ddr4_sdram_c2_dq,
+    //ddr4_sdram_c2_dqs_c,
+    //ddr4_sdram_c2_dqs_t,
+    //ddr4_sdram_c2_odt,
+    //ddr4_sdram_c2_par,
+    //ddr4_sdram_c2_reset_n,
+    //ddr4_sdram_c3_act_n,
+    //ddr4_sdram_c3_adr,
+    //ddr4_sdram_c3_ba,
+    //ddr4_sdram_c3_bg,
+    //ddr4_sdram_c3_ck_c,
+    //ddr4_sdram_c3_ck_t,
+    //ddr4_sdram_c3_cke,
+    //ddr4_sdram_c3_cs_n,
+    //ddr4_sdram_c3_dq,
+    //ddr4_sdram_c3_dqs_c,
+    //ddr4_sdram_c3_dqs_t,
+    //ddr4_sdram_c3_odt,
+    //ddr4_sdram_c3_par,
+    //ddr4_sdram_c3_reset_n,
     default_300mhz_clk0_clk_p,
     default_300mhz_clk1_clk_n,
     default_300mhz_clk1_clk_p,
     default_300mhz_clk2_clk_n,
     default_300mhz_clk2_clk_p,
-    default_300mhz_clk3_clk_n,
-    default_300mhz_clk3_clk_p,
+    //default_300mhz_clk3_clk_n,
+    //default_300mhz_clk3_clk_p,
     pci_express_x16_rxn,
     pci_express_x16_rxp,
     pci_express_x16_txn,
@@ -89,56 +88,56 @@ module overall_fpga_top (
     output ddr4_sdram_c0_odt;
     output ddr4_sdram_c0_par;
     output ddr4_sdram_c0_reset_n;
-    output ddr4_sdram_c1_act_n;
-    output [16:0]ddr4_sdram_c1_adr;
-    output [1:0]ddr4_sdram_c1_ba;
-    output [1:0]ddr4_sdram_c1_bg;
-    output ddr4_sdram_c1_ck_c;
-    output ddr4_sdram_c1_ck_t;
-    output ddr4_sdram_c1_cke;
-    output ddr4_sdram_c1_cs_n;
-    inout [71:0]ddr4_sdram_c1_dq;
-    inout [17:0]ddr4_sdram_c1_dqs_c;
-    inout [17:0]ddr4_sdram_c1_dqs_t;
-    output ddr4_sdram_c1_odt;
-    output ddr4_sdram_c1_par;
-    output ddr4_sdram_c1_reset_n;
-    output ddr4_sdram_c2_act_n;
-    output [16:0]ddr4_sdram_c2_adr;
-    output [1:0]ddr4_sdram_c2_ba;
-    output [1:0]ddr4_sdram_c2_bg;
-    output ddr4_sdram_c2_ck_c;
-    output ddr4_sdram_c2_ck_t;
-    output ddr4_sdram_c2_cke;
-    output ddr4_sdram_c2_cs_n;
-    inout [71:0]ddr4_sdram_c2_dq;
-    inout [17:0]ddr4_sdram_c2_dqs_c;
-    inout [17:0]ddr4_sdram_c2_dqs_t;
-    output ddr4_sdram_c2_odt;
-    output ddr4_sdram_c2_par;
-    output ddr4_sdram_c2_reset_n;
-    output ddr4_sdram_c3_act_n;
-    output [16:0]ddr4_sdram_c3_adr;
-    output [1:0]ddr4_sdram_c3_ba;
-    output [1:0]ddr4_sdram_c3_bg;
-    output ddr4_sdram_c3_ck_c;
-    output ddr4_sdram_c3_ck_t;
-    output ddr4_sdram_c3_cke;
-    output ddr4_sdram_c3_cs_n;
-    inout [71:0]ddr4_sdram_c3_dq;
-    inout [17:0]ddr4_sdram_c3_dqs_c;
-    inout [17:0]ddr4_sdram_c3_dqs_t;
-    output ddr4_sdram_c3_odt;
-    output ddr4_sdram_c3_par;
-    output ddr4_sdram_c3_reset_n;
+    //output ddr4_sdram_c1_act_n;
+    //output [16:0]ddr4_sdram_c1_adr;
+    //output [1:0]ddr4_sdram_c1_ba;
+    //output [1:0]ddr4_sdram_c1_bg;
+    //output ddr4_sdram_c1_ck_c;
+    //output ddr4_sdram_c1_ck_t;
+    //output ddr4_sdram_c1_cke;
+    //output ddr4_sdram_c1_cs_n;
+    //inout [71:0]ddr4_sdram_c1_dq;
+    //inout [17:0]ddr4_sdram_c1_dqs_c;
+    //inout [17:0]ddr4_sdram_c1_dqs_t;
+    //output ddr4_sdram_c1_odt;
+    //output ddr4_sdram_c1_par;
+    //output ddr4_sdram_c1_reset_n;
+    //output ddr4_sdram_c2_act_n;
+    //output [16:0]ddr4_sdram_c2_adr;
+    //output [1:0]ddr4_sdram_c2_ba;
+    //output [1:0]ddr4_sdram_c2_bg;
+    //output ddr4_sdram_c2_ck_c;
+    //output ddr4_sdram_c2_ck_t;
+    //output ddr4_sdram_c2_cke;
+    //output ddr4_sdram_c2_cs_n;
+    //inout [71:0]ddr4_sdram_c2_dq;
+    //inout [17:0]ddr4_sdram_c2_dqs_c;
+    //inout [17:0]ddr4_sdram_c2_dqs_t;
+    //output ddr4_sdram_c2_odt;
+    //output ddr4_sdram_c2_par;
+    //output ddr4_sdram_c2_reset_n;
+    //output ddr4_sdram_c3_act_n;
+    //output [16:0]ddr4_sdram_c3_adr;
+    //output [1:0]ddr4_sdram_c3_ba;
+    //output [1:0]ddr4_sdram_c3_bg;
+    //output ddr4_sdram_c3_ck_c;
+    //output ddr4_sdram_c3_ck_t;
+    //output ddr4_sdram_c3_cke;
+    //output ddr4_sdram_c3_cs_n;
+    //inout [71:0]ddr4_sdram_c3_dq;
+    //inout [17:0]ddr4_sdram_c3_dqs_c;
+    //inout [17:0]ddr4_sdram_c3_dqs_t;
+    //output ddr4_sdram_c3_odt;
+    //output ddr4_sdram_c3_par;
+    //output ddr4_sdram_c3_reset_n;
     input default_300mhz_clk0_clk_n;
     input default_300mhz_clk0_clk_p;
     input default_300mhz_clk1_clk_n;
     input default_300mhz_clk1_clk_p;
     input default_300mhz_clk2_clk_n;
     input default_300mhz_clk2_clk_p;
-    input default_300mhz_clk3_clk_n;
-    input default_300mhz_clk3_clk_p;
+    //input default_300mhz_clk3_clk_n;
+    //input default_300mhz_clk3_clk_p;
     input [15:0]pci_express_x16_rxn;
     input [15:0]pci_express_x16_rxp;
     output [15:0]pci_express_x16_txn;
@@ -162,56 +161,56 @@ module overall_fpga_top (
     wire ddr4_sdram_c0_odt;
     wire ddr4_sdram_c0_par;
     wire ddr4_sdram_c0_reset_n;
-    wire ddr4_sdram_c1_act_n;
-    wire [16:0]ddr4_sdram_c1_adr;
-    wire [1:0]ddr4_sdram_c1_ba;
-    wire [1:0]ddr4_sdram_c1_bg;
-    wire ddr4_sdram_c1_ck_c;
-    wire ddr4_sdram_c1_ck_t;
-    wire ddr4_sdram_c1_cke;
-    wire ddr4_sdram_c1_cs_n;
-    wire [71:0]ddr4_sdram_c1_dq;
-    wire [17:0]ddr4_sdram_c1_dqs_c;
-    wire [17:0]ddr4_sdram_c1_dqs_t;
-    wire ddr4_sdram_c1_odt;
-    wire ddr4_sdram_c1_par;
-    wire ddr4_sdram_c1_reset_n;
-    wire ddr4_sdram_c2_act_n;
-    wire [16:0]ddr4_sdram_c2_adr;
-    wire [1:0]ddr4_sdram_c2_ba;
-    wire [1:0]ddr4_sdram_c2_bg;
-    wire ddr4_sdram_c2_ck_c;
-    wire ddr4_sdram_c2_ck_t;
-    wire ddr4_sdram_c2_cke;
-    wire ddr4_sdram_c2_cs_n;
-    wire [71:0]ddr4_sdram_c2_dq;
-    wire [17:0]ddr4_sdram_c2_dqs_c;
-    wire [17:0]ddr4_sdram_c2_dqs_t;
-    wire ddr4_sdram_c2_odt;
-    wire ddr4_sdram_c2_par;
-    wire ddr4_sdram_c2_reset_n;
-    wire ddr4_sdram_c3_act_n;
-    wire [16:0]ddr4_sdram_c3_adr;
-    wire [1:0]ddr4_sdram_c3_ba;
-    wire [1:0]ddr4_sdram_c3_bg;
-    wire ddr4_sdram_c3_ck_c;
-    wire ddr4_sdram_c3_ck_t;
-    wire ddr4_sdram_c3_cke;
-    wire ddr4_sdram_c3_cs_n;
-    wire [71:0]ddr4_sdram_c3_dq;
-    wire [17:0]ddr4_sdram_c3_dqs_c;
-    wire [17:0]ddr4_sdram_c3_dqs_t;
-    wire ddr4_sdram_c3_odt;
-    wire ddr4_sdram_c3_par;
-    wire ddr4_sdram_c3_reset_n;
+    //wire ddr4_sdram_c1_act_n;
+    //wire [16:0]ddr4_sdram_c1_adr;
+    //wire [1:0]ddr4_sdram_c1_ba;
+    //wire [1:0]ddr4_sdram_c1_bg;
+    //wire ddr4_sdram_c1_ck_c;
+    //wire ddr4_sdram_c1_ck_t;
+    //wire ddr4_sdram_c1_cke;
+    //wire ddr4_sdram_c1_cs_n;
+    //wire [71:0]ddr4_sdram_c1_dq;
+    //wire [17:0]ddr4_sdram_c1_dqs_c;
+    //wire [17:0]ddr4_sdram_c1_dqs_t;
+    //wire ddr4_sdram_c1_odt;
+    //wire ddr4_sdram_c1_par;
+    //wire ddr4_sdram_c1_reset_n;
+    //wire ddr4_sdram_c2_act_n;
+    //wire [16:0]ddr4_sdram_c2_adr;
+    //wire [1:0]ddr4_sdram_c2_ba;
+    //wire [1:0]ddr4_sdram_c2_bg;
+    //wire ddr4_sdram_c2_ck_c;
+    //wire ddr4_sdram_c2_ck_t;
+    //wire ddr4_sdram_c2_cke;
+    //wire ddr4_sdram_c2_cs_n;
+    //wire [71:0]ddr4_sdram_c2_dq;
+    //wire [17:0]ddr4_sdram_c2_dqs_c;
+    //wire [17:0]ddr4_sdram_c2_dqs_t;
+    //wire ddr4_sdram_c2_odt;
+    //wire ddr4_sdram_c2_par;
+    //wire ddr4_sdram_c2_reset_n;
+    //wire ddr4_sdram_c3_act_n;
+    //wire [16:0]ddr4_sdram_c3_adr;
+    //wire [1:0]ddr4_sdram_c3_ba;
+    //wire [1:0]ddr4_sdram_c3_bg;
+    //wire ddr4_sdram_c3_ck_c;
+    //wire ddr4_sdram_c3_ck_t;
+    //wire ddr4_sdram_c3_cke;
+    //wire ddr4_sdram_c3_cs_n;
+    //wire [71:0]ddr4_sdram_c3_dq;
+    //wire [17:0]ddr4_sdram_c3_dqs_c;
+    //wire [17:0]ddr4_sdram_c3_dqs_t;
+    //wire ddr4_sdram_c3_odt;
+    //wire ddr4_sdram_c3_par;
+    //wire ddr4_sdram_c3_reset_n;
     wire default_300mhz_clk0_clk_n;
     wire default_300mhz_clk0_clk_p;
     wire default_300mhz_clk1_clk_n;
     wire default_300mhz_clk1_clk_p;
     wire default_300mhz_clk2_clk_n;
     wire default_300mhz_clk2_clk_p;
-    wire default_300mhz_clk3_clk_n;
-    wire default_300mhz_clk3_clk_p;
+    //wire default_300mhz_clk3_clk_n;
+    //wire default_300mhz_clk3_clk_p;
     wire [15:0]pci_express_x16_rxn;
     wire [15:0]pci_express_x16_rxp;
     wire [15:0]pci_express_x16_txn;
@@ -262,123 +261,123 @@ module overall_fpga_top (
     wire DDR4_0_S_AXI_wready;
     wire [7:0]DDR4_0_S_AXI_wstrb;
     wire DDR4_0_S_AXI_wvalid;
-    wire [33:0]DDR4_1_S_AXI_araddr;
-    wire [1:0]DDR4_1_S_AXI_arburst;
-    wire [3:0]DDR4_1_S_AXI_arcache;
-    wire [15:0]DDR4_1_S_AXI_arid;
-    wire [7:0]DDR4_1_S_AXI_arlen;
-    wire [0:0]DDR4_1_S_AXI_arlock;
-    wire [2:0]DDR4_1_S_AXI_arprot;
-    wire [3:0]DDR4_1_S_AXI_arqos;
-    wire DDR4_1_S_AXI_arready;
-    wire [3:0]DDR4_1_S_AXI_arregion;
-    wire [2:0]DDR4_1_S_AXI_arsize;
-    wire DDR4_1_S_AXI_arvalid;
-    wire [33:0]DDR4_1_S_AXI_awaddr;
-    wire [1:0]DDR4_1_S_AXI_awburst;
-    wire [3:0]DDR4_1_S_AXI_awcache;
-    wire [15:0]DDR4_1_S_AXI_awid;
-    wire [7:0]DDR4_1_S_AXI_awlen;
-    wire [0:0]DDR4_1_S_AXI_awlock;
-    wire [2:0]DDR4_1_S_AXI_awprot;
-    wire [3:0]DDR4_1_S_AXI_awqos;
-    wire DDR4_1_S_AXI_awready;
-    wire [3:0]DDR4_1_S_AXI_awregion;
-    wire [2:0]DDR4_1_S_AXI_awsize;
-    wire DDR4_1_S_AXI_awvalid;
-    wire [15:0]DDR4_1_S_AXI_bid;
-    wire DDR4_1_S_AXI_bready;
-    wire [1:0]DDR4_1_S_AXI_bresp;
-    wire DDR4_1_S_AXI_bvalid;
-    wire [63:0]DDR4_1_S_AXI_rdata;
-    wire [15:0]DDR4_1_S_AXI_rid;
-    wire DDR4_1_S_AXI_rlast;
-    wire DDR4_1_S_AXI_rready;
-    wire [1:0]DDR4_1_S_AXI_rresp;
-    wire DDR4_1_S_AXI_rvalid;
-    wire [63:0]DDR4_1_S_AXI_wdata;
-    wire DDR4_1_S_AXI_wlast;
-    wire DDR4_1_S_AXI_wready;
-    wire [7:0]DDR4_1_S_AXI_wstrb;
-    wire DDR4_1_S_AXI_wvalid;
-    wire [33:0]DDR4_2_S_AXI_araddr;
-    wire [1:0]DDR4_2_S_AXI_arburst;
-    wire [3:0]DDR4_2_S_AXI_arcache;
-    wire [15:0]DDR4_2_S_AXI_arid;
-    wire [7:0]DDR4_2_S_AXI_arlen;
-    wire [0:0]DDR4_2_S_AXI_arlock;
-    wire [2:0]DDR4_2_S_AXI_arprot;
-    wire [3:0]DDR4_2_S_AXI_arqos;
-    wire DDR4_2_S_AXI_arready;
-    wire [3:0]DDR4_2_S_AXI_arregion;
-    wire [2:0]DDR4_2_S_AXI_arsize;
-    wire DDR4_2_S_AXI_arvalid;
-    wire [33:0]DDR4_2_S_AXI_awaddr;
-    wire [1:0]DDR4_2_S_AXI_awburst;
-    wire [3:0]DDR4_2_S_AXI_awcache;
-    wire [15:0]DDR4_2_S_AXI_awid;
-    wire [7:0]DDR4_2_S_AXI_awlen;
-    wire [0:0]DDR4_2_S_AXI_awlock;
-    wire [2:0]DDR4_2_S_AXI_awprot;
-    wire [3:0]DDR4_2_S_AXI_awqos;
-    wire DDR4_2_S_AXI_awready;
-    wire [3:0]DDR4_2_S_AXI_awregion;
-    wire [2:0]DDR4_2_S_AXI_awsize;
-    wire DDR4_2_S_AXI_awvalid;
-    wire [15:0]DDR4_2_S_AXI_bid;
-    wire DDR4_2_S_AXI_bready;
-    wire [1:0]DDR4_2_S_AXI_bresp;
-    wire DDR4_2_S_AXI_bvalid;
-    wire [63:0]DDR4_2_S_AXI_rdata;
-    wire [15:0]DDR4_2_S_AXI_rid;
-    wire DDR4_2_S_AXI_rlast;
-    wire DDR4_2_S_AXI_rready;
-    wire [1:0]DDR4_2_S_AXI_rresp;
-    wire DDR4_2_S_AXI_rvalid;
-    wire [63:0]DDR4_2_S_AXI_wdata;
-    wire DDR4_2_S_AXI_wlast;
-    wire DDR4_2_S_AXI_wready;
-    wire [7:0]DDR4_2_S_AXI_wstrb;
-    wire DDR4_2_S_AXI_wvalid;
-    wire [33:0]DDR4_3_S_AXI_araddr;
-    wire [1:0]DDR4_3_S_AXI_arburst;
-    wire [3:0]DDR4_3_S_AXI_arcache;
-    wire [15:0]DDR4_3_S_AXI_arid;
-    wire [7:0]DDR4_3_S_AXI_arlen;
-    wire [0:0]DDR4_3_S_AXI_arlock;
-    wire [2:0]DDR4_3_S_AXI_arprot;
-    wire [3:0]DDR4_3_S_AXI_arqos;
-    wire DDR4_3_S_AXI_arready;
-    wire [3:0]DDR4_3_S_AXI_arregion;
-    wire [2:0]DDR4_3_S_AXI_arsize;
-    wire DDR4_3_S_AXI_arvalid;
-    wire [33:0]DDR4_3_S_AXI_awaddr;
-    wire [1:0]DDR4_3_S_AXI_awburst;
-    wire [3:0]DDR4_3_S_AXI_awcache;
-    wire [15:0]DDR4_3_S_AXI_awid;
-    wire [7:0]DDR4_3_S_AXI_awlen;
-    wire [0:0]DDR4_3_S_AXI_awlock;
-    wire [2:0]DDR4_3_S_AXI_awprot;
-    wire [3:0]DDR4_3_S_AXI_awqos;
-    wire DDR4_3_S_AXI_awready;
-    wire [3:0]DDR4_3_S_AXI_awregion;
-    wire [2:0]DDR4_3_S_AXI_awsize;
-    wire DDR4_3_S_AXI_awvalid;
-    wire [15:0]DDR4_3_S_AXI_bid;
-    wire DDR4_3_S_AXI_bready;
-    wire [1:0]DDR4_3_S_AXI_bresp;
-    wire DDR4_3_S_AXI_bvalid;
-    wire [63:0]DDR4_3_S_AXI_rdata;
-    wire [15:0]DDR4_3_S_AXI_rid;
-    wire DDR4_3_S_AXI_rlast;
-    wire DDR4_3_S_AXI_rready;
-    wire [1:0]DDR4_3_S_AXI_rresp;
-    wire DDR4_3_S_AXI_rvalid;
-    wire [63:0]DDR4_3_S_AXI_wdata;
-    wire DDR4_3_S_AXI_wlast;
-    wire DDR4_3_S_AXI_wready;
-    wire [7:0]DDR4_3_S_AXI_wstrb;
-    wire DDR4_3_S_AXI_wvalid;
+    //wire [33:0]DDR4_1_S_AXI_araddr;
+    //wire [1:0]DDR4_1_S_AXI_arburst;
+    //wire [3:0]DDR4_1_S_AXI_arcache;
+    //wire [15:0]DDR4_1_S_AXI_arid;
+    //wire [7:0]DDR4_1_S_AXI_arlen;
+    //wire [0:0]DDR4_1_S_AXI_arlock;
+    //wire [2:0]DDR4_1_S_AXI_arprot;
+    //wire [3:0]DDR4_1_S_AXI_arqos;
+    //wire DDR4_1_S_AXI_arready;
+    //wire [3:0]DDR4_1_S_AXI_arregion;
+    //wire [2:0]DDR4_1_S_AXI_arsize;
+    //wire DDR4_1_S_AXI_arvalid;
+    //wire [33:0]DDR4_1_S_AXI_awaddr;
+    //wire [1:0]DDR4_1_S_AXI_awburst;
+    //wire [3:0]DDR4_1_S_AXI_awcache;
+    //wire [15:0]DDR4_1_S_AXI_awid;
+    //wire [7:0]DDR4_1_S_AXI_awlen;
+    //wire [0:0]DDR4_1_S_AXI_awlock;
+    //wire [2:0]DDR4_1_S_AXI_awprot;
+    //wire [3:0]DDR4_1_S_AXI_awqos;
+    //wire DDR4_1_S_AXI_awready;
+    //wire [3:0]DDR4_1_S_AXI_awregion;
+    //wire [2:0]DDR4_1_S_AXI_awsize;
+    //wire DDR4_1_S_AXI_awvalid;
+    //wire [15:0]DDR4_1_S_AXI_bid;
+    //wire DDR4_1_S_AXI_bready;
+    //wire [1:0]DDR4_1_S_AXI_bresp;
+    //wire DDR4_1_S_AXI_bvalid;
+    //wire [63:0]DDR4_1_S_AXI_rdata;
+    //wire [15:0]DDR4_1_S_AXI_rid;
+    //wire DDR4_1_S_AXI_rlast;
+    //wire DDR4_1_S_AXI_rready;
+    //wire [1:0]DDR4_1_S_AXI_rresp;
+    //wire DDR4_1_S_AXI_rvalid;
+    //wire [63:0]DDR4_1_S_AXI_wdata;
+    //wire DDR4_1_S_AXI_wlast;
+    //wire DDR4_1_S_AXI_wready;
+    //wire [7:0]DDR4_1_S_AXI_wstrb;
+    //wire DDR4_1_S_AXI_wvalid;
+    //wire [33:0]DDR4_2_S_AXI_araddr;
+    //wire [1:0]DDR4_2_S_AXI_arburst;
+    //wire [3:0]DDR4_2_S_AXI_arcache;
+    //wire [15:0]DDR4_2_S_AXI_arid;
+    //wire [7:0]DDR4_2_S_AXI_arlen;
+    //wire [0:0]DDR4_2_S_AXI_arlock;
+    //wire [2:0]DDR4_2_S_AXI_arprot;
+    //wire [3:0]DDR4_2_S_AXI_arqos;
+    //wire DDR4_2_S_AXI_arready;
+    //wire [3:0]DDR4_2_S_AXI_arregion;
+    //wire [2:0]DDR4_2_S_AXI_arsize;
+    //wire DDR4_2_S_AXI_arvalid;
+    //wire [33:0]DDR4_2_S_AXI_awaddr;
+    //wire [1:0]DDR4_2_S_AXI_awburst;
+    //wire [3:0]DDR4_2_S_AXI_awcache;
+    //wire [15:0]DDR4_2_S_AXI_awid;
+    //wire [7:0]DDR4_2_S_AXI_awlen;
+    //wire [0:0]DDR4_2_S_AXI_awlock;
+    //wire [2:0]DDR4_2_S_AXI_awprot;
+    //wire [3:0]DDR4_2_S_AXI_awqos;
+    //wire DDR4_2_S_AXI_awready;
+    //wire [3:0]DDR4_2_S_AXI_awregion;
+    //wire [2:0]DDR4_2_S_AXI_awsize;
+    //wire DDR4_2_S_AXI_awvalid;
+    //wire [15:0]DDR4_2_S_AXI_bid;
+    //wire DDR4_2_S_AXI_bready;
+    //wire [1:0]DDR4_2_S_AXI_bresp;
+    //wire DDR4_2_S_AXI_bvalid;
+    //wire [63:0]DDR4_2_S_AXI_rdata;
+    //wire [15:0]DDR4_2_S_AXI_rid;
+    //wire DDR4_2_S_AXI_rlast;
+    //wire DDR4_2_S_AXI_rready;
+    //wire [1:0]DDR4_2_S_AXI_rresp;
+    //wire DDR4_2_S_AXI_rvalid;
+    //wire [63:0]DDR4_2_S_AXI_wdata;
+    //wire DDR4_2_S_AXI_wlast;
+    //wire DDR4_2_S_AXI_wready;
+    //wire [7:0]DDR4_2_S_AXI_wstrb;
+    //wire DDR4_2_S_AXI_wvalid;
+    //wire [33:0]DDR4_3_S_AXI_araddr;
+    //wire [1:0]DDR4_3_S_AXI_arburst;
+    //wire [3:0]DDR4_3_S_AXI_arcache;
+    //wire [15:0]DDR4_3_S_AXI_arid;
+    //wire [7:0]DDR4_3_S_AXI_arlen;
+    //wire [0:0]DDR4_3_S_AXI_arlock;
+    //wire [2:0]DDR4_3_S_AXI_arprot;
+    //wire [3:0]DDR4_3_S_AXI_arqos;
+    //wire DDR4_3_S_AXI_arready;
+    //wire [3:0]DDR4_3_S_AXI_arregion;
+    //wire [2:0]DDR4_3_S_AXI_arsize;
+    //wire DDR4_3_S_AXI_arvalid;
+    //wire [33:0]DDR4_3_S_AXI_awaddr;
+    //wire [1:0]DDR4_3_S_AXI_awburst;
+    //wire [3:0]DDR4_3_S_AXI_awcache;
+    //wire [15:0]DDR4_3_S_AXI_awid;
+    //wire [7:0]DDR4_3_S_AXI_awlen;
+    //wire [0:0]DDR4_3_S_AXI_awlock;
+    //wire [2:0]DDR4_3_S_AXI_awprot;
+    //wire [3:0]DDR4_3_S_AXI_awqos;
+    //wire DDR4_3_S_AXI_awready;
+    //wire [3:0]DDR4_3_S_AXI_awregion;
+    //wire [2:0]DDR4_3_S_AXI_awsize;
+    //wire DDR4_3_S_AXI_awvalid;
+    //wire [15:0]DDR4_3_S_AXI_bid;
+    //wire DDR4_3_S_AXI_bready;
+    //wire [1:0]DDR4_3_S_AXI_bresp;
+    //wire DDR4_3_S_AXI_bvalid;
+    //wire [63:0]DDR4_3_S_AXI_rdata;
+    //wire [15:0]DDR4_3_S_AXI_rid;
+    //wire DDR4_3_S_AXI_rlast;
+    //wire DDR4_3_S_AXI_rready;
+    //wire [1:0]DDR4_3_S_AXI_rresp;
+    //wire DDR4_3_S_AXI_rvalid;
+    //wire [63:0]DDR4_3_S_AXI_wdata;
+    //wire DDR4_3_S_AXI_wlast;
+    //wire DDR4_3_S_AXI_wready;
+    //wire [7:0]DDR4_3_S_AXI_wstrb;
+    //wire DDR4_3_S_AXI_wvalid;
     wire [31:0]PCIE_M_AXI_LITE_araddr;
     wire [2:0]PCIE_M_AXI_LITE_arprot;
     wire PCIE_M_AXI_LITE_arready;
@@ -437,6 +436,20 @@ module overall_fpga_top (
     wire PCIE_M_AXI_wready;
     wire [63:0]PCIE_M_AXI_wstrb;
     wire PCIE_M_AXI_wvalid;
+    wire QSFP0_CHANNEL_UP;
+    wire [255:0] TO_QSFP0_DATA;
+    wire TO_QSFP0_VALID;
+    wire TO_QSFP0_READY;
+    wire [255:0] FROM_QSFP0_DATA;
+    wire FROM_QSFP0_VALID;
+    wire FROM_QSFP0_READY;
+    wire QSFP1_CHANNEL_UP;
+    wire [255:0] TO_QSFP1_DATA;
+    wire TO_QSFP1_VALID;
+    wire TO_QSFP1_READY;
+    wire [255:0] FROM_QSFP1_DATA;
+    wire FROM_QSFP1_VALID;
+    wire FROM_QSFP1_READY;
 
     design_1 design_1_i (
         .ddr4_sdram_c0_act_n(ddr4_sdram_c0_act_n),
@@ -453,56 +466,60 @@ module overall_fpga_top (
         .ddr4_sdram_c0_odt(ddr4_sdram_c0_odt),
         .ddr4_sdram_c0_par(ddr4_sdram_c0_par),
         .ddr4_sdram_c0_reset_n(ddr4_sdram_c0_reset_n),
-        .ddr4_sdram_c1_act_n(ddr4_sdram_c1_act_n),
-        .ddr4_sdram_c1_adr(ddr4_sdram_c1_adr),
-        .ddr4_sdram_c1_ba(ddr4_sdram_c1_ba),
-        .ddr4_sdram_c1_bg(ddr4_sdram_c1_bg),
-        .ddr4_sdram_c1_ck_c(ddr4_sdram_c1_ck_c),
-        .ddr4_sdram_c1_ck_t(ddr4_sdram_c1_ck_t),
-        .ddr4_sdram_c1_cke(ddr4_sdram_c1_cke),
-        .ddr4_sdram_c1_cs_n(ddr4_sdram_c1_cs_n),
-        .ddr4_sdram_c1_dq(ddr4_sdram_c1_dq),
-        .ddr4_sdram_c1_dqs_c(ddr4_sdram_c1_dqs_c),
-        .ddr4_sdram_c1_dqs_t(ddr4_sdram_c1_dqs_t),
-        .ddr4_sdram_c1_odt(ddr4_sdram_c1_odt),
-        .ddr4_sdram_c1_par(ddr4_sdram_c1_par),
-        .ddr4_sdram_c1_reset_n(ddr4_sdram_c1_reset_n),
-        .ddr4_sdram_c2_act_n(ddr4_sdram_c2_act_n),
-        .ddr4_sdram_c2_adr(ddr4_sdram_c2_adr),
-        .ddr4_sdram_c2_ba(ddr4_sdram_c2_ba),
-        .ddr4_sdram_c2_bg(ddr4_sdram_c2_bg),
-        .ddr4_sdram_c2_ck_c(ddr4_sdram_c2_ck_c),
-        .ddr4_sdram_c2_ck_t(ddr4_sdram_c2_ck_t),
-        .ddr4_sdram_c2_cke(ddr4_sdram_c2_cke),
-        .ddr4_sdram_c2_cs_n(ddr4_sdram_c2_cs_n),
-        .ddr4_sdram_c2_dq(ddr4_sdram_c2_dq),
-        .ddr4_sdram_c2_dqs_c(ddr4_sdram_c2_dqs_c),
-        .ddr4_sdram_c2_dqs_t(ddr4_sdram_c2_dqs_t),
-        .ddr4_sdram_c2_odt(ddr4_sdram_c2_odt),
-        .ddr4_sdram_c2_par(ddr4_sdram_c2_par),
-        .ddr4_sdram_c2_reset_n(ddr4_sdram_c2_reset_n),
-        .ddr4_sdram_c3_act_n(ddr4_sdram_c3_act_n),
-        .ddr4_sdram_c3_adr(ddr4_sdram_c3_adr),
-        .ddr4_sdram_c3_ba(ddr4_sdram_c3_ba),
-        .ddr4_sdram_c3_bg(ddr4_sdram_c3_bg),
-        .ddr4_sdram_c3_ck_c(ddr4_sdram_c3_ck_c),
-        .ddr4_sdram_c3_ck_t(ddr4_sdram_c3_ck_t),
-        .ddr4_sdram_c3_cke(ddr4_sdram_c3_cke),
-        .ddr4_sdram_c3_cs_n(ddr4_sdram_c3_cs_n),
-        .ddr4_sdram_c3_dq(ddr4_sdram_c3_dq),
-        .ddr4_sdram_c3_dqs_c(ddr4_sdram_c3_dqs_c),
-        .ddr4_sdram_c3_dqs_t(ddr4_sdram_c3_dqs_t),
-        .ddr4_sdram_c3_odt(ddr4_sdram_c3_odt),
-        .ddr4_sdram_c3_par(ddr4_sdram_c3_par),
-        .ddr4_sdram_c3_reset_n(ddr4_sdram_c3_reset_n),
+        //.ddr4_sdram_c1_act_n(ddr4_sdram_c1_act_n),
+        //.ddr4_sdram_c1_adr(ddr4_sdram_c1_adr),
+        //.ddr4_sdram_c1_ba(ddr4_sdram_c1_ba),
+        //.ddr4_sdram_c1_bg(ddr4_sdram_c1_bg),
+        //.ddr4_sdram_c1_ck_c(ddr4_sdram_c1_ck_c),
+        //.ddr4_sdram_c1_ck_t(ddr4_sdram_c1_ck_t),
+        //.ddr4_sdram_c1_cke(ddr4_sdram_c1_cke),
+        //.ddr4_sdram_c1_cs_n(ddr4_sdram_c1_cs_n),
+        //.ddr4_sdram_c1_dq(ddr4_sdram_c1_dq),
+        //.ddr4_sdram_c1_dqs_c(ddr4_sdram_c1_dqs_c),
+        //.ddr4_sdram_c1_dqs_t(ddr4_sdram_c1_dqs_t),
+        //.ddr4_sdram_c1_odt(ddr4_sdram_c1_odt),
+        //.ddr4_sdram_c1_par(ddr4_sdram_c1_par),
+        //.ddr4_sdram_c1_reset_n(ddr4_sdram_c1_reset_n),
+        //.ddr4_sdram_c2_act_n(ddr4_sdram_c2_act_n),
+        //.ddr4_sdram_c2_adr(ddr4_sdram_c2_adr),
+        //.ddr4_sdram_c2_ba(ddr4_sdram_c2_ba),
+        //.ddr4_sdram_c2_bg(ddr4_sdram_c2_bg),
+        //.ddr4_sdram_c2_ck_c(ddr4_sdram_c2_ck_c),
+        //.ddr4_sdram_c2_ck_t(ddr4_sdram_c2_ck_t),
+        //.ddr4_sdram_c2_cke(ddr4_sdram_c2_cke),
+        //.ddr4_sdram_c2_cs_n(ddr4_sdram_c2_cs_n),
+        //.ddr4_sdram_c2_dq(ddr4_sdram_c2_dq),
+        //.ddr4_sdram_c2_dqs_c(ddr4_sdram_c2_dqs_c),
+        //.ddr4_sdram_c2_dqs_t(ddr4_sdram_c2_dqs_t),
+        //.ddr4_sdram_c2_odt(ddr4_sdram_c2_odt),
+        //.ddr4_sdram_c2_par(ddr4_sdram_c2_par),
+        //.ddr4_sdram_c2_reset_n(ddr4_sdram_c2_reset_n),
+        //.ddr4_sdram_c3_act_n(ddr4_sdram_c3_act_n),
+        //.ddr4_sdram_c3_adr(ddr4_sdram_c3_adr),
+        //.ddr4_sdram_c3_ba(ddr4_sdram_c3_ba),
+        //.ddr4_sdram_c3_bg(ddr4_sdram_c3_bg),
+        //.ddr4_sdram_c3_ck_c(ddr4_sdram_c3_ck_c),
+        //.ddr4_sdram_c3_ck_t(ddr4_sdram_c3_ck_t),
+        //.ddr4_sdram_c3_cke(ddr4_sdram_c3_cke),
+        //.ddr4_sdram_c3_cs_n(ddr4_sdram_c3_cs_n),
+        //.ddr4_sdram_c3_dq(ddr4_sdram_c3_dq),
+        //.ddr4_sdram_c3_dqs_c(ddr4_sdram_c3_dqs_c),
+        //.ddr4_sdram_c3_dqs_t(ddr4_sdram_c3_dqs_t),
+        //.ddr4_sdram_c3_odt(ddr4_sdram_c3_odt),
+        //.ddr4_sdram_c3_par(ddr4_sdram_c3_par),
+        //.ddr4_sdram_c3_reset_n(ddr4_sdram_c3_reset_n),
         .default_300mhz_clk0_clk_n(default_300mhz_clk0_clk_n),
         .default_300mhz_clk0_clk_p(default_300mhz_clk0_clk_p),
         .default_300mhz_clk1_clk_n(default_300mhz_clk1_clk_n),
         .default_300mhz_clk1_clk_p(default_300mhz_clk1_clk_p),
         .default_300mhz_clk2_clk_n(default_300mhz_clk2_clk_n),
         .default_300mhz_clk2_clk_p(default_300mhz_clk2_clk_p),
-        .default_300mhz_clk3_clk_n(default_300mhz_clk3_clk_n),
-        .default_300mhz_clk3_clk_p(default_300mhz_clk3_clk_p),
+        //.default_300mhz_clk3_clk_n(default_300mhz_clk3_clk_n),
+        //.default_300mhz_clk3_clk_p(default_300mhz_clk3_clk_p),
+        //.default_300mhz_clk4_clk_n(default_300mhz_clk1_clk_n),
+        //.default_300mhz_clk4_clk_p(default_300mhz_clk1_clk_p),
+        //.default_300mhz_clk5_clk_n(default_300mhz_clk2_clk_n),
+        //.default_300mhz_clk5_clk_p(default_300mhz_clk2_clk_p),
         .pci_express_x16_rxn(pci_express_x16_rxn),
         .pci_express_x16_rxp(pci_express_x16_rxp),
         .pci_express_x16_txn(pci_express_x16_txn),
@@ -555,125 +572,125 @@ module overall_fpga_top (
         .DDR4_0_S_AXI_wstrb(DDR4_0_S_AXI_wstrb),
         .DDR4_0_S_AXI_wvalid(DDR4_0_S_AXI_wvalid),
 
-        .DDR4_1_S_AXI_araddr(DDR4_1_S_AXI_araddr),
-        .DDR4_1_S_AXI_arburst(DDR4_1_S_AXI_arburst),
-        .DDR4_1_S_AXI_arcache(DDR4_1_S_AXI_arcache),
-        .DDR4_1_S_AXI_arid(DDR4_1_S_AXI_arid),
-        .DDR4_1_S_AXI_arlen(DDR4_1_S_AXI_arlen),
-        .DDR4_1_S_AXI_arlock(DDR4_1_S_AXI_arlock),
-        .DDR4_1_S_AXI_arprot(DDR4_1_S_AXI_arprot),
-        .DDR4_1_S_AXI_arqos(DDR4_1_S_AXI_arqos),
-        .DDR4_1_S_AXI_arready(DDR4_1_S_AXI_arready),
-        .DDR4_1_S_AXI_arregion(DDR4_1_S_AXI_arregion),
-        .DDR4_1_S_AXI_arsize(DDR4_1_S_AXI_arsize),
-        .DDR4_1_S_AXI_arvalid(DDR4_1_S_AXI_arvalid),
-        .DDR4_1_S_AXI_awaddr(DDR4_1_S_AXI_awaddr),
-        .DDR4_1_S_AXI_awburst(DDR4_1_S_AXI_awburst),
-        .DDR4_1_S_AXI_awcache(DDR4_1_S_AXI_awcache),
-        .DDR4_1_S_AXI_awid(DDR4_1_S_AXI_awid),
-        .DDR4_1_S_AXI_awlen(DDR4_1_S_AXI_awlen),
-        .DDR4_1_S_AXI_awlock(DDR4_1_S_AXI_awlock),
-        .DDR4_1_S_AXI_awprot(DDR4_1_S_AXI_awprot),
-        .DDR4_1_S_AXI_awqos(DDR4_1_S_AXI_awqos),
-        .DDR4_1_S_AXI_awready(DDR4_1_S_AXI_awready),
-        .DDR4_1_S_AXI_awregion(DDR4_1_S_AXI_awregion),
-        .DDR4_1_S_AXI_awsize(DDR4_1_S_AXI_awsize),
-        .DDR4_1_S_AXI_awvalid(DDR4_1_S_AXI_awvalid),
-        .DDR4_1_S_AXI_bid(DDR4_1_S_AXI_bid),
-        .DDR4_1_S_AXI_bready(DDR4_1_S_AXI_bready),
-        .DDR4_1_S_AXI_bresp(DDR4_1_S_AXI_bresp),
-        .DDR4_1_S_AXI_bvalid(DDR4_1_S_AXI_bvalid),
-        .DDR4_1_S_AXI_rdata(DDR4_1_S_AXI_rdata),
-        .DDR4_1_S_AXI_rid(DDR4_1_S_AXI_rid),
-        .DDR4_1_S_AXI_rlast(DDR4_1_S_AXI_rlast),
-        .DDR4_1_S_AXI_rready(DDR4_1_S_AXI_rready),
-        .DDR4_1_S_AXI_rresp(DDR4_1_S_AXI_rresp),
-        .DDR4_1_S_AXI_rvalid(DDR4_1_S_AXI_rvalid),
-        .DDR4_1_S_AXI_wdata(DDR4_1_S_AXI_wdata),
-        .DDR4_1_S_AXI_wlast(DDR4_1_S_AXI_wlast),
-        .DDR4_1_S_AXI_wready(DDR4_1_S_AXI_wready),
-        .DDR4_1_S_AXI_wstrb(DDR4_1_S_AXI_wstrb),
-        .DDR4_1_S_AXI_wvalid(DDR4_1_S_AXI_wvalid),
+        //.DDR4_1_S_AXI_araddr(DDR4_1_S_AXI_araddr),
+        //.DDR4_1_S_AXI_arburst(DDR4_1_S_AXI_arburst),
+        //.DDR4_1_S_AXI_arcache(DDR4_1_S_AXI_arcache),
+        //.DDR4_1_S_AXI_arid(DDR4_1_S_AXI_arid),
+        //.DDR4_1_S_AXI_arlen(DDR4_1_S_AXI_arlen),
+        //.DDR4_1_S_AXI_arlock(DDR4_1_S_AXI_arlock),
+        //.DDR4_1_S_AXI_arprot(DDR4_1_S_AXI_arprot),
+        //.DDR4_1_S_AXI_arqos(DDR4_1_S_AXI_arqos),
+        //.DDR4_1_S_AXI_arready(DDR4_1_S_AXI_arready),
+        //.DDR4_1_S_AXI_arregion(DDR4_1_S_AXI_arregion),
+        //.DDR4_1_S_AXI_arsize(DDR4_1_S_AXI_arsize),
+        //.DDR4_1_S_AXI_arvalid(DDR4_1_S_AXI_arvalid),
+        //.DDR4_1_S_AXI_awaddr(DDR4_1_S_AXI_awaddr),
+        //.DDR4_1_S_AXI_awburst(DDR4_1_S_AXI_awburst),
+        //.DDR4_1_S_AXI_awcache(DDR4_1_S_AXI_awcache),
+        //.DDR4_1_S_AXI_awid(DDR4_1_S_AXI_awid),
+        //.DDR4_1_S_AXI_awlen(DDR4_1_S_AXI_awlen),
+        //.DDR4_1_S_AXI_awlock(DDR4_1_S_AXI_awlock),
+        //.DDR4_1_S_AXI_awprot(DDR4_1_S_AXI_awprot),
+        //.DDR4_1_S_AXI_awqos(DDR4_1_S_AXI_awqos),
+        //.DDR4_1_S_AXI_awready(DDR4_1_S_AXI_awready),
+        //.DDR4_1_S_AXI_awregion(DDR4_1_S_AXI_awregion),
+        //.DDR4_1_S_AXI_awsize(DDR4_1_S_AXI_awsize),
+        //.DDR4_1_S_AXI_awvalid(DDR4_1_S_AXI_awvalid),
+        //.DDR4_1_S_AXI_bid(DDR4_1_S_AXI_bid),
+        //.DDR4_1_S_AXI_bready(DDR4_1_S_AXI_bready),
+        //.DDR4_1_S_AXI_bresp(DDR4_1_S_AXI_bresp),
+        //.DDR4_1_S_AXI_bvalid(DDR4_1_S_AXI_bvalid),
+        //.DDR4_1_S_AXI_rdata(DDR4_1_S_AXI_rdata),
+        //.DDR4_1_S_AXI_rid(DDR4_1_S_AXI_rid),
+        //.DDR4_1_S_AXI_rlast(DDR4_1_S_AXI_rlast),
+        //.DDR4_1_S_AXI_rready(DDR4_1_S_AXI_rready),
+        //.DDR4_1_S_AXI_rresp(DDR4_1_S_AXI_rresp),
+        //.DDR4_1_S_AXI_rvalid(DDR4_1_S_AXI_rvalid),
+        //.DDR4_1_S_AXI_wdata(DDR4_1_S_AXI_wdata),
+        //.DDR4_1_S_AXI_wlast(DDR4_1_S_AXI_wlast),
+        //.DDR4_1_S_AXI_wready(DDR4_1_S_AXI_wready),
+        //.DDR4_1_S_AXI_wstrb(DDR4_1_S_AXI_wstrb),
+        //.DDR4_1_S_AXI_wvalid(DDR4_1_S_AXI_wvalid),
 
-        .DDR4_2_S_AXI_araddr(DDR4_2_S_AXI_araddr),
-        .DDR4_2_S_AXI_arburst(DDR4_2_S_AXI_arburst),
-        .DDR4_2_S_AXI_arcache(DDR4_2_S_AXI_arcache),
-        .DDR4_2_S_AXI_arid(DDR4_2_S_AXI_arid),
-        .DDR4_2_S_AXI_arlen(DDR4_2_S_AXI_arlen),
-        .DDR4_2_S_AXI_arlock(DDR4_2_S_AXI_arlock),
-        .DDR4_2_S_AXI_arprot(DDR4_2_S_AXI_arprot),
-        .DDR4_2_S_AXI_arqos(DDR4_2_S_AXI_arqos),
-        .DDR4_2_S_AXI_arready(DDR4_2_S_AXI_arready),
-        .DDR4_2_S_AXI_arregion(DDR4_2_S_AXI_arregion),
-        .DDR4_2_S_AXI_arsize(DDR4_2_S_AXI_arsize),
-        .DDR4_2_S_AXI_arvalid(DDR4_2_S_AXI_arvalid),
-        .DDR4_2_S_AXI_awaddr(DDR4_2_S_AXI_awaddr),
-        .DDR4_2_S_AXI_awburst(DDR4_2_S_AXI_awburst),
-        .DDR4_2_S_AXI_awcache(DDR4_2_S_AXI_awcache),
-        .DDR4_2_S_AXI_awid(DDR4_2_S_AXI_awid),
-        .DDR4_2_S_AXI_awlen(DDR4_2_S_AXI_awlen),
-        .DDR4_2_S_AXI_awlock(DDR4_2_S_AXI_awlock),
-        .DDR4_2_S_AXI_awprot(DDR4_2_S_AXI_awprot),
-        .DDR4_2_S_AXI_awqos(DDR4_2_S_AXI_awqos),
-        .DDR4_2_S_AXI_awready(DDR4_2_S_AXI_awready),
-        .DDR4_2_S_AXI_awregion(DDR4_2_S_AXI_awregion),
-        .DDR4_2_S_AXI_awsize(DDR4_2_S_AXI_awsize),
-        .DDR4_2_S_AXI_awvalid(DDR4_2_S_AXI_awvalid),
-        .DDR4_2_S_AXI_bid(DDR4_2_S_AXI_bid),
-        .DDR4_2_S_AXI_bready(DDR4_2_S_AXI_bready),
-        .DDR4_2_S_AXI_bresp(DDR4_2_S_AXI_bresp),
-        .DDR4_2_S_AXI_bvalid(DDR4_2_S_AXI_bvalid),
-        .DDR4_2_S_AXI_rdata(DDR4_2_S_AXI_rdata),
-        .DDR4_2_S_AXI_rid(DDR4_2_S_AXI_rid),
-        .DDR4_2_S_AXI_rlast(DDR4_2_S_AXI_rlast),
-        .DDR4_2_S_AXI_rready(DDR4_2_S_AXI_rready),
-        .DDR4_2_S_AXI_rresp(DDR4_2_S_AXI_rresp),
-        .DDR4_2_S_AXI_rvalid(DDR4_2_S_AXI_rvalid),
-        .DDR4_2_S_AXI_wdata(DDR4_2_S_AXI_wdata),
-        .DDR4_2_S_AXI_wlast(DDR4_2_S_AXI_wlast),
-        .DDR4_2_S_AXI_wready(DDR4_2_S_AXI_wready),
-        .DDR4_2_S_AXI_wstrb(DDR4_2_S_AXI_wstrb),
-        .DDR4_2_S_AXI_wvalid(DDR4_2_S_AXI_wvalid),
+        //.DDR4_2_S_AXI_araddr(DDR4_2_S_AXI_araddr),
+        //.DDR4_2_S_AXI_arburst(DDR4_2_S_AXI_arburst),
+        //.DDR4_2_S_AXI_arcache(DDR4_2_S_AXI_arcache),
+        //.DDR4_2_S_AXI_arid(DDR4_2_S_AXI_arid),
+        //.DDR4_2_S_AXI_arlen(DDR4_2_S_AXI_arlen),
+        //.DDR4_2_S_AXI_arlock(DDR4_2_S_AXI_arlock),
+        //.DDR4_2_S_AXI_arprot(DDR4_2_S_AXI_arprot),
+        //.DDR4_2_S_AXI_arqos(DDR4_2_S_AXI_arqos),
+        //.DDR4_2_S_AXI_arready(DDR4_2_S_AXI_arready),
+        //.DDR4_2_S_AXI_arregion(DDR4_2_S_AXI_arregion),
+        //.DDR4_2_S_AXI_arsize(DDR4_2_S_AXI_arsize),
+        //.DDR4_2_S_AXI_arvalid(DDR4_2_S_AXI_arvalid),
+        //.DDR4_2_S_AXI_awaddr(DDR4_2_S_AXI_awaddr),
+        //.DDR4_2_S_AXI_awburst(DDR4_2_S_AXI_awburst),
+        //.DDR4_2_S_AXI_awcache(DDR4_2_S_AXI_awcache),
+        //.DDR4_2_S_AXI_awid(DDR4_2_S_AXI_awid),
+        //.DDR4_2_S_AXI_awlen(DDR4_2_S_AXI_awlen),
+        //.DDR4_2_S_AXI_awlock(DDR4_2_S_AXI_awlock),
+        //.DDR4_2_S_AXI_awprot(DDR4_2_S_AXI_awprot),
+        //.DDR4_2_S_AXI_awqos(DDR4_2_S_AXI_awqos),
+        //.DDR4_2_S_AXI_awready(DDR4_2_S_AXI_awready),
+        //.DDR4_2_S_AXI_awregion(DDR4_2_S_AXI_awregion),
+        //.DDR4_2_S_AXI_awsize(DDR4_2_S_AXI_awsize),
+        //.DDR4_2_S_AXI_awvalid(DDR4_2_S_AXI_awvalid),
+        //.DDR4_2_S_AXI_bid(DDR4_2_S_AXI_bid),
+        //.DDR4_2_S_AXI_bready(DDR4_2_S_AXI_bready),
+        //.DDR4_2_S_AXI_bresp(DDR4_2_S_AXI_bresp),
+        //.DDR4_2_S_AXI_bvalid(DDR4_2_S_AXI_bvalid),
+        //.DDR4_2_S_AXI_rdata(DDR4_2_S_AXI_rdata),
+        //.DDR4_2_S_AXI_rid(DDR4_2_S_AXI_rid),
+        //.DDR4_2_S_AXI_rlast(DDR4_2_S_AXI_rlast),
+        //.DDR4_2_S_AXI_rready(DDR4_2_S_AXI_rready),
+        //.DDR4_2_S_AXI_rresp(DDR4_2_S_AXI_rresp),
+        //.DDR4_2_S_AXI_rvalid(DDR4_2_S_AXI_rvalid),
+        //.DDR4_2_S_AXI_wdata(DDR4_2_S_AXI_wdata),
+        //.DDR4_2_S_AXI_wlast(DDR4_2_S_AXI_wlast),
+        //.DDR4_2_S_AXI_wready(DDR4_2_S_AXI_wready),
+        //.DDR4_2_S_AXI_wstrb(DDR4_2_S_AXI_wstrb),
+        //.DDR4_2_S_AXI_wvalid(DDR4_2_S_AXI_wvalid),
 
-        .DDR4_3_S_AXI_araddr(DDR4_3_S_AXI_araddr),
-        .DDR4_3_S_AXI_arburst(DDR4_3_S_AXI_arburst),
-        .DDR4_3_S_AXI_arcache(DDR4_3_S_AXI_arcache),
-        .DDR4_3_S_AXI_arid(DDR4_3_S_AXI_arid),
-        .DDR4_3_S_AXI_arlen(DDR4_3_S_AXI_arlen),
-        .DDR4_3_S_AXI_arlock(DDR4_3_S_AXI_arlock),
-        .DDR4_3_S_AXI_arprot(DDR4_3_S_AXI_arprot),
-        .DDR4_3_S_AXI_arqos(DDR4_3_S_AXI_arqos),
-        .DDR4_3_S_AXI_arready(DDR4_3_S_AXI_arready),
-        .DDR4_3_S_AXI_arregion(DDR4_3_S_AXI_arregion),
-        .DDR4_3_S_AXI_arsize(DDR4_3_S_AXI_arsize),
-        .DDR4_3_S_AXI_arvalid(DDR4_3_S_AXI_arvalid),
-        .DDR4_3_S_AXI_awaddr(DDR4_3_S_AXI_awaddr),
-        .DDR4_3_S_AXI_awburst(DDR4_3_S_AXI_awburst),
-        .DDR4_3_S_AXI_awcache(DDR4_3_S_AXI_awcache),
-        .DDR4_3_S_AXI_awid(DDR4_3_S_AXI_awid),
-        .DDR4_3_S_AXI_awlen(DDR4_3_S_AXI_awlen),
-        .DDR4_3_S_AXI_awlock(DDR4_3_S_AXI_awlock),
-        .DDR4_3_S_AXI_awprot(DDR4_3_S_AXI_awprot),
-        .DDR4_3_S_AXI_awqos(DDR4_3_S_AXI_awqos),
-        .DDR4_3_S_AXI_awready(DDR4_3_S_AXI_awready),
-        .DDR4_3_S_AXI_awregion(DDR4_3_S_AXI_awregion),
-        .DDR4_3_S_AXI_awsize(DDR4_3_S_AXI_awsize),
-        .DDR4_3_S_AXI_awvalid(DDR4_3_S_AXI_awvalid),
-        .DDR4_3_S_AXI_bid(DDR4_3_S_AXI_bid),
-        .DDR4_3_S_AXI_bready(DDR4_3_S_AXI_bready),
-        .DDR4_3_S_AXI_bresp(DDR4_3_S_AXI_bresp),
-        .DDR4_3_S_AXI_bvalid(DDR4_3_S_AXI_bvalid),
-        .DDR4_3_S_AXI_rdata(DDR4_3_S_AXI_rdata),
-        .DDR4_3_S_AXI_rid(DDR4_3_S_AXI_rid),
-        .DDR4_3_S_AXI_rlast(DDR4_3_S_AXI_rlast),
-        .DDR4_3_S_AXI_rready(DDR4_3_S_AXI_rready),
-        .DDR4_3_S_AXI_rresp(DDR4_3_S_AXI_rresp),
-        .DDR4_3_S_AXI_rvalid(DDR4_3_S_AXI_rvalid),
-        .DDR4_3_S_AXI_wdata(DDR4_3_S_AXI_wdata),
-        .DDR4_3_S_AXI_wlast(DDR4_3_S_AXI_wlast),
-        .DDR4_3_S_AXI_wready(DDR4_3_S_AXI_wready),
-        .DDR4_3_S_AXI_wstrb(DDR4_3_S_AXI_wstrb),
-        .DDR4_3_S_AXI_wvalid(DDR4_3_S_AXI_wvalid),
+        //.DDR4_3_S_AXI_araddr(DDR4_3_S_AXI_araddr),
+        //.DDR4_3_S_AXI_arburst(DDR4_3_S_AXI_arburst),
+        //.DDR4_3_S_AXI_arcache(DDR4_3_S_AXI_arcache),
+        //.DDR4_3_S_AXI_arid(DDR4_3_S_AXI_arid),
+        //.DDR4_3_S_AXI_arlen(DDR4_3_S_AXI_arlen),
+        //.DDR4_3_S_AXI_arlock(DDR4_3_S_AXI_arlock),
+        //.DDR4_3_S_AXI_arprot(DDR4_3_S_AXI_arprot),
+        //.DDR4_3_S_AXI_arqos(DDR4_3_S_AXI_arqos),
+        //.DDR4_3_S_AXI_arready(DDR4_3_S_AXI_arready),
+        //.DDR4_3_S_AXI_arregion(DDR4_3_S_AXI_arregion),
+        //.DDR4_3_S_AXI_arsize(DDR4_3_S_AXI_arsize),
+        //.DDR4_3_S_AXI_arvalid(DDR4_3_S_AXI_arvalid),
+        //.DDR4_3_S_AXI_awaddr(DDR4_3_S_AXI_awaddr),
+        //.DDR4_3_S_AXI_awburst(DDR4_3_S_AXI_awburst),
+        //.DDR4_3_S_AXI_awcache(DDR4_3_S_AXI_awcache),
+        //.DDR4_3_S_AXI_awid(DDR4_3_S_AXI_awid),
+        //.DDR4_3_S_AXI_awlen(DDR4_3_S_AXI_awlen),
+        //.DDR4_3_S_AXI_awlock(DDR4_3_S_AXI_awlock),
+        //.DDR4_3_S_AXI_awprot(DDR4_3_S_AXI_awprot),
+        //.DDR4_3_S_AXI_awqos(DDR4_3_S_AXI_awqos),
+        //.DDR4_3_S_AXI_awready(DDR4_3_S_AXI_awready),
+        //.DDR4_3_S_AXI_awregion(DDR4_3_S_AXI_awregion),
+        //.DDR4_3_S_AXI_awsize(DDR4_3_S_AXI_awsize),
+        //.DDR4_3_S_AXI_awvalid(DDR4_3_S_AXI_awvalid),
+        //.DDR4_3_S_AXI_bid(DDR4_3_S_AXI_bid),
+        //.DDR4_3_S_AXI_bready(DDR4_3_S_AXI_bready),
+        //.DDR4_3_S_AXI_bresp(DDR4_3_S_AXI_bresp),
+        //.DDR4_3_S_AXI_bvalid(DDR4_3_S_AXI_bvalid),
+        //.DDR4_3_S_AXI_rdata(DDR4_3_S_AXI_rdata),
+        //.DDR4_3_S_AXI_rid(DDR4_3_S_AXI_rid),
+        //.DDR4_3_S_AXI_rlast(DDR4_3_S_AXI_rlast),
+        //.DDR4_3_S_AXI_rready(DDR4_3_S_AXI_rready),
+        //.DDR4_3_S_AXI_rresp(DDR4_3_S_AXI_rresp),
+        //.DDR4_3_S_AXI_rvalid(DDR4_3_S_AXI_rvalid),
+        //.DDR4_3_S_AXI_wdata(DDR4_3_S_AXI_wdata),
+        //.DDR4_3_S_AXI_wlast(DDR4_3_S_AXI_wlast),
+        //.DDR4_3_S_AXI_wready(DDR4_3_S_AXI_wready),
+        //.DDR4_3_S_AXI_wstrb(DDR4_3_S_AXI_wstrb),
+        //.DDR4_3_S_AXI_wvalid(DDR4_3_S_AXI_wvalid),
 
         .PCIE_M_AXI_LITE_araddr(PCIE_M_AXI_LITE_araddr),
         .PCIE_M_AXI_LITE_arprot(PCIE_M_AXI_LITE_arprot),
@@ -733,7 +750,22 @@ module overall_fpga_top (
         .PCIE_M_AXI_wlast(PCIE_M_AXI_wlast),
         .PCIE_M_AXI_wready(PCIE_M_AXI_wready),
         .PCIE_M_AXI_wstrb(PCIE_M_AXI_wstrb),
-        .PCIE_M_AXI_wvalid(PCIE_M_AXI_wvalid)
+        .PCIE_M_AXI_wvalid(PCIE_M_AXI_wvalid),
+
+        .QSFP0_CHANNEL_UP(QSFP0_CHANNEL_UP),
+        .TO_QSFP0_DATA(TO_QSFP0_DATA),
+        .TO_QSFP0_VALID(TO_QSFP0_VALID),
+        .TO_QSFP0_READY(TO_QSFP0_READY),
+        .FROM_QSFP0_DATA(FROM_QSFP0_DATA),
+        .FROM_QSFP0_VALID(FROM_QSFP0_VALID),
+        .FROM_QSFP0_READY(FROM_QSFP0_READY),
+        .QSFP1_CHANNEL_UP(QSFP1_CHANNEL_UP),
+        .TO_QSFP1_DATA(TO_QSFP1_DATA),
+        .TO_QSFP1_VALID(TO_QSFP1_VALID),
+        .TO_QSFP1_READY(TO_QSFP1_READY),
+        .FROM_QSFP1_DATA(FROM_QSFP1_DATA),
+        .FROM_QSFP1_VALID(FROM_QSFP1_VALID),
+        .FROM_QSFP1_READY(FROM_QSFP1_READY)
     );
 
     F1Shim firesim_top(
@@ -885,131 +917,149 @@ module overall_fpga_top (
         .io_slave_0_r_bits_last(DDR4_0_S_AXI_rlast),
         .io_slave_0_r_bits_id(DDR4_0_S_AXI_rid),
 
-        .io_slave_1_aw_ready(DDR4_1_S_AXI_awready),
-        .io_slave_1_aw_valid(DDR4_1_S_AXI_awvalid),
-        .io_slave_1_aw_bits_addr(DDR4_1_S_AXI_awaddr),
-        .io_slave_1_aw_bits_len(DDR4_1_S_AXI_awlen),
-        .io_slave_1_aw_bits_size(DDR4_1_S_AXI_awsize),
-        .io_slave_1_aw_bits_burst(DDR4_1_S_AXI_awburst), // not available on DDR IF
-        .io_slave_1_aw_bits_lock(DDR4_1_S_AXI_awlock), // not available on DDR IF
-        .io_slave_1_aw_bits_cache(DDR4_1_S_AXI_awcache), // not available on DDR IF
-        .io_slave_1_aw_bits_prot(DDR4_1_S_AXI_awprot), // not available on DDR IF
-        .io_slave_1_aw_bits_qos(DDR4_1_S_AXI_awqos), // not available on DDR IF
-        .io_slave_1_aw_bits_id(DDR4_1_S_AXI_awid),
+        //.io_slave_1_aw_ready(DDR4_3_S_AXI_awready),
+        //.io_slave_1_aw_valid(DDR4_3_S_AXI_awvalid),
+        //.io_slave_1_aw_bits_addr(DDR4_3_S_AXI_awaddr),
+        //.io_slave_1_aw_bits_len(DDR4_3_S_AXI_awlen),
+        //.io_slave_1_aw_bits_size(DDR4_3_S_AXI_awsize),
+        //.io_slave_1_aw_bits_burst(DDR4_3_S_AXI_awburst), // not available on DDR IF
+        //.io_slave_1_aw_bits_lock(DDR4_3_S_AXI_awlock), // not available on DDR IF
+        //.io_slave_1_aw_bits_cache(DDR4_3_S_AXI_awcache), // not available on DDR IF
+        //.io_slave_1_aw_bits_prot(DDR4_3_S_AXI_awprot), // not available on DDR IF
+        //.io_slave_1_aw_bits_qos(DDR4_3_S_AXI_awqos), // not available on DDR IF
+        //.io_slave_1_aw_bits_id(DDR4_3_S_AXI_awid),
 
-        .io_slave_1_w_ready(DDR4_1_S_AXI_wready),
-        .io_slave_1_w_valid(DDR4_1_S_AXI_wvalid),
-        .io_slave_1_w_bits_data(DDR4_1_S_AXI_wdata),
-        .io_slave_1_w_bits_last(DDR4_1_S_AXI_wlast),
-        .io_slave_1_w_bits_strb(DDR4_1_S_AXI_wstrb),
+        //.io_slave_1_w_ready(DDR4_3_S_AXI_wready),
+        //.io_slave_1_w_valid(DDR4_3_S_AXI_wvalid),
+        //.io_slave_1_w_bits_data(DDR4_3_S_AXI_wdata),
+        //.io_slave_1_w_bits_last(DDR4_3_S_AXI_wlast),
+        //.io_slave_1_w_bits_strb(DDR4_3_S_AXI_wstrb),
 
-        .io_slave_1_b_ready(DDR4_1_S_AXI_bready),
-        .io_slave_1_b_valid(DDR4_1_S_AXI_bvalid),
-        .io_slave_1_b_bits_resp(DDR4_1_S_AXI_bresp),
-        .io_slave_1_b_bits_id(DDR4_1_S_AXI_bid),
+        //.io_slave_1_b_ready(DDR4_3_S_AXI_bready),
+        //.io_slave_1_b_valid(DDR4_3_S_AXI_bvalid),
+        //.io_slave_1_b_bits_resp(DDR4_3_S_AXI_bresp),
+        //.io_slave_1_b_bits_id(DDR4_3_S_AXI_bid),
 
-        .io_slave_1_ar_ready(DDR4_1_S_AXI_arready),
-        .io_slave_1_ar_valid(DDR4_1_S_AXI_arvalid),
-        .io_slave_1_ar_bits_addr(DDR4_1_S_AXI_araddr),
-        .io_slave_1_ar_bits_len(DDR4_1_S_AXI_arlen),
-        .io_slave_1_ar_bits_size(DDR4_1_S_AXI_arsize),
-        .io_slave_1_ar_bits_burst(DDR4_1_S_AXI_arburst), // not available on DDR IF
-        .io_slave_1_ar_bits_lock(DDR4_1_S_AXI_arlock), // not available on DDR IF
-        .io_slave_1_ar_bits_cache(DDR4_1_S_AXI_arcache), // not available on DDR IF
-        .io_slave_1_ar_bits_prot(DDR4_1_S_AXI_arprot), // not available on DDR IF
-        .io_slave_1_ar_bits_qos(DDR4_1_S_AXI_arqos), // not available on DDR IF
-        .io_slave_1_ar_bits_id(DDR4_1_S_AXI_arid), // not available on DDR IF
+        //.io_slave_1_ar_ready(DDR4_3_S_AXI_arready),
+        //.io_slave_1_ar_valid(DDR4_3_S_AXI_arvalid),
+        //.io_slave_1_ar_bits_addr(DDR4_3_S_AXI_araddr),
+        //.io_slave_1_ar_bits_len(DDR4_3_S_AXI_arlen),
+        //.io_slave_1_ar_bits_size(DDR4_3_S_AXI_arsize),
+        //.io_slave_1_ar_bits_burst(DDR4_3_S_AXI_arburst), // not available on DDR IF
+        //.io_slave_1_ar_bits_lock(DDR4_3_S_AXI_arlock), // not available on DDR IF
+        //.io_slave_1_ar_bits_cache(DDR4_3_S_AXI_arcache), // not available on DDR IF
+        //.io_slave_1_ar_bits_prot(DDR4_3_S_AXI_arprot), // not available on DDR IF
+        //.io_slave_1_ar_bits_qos(DDR4_3_S_AXI_arqos), // not available on DDR IF
+        //.io_slave_1_ar_bits_id(DDR4_3_S_AXI_arid), // not available on DDR IF
 
-        .io_slave_1_r_ready(DDR4_1_S_AXI_rready),
-        .io_slave_1_r_valid(DDR4_1_S_AXI_rvalid),
-        .io_slave_1_r_bits_resp(DDR4_1_S_AXI_rresp),
-        .io_slave_1_r_bits_data(DDR4_1_S_AXI_rdata),
-        .io_slave_1_r_bits_last(DDR4_1_S_AXI_rlast),
-        .io_slave_1_r_bits_id(DDR4_1_S_AXI_rid),
+        //.io_slave_1_r_ready(DDR4_3_S_AXI_rready),
+        //.io_slave_1_r_valid(DDR4_3_S_AXI_rvalid),
+        //.io_slave_1_r_bits_resp(DDR4_3_S_AXI_rresp),
+        //.io_slave_1_r_bits_data(DDR4_3_S_AXI_rdata),
+        //.io_slave_1_r_bits_last(DDR4_3_S_AXI_rlast),
+        //.io_slave_1_r_bits_id(DDR4_3_S_AXI_rid),
 
-        .io_slave_2_aw_ready(DDR4_2_S_AXI_awready),
-        .io_slave_2_aw_valid(DDR4_2_S_AXI_awvalid),
-        .io_slave_2_aw_bits_addr(DDR4_2_S_AXI_awaddr),
-        .io_slave_2_aw_bits_len(DDR4_2_S_AXI_awlen),
-        .io_slave_2_aw_bits_size(DDR4_2_S_AXI_awsize),
-        .io_slave_2_aw_bits_burst(DDR4_2_S_AXI_awburst), // not available on DDR IF
-        .io_slave_2_aw_bits_lock(DDR4_2_S_AXI_awlock), // not available on DDR IF
-        .io_slave_2_aw_bits_cache(DDR4_2_S_AXI_awcache), // not available on DDR IF
-        .io_slave_2_aw_bits_prot(DDR4_2_S_AXI_awprot), // not available on DDR IF
-        .io_slave_2_aw_bits_qos(DDR4_2_S_AXI_awqos), // not available on DDR IF
-        .io_slave_2_aw_bits_id(DDR4_2_S_AXI_awid),
+        //.io_slave_2_aw_ready(DDR4_2_S_AXI_awready),
+        //.io_slave_2_aw_valid(DDR4_2_S_AXI_awvalid),
+        //.io_slave_2_aw_bits_addr(DDR4_2_S_AXI_awaddr),
+        //.io_slave_2_aw_bits_len(DDR4_2_S_AXI_awlen),
+        //.io_slave_2_aw_bits_size(DDR4_2_S_AXI_awsize),
+        //.io_slave_2_aw_bits_burst(DDR4_2_S_AXI_awburst), // not available on DDR IF
+        //.io_slave_2_aw_bits_lock(DDR4_2_S_AXI_awlock), // not available on DDR IF
+        //.io_slave_2_aw_bits_cache(DDR4_2_S_AXI_awcache), // not available on DDR IF
+        //.io_slave_2_aw_bits_prot(DDR4_2_S_AXI_awprot), // not available on DDR IF
+        //.io_slave_2_aw_bits_qos(DDR4_2_S_AXI_awqos), // not available on DDR IF
+        //.io_slave_2_aw_bits_id(DDR4_2_S_AXI_awid),
 
-        .io_slave_2_w_ready(DDR4_2_S_AXI_wready),
-        .io_slave_2_w_valid(DDR4_2_S_AXI_wvalid),
-        .io_slave_2_w_bits_data(DDR4_2_S_AXI_wdata),
-        .io_slave_2_w_bits_last(DDR4_2_S_AXI_wlast),
-        .io_slave_2_w_bits_strb(DDR4_2_S_AXI_wstrb),
+        //.io_slave_2_w_ready(DDR4_2_S_AXI_wready),
+        //.io_slave_2_w_valid(DDR4_2_S_AXI_wvalid),
+        //.io_slave_2_w_bits_data(DDR4_2_S_AXI_wdata),
+        //.io_slave_2_w_bits_last(DDR4_2_S_AXI_wlast),
+        //.io_slave_2_w_bits_strb(DDR4_2_S_AXI_wstrb),
 
-        .io_slave_2_b_ready(DDR4_2_S_AXI_bready),
-        .io_slave_2_b_valid(DDR4_2_S_AXI_bvalid),
-        .io_slave_2_b_bits_resp(DDR4_2_S_AXI_bresp),
-        .io_slave_2_b_bits_id(DDR4_2_S_AXI_bid),
+        //.io_slave_2_b_ready(DDR4_2_S_AXI_bready),
+        //.io_slave_2_b_valid(DDR4_2_S_AXI_bvalid),
+        //.io_slave_2_b_bits_resp(DDR4_2_S_AXI_bresp),
+        //.io_slave_2_b_bits_id(DDR4_2_S_AXI_bid),
 
-        .io_slave_2_ar_ready(DDR4_2_S_AXI_arready),
-        .io_slave_2_ar_valid(DDR4_2_S_AXI_arvalid),
-        .io_slave_2_ar_bits_addr(DDR4_2_S_AXI_araddr),
-        .io_slave_2_ar_bits_len(DDR4_2_S_AXI_arlen),
-        .io_slave_2_ar_bits_size(DDR4_2_S_AXI_arsize),
-        .io_slave_2_ar_bits_burst(DDR4_2_S_AXI_arburst), // not available on DDR IF
-        .io_slave_2_ar_bits_lock(DDR4_2_S_AXI_arlock), // not available on DDR IF
-        .io_slave_2_ar_bits_cache(DDR4_2_S_AXI_arcache), // not available on DDR IF
-        .io_slave_2_ar_bits_prot(DDR4_2_S_AXI_arprot), // not available on DDR IF
-        .io_slave_2_ar_bits_qos(DDR4_2_S_AXI_arqos), // not available on DDR IF
-        .io_slave_2_ar_bits_id(DDR4_2_S_AXI_arid), // not available on DDR IF
+        //.io_slave_2_ar_ready(DDR4_2_S_AXI_arready),
+        //.io_slave_2_ar_valid(DDR4_2_S_AXI_arvalid),
+        //.io_slave_2_ar_bits_addr(DDR4_2_S_AXI_araddr),
+        //.io_slave_2_ar_bits_len(DDR4_2_S_AXI_arlen),
+        //.io_slave_2_ar_bits_size(DDR4_2_S_AXI_arsize),
+        //.io_slave_2_ar_bits_burst(DDR4_2_S_AXI_arburst), // not available on DDR IF
+        //.io_slave_2_ar_bits_lock(DDR4_2_S_AXI_arlock), // not available on DDR IF
+        //.io_slave_2_ar_bits_cache(DDR4_2_S_AXI_arcache), // not available on DDR IF
+        //.io_slave_2_ar_bits_prot(DDR4_2_S_AXI_arprot), // not available on DDR IF
+        //.io_slave_2_ar_bits_qos(DDR4_2_S_AXI_arqos), // not available on DDR IF
+        //.io_slave_2_ar_bits_id(DDR4_2_S_AXI_arid), // not available on DDR IF
 
-        .io_slave_2_r_ready(DDR4_2_S_AXI_rready),
-        .io_slave_2_r_valid(DDR4_2_S_AXI_rvalid),
-        .io_slave_2_r_bits_resp(DDR4_2_S_AXI_rresp),
-        .io_slave_2_r_bits_data(DDR4_2_S_AXI_rdata),
-        .io_slave_2_r_bits_last(DDR4_2_S_AXI_rlast),
-        .io_slave_2_r_bits_id(DDR4_2_S_AXI_rid),
+        //.io_slave_2_r_ready(DDR4_2_S_AXI_rready),
+        //.io_slave_2_r_valid(DDR4_2_S_AXI_rvalid),
+        //.io_slave_2_r_bits_resp(DDR4_2_S_AXI_rresp),
+        //.io_slave_2_r_bits_data(DDR4_2_S_AXI_rdata),
+        //.io_slave_2_r_bits_last(DDR4_2_S_AXI_rlast),
+        //.io_slave_2_r_bits_id(DDR4_2_S_AXI_rid),
 
-        .io_slave_3_aw_ready(DDR4_3_S_AXI_awready),
-        .io_slave_3_aw_valid(DDR4_3_S_AXI_awvalid),
-        .io_slave_3_aw_bits_addr(DDR4_3_S_AXI_awaddr),
-        .io_slave_3_aw_bits_len(DDR4_3_S_AXI_awlen),
-        .io_slave_3_aw_bits_size(DDR4_3_S_AXI_awsize),
-        .io_slave_3_aw_bits_burst(DDR4_3_S_AXI_awburst), // not available on DDR IF
-        .io_slave_3_aw_bits_lock(DDR4_3_S_AXI_awlock), // not available on DDR IF
-        .io_slave_3_aw_bits_cache(DDR4_3_S_AXI_awcache), // not available on DDR IF
-        .io_slave_3_aw_bits_prot(DDR4_3_S_AXI_awprot), // not available on DDR IF
-        .io_slave_3_aw_bits_qos(DDR4_3_S_AXI_awqos), // not available on DDR IF
-        .io_slave_3_aw_bits_id(DDR4_3_S_AXI_awid),
+        //.io_slave_3_aw_ready(DDR4_3_S_AXI_awready),
+        //.io_slave_3_aw_valid(DDR4_3_S_AXI_awvalid),
+        //.io_slave_3_aw_bits_addr(DDR4_3_S_AXI_awaddr),
+        //.io_slave_3_aw_bits_len(DDR4_3_S_AXI_awlen),
+        //.io_slave_3_aw_bits_size(DDR4_3_S_AXI_awsize),
+        //.io_slave_3_aw_bits_burst(DDR4_3_S_AXI_awburst), // not available on DDR IF
+        //.io_slave_3_aw_bits_lock(DDR4_3_S_AXI_awlock), // not available on DDR IF
+        //.io_slave_3_aw_bits_cache(DDR4_3_S_AXI_awcache), // not available on DDR IF
+        //.io_slave_3_aw_bits_prot(DDR4_3_S_AXI_awprot), // not available on DDR IF
+        //.io_slave_3_aw_bits_qos(DDR4_3_S_AXI_awqos), // not available on DDR IF
+        //.io_slave_3_aw_bits_id(DDR4_3_S_AXI_awid),
 
-        .io_slave_3_w_ready(DDR4_3_S_AXI_wready),
-        .io_slave_3_w_valid(DDR4_3_S_AXI_wvalid),
-        .io_slave_3_w_bits_data(DDR4_3_S_AXI_wdata),
-        .io_slave_3_w_bits_last(DDR4_3_S_AXI_wlast),
-        .io_slave_3_w_bits_strb(DDR4_3_S_AXI_wstrb),
+        //.io_slave_3_w_ready(DDR4_3_S_AXI_wready),
+        //.io_slave_3_w_valid(DDR4_3_S_AXI_wvalid),
+        //.io_slave_3_w_bits_data(DDR4_3_S_AXI_wdata),
+        //.io_slave_3_w_bits_last(DDR4_3_S_AXI_wlast),
+        //.io_slave_3_w_bits_strb(DDR4_3_S_AXI_wstrb),
 
-        .io_slave_3_b_ready(DDR4_3_S_AXI_bready),
-        .io_slave_3_b_valid(DDR4_3_S_AXI_bvalid),
-        .io_slave_3_b_bits_resp(DDR4_3_S_AXI_bresp),
-        .io_slave_3_b_bits_id(DDR4_3_S_AXI_bid),
+        //.io_slave_3_b_ready(DDR4_3_S_AXI_bready),
+        //.io_slave_3_b_valid(DDR4_3_S_AXI_bvalid),
+        //.io_slave_3_b_bits_resp(DDR4_3_S_AXI_bresp),
+        //.io_slave_3_b_bits_id(DDR4_3_S_AXI_bid),
 
-        .io_slave_3_ar_ready(DDR4_3_S_AXI_arready),
-        .io_slave_3_ar_valid(DDR4_3_S_AXI_arvalid),
-        .io_slave_3_ar_bits_addr(DDR4_3_S_AXI_araddr),
-        .io_slave_3_ar_bits_len(DDR4_3_S_AXI_arlen),
-        .io_slave_3_ar_bits_size(DDR4_3_S_AXI_arsize),
-        .io_slave_3_ar_bits_burst(DDR4_3_S_AXI_arburst), // not available on DDR IF
-        .io_slave_3_ar_bits_lock(DDR4_3_S_AXI_arlock), // not available on DDR IF
-        .io_slave_3_ar_bits_cache(DDR4_3_S_AXI_arcache), // not available on DDR IF
-        .io_slave_3_ar_bits_prot(DDR4_3_S_AXI_arprot), // not available on DDR IF
-        .io_slave_3_ar_bits_qos(DDR4_3_S_AXI_arqos), // not available on DDR IF
-        .io_slave_3_ar_bits_id(DDR4_3_S_AXI_arid), // not available on DDR IF
+        //.io_slave_3_ar_ready(DDR4_3_S_AXI_arready),
+        //.io_slave_3_ar_valid(DDR4_3_S_AXI_arvalid),
+        //.io_slave_3_ar_bits_addr(DDR4_3_S_AXI_araddr),
+        //.io_slave_3_ar_bits_len(DDR4_3_S_AXI_arlen),
+        //.io_slave_3_ar_bits_size(DDR4_3_S_AXI_arsize),
+        //.io_slave_3_ar_bits_burst(DDR4_3_S_AXI_arburst), // not available on DDR IF
+        //.io_slave_3_ar_bits_lock(DDR4_3_S_AXI_arlock), // not available on DDR IF
+        //.io_slave_3_ar_bits_cache(DDR4_3_S_AXI_arcache), // not available on DDR IF
+        //.io_slave_3_ar_bits_prot(DDR4_3_S_AXI_arprot), // not available on DDR IF
+        //.io_slave_3_ar_bits_qos(DDR4_3_S_AXI_arqos), // not available on DDR IF
+        //.io_slave_3_ar_bits_id(DDR4_3_S_AXI_arid), // not available on DDR IF
 
-        .io_slave_3_r_ready(DDR4_3_S_AXI_rready),
-        .io_slave_3_r_valid(DDR4_3_S_AXI_rvalid),
-        .io_slave_3_r_bits_resp(DDR4_3_S_AXI_rresp),
-        .io_slave_3_r_bits_data(DDR4_3_S_AXI_rdata),
-        .io_slave_3_r_bits_last(DDR4_3_S_AXI_rlast),
-        .io_slave_3_r_bits_id(DDR4_3_S_AXI_rid)
+        //.io_slave_3_r_ready(DDR4_3_S_AXI_rready),
+        //.io_slave_3_r_valid(DDR4_3_S_AXI_rvalid),
+        //.io_slave_3_r_bits_resp(DDR4_3_S_AXI_rresp),
+        //.io_slave_3_r_bits_data(DDR4_3_S_AXI_rdata),
+        //.io_slave_3_r_bits_last(DDR4_3_S_AXI_rlast),
+        //.io_slave_3_r_bits_id(DDR4_3_S_AXI_rid),
+
+        .io_qsfp_channel_up_0(QSFP0_CHANNEL_UP),
+        .io_qsfp_tx_0_ready(TO_QSFP0_READY),
+        .io_qsfp_tx_0_valid(TO_QSFP0_VALID),
+        .io_qsfp_tx_0_bits(TO_QSFP0_DATA),
+
+        .io_qsfp_rx_0_ready(FROM_QSFP0_READY),
+        .io_qsfp_rx_0_valid(FROM_QSFP0_VALID),
+        .io_qsfp_rx_0_bits(FROM_QSFP0_DATA),
+
+        .io_qsfp_channel_up_1(QSFP1_CHANNEL_UP),
+        .io_qsfp_tx_1_ready(TO_QSFP1_READY),
+        .io_qsfp_tx_1_valid(TO_QSFP1_VALID),
+        .io_qsfp_tx_1_bits(TO_QSFP1_DATA),
+
+        .io_qsfp_rx_1_ready(FROM_QSFP1_READY),
+        .io_qsfp_rx_1_valid(FROM_QSFP1_VALID),
+        .io_qsfp_rx_1_bits(FROM_QSFP1_DATA)
     );
 
 endmodule

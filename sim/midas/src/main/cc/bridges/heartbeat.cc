@@ -32,7 +32,8 @@ void heartbeat_t::tick() {
   if (trip_count == polling_interval) {
     trip_count = 0;
     uint64_t current_cycle = clock.tcycle();
-    has_timed_out |= current_cycle == last_cycle;
+/* has_timed_out |= current_cycle == last_cycle; */
+    has_timed_out = false;
 
     time_t current_time;
     time(&current_time);

@@ -27,7 +27,8 @@ verilator_cc := $(emul_cc) $(sim_harness)
 override VERILATOR_FLAGS := \
 	--timescale $(SIM_TIMESCALE) \
 	--top-module $(TB) \
-	-O2 \
+	-O0 \
+	--gdbbt	\
 	-sv \
 	--vpi \
 	--output-split 10000 \
@@ -37,6 +38,11 @@ override VERILATOR_FLAGS := \
 	-Wno-DECLFILENAME \
 	-Wno-VARHIDDEN \
 	-Wno-UNDRIVEN \
+	-Wno-WIDTHTRUNC \
+	-Wno-UNUSEDPARAM \
+	-Wno-UNOPTFLAT \
+	-Wno-PINCONNECTEMPTY \
+	-Wno-fatal \
 	-CFLAGS "$(CXXFLAGS) -DVERILATOR" \
 	$(if $(LDFLAGS),-LDFLAGS "$(LDFLAGS)",) \
 	$(SIM_PREPROC_DEFINES) \

@@ -8,6 +8,7 @@ import midas.widgets.{RationalClock}
 import firrtl._
 import firrtl.annotations._
 
+
 /**
   *  [[ChannelClockInfoAnalysis]]'s output annotation. Maps channel global name
   *  (See [[FAMEChannelConnectionAnnotation]] to a clock info class.

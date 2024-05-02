@@ -3,7 +3,7 @@ run_farm:
   recipe_arg_overrides:
     run_farm_tag: helloworldlocalhost
     default_platform: EC2InstanceDeployManager
-    default_simulation_dir: /home/centos/RUN_DIR
+    default_simulation_dir: /home/centos
     run_farm_hosts_to_use:
       - localhost: four_metasims_spec
 

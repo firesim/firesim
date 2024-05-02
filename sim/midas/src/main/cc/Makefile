@@ -21,7 +21,7 @@ PLATFORM ?= f1
 OUT_DIR ?= $(GEN_DIR)
 
 override CXXFLAGS += -Wall -I$(midas_dir) -I$(GEN_DIR)
-override LDFLAGS += -L$(GEN_DIR) -lstdc++ -lpthread -lgmp
+override LDFLAGS += -L$(GEN_DIR) -lstdc++ -lpthread -lgmp -lrt
 
 DESIGN_V  ?= $(GEN_DIR)/$(GEN_FILE_BASENAME).sv
 design_h  := $(GEN_DIR)/$(GEN_FILE_BASENAME).const.h
@@ -56,9 +56,9 @@ override CXXFLAGS += -std=c++20
 sim_fpga_resource_models := $(v_dir)/BUFGCE.v
 
 emul_dir   := $(midas_dir)/emul
-emul_h     := $(driver_h) $(bridge_h) $(emul_dir)/simif_emul.h $(emul_dir)/mmio.h $(emul_dir)/mm.h $(midas_dir)/entry.h
+emul_h     := $(driver_h) $(bridge_h) $(emul_dir)/simif_emul.h $(emul_dir)/mmio.h $(emul_dir)/mm.h $(midas_dir)/entry.h $(emul_dir)/qsfp.h
 # This includes c sources and static libraries
-emul_cc    := $(DRIVER) $(bridge_cc) $(emul_dir)/simif_emul.cc $(emul_dir)/mmio.cc $(emul_dir)/mm.cc $(emul_dir)/dpi.cc $(midas_dir)/entry.cc
+emul_cc    := $(DRIVER) $(bridge_cc) $(emul_dir)/simif_emul.cc $(emul_dir)/mmio.cc $(emul_dir)/mm.cc $(emul_dir)/dpi.cc $(midas_dir)/entry.cc $(emul_dir)/qsfp.cc
 emul_v     := $(design_vh) $(DESIGN_V) $(sim_fpga_resource_models)
 
 TB := emul
@@ -78,6 +78,7 @@ SIM_PREPROC_DEFINES = \
 sim_wrapper_v := $(v_dir)/top.sv
 sim_harness := $(midas_dir)/simif_emul_all.cc
 
+verilator_conf := $(midas_dir)/rtlsim/ml-verilator-conf.vlt
 include rtlsim/Makefrag-verilator
 
 # tell make not to look for implicit rules for sim sourcefiles (helps --debug=i output)

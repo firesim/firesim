@@ -51,6 +51,10 @@ class LabelSRAMModels extends Transform {
             memModelAnnotations ++= mem.readers.map(rp => ModelReadPort(wrapperTarget.ref(rp)))
             memModelAnnotations ++= mem.writers.map(rp => ModelWritePort(wrapperTarget.ref(rp)))
             memModelAnnotations ++= mem.readwriters.map(rp => ModelReadWritePort(wrapperTarget.ref(rp)))
+
+            println(s"labeled sram ${mem.name} wrapper ${wrapper.name}")
+
+
             WDefInstance(mem.info, mem.name, wrapper.name, UnknownType)
           case c: Connect if (Utils.kind(c.loc) == MemKind && c.loc.tpe == ClockType) =>
             // change clock connects to target single mem wrapper clock
