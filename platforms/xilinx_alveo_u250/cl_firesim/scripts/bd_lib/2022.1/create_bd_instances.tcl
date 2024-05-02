@@ -18,9 +18,6 @@ proc create_axi_dwidth_converter { name } {
    return $i
 }
 set axi_dwidth_converter_0 [ create_axi_dwidth_converter axi_dwidth_converter_0 ]
-set axi_dwidth_converter_1 [ create_axi_dwidth_converter axi_dwidth_converter_1 ]
-set axi_dwidth_converter_2 [ create_axi_dwidth_converter axi_dwidth_converter_2 ]
-set axi_dwidth_converter_3 [ create_axi_dwidth_converter axi_dwidth_converter_3 ]
 
 proc create_axi_tieoff_master { name } {
    set block_name axi_tieoff_master
@@ -35,9 +32,6 @@ proc create_axi_tieoff_master { name } {
    return $i
 }
 set axi_tieoff_master_0 [ create_axi_tieoff_master axi_tieoff_master_0 ]
-set axi_tieoff_master_1 [ create_axi_tieoff_master axi_tieoff_master_1 ]
-set axi_tieoff_master_2 [ create_axi_tieoff_master axi_tieoff_master_2 ]
-set axi_tieoff_master_3 [ create_axi_tieoff_master axi_tieoff_master_3 ]
 
 set clk_wiz_0 [ create_bd_cell -type ip -vlnv xilinx.com:ip:clk_wiz:6.0 clk_wiz_0 ]
 set_property -dict [list \
@@ -62,9 +56,6 @@ proc create_ddr { name clk_intf ddr_intf } {
    return $i
 }
 set ddr4_0 [ create_ddr ddr4_0 default_300mhz_clk0 ddr4_sdram_c0 ]
-set ddr4_1 [ create_ddr ddr4_1 default_300mhz_clk1 ddr4_sdram_c1 ]
-set ddr4_2 [ create_ddr ddr4_2 default_300mhz_clk2 ddr4_sdram_c2 ]
-set ddr4_3 [ create_ddr ddr4_3 default_300mhz_clk3 ddr4_sdram_c3 ]
 
 set proc_sys_reset_0 [ create_bd_cell -type ip -vlnv xilinx.com:ip:proc_sys_reset:5.0 proc_sys_reset_0 ]
 
@@ -72,9 +63,6 @@ proc create_proc_sys_reset_ddr { name } {
    return [ create_bd_cell -type ip -vlnv xilinx.com:ip:proc_sys_reset:5.0 $name ]
 }
 set proc_sys_reset_ddr_0 [ create_proc_sys_reset_ddr proc_sys_reset_ddr_0 ]
-set proc_sys_reset_ddr_1 [ create_proc_sys_reset_ddr proc_sys_reset_ddr_1 ]
-set proc_sys_reset_ddr_2 [ create_proc_sys_reset_ddr proc_sys_reset_ddr_2 ]
-set proc_sys_reset_ddr_3 [ create_proc_sys_reset_ddr proc_sys_reset_ddr_3 ]
 
 set resetn_inv_0 [ create_bd_cell -type ip -vlnv xilinx.com:ip:util_vector_logic:2.0 resetn_inv_0 ]
 set_property -dict [list \

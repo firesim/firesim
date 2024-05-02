@@ -10,7 +10,7 @@ from fabric.api import run, local, warn_only, get, put, cd, hide # type: ignore
 from fabric.exceptions import CommandTimeout # type: ignore
 
 from runtools.switch_model_config import AbstractSwitchToSwitchConfig
-from runtools.utils import get_local_shared_libraries
+from runtools.utils import get_local_shared_libraries, run_only_aws, check_script, is_on_aws, script_path
 from runtools.simulation_data_classes import TracerVConfig, AutoCounterConfig, HostDebugConfig, SynthPrintConfig
 
 from runtools.run_farm_deploy_managers import InstanceDeployManager
@@ -248,7 +248,7 @@ class FireSimServerNode(FireSimNode):
                 allocd_device = nbd_tracker.get_nbd_for_imagename(rootfsname)
 
                 # connect the /dev/nbdX device to the rootfs
-                run("""sudo qemu-nbd -c {devname} {rootfs}""".format(devname=allocd_device, rootfs=rootfsname))
+                run_only_aws(f"""sudo qemu-nbd -c {allocd_device} {rootfsname}""")
                 rootfsname = allocd_device
             result_list.append(rootfsname)
         return result_list
@@ -272,7 +272,7 @@ class FireSimServerNode(FireSimNode):
                                                    str(self.server_hardware_config))
         return msg
 
-    def get_sim_start_command(self, slotno: int, sudo: bool, extra_plusargs: Optional[str]) -> str:
+    def get_sim_start_command(self, slotno: int, extra_plusargs: Optional[str]) -> str:
         """ get the command to run a simulation. assumes it will be
         called in a directory where its required_files are already located.
         """
@@ -313,7 +313,6 @@ class FireSimServerNode(FireSimNode):
             self.autocounter_config,
             self.hostdebug_config,
             self.synthprint_config,
-            sudo,
             plusargs,
             "")
 
@@ -368,14 +367,14 @@ class FireSimServerNode(FireSimNode):
 
         return script_path
 
-    def write_sim_start_script(self, slotno: int, sudo: bool, extra_plusargs: Optional[str]) -> str:
+    def write_sim_start_script(self, slotno: int, extra_plusargs: Optional[str]) -> str:
         """ Write sim-run.sh script to local job results dir and return its
         path. """
-        start_cmd = self.get_sim_start_command(slotno, sudo, extra_plusargs)
+        start_cmd = self.get_sim_start_command(slotno, extra_plusargs)
         sim_start_script_local_path = self.write_script("sim-run.sh", start_cmd)
         return sim_start_script_local_path
 
-    def copy_back_job_results_from_run(self, slotno: int, sudo: bool) -> None:
+    def copy_back_job_results_from_run(self, slotno: int) -> None:
         """
         1) Copy back UART log
         2) Mount rootfs on the remote node and copy back files
@@ -402,25 +401,21 @@ class FireSimServerNode(FireSimNode):
             return hash(o) % ((sys.maxsize + 1) * 2)
 
         def mount(img: str, mnt: str, tmp_dir: str) -> None:
-            if sudo:
+            if is_on_aws():
                 run(f"sudo mount -o loop {img} {mnt}")
                 run(f"sudo chown -R $(whoami) {mnt}")
             else:
-                run(f"""screen -S guestmount-wait-{pos_hash(mnt)} -dm bash -c "guestmount -o uid=$(id -u) -o gid=$(id -g) --pid-file {tmp_dir}/guestmount.pid -a {img} -m /dev/sda {mnt}; while true; do sleep 1; done;" """, pty=False)
-                try:
-                    run(f"""while [ ! "$(ls -A {mnt})" ]; do echo "Waiting for mount to finish"; sleep 1; done""", timeout=60*10)
-                except CommandTimeout:
-                    umount(mnt, tmp_dir)
+                cmd = f"{script_path}/firesim-mount"
+                check_script(cmd)
+                run(f"sudo {cmd} {img} {mnt}")
 
         def umount(mnt: str, tmp_dir: str) -> None:
-            if sudo:
+            if is_on_aws():
                 run(f"sudo umount {mnt}")
             else:
-                pid = run(f"cat {tmp_dir}/guestmount.pid")
-                run(f"screen -XS guestmount-wait-{pos_hash(mnt)} quit")
-                run(f"guestunmount {mnt}")
-                run(f"tail --pid={pid} -f /dev/null")
-                run(f"rm -f {tmp_dir}/guestmount.pid")
+                cmd = f"{script_path}/firesim-unmount"
+                check_script(cmd)
+                run(f"sudo {cmd} {mnt}")
 
         # mount rootfs, copy files from it back to local system
         rfsname = self.get_rootfs_name()
@@ -428,7 +423,7 @@ class FireSimServerNode(FireSimNode):
             is_qcow2 = rfsname.endswith(".qcow2")
             mountpoint = dest_sim_slot_dir + "mountpoint"
 
-            run("""{} mkdir -p {}""".format("sudo" if sudo else "", mountpoint))
+            run(f"""mkdir -p {mountpoint}""")
 
             if is_qcow2:
                 host_inst = self.get_host_instance()
@@ -442,7 +437,7 @@ class FireSimServerNode(FireSimNode):
             mount(rfsname, mountpoint, dest_sim_slot_dir)
             with warn_only(), hide('warnings'):
                 # ignore if this errors. not all rootfses have /etc/sysconfig/nfs
-                run("""{} chattr -i {}/etc/sysconfig/nfs""".format("sudo" if sudo else "", mountpoint))
+                run(f"""chattr -i {mountpoint}/etc/sysconfig/nfs""")
 
             ## copy back files from inside the rootfs
             with warn_only():
@@ -461,7 +456,7 @@ class FireSimServerNode(FireSimNode):
 
             ## if qcow2, detach .qcow2 image from the device, we're done with it
             if is_qcow2:
-                run("""sudo qemu-nbd -d {devname}""".format(devname=rfsname))
+                run_only_aws(f"""sudo qemu-nbd -d {rfsname}""")
 
 
         ## copy output files generated by the simulator that live on the host:
@@ -591,10 +586,10 @@ class FireSimSuperNodeServerNode(FireSimServerNode):
     def __init__(self) -> None:
         super().__init__()
 
-    def copy_back_job_results_from_run(self, slotno: int, sudo: bool) -> None:
+    def copy_back_job_results_from_run(self, slotno: int) -> None:
         """ This override is to call copy back job results for all the dummy nodes too. """
         # first call the original
-        super().copy_back_job_results_from_run(slotno, sudo)
+        super().copy_back_job_results_from_run(slotno)
 
         # call on all siblings
         num_siblings = self.supernode_get_num_siblings_plus_one()
@@ -606,7 +601,7 @@ class FireSimSuperNodeServerNode(FireSimServerNode):
         for sibindex in range(1, num_siblings):
             sib = self.supernode_get_sibling(sibindex)
             sib.assign_host_instance(super_server_host)
-            sib.copy_back_job_results_from_run(slotno, sudo)
+            sib.copy_back_job_results_from_run(slotno)
 
     def supernode_get_num_siblings_plus_one(self) -> int:
         """ This returns the number of siblings the supernodeservernode has,
@@ -639,7 +634,7 @@ class FireSimSuperNodeServerNode(FireSimServerNode):
         num_siblings = self.supernode_get_num_siblings_plus_one()
         return [self.get_rootfs_name()] + [self.supernode_get_sibling(x).get_rootfs_name() for x in range(1, num_siblings)]
 
-    def get_sim_start_command(self, slotno: int, sudo: bool, extra_plusargs: Optional[str]) -> str:
+    def get_sim_start_command(self, slotno: int, extra_plusargs: Optional[str]) -> str:
         """ get the command to run a simulation. assumes it will be
         called in a directory where its required_files are already located."""
 
@@ -689,7 +684,6 @@ class FireSimSuperNodeServerNode(FireSimServerNode):
             self.autocounter_config,
             self.hostdebug_config,
             self.synthprint_config,
-            sudo,
             plusargs,
             "")
 
@@ -800,8 +794,8 @@ class FireSimSwitchNode(FireSimNode):
         all_paths += get_local_shared_libraries(bin)
         return all_paths
 
-    def get_switch_start_command(self, sudo: bool) -> str:
-        return self.switch_builder.get_switch_simulation_command(sudo)
+    def get_switch_start_command(self) -> str:
+        return self.switch_builder.get_switch_simulation_command()
 
     def get_switch_kill_command(self) -> str:
         return self.switch_builder.kill_switch_simulation_command()

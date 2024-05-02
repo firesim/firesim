@@ -21,7 +21,7 @@ val apiDirectory = settingKey[String]("The site directory into which the publish
 apiDirectory := "latest"
 
 lazy val commonSettings = Seq(
-  organization := "berkeley",
+  organization := "edu.berkeley.cs",
   version      := "1.0",
   scalaVersion := "2.13.10",
   scalacOptions ++= Seq("-deprecation","-unchecked","-Ywarn-unused","-Ymacro-annotations"),

@@ -9,11 +9,12 @@ import json
 from pathlib import Path
 import pcielib
 import util
-import firesim
 
 from typing import Dict, Any, List
 
 scriptPath = Path(__file__).resolve().parent
+# firesim specific location of where to read/write database file
+dbPath = Path("/opt/firesim-db.json")
 
 def program_fpga(vivado: Path, serial: str, bitstream: str) -> None:
     progTcl = scriptPath / 'program_fpga.tcl'
@@ -33,12 +34,12 @@ def program_fpga(vivado: Path, serial: str, bitstream: str) -> None:
 # mapping functions
 
 def get_fpga_db() -> Dict[Any, Any]:
-    if firesim.dbPath.exists():
-        with open(firesim.dbPath, 'r') as f:
+    if dbPath.exists():
+        with open(dbPath, 'r') as f:
             return json.load(f)
     else:
-        print(f":ERROR: Unable to open {firesim.dbPath}. Does it exist? Did you run 'firesim enumeratefpgas'?", file=sys.stderr)
-    sys.exit(f":ERROR: Unable to create FPGA database from {firesim.dbPath}")
+        print(f":ERROR: Unable to open {dbPath}. Does it exist? Did you run 'firesim enumeratefpgas'?", file=sys.stderr)
+    sys.exit(f":ERROR: Unable to create FPGA database from {dbPath}")
 
 def get_serial_from_bus_id(id: str) -> str:
     deviceBDF = pcielib.get_bdf_from_extended_bdf(pcielib.get_singular_device_extended_bdf(id))

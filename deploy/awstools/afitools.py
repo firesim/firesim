@@ -13,7 +13,9 @@ def get_fpga_regions():
     fpga_regions = [
         'us-east-1',       # US East (N. Virginia)
         'us-west-2',       # US West (Oregon)
+        'eu-central-1',    # Europe (Frankfurt)
         'eu-west-1',       # Europe (Ireland)
+        'eu-west-2',       # Europe (London)
         'ap-southeast-2',  # Asia Pacific (Sydney)
     ]
     return list(fpga_regions)

@@ -49,27 +49,102 @@ To do so, edit your ``~/.bashrc`` file so that the following section is removed:
           *) return;;
    esac
 
+2. Install/enable FireSim scripts to new ``firesim`` Linux group
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-2. Enable password-less sudo
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+**Machines:** Manager Machine, Run Farm Machines, Build Farm Machines.
 
-**Machines:** Manager Machine and Run Farm Machines.
-
-Enable passwordless sudo by running ``sudo visudo``, then adding
-the following line at the end of the file, replacing ``YOUR_USERNAME_HERE``
-with your actual username on the machine:
+First, let's clone a temporary version of FireSim with the scripts within it:
 
 .. code-block:: bash
+   :substitutions:
 
-   YOUR_USERNAME_HERE ALL=(ALL) NOPASSWD:ALL
+   cd ~/     # or any scratch directory
+   mkdir firesim-script-installs
+   cd firesim-script-installs
+   git clone https://github.com/firesim/firesim
+   cd firesim
+   # checkout latest official firesim release
+   # note: this may not be the latest release if the documentation version != "stable"
+   git checkout |overall_version|
 
+Next, copy the required scripts to  ``/usr/local/bin``:
 
-Once you have done so, reboot the machines
-and confirm that you are able to run ``sudo true`` without being
-prompted for a password.
+.. code-block:: bash
+   :substitutions:
 
+   sudo cp deploy/sudo-scripts/* /usr/local/bin
+   sudo cp platforms/xilinx_alveo_u250/scripts/* /usr/local/bin
 
-3. Install Vivado Lab and Cable Drivers
+Now we can delete the temporary clone:
+
+.. code-block:: bash
+   :substitutions:
+
+   rm -rf ~/firesim-script-installs    # or the temp. dir. created previously
+
+Next, lets change the permissions of the scripts and them to a new ``firesim`` Linux group.
+
+.. code-block:: bash
+   :substitutions:
+
+   sudo addgroup firesim
+   sudo chmod 755 /usr/local/bin/firesim*
+   sudo chgrp firesim /usr/local/bin/firesim*
+
+Next, lets allow the ``firesim`` Linux group to run the pre-installed commands.
+Enter/create the following file with `sudo`:
+
+.. code-block:: bash
+   :substitutions:
+
+   sudo visudo /etc/sudoers.d/firesim
+
+Then add the following lines:
+
+.. code-block:: bash
+   :substitutions:
+
+   %firesim ALL=(ALL) NOPASSWD: /usr/local/bin/firesim-*
+
+Then change the permissions of the file:
+
+.. code-block:: bash
+   :substitutions:
+
+   sudo chmod 400 /etc/sudoers.d/firesim
+
+This allows only users in the ``firesim`` group to execute the scripts.
+
+3. Add your user to the `firesim` group
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+**Machines:** Manager Machine, Run Farm Machines, Build Farm Machines.
+
+Next, add your user to the ``firesim`` group that you created.
+Make sure to replace ``YOUR_USER_NAME`` with the user to run simulations with:
+
+.. code-block:: bash
+   :substitutions:
+
+   sudo usermod -a -G firesim YOUR_USER_NAME
+
+Finally, verify that the user can access the FireSim installed scripts by running:
+
+.. code-block:: bash
+   :substitutions:
+
+   sudo -l
+
+The output should look similar to this:
+
+.. code-block:: bash
+   :substitutions:
+
+   User YOUR_USER_NAME may run the following commands on MACHINE_NAME:
+       (ALL) NOPASSWD: /usr/local/bin/firesim-*
+
+4. Install Vivado Lab and Cable Drivers
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 **Machines:** Run Farm Machines.
@@ -103,7 +178,7 @@ Next, install the cable drivers like so:
    sudo ./install_drivers
 
 
-4. Install the Xilinx XDMA and XVSEC drivers
+5. Install the Xilinx XDMA and XVSEC drivers
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 **Machines:** Run Farm Machines.
@@ -129,7 +204,7 @@ Now, test that the module can be inserted:
 
 .. code-block:: bash
 
-   sudo insmod /lib/modules/$(uname -r)/extra/xdma.ko poll_mode=1
+   sudo insmod $(find /lib/modules/$(uname -r) -name "xdma.ko") poll_mode=1
    lsmod | grep -i xdma
 
 
@@ -168,7 +243,7 @@ Also, make sure you get output for the following (usually, ``/usr/local/sbin/xvs
    which xvsecctl
 
 
-5. Install your FPGA(s)
+6. Install your FPGA(s)
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 **Machines:** Run Farm Machines.
@@ -187,7 +262,8 @@ Now, let's attach your |fpga_name|_ FPGA(s) to your Run Farm Machines:
 
 6. Obtain an existing bitstream tar file for your FPGA by opening the ``bitstream_tar`` URL listed
    under |hwdb_entry_name| in the following file: :gh-file-ref:`deploy/sample-backup-configs/sample_config_hwdb.yaml`.
-7. Extract the ``.tar.gz`` file to a known location. |mcs_info|
+
+7. Download/extract the ``.tar.gz`` file to a known location. |mcs_info|
 
 8. Open Vivado Lab and click "Open Hardware Manager". Then click "Open Target" and "Auto connect".
 
@@ -217,7 +293,7 @@ for each FPGA you've added to the Run Farm Machine.
 .. note:: |jtag_cable_reminder|
 
 
-6. Install sshd
+7. Install sshd
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 **Machines:** Manager Machine, Run Farm Machines, and Build Farm Machines
@@ -229,7 +305,7 @@ On Ubuntu, install ``openssh-server`` like so:
    sudo apt install openssh-server
 
 
-7. Set up SSH Keys
+8. Set up SSH Keys
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 **Machines:** Manager Machine.
@@ -272,44 +348,6 @@ you can simply run ``source ~/.ssh/AGENT_VARS``.
 
 Finally, confirm that you can now ``ssh localhost`` and ssh into your Run Farm
 and Build Farm Machines without being prompted for a passphrase.
-
-8. Install Guestmount
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-
-**Machines:** Manager Machine and Run Farm Machines
-
-Next, install the ``guestmount`` program:
-
-.. code-block:: bash
-
-   sudo chmod +r /boot/vmlinuz-*
-   sudo apt install libguestfs-tools
-   sudo chmod +r /boot/vmlinuz-*
-
-
-This is needed by a variety of FireSim steps that mount disk images in order to copy in/out results of simulations out of the images.
-Using ``guestmount`` instead of the standard mount commands allows for users to perform these operations without requiring ``sudo`` (after this initial installation).
-
-Let's double check that ``guestmount`` is functioning correctly on your system. To do so, we'll generate a dummy filesystem image:
-
-.. code-block:: bash
-
-   cd ~/   # or any scratch area
-   mkdir sysroot-testing
-   cd sysroot-testing
-   mkdir sysroot
-   dd if=/dev/urandom of=sysroot/myfile bs=1024 count=1024
-   virt-make-fs --format=qcow2 --type=ext2 sysroot sysroot.qcow2
-
-Ensure that this command completed without producing an error and that the output file ``sysroot.qcow2`` exists.
-
-Assuming all of this completed successfully (i.e., no error from ``virt-make-fs``), you can delete the ``sysroot-testing`` directory,
-since we will not need it any longer.
-
-
-.. warning:: Due to prior issues we've seen with ``guestmount``, ensure that your FireSim repository
-   does not reside on an NFS mount.
-
 
 9. Check Hard File Limit
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^

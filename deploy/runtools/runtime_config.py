@@ -29,6 +29,7 @@ from runtools.run_farm_deploy_managers import VitisInstanceDeployManager
 from runtools.workload import WorkloadConfig
 from runtools.run_farm import RunFarm
 from runtools.simulation_data_classes import TracerVConfig, AutoCounterConfig, HostDebugConfig, SynthPrintConfig
+from runtools.utils import is_on_aws
 from util.inheritors import inheritors
 from util.deepmerge import deep_merge
 from util.streamlogger import InfoStreamLogger
@@ -336,7 +337,6 @@ class RuntimeHWConfig:
             autocounter_config: AutoCounterConfig,
             hostdebug_config: HostDebugConfig,
             synthprint_config: SynthPrintConfig,
-            sudo: bool,
             extra_plusargs: str,
             extra_args: str) -> str:
         """ return the command used to boot the simulation. this has to have
@@ -383,6 +383,8 @@ class RuntimeHWConfig:
         # TODO supernode support
         dwarf_file_name = "+dwarf-file-name=" + all_bootbinaries[0] + "-dwarf"
 
+        need_sudo = "sudo" if is_on_aws() else ""
+
         screen_name = "fsim{}".format(slotid)
 
         # TODO: supernode support (tracefile, trace-select.. etc)
@@ -402,7 +404,7 @@ class RuntimeHWConfig:
         permissive_driver_args += command_linklatencies
         permissive_driver_args += command_netbws
         permissive_driver_args += command_shmemportnames
-        driver_call = f"""{"sudo" if sudo else ""} ./{driver} +permissive {" ".join(permissive_driver_args)} {extra_plusargs} +permissive-off {" ".join(command_bootbinaries)} {extra_args} """
+        driver_call = f"""{need_sudo} ./{driver} +permissive {" ".join(permissive_driver_args)} {extra_plusargs} +permissive-off {" ".join(command_bootbinaries)} {extra_args} """
         base_command = f"""script -f -c 'stty intr ^] && {driver_call} && stty intr ^c' uartlog"""
         screen_wrapped = f"""screen -S {screen_name} -d -m bash -c "{base_command}"; sleep 1"""
 
@@ -410,8 +412,9 @@ class RuntimeHWConfig:
 
     def get_kill_simulation_command(self) -> str:
         driver = self.get_local_driver_binaryname()
+        need_sudo = "sudo" if is_on_aws() else ""
         # Note that pkill only works for names <=15 characters
-        return """pkill -SIGKILL {driver}""".format(driver=driver[:15])
+        return f"""{need_sudo} pkill -SIGKILL {driver[:15]}"""
 
     def handle_failure(self, buildresult: _stdoutString, what: str, dir: Path|str, cmd: str) -> None:
         """ A helper function for a nice error message when used in conjunction with the run() function"""
@@ -575,7 +578,7 @@ class RuntimeBuildRecipeConfig(RuntimeHWConfig):
         self.metasim_host_simulator = default_metasim_host_sim
 
         # currently only f1 metasims supported
-        self.platform = "f1"
+        self.platform = build_recipe_dict.get('PLATFORM', 'f1')
         self.driver_name_prefix = ""
         if self.metasim_host_simulator in ["verilator", "verilator-debug"]:
             self.driver_name_prefix = "V"
@@ -614,7 +617,6 @@ class RuntimeBuildRecipeConfig(RuntimeHWConfig):
             autocounter_config: AutoCounterConfig,
             hostdebug_config: HostDebugConfig,
             synthprint_config: SynthPrintConfig,
-            sudo: bool,
             extra_plusargs: str,
             extra_args: str) -> str:
         """ return the command used to boot the meta simulation. """
@@ -640,7 +642,6 @@ class RuntimeBuildRecipeConfig(RuntimeHWConfig):
             autocounter_config,
             hostdebug_config,
             synthprint_config,
-            sudo,
             full_extra_plusargs,
             full_extra_args)
 

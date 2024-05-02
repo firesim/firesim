@@ -1,16 +1,16 @@
 run_farm:
     base_recipe: run-farm-recipes/externally_provisioned.yaml
     recipe_arg_overrides:
-        default_platform: VitisInstanceDeployManager
+        default_platform: XilinxAlveoU250InstanceDeployManager
         default_simulation_dir: /scratch/buildbot/RUN_DIR
         run_farm_hosts_to_use:
-            - harp: one_fpga_spec
+            - localhost: one_fpga_spec
 
 metasimulation:
   metasimulation_enabled: false
   metasimulation_host_simulator: verilator
-  metasimulation_only_plusargs: "+fesvr-step-size=128 +max-cycles=100000000"
-  metasimulation_only_vcs_plusargs: "+vcs+initreg+0 +vcs+initmem+0"
+  metasimulation_only_plusargs: ""
+  metasimulation_only_vcs_plusargs: ""
 
 target_config:
     topology: no_net_config
@@ -19,7 +19,7 @@ target_config:
     switching_latency: 10
     net_bandwidth: 200
     profile_interval: -1
-    default_hw_config: vitis_firesim_rocket_singlecore_no_nic
+    default_hw_config: alveo_u250_firesim_rocket_singlecore_no_nic
     plusarg_passthrough: ""
 
 tracing:

@@ -49,6 +49,14 @@ private:
   int64_t mem_host_offset;
   // Number of target cycles between fesvr interactions
   uint32_t step_size;
+  // Same as step_size but value during initial programing phase
+  uint32_t loading_step_size;
+  // During the initial program phase speed up when FESVR is called
+  // (i.e. speed up program loading when loadmem isn't/can't be used)
+  bool fast_fesvr;
+  // Delay n ticks to avoid race-condition where target reset resets the bridge
+  // state and drops xacts
+  uint32_t wait_ticks;
 
   // Arguments passed to firesim_tsi.
   char **tsi_argv = nullptr;

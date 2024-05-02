@@ -43,7 +43,7 @@ jobs:
     steps:
       - name: Cancel previous workflow runs
         if: ${{ (env.CI_LABEL_PERSIST != 'true') }}
-        uses: styfle/cancel-workflow-action@0.11.0
+        uses: styfle/cancel-workflow-action@0.12.1
         with:
           access_token: ${{ github.token }}
 
@@ -58,8 +58,8 @@ jobs:
       needs-manager: ${{ steps.filter.outputs.all_count != steps.filter.outputs.skip-manager_count }}
       both-conda-reqs-lock-modified: ${{ ((steps.filter.outputs.conda-reqs == 'false') && (steps.filter.outputs.conda-lock == 'false')) || ((steps.filter.outputs.conda-reqs == 'true') && (steps.filter.outputs.conda-lock == 'true')) }}
     steps:
-      - uses: actions/checkout@v3
-      - uses: dorny/paths-filter@v2
+      - uses: actions/checkout@v4
+      - uses: dorny/paths-filter@v3
         id: filter
         with:
           filters: |
@@ -93,8 +93,8 @@ jobs:
     if: needs.change-filters.outputs.needs-manager == 'true'
     runs-on: ubuntu-20.04
     steps:
-      - uses: actions/checkout@v3
-      - uses: conda-incubator/setup-miniconda@v2
+      - uses: actions/checkout@v4
+      - uses: conda-incubator/setup-miniconda@v3
         with:
           environment-file: conda-reqs/ci-shared.yaml
           miniforge-version: latest
@@ -115,7 +115,7 @@ jobs:
     needs: [setup-self-hosted-manager]
     runs-on: aws-${{ github.run_id }}
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
       - name: Install FireSim pem
         run: ./.github/scripts/install-firesim-pem.py
       - name: Setup FireSim repo (.pem, build-setup.sh, AWS credentials, submodules) and CI daemons
@@ -144,7 +144,7 @@ jobs:
     needs: [setup-manager]
     runs-on: aws-${{ github.run_id }}
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
       - name: Build default workloads (FireMarshal and paper workloads)
         run: .github/scripts/build-default-workloads.py
 
@@ -153,7 +153,7 @@ jobs:
     needs: [setup-manager]
     runs-on: aws-${{ github.run_id }}
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
       - name: Run pytests
         run: .github/scripts/run-manager-pytests.py
 
@@ -162,7 +162,7 @@ jobs:
     needs: [setup-manager]
     runs-on: aws-${{ github.run_id }}
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
       - name: Run manager Python type checker
         run: .github/scripts/run-manager-python-typechecking.py
 
@@ -171,7 +171,7 @@ jobs:
       needs: [setup-manager]
       runs-on: aws-${{ github.run_id }}
       steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
       - name: Run CI Python type checker
         run: .github/scripts/run-ci-python-typechecking.py
 
@@ -180,7 +180,7 @@ jobs:
     needs: [setup-manager]
     runs-on: aws-${{ github.run_id }}
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
       - name: Run Scalafmt on FireSim Scala main sources
         run: .github/scripts/run-scala-lint-check.py
 
@@ -189,16 +189,16 @@ jobs:
     needs: [setup-manager]
     runs-on: aws-${{ github.run_id }}
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
       - name: Check docs components that require manual re-generation (e.g. config_runtime.yaml example, help output)
-        run: ./.github/scripts/check-docs-generated-components.py
+        run: ./.github/scripts/check-docs-generated-components.py --platform f1
 
   build-f1-driver:
     name: build-f1-driver
     needs: [setup-manager]
     runs-on: aws-${{ github.run_id }}
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
       - name: Runs compilation of F1 driver for the make-default tuple
         run: ./.github/scripts/build-f1-driver.py
 
@@ -207,7 +207,7 @@ jobs:
     needs: [setup-manager]
     runs-on: aws-${{ github.run_id }}
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
       - name: Run targetutils scala tests
         run: ./.github/scripts/run-sbt-command.py midasexamples "'project targetutils; test' "
 
@@ -216,7 +216,7 @@ jobs:
     needs: [setup-manager]
     runs-on: aws-${{ github.run_id }}
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
       - name: Run targetutils scala tests
         run: ./.github/scripts/run-sbt-command.py midasexamples "'project midas; test' "
 
@@ -225,7 +225,7 @@ jobs:
     needs: [build-f1-driver]
     runs-on: aws-${{ github.run_id }}
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
       - name: Run CIGroupA Scala tests
         uses: ./.github/actions/run-scala-test
         with:
@@ -236,7 +236,7 @@ jobs:
     needs: [run-test-groupA]
     runs-on: aws-${{ github.run_id }}
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
       - name: Run CIGroupB Scala tests
         uses: ./.github/actions/run-scala-test
         with:
@@ -247,7 +247,7 @@ jobs:
     needs: [run-test-groupB]
     runs-on: aws-${{ github.run_id }}
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
       - name: Run firesim-lib Scala tests
         uses: ./.github/actions/run-scala-test
         with:
@@ -260,7 +260,7 @@ jobs:
     needs: [run-test-firesim-lib]
     runs-on: aws-${{ github.run_id }}
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
       - name: Run other (CITests) Scala tests
         uses: ./.github/actions/run-scala-test
         with:
@@ -275,7 +275,7 @@ jobs:
     needs: [run-chipyard-tests]
     runs-on: aws-${{ github.run_id }}
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
       - name: Run parallel Verilator metasimulation tests (deploy on localhost and on AWS instances)
         run: .github/scripts/run-parallel-verilator-metasims.py
 
@@ -287,7 +287,7 @@ jobs:
     needs: [build-default-workloads, run-chipyard-tests, run-parallel-verilator-metasims]
     runs-on: aws-${{ github.run_id }}
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
       - name: Run linux-poweroff test w/ AWS EC2 run farm
         run: .github/scripts/run-linux-poweroff.py
 
@@ -297,7 +297,7 @@ jobs:
     needs: [build-default-workloads]
     runs-on: aws-${{ github.run_id }}
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
       - name: Run linux-poweroff test w/ externally provisioned (AWS EC2) run farm
         run: .github/scripts/run-linux-poweroff-externally-provisioned.py
 
@@ -308,10 +308,10 @@ jobs:
     runs-on: aws-${{ github.run_id }}
     timeout-minutes: 600 # 10h
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
       - name: Run buildbitstream command and update sample AGFIs
         run: .github/scripts/run-agfi-buildbitstream.py
-      - uses: peter-evans/create-pull-request@v5
+      - uses: peter-evans/create-pull-request@v6
         with:
           base: ${{ github.head_ref }}
           add-paths: "deploy/sample-backup-configs/sample_config_hwdb.yaml"
