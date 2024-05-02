@@ -2,6 +2,7 @@
 
 #include "cospike.h"
 #include "cospike_impl.h"
+#include "bridges/cospike/thread_pool.h"
 
 #include <assert.h>
 #include <iostream>
@@ -11,13 +12,9 @@
 #include <string.h>
 #include <zlib.h>
 
-// Create bitmask macro
-#define BIT_MASK(__ITYPE__, __ONE_COUNT__)                                     \
-  (((__ITYPE__)(-((__ONE_COUNT__) != 0))) &                                    \
-   (((__ITYPE__)-1) >> ((sizeof(__ITYPE__) * CHAR_BIT) - (__ONE_COUNT__))))
-#define TO_BYTES(__BITS__) ((__BITS__) / 8)
 
 /* #define DEBUG */
+/* #define THROUGHPUT_TESTING */
 
 char cospike_t::KIND;
 
@@ -54,26 +51,18 @@ cospike_t::cospike_t(simif_t &sim,
       _hartid(hartid), _num_commit_insts(num_commit_insts),
       _bits_per_trace(bits_per_trace), stream_idx(stream_idx),
       stream_depth(stream_depth) {
-  this->_time_width = 8;
-  this->_valid_width = 1;
-  this->_iaddr_width = TO_BYTES(iaddr_width);
-  this->_insn_width = TO_BYTES(insn_width);
-  this->_exception_width = 1;
-  this->_interrupt_width = 1;
-  this->_cause_width = TO_BYTES(cause_width);
-  this->_wdata_width = TO_BYTES(wdata_width);
-  this->_priv_width = 1;
 
-  // must align with how the trace is composed
-  this->_time_offset = 0;
-  this->_valid_offset = this->_time_offset + this->_time_width;
-  this->_iaddr_offset = this->_valid_offset + this->_valid_width;
-  this->_insn_offset = this->_iaddr_offset + this->_iaddr_width;
-  this->_priv_offset = this->_insn_offset + this->_insn_width;
-  this->_exception_offset = this->_priv_offset + this->_priv_width;
-  this->_interrupt_offset = this->_exception_offset + this->_exception_width;
-  this->_cause_offset = this->_interrupt_offset + this->_interrupt_width;
-  this->_wdata_offset = this->_cause_offset + this->_cause_width;
+  this->_trace_cfg.init(
+      8,
+      1,
+      TO_BYTES(iaddr_width),
+      TO_BYTES(insn_width), 
+      1,
+      1,
+      TO_BYTES(cause_width),
+      TO_BYTES(wdata_width),
+      1,
+      bits_per_trace);
 
   this->cospike_failed = false;
   this->cospike_exit_code = 0;
@@ -82,9 +71,13 @@ cospike_t::cospike_t(simif_t &sim,
     std::string("+cospike-trace=");
   for (auto &arg : args) {
     if (arg.find(cospike_trace) == 0) {
+      // multithreaded logging
+      this->_trace_printers.start(2);
+
+      // single threaded logging with compression
       std::string out_filename = std::string("COSPIKE-TRACE-") +
-                                 std::to_string(cospikeno) +
-                                 std::string(".gz");
+        std::to_string(cospikeno) +
+        std::string(".gz");
       this->_trace_file = gzopen(out_filename.c_str(), "wb");
     }
   }
@@ -111,45 +104,33 @@ void cospike_t::init() {
                       this->args);
 }
 
-#define SHIFT_BITS(__RTYPE__, __BYTE_WIDTH__)                                  \
-  ((sizeof(__RTYPE__) - (__BYTE_WIDTH__)) * 8)
-#define SIGNED_EXTRACT_NON_ALIGNED(                                            \
-    __ITYPE__, __RTYPE__, __BUF__, __BYTE_WIDTH__, __BYTE_OFFSET__)            \
-  (*((__ITYPE__ *)((__BUF__) + (__BYTE_OFFSET__))) &                           \
-   BIT_MASK(__RTYPE__, (__BYTE_WIDTH__)*8))
-#define EXTRACT_ALIGNED(                                                       \
-    __ITYPE__, __RTYPE__, __BUF__, __BYTE_WIDTH__, __BYTE_OFFSET__)            \
-  ((((__ITYPE__)SIGNED_EXTRACT_NON_ALIGNED(                                    \
-        __ITYPE__, __RTYPE__, __BUF__, __BYTE_WIDTH__, __BYTE_OFFSET__))       \
-    << SHIFT_BITS(__RTYPE__, __BYTE_WIDTH__)) >>                               \
-   SHIFT_BITS(__RTYPE__, __BYTE_WIDTH__))
-
 /**
  * Call cospike co-sim functions with an aligned buffer.
  * This returns the return code of the co-sim functions.
  */
 int cospike_t::invoke_cospike(uint8_t *buf) {
+  trace_cfg_t& cfg = this->_trace_cfg;
    uint64_t time = EXTRACT_ALIGNED(
-    int64_t, uint64_t, buf, this->_time_width, this->_time_offset);
-  bool valid = buf[this->_valid_offset];
+    int64_t, uint64_t, buf, cfg._time_width, cfg._time_offset);
+  bool valid = buf[cfg._valid_offset];
   // this crazy to extract the right value then sign extend within the size
   uint64_t iaddr = EXTRACT_ALIGNED(int64_t,
                                    uint64_t,
                                    buf,
-                                   this->_iaddr_width,
-                                   this->_iaddr_offset); // aka the pc
+                                   cfg._iaddr_width,
+                                   cfg._iaddr_offset); // aka the pc
   uint32_t insn = EXTRACT_ALIGNED(
-      int32_t, uint32_t, buf, this->_insn_width, this->_insn_offset);
-  bool exception = buf[this->_exception_offset];
-  bool interrupt = buf[this->_interrupt_offset];
+      int32_t, uint32_t, buf, cfg._insn_width, cfg._insn_offset);
+  bool exception = buf[cfg._exception_offset];
+  bool interrupt = buf[cfg._interrupt_offset];
   uint64_t cause = EXTRACT_ALIGNED(
-      int64_t, uint64_t, buf, this->_cause_width, this->_cause_offset);
+      int64_t, uint64_t, buf, cfg._cause_width, cfg._cause_offset);
   uint64_t wdata =
-      this->_wdata_width != 0
+      cfg._wdata_width != 0
           ? EXTRACT_ALIGNED(
-                int64_t, uint64_t, buf, this->_wdata_width, this->_wdata_offset)
+                int64_t, uint64_t, buf, cfg._wdata_width, cfg._wdata_offset)
           : 0;
-  uint8_t priv = buf[this->_priv_offset];
+  uint8_t priv = buf[cfg._priv_offset];
 
 #ifdef DEBUG
   fprintf(stderr,
@@ -170,21 +151,21 @@ int cospike_t::invoke_cospike(uint8_t *buf) {
   if (valid || exception || cause) {
     if (this->_trace_file) {
       gzprintf(this->_trace_file,
-              "%lld %llu %d %d %d %d %d %lu %lx\n",
+              "%lld %llu %d %d %d %d %d %d %lx\n",
               this->_hartid,
               time,
               iaddr,
               valid,
               exception,
               interrupt,
-              (this->_wdata_width != 0),
-              cause,
+              (cfg._wdata_width != 0),
+              (int)cause,
               wdata);
       return 0;
     } else {
       return cospike_cosim(time, // TODO: No cycle given
                            this->_hartid,
-                           (this->_wdata_width != 0),
+                           (cfg._wdata_width != 0),
                            valid,
                            iaddr,
                            insn,
@@ -209,6 +190,23 @@ size_t cospike_t::process_tokens(int num_beats, size_t minimum_batch_beats) {
   page_aligned_sized_array(OUTBUF, maximum_batch_bytes);
   auto bytes_received =
       pull(stream_idx, OUTBUF, maximum_batch_bytes, minimum_batch_bytes);
+
+
+#ifdef THROUGHPUT_TESTING
+  if (bytes_received > 0) {
+    std::string ofname = "COSPIKE-TRACE-" +
+      std::to_string(this->_hartid) + "-" +
+      std::to_string(this->_file_idx++);
+
+    printf("bytes_received: %u\n", bytes_received);
+
+    this->_trace_printers.queue_job(print_insn_logs,
+        trace_t((uint8_t*)OUTBUF, bytes_received, this->_trace_cfg),
+        ofname);
+  }
+  return bytes_received;
+#endif
+
   const size_t bytes_per_trace = this->_bits_per_trace / 8;
 
   for (uint32_t offset = 0; offset < bytes_received;
@@ -279,7 +277,8 @@ void cospike_t::flush() {
   while (!cospike_failed && (this->process_tokens(this->stream_depth, 0) > 0))
     ;
 
-  if (this->_trace_file) {
-    gzclose(this->_trace_file);
-  }
+  this->_trace_printers.stop();
+/* if (this->_trace_file) { */
+/* gzclose(this->_trace_file); */
+/* } */
 }

@@ -6,6 +6,7 @@
 #include <string>
 #include <vector>
 #include <zlib.h>
+#include "bridges/cospike/thread_pool.h"
 
 class cospike_t : public streaming_bridge_driver_t {
 public:
@@ -51,29 +52,7 @@ private:
 
   std::vector<std::string> args;
 
-  // in bytes
-  uint32_t _time_width;
-  uint32_t _valid_width;
-  uint32_t _iaddr_width;
-  uint32_t _insn_width;
-  uint32_t _wdata_width;
-  uint32_t _priv_width;
-  uint32_t _exception_width;
-  uint32_t _interrupt_width;
-  uint32_t _cause_width;
-  uint32_t _tval_width;
-
-  // in bytes
-  uint32_t _time_offset;
-  uint32_t _valid_offset;
-  uint32_t _iaddr_offset;
-  uint32_t _insn_offset;
-  uint32_t _wdata_offset;
-  uint32_t _priv_offset;
-  uint32_t _exception_offset;
-  uint32_t _interrupt_offset;
-  uint32_t _cause_offset;
-  uint32_t _tval_offset;
+  trace_cfg_t _trace_cfg;
 
   const char *_isa;
   uint32_t _vlen;
@@ -98,6 +77,8 @@ private:
   int stream_depth;
 
   gzFile _trace_file = NULL;
+  int _file_idx = 0;
+  threadpool_t<trace_t, std::string> _trace_printers;
 };
 
 #endif // __COSPIKE_H
