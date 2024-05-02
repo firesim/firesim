@@ -9,6 +9,7 @@
 #include <stdint.h>
 #include <stdio.h>
 #include <string.h>
+#include <zlib.h>
 
 // Create bitmask macro
 #define BIT_MASK(__ITYPE__, __ONE_COUNT__)                                     \
@@ -16,7 +17,7 @@
    (((__ITYPE__)-1) >> ((sizeof(__ITYPE__) * CHAR_BIT) - (__ONE_COUNT__))))
 #define TO_BYTES(__BITS__) ((__BITS__) / 8)
 
-#define DEBUG
+/* #define DEBUG */
 
 char cospike_t::KIND;
 
@@ -76,6 +77,17 @@ cospike_t::cospike_t(simif_t &sim,
 
   this->cospike_failed = false;
   this->cospike_exit_code = 0;
+
+  std::string cospike_trace =
+    std::string("+cospike-trace=");
+  for (auto &arg : args) {
+    if (arg.find(cospike_trace) == 0) {
+      std::string out_filename = std::string("COSPIKE-TRACE-") +
+                                 std::to_string(cospikeno) +
+                                 std::string(".gz");
+      this->_trace_file = gzopen(out_filename.c_str(), "wb");
+    }
+  }
 }
 
 /**
@@ -156,17 +168,32 @@ int cospike_t::invoke_cospike(uint8_t *buf) {
 #endif
 
   if (valid || exception || cause) {
-    return cospike_cosim(0, // TODO: No cycle given
-                         this->_hartid,
-                         (this->_wdata_width != 0),
-                         valid,
-                         iaddr,
-                         insn,
-                         exception,
-                         interrupt,
-                         cause,
-                         wdata,
-                         priv);
+    if (this->_trace_file) {
+      gzprintf(this->_trace_file,
+              "%lld %llu %d %d %d %d %d %lu %lx\n",
+              this->_hartid,
+              time,
+              iaddr,
+              valid,
+              exception,
+              interrupt,
+              (this->_wdata_width != 0),
+              cause,
+              wdata);
+      return 0;
+    } else {
+      return cospike_cosim(time, // TODO: No cycle given
+                           this->_hartid,
+                           (this->_wdata_width != 0),
+                           valid,
+                           iaddr,
+                           insn,
+                           exception,
+                           interrupt,
+                           cause,
+                           wdata,
+                           priv);
+    }
   } else {
     return 0;
   }
@@ -251,4 +278,8 @@ void cospike_t::flush() {
   // only flush if there wasn't a failure before
   while (!cospike_failed && (this->process_tokens(this->stream_depth, 0) > 0))
     ;
+
+  if (this->_trace_file) {
+    gzclose(this->_trace_file);
+  }
 }

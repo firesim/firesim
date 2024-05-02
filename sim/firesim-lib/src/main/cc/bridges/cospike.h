@@ -5,6 +5,7 @@
 #include "core/bridge_driver.h"
 #include <string>
 #include <vector>
+#include <zlib.h>
 
 class cospike_t : public streaming_bridge_driver_t {
 public:
@@ -95,6 +96,8 @@ private:
   // stream config
   int stream_idx;
   int stream_depth;
+
+  gzFile _trace_file = NULL;
 };
 
 #endif // __COSPIKE_H
