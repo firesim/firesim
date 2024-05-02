@@ -64,6 +64,8 @@ struct trace_cfg_t {
 
   uint32_t _bits_per_trace;
 
+  int _hartid;
+
   void init(uint32_t time_width,
             uint32_t valid_width,
             uint32_t iaddr_width,
@@ -73,7 +75,8 @@ struct trace_cfg_t {
             uint32_t cause_width,
             uint32_t wdata_width,
             uint32_t priv_width,
-            uint32_t bits_per_trace) {
+            uint32_t bits_per_trace,
+            int hartid) {
     _time_width = time_width;
     _valid_width = valid_width;
     _iaddr_width = iaddr_width;
@@ -96,6 +99,7 @@ struct trace_cfg_t {
     _wdata_offset = _cause_offset + _cause_width;
 
     _bits_per_trace = bits_per_trace;
+    _hartid = hartid;
   }
 
   void print() {

@@ -14,7 +14,7 @@
 
 
 /* #define DEBUG */
-/* #define THROUGHPUT_TESTING */
+#define THROUGHPUT_TESTING
 
 char cospike_t::KIND;
 
@@ -62,7 +62,8 @@ cospike_t::cospike_t(simif_t &sim,
       TO_BYTES(cause_width),
       TO_BYTES(wdata_width),
       1,
-      bits_per_trace);
+      bits_per_trace,
+      hartid);
 
   this->cospike_failed = false;
   this->cospike_exit_code = 0;
@@ -151,7 +152,7 @@ int cospike_t::invoke_cospike(uint8_t *buf) {
   if (valid || exception || cause) {
     if (this->_trace_file) {
       gzprintf(this->_trace_file,
-              "%lld %llu %d %d %d %d %d %d %lx\n",
+              "%lld %llu %llx %d %d %d %d %d %lx\n",
               this->_hartid,
               time,
               iaddr,
@@ -278,7 +279,7 @@ void cospike_t::flush() {
     ;
 
   this->_trace_printers.stop();
-/* if (this->_trace_file) { */
-/* gzclose(this->_trace_file); */
-/* } */
+  if (this->_trace_file) {
+    gzclose(this->_trace_file);
+  }
 }

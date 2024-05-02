@@ -1,10 +1,11 @@
 #include <iostream>
 #include <fstream>
 #include <inttypes.h>
+#include <zlib.h>
 #include "thread_pool.h"
 
 void print_insn_logs(trace_t trace, std::string oname) {
-  std::ofstream os(oname, std::ofstream::out);
+  gzFile trace_file = gzopen(oname.c_str(), "wb");
   trace_cfg_t& cfg = trace.cfg;
   uint8_t* buf = trace.buf;
 
@@ -35,14 +36,27 @@ void print_insn_logs(trace_t trace, std::string oname) {
             : 0;
     uint8_t priv = cur_buf[cfg._priv_offset];
 
-    os << std::dec << valid << " " <<
-                      exception << " " <<
-                      interrupt << " " <<
-                      has_w << " " <<
-                      (int)cause << " " <<
-                      time << " " <<
-          std::hex << iaddr << " " <<
-                      wdata << "\n";
+    gzprintf(trace_file,
+            "%lld %llu %llx %d %d %d %d %d %lx\n",
+            cfg._hartid,
+            time,
+            iaddr,
+            valid,
+            exception,
+            interrupt,
+            (cfg._wdata_width != 0),
+            (int)cause,
+            wdata);
+
+/* os << std::dec << valid << " " << */
+/* exception << " " << */
+/* interrupt << " " << */
+/* has_w << " " << */
+/* (int)cause << " " << */
+/* time << " " << */
+/* std::hex << iaddr << " " << */
+/* wdata << "\n"; */
   }
-  os.close();
+/* os.close(); */
+  gzclose(trace_file);
 }
