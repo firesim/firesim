@@ -1,20 +1,20 @@
-#include <iostream>
+#include "thread_pool.h"
+#include <algorithm>
 #include <fstream>
 #include <inttypes.h>
+#include <iostream>
 #include <zlib.h>
-#include <algorithm>
-#include "thread_pool.h"
 
 void print_insn_logs(trace_t trace, std::string oname) {
   gzFile trace_file = gzopen(oname.c_str(), "wb");
-  trace_cfg_t& cfg = trace.cfg;
-  uint8_t* buf = trace.buf->get_data();
-  size_t   buf_bytes = trace.buf->bytes();
+  trace_cfg_t &cfg = trace.cfg;
+  uint8_t *buf = trace.buf->get_data();
+  size_t buf_bytes = trace.buf->bytes();
 
   const size_t bytes_per_trace = cfg._bits_per_trace / 8;
 
   for (uint32_t offset = 0; offset < buf_bytes; offset += bytes_per_trace) {
-    uint8_t* cur_buf = buf + offset;
+    uint8_t *cur_buf = buf + offset;
     uint64_t time = EXTRACT_ALIGNED(
         int64_t, uint64_t, cur_buf, cfg._time_width, cfg._time_offset);
     bool valid = cur_buf[cfg._valid_offset];
@@ -31,46 +31,37 @@ void print_insn_logs(trace_t trace, std::string oname) {
     uint64_t cause = EXTRACT_ALIGNED(
         int64_t, uint64_t, cur_buf, cfg._cause_width, cfg._cause_offset);
     bool has_w = cfg._wdata_width != 0;
-    uint64_t wdata =
-        cfg._wdata_width != 0
-            ? EXTRACT_ALIGNED(
-                  int64_t, uint64_t, cur_buf, cfg._wdata_width, cfg._wdata_offset)
-            : 0;
+    uint64_t wdata = cfg._wdata_width != 0 ? EXTRACT_ALIGNED(int64_t,
+                                                             uint64_t,
+                                                             cur_buf,
+                                                             cfg._wdata_width,
+                                                             cfg._wdata_offset)
+                                           : 0;
     uint8_t priv = cur_buf[cfg._priv_offset];
 
     if (valid || exception || cause) {
       gzprintf(trace_file,
-          "%lld %llu %llx %d %d %d %d %d %lx\n",
-          cfg._hartid,
-          time,
-          iaddr,
-          valid,
-          exception,
-          interrupt,
-          (cfg._wdata_width != 0),
-          (int)cause,
-          wdata);
+               "%lld %llu %llx %d %d %d %d %d %lx\n",
+               cfg._hartid,
+               time,
+               iaddr,
+               valid,
+               exception,
+               interrupt,
+               (cfg._wdata_width != 0),
+               (int)cause,
+               wdata);
     }
-
-/* os << std::dec << valid << " " << */
-/* exception << " " << */
-/* interrupt << " " << */
-/* has_w << " " << */
-/* (int)cause << " " << */
-/* time << " " << */
-/* std::hex << iaddr << " " << */
-/* wdata << "\n"; */
   }
-/* os.close(); */
   gzclose(trace_file);
   trace.buf->clear();
 }
 
-void print_buf(buffer_t* buf, std::string ofname) {
-  FILE* fp = fopen(ofname.c_str(), "w");
-  uint64_t* data = (uint64_t*)buf->get_data();
-  for (size_t i = 0; i < buf->bytes()/8; i += 16) {
-    for (size_t j = 0; j < std::min(buf->bytes()/8 - i, (size_t)16); j++) {
+void print_buf(buffer_t *buf, std::string ofname) {
+  FILE *fp = fopen(ofname.c_str(), "w");
+  uint64_t *data = (uint64_t *)buf->get_data();
+  for (size_t i = 0; i < buf->bytes() / 8; i += 16) {
+    for (size_t j = 0; j < std::min(buf->bytes() / 8 - i, (size_t)16); j++) {
       fprintf(fp, "%3" PRIu64 ",", data[i + j]);
     }
     fprintf(fp, "\n");

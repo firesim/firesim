@@ -1,18 +1,17 @@
 // See LICENSE for license details
 
 #include "cospike.h"
-#include "cospike_impl.h"
 #include "bridges/cospike/thread_pool.h"
+#include "cospike_impl.h"
 
 #include <assert.h>
+#include <filesystem>
 #include <iostream>
 #include <limits.h>
 #include <stdint.h>
 #include <stdio.h>
 #include <string.h>
 #include <zlib.h>
-#include <filesystem>
-
 
 /* #define DEBUG */
 #define THROUGHPUT_TESTING
@@ -53,18 +52,17 @@ cospike_t::cospike_t(simif_t &sim,
       _bits_per_trace(bits_per_trace), stream_idx(stream_idx),
       stream_depth(stream_depth) {
 
-  this->_trace_cfg.init(
-      8,
-      1,
-      TO_BYTES(iaddr_width),
-      TO_BYTES(insn_width), 
-      1,
-      1,
-      TO_BYTES(cause_width),
-      TO_BYTES(wdata_width),
-      1,
-      bits_per_trace,
-      hartid);
+  this->_trace_cfg.init(8,
+                        1,
+                        TO_BYTES(iaddr_width),
+                        TO_BYTES(insn_width),
+                        1,
+                        1,
+                        TO_BYTES(cause_width),
+                        TO_BYTES(wdata_width),
+                        1,
+                        bits_per_trace,
+                        hartid);
 
   this->cospike_failed = false;
   this->cospike_exit_code = 0;
@@ -72,12 +70,13 @@ cospike_t::cospike_t(simif_t &sim,
   const std::string cospiketrace_arg = std::string("+cospike-trace=");
   for (auto &arg : args) {
     if (arg.find(cospiketrace_arg) == 0) {
-      char* str = const_cast<char *>(arg.c_str()) + cospiketrace_arg.length();
+      char *str = const_cast<char *>(arg.c_str()) + cospiketrace_arg.length();
       int num_threads = atol(str);
       this->_trace_printers.start(num_threads);
 
       size_t max_input_bytes = stream_depth * STREAM_WIDTH_BYTES;
-      this->_trace_mempool = new mempool_t(num_threads, num_threads * max_input_bytes, max_input_bytes);
+      this->_trace_mempool = new mempool_t(
+          num_threads, num_threads * max_input_bytes, max_input_bytes);
 
       std::filesystem::create_directory("COSPIKE-TRACES");
     }
@@ -110,9 +109,9 @@ void cospike_t::init() {
  * This returns the return code of the co-sim functions.
  */
 int cospike_t::invoke_cospike(uint8_t *buf) {
-  trace_cfg_t& cfg = this->_trace_cfg;
-   uint64_t time = EXTRACT_ALIGNED(
-    int64_t, uint64_t, buf, cfg._time_width, cfg._time_offset);
+  trace_cfg_t &cfg = this->_trace_cfg;
+  uint64_t time = EXTRACT_ALIGNED(
+      int64_t, uint64_t, buf, cfg._time_width, cfg._time_offset);
   bool valid = buf[cfg._valid_offset];
   // this crazy to extract the right value then sign extend within the size
   uint64_t iaddr = EXTRACT_ALIGNED(int64_t,
@@ -181,8 +180,8 @@ size_t cospike_t::record_trace(size_t max_batch_bytes, size_t min_batch_bytes) {
         ;
       }
       std::string ofname = "COSPIKE-TRACES/COSPIKE-TRACE-" +
-        std::to_string(this->_hartid) + "-" +
-        std::to_string(this->_file_idx++) + ".gz";
+                           std::to_string(this->_hartid) + "-" +
+                           std::to_string(this->_file_idx++) + ".gz";
       trace_t trace = {_trace_mempool->cur_buf(), this->_trace_cfg};
       _trace_printers.queue_job(print_insn_logs, trace, ofname);
       _trace_mempool->advance_buffer();

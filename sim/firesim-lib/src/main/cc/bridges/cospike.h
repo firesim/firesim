@@ -2,12 +2,12 @@
 #ifndef __COSPIKE_H
 #define __COSPIKE_H
 
+#include "bridges/cospike/mem_pool.h"
+#include "bridges/cospike/thread_pool.h"
 #include "core/bridge_driver.h"
 #include <string>
 #include <vector>
 #include <zlib.h>
-#include "bridges/cospike/thread_pool.h"
-#include "bridges/cospike/mem_pool.h"
 
 class cospike_t : public streaming_bridge_driver_t {
 public:
@@ -82,7 +82,7 @@ private:
   bool _record_trace = false;
   int _file_idx = 0;
   threadpool_t<trace_t, std::string> _trace_printers;
-  mempool_t* _trace_mempool = NULL;
+  mempool_t *_trace_mempool = NULL;
 };
 
 #endif // __COSPIKE_H

@@ -3,18 +3,18 @@
 
 /* https://stackoverflow.com/questions/15752659/thread-pooling-in-c11 */
 
-#include <cstdint>
-#include <thread>
-#include <vector>
-#include <queue>
-#include <mutex>
-#include <condition_variable>
-#include <functional>
-#include <utility>
-#include <iostream>
-#include <fstream>
-#include <string>
 #include "mem_pool.h"
+#include <condition_variable>
+#include <cstdint>
+#include <fstream>
+#include <functional>
+#include <iostream>
+#include <mutex>
+#include <queue>
+#include <string>
+#include <thread>
+#include <utility>
+#include <vector>
 
 // Create bitmask macro
 #define BIT_MASK(__ITYPE__, __ONE_COUNT__)                                     \
@@ -105,41 +105,39 @@ struct trace_cfg_t {
 
   void print() {
     printf("trace_cfg_t: %d %d %d %d %d %d %d %d %d %d\n",
-        _time_width,
-        _valid_width,
-        _iaddr_width,
-        _insn_width,
-        _exception_width,
-        _interrupt_width,
-        _cause_width,
-        _wdata_width,
-        _priv_width,
-        _bits_per_trace);
+           _time_width,
+           _valid_width,
+           _iaddr_width,
+           _insn_width,
+           _exception_width,
+           _interrupt_width,
+           _cause_width,
+           _wdata_width,
+           _priv_width,
+           _bits_per_trace);
   }
 };
 
 struct trace_t {
-  buffer_t* buf;
+  buffer_t *buf;
   trace_cfg_t cfg;
 };
 
 template <class T, class S>
 class threadpool_t {
-typedef std::function<void(T, S)> job_t;
+  typedef std::function<void(T, S)> job_t;
 
 public:
-
   void start(uint32_t max_concurrency) {
-    const uint32_t num_threads = std::max(std::thread::hardware_concurrency() / 16,
-                                 std::min(
-                                   std::thread::hardware_concurrency(),
-                                   max_concurrency));
+    const uint32_t num_threads = std::max(
+        std::thread::hardware_concurrency() / 16,
+        std::min(std::thread::hardware_concurrency(), max_concurrency));
     for (uint32_t ii = 0; ii < num_threads; ++ii) {
       threads.emplace_back(std::thread(&threadpool_t::threadloop, this));
     }
   }
 
-  void queue_job(const job_t& job, const T& trace, S& oname) {
+  void queue_job(const job_t &job, const T &trace, S &oname) {
     {
       std::unique_lock<std::mutex> lock(queue_mutex);
       jobs.push(job);
@@ -155,7 +153,7 @@ public:
       should_terminate = true;
     }
     mutex_condition.notify_all();
-    for (std::thread& active_thread : threads) {
+    for (std::thread &active_thread : threads) {
       active_thread.join();
     }
     threads.clear();
@@ -178,9 +176,8 @@ private:
       S oname;
       {
         std::unique_lock<std::mutex> lock(queue_mutex);
-        mutex_condition.wait(lock, [this] {
-            return !jobs.empty() || should_terminate;
-            });
+        mutex_condition.wait(
+            lock, [this] { return !jobs.empty() || should_terminate; });
         if (should_terminate) {
           return;
         }
@@ -197,9 +194,10 @@ private:
     }
   }
 
-  bool should_terminate = false;           // Tells threads to stop looking for jobs
-  std::mutex queue_mutex;                  // Prevents data races to the job queue
-  std::condition_variable mutex_condition; // Allows threads to wait on new jobs or termination 
+  bool should_terminate = false; // Tells threads to stop looking for jobs
+  std::mutex queue_mutex;        // Prevents data races to the job queue
+  std::condition_variable
+      mutex_condition; // Allows threads to wait on new jobs or termination
   std::vector<std::thread> threads;
   std::queue<job_t> jobs;
   std::queue<T> traces;
@@ -207,6 +205,6 @@ private:
 };
 
 void print_insn_logs(trace_t trace, std::string ofname);
-void print_buf(buffer_t* buf, std::string ofname);
+void print_buf(buffer_t *buf, std::string ofname);
 
 #endif //__THREAD_POOL_H__
