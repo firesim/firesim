@@ -8,11 +8,12 @@
 void print_insn_logs(trace_t trace, std::string oname) {
   gzFile trace_file = gzopen(oname.c_str(), "wb");
   trace_cfg_t& cfg = trace.cfg;
-  uint8_t* buf = trace.buf;
+  uint8_t* buf = trace.buf->get_data();
+  size_t   buf_bytes = trace.buf->bytes();
 
   const size_t bytes_per_trace = cfg._bits_per_trace / 8;
 
-  for (uint32_t offset = 0; offset < trace.sz; offset += bytes_per_trace) {
+  for (uint32_t offset = 0; offset < buf_bytes; offset += bytes_per_trace) {
     uint8_t* cur_buf = buf + offset;
     uint64_t time = EXTRACT_ALIGNED(
         int64_t, uint64_t, cur_buf, cfg._time_width, cfg._time_offset);
@@ -62,6 +63,7 @@ void print_insn_logs(trace_t trace, std::string oname) {
   }
 /* os.close(); */
   gzclose(trace_file);
+  trace.buf->clear();
 }
 
 void print_buf(buffer_t* buf, std::string ofname) {

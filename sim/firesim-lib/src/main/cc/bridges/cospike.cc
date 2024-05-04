@@ -11,6 +11,7 @@
 #include <stdio.h>
 #include <string.h>
 #include <zlib.h>
+#include <filesystem>
 
 
 /* #define DEBUG */
@@ -68,18 +69,17 @@ cospike_t::cospike_t(simif_t &sim,
   this->cospike_failed = false;
   this->cospike_exit_code = 0;
 
-  std::string cospike_trace =
-    std::string("+cospike-trace=");
+  const std::string cospiketrace_arg = std::string("+cospike-trace=");
   for (auto &arg : args) {
-    if (arg.find(cospike_trace) == 0) {
-      // multithreaded logging
-      this->_trace_printers.start(2);
+    if (arg.find(cospiketrace_arg) == 0) {
+      char* str = const_cast<char *>(arg.c_str()) + cospiketrace_arg.length();
+      int num_threads = atol(str);
+      this->_trace_printers.start(num_threads);
 
-      // single threaded logging with compression
-      std::string out_filename = std::string("COSPIKE-TRACE-") +
-        std::to_string(cospikeno) +
-        std::string(".gz");
-      this->_trace_file = gzopen(out_filename.c_str(), "wb");
+      size_t max_input_bytes = stream_depth * STREAM_WIDTH_BYTES;
+      this->_trace_mempool = new mempool_t(num_threads, num_threads * max_input_bytes, max_input_bytes);
+
+      std::filesystem::create_directory("COSPIKE-TRACES");
     }
   }
 }
@@ -150,61 +150,52 @@ int cospike_t::invoke_cospike(uint8_t *buf) {
 #endif
 
   if (valid || exception || cause) {
-    if (this->_trace_file) {
-      gzprintf(this->_trace_file,
-              "%lld %llu %llx %d %d %d %d %d %lx\n",
-              this->_hartid,
-              time,
-              iaddr,
-              valid,
-              exception,
-              interrupt,
-              (cfg._wdata_width != 0),
-              (int)cause,
-              wdata);
-      return 0;
-    } else {
-      return cospike_cosim(time, // TODO: No cycle given
-                           this->_hartid,
-                           (cfg._wdata_width != 0),
-                           valid,
-                           iaddr,
-                           insn,
-                           exception,
-                           interrupt,
-                           cause,
-                           wdata,
-                           priv);
-    }
+    return cospike_cosim(time, // TODO: No cycle given
+                         this->_hartid,
+                         (cfg._wdata_width != 0),
+                         valid,
+                         iaddr,
+                         insn,
+                         exception,
+                         interrupt,
+                         cause,
+                         wdata,
+                         priv);
   } else {
     return 0;
   }
 }
 
-/**
- * Read queue and co-simulate
- */
-size_t cospike_t::process_tokens(int num_beats, size_t minimum_batch_beats) {
-  const size_t maximum_batch_bytes = num_beats * STREAM_WIDTH_BYTES;
-  const size_t minimum_batch_bytes = minimum_batch_beats * STREAM_WIDTH_BYTES;
-  // TODO: as opt can mmap file and just load directly into it.
-  page_aligned_sized_array(OUTBUF, maximum_batch_bytes);
-  auto bytes_received =
-      pull(stream_idx, OUTBUF, maximum_batch_bytes, minimum_batch_bytes);
-
-
-#ifdef THROUGHPUT_TESTING
+size_t cospike_t::record_trace(size_t max_batch_bytes, size_t min_batch_bytes) {
+  assert(!_trace_mempool->full());
+  size_t bytes_received = pull(stream_idx,
+                               _trace_mempool->next_empty(),
+                               max_batch_bytes,
+                               min_batch_bytes);
   if (bytes_received > 0) {
-    std::string ofname = "COSPIKE-TRACE-" +
-      std::to_string(this->_hartid) + "-" +
-      std::to_string(this->_file_idx++) + ".gz";
+    _trace_mempool->fill(bytes_received);
 
-    this->_trace_printers.queue_job(print_insn_logs,
-        trace_t((uint8_t*)OUTBUF, bytes_received, this->_trace_cfg),
-        ofname);
+    // if the buffer is full, push it to the threadpool
+    if (_trace_mempool->full()) {
+      while (_trace_mempool->next_buffer_full()) {
+        ;
+      }
+      std::string ofname = "COSPIKE-TRACES/COSPIKE-TRACE-" +
+        std::to_string(this->_hartid) + "-" +
+        std::to_string(this->_file_idx++) + ".gz";
+      trace_t trace = {_trace_mempool->cur_buf(), this->_trace_cfg};
+      _trace_printers.queue_job(print_insn_logs, trace, ofname);
+      _trace_mempool->advance_buffer();
+    }
   }
   return bytes_received;
-#endif
+}
+
+size_t cospike_t::run_cosim(size_t max_batch_bytes, size_t min_batch_bytes) {
+  // TODO: as opt can mmap file and just load directly into it.
+  page_aligned_sized_array(OUTBUF, max_batch_bytes);
+  size_t bytes_received =
+      pull(stream_idx, OUTBUF, max_batch_bytes, min_batch_bytes);
 
   const size_t bytes_per_trace = this->_bits_per_trace / 8;
 
@@ -256,7 +247,22 @@ size_t cospike_t::process_tokens(int num_beats, size_t minimum_batch_beats) {
       break;
     }
   }
+  return bytes_received;
+}
 
+/**
+ * Read queue and co-simulate
+ */
+size_t cospike_t::process_tokens(int num_beats, size_t minimum_batch_beats) {
+  const size_t maximum_batch_bytes = num_beats * STREAM_WIDTH_BYTES;
+  const size_t minimum_batch_bytes = minimum_batch_beats * STREAM_WIDTH_BYTES;
+
+  size_t bytes_received;
+  if (this->_trace_mempool) {
+    bytes_received = record_trace(maximum_batch_bytes, minimum_batch_bytes);
+  } else {
+    bytes_received = run_cosim(maximum_batch_bytes, minimum_batch_bytes);
+  }
   return bytes_received;
 }
 
@@ -276,8 +282,6 @@ void cospike_t::flush() {
   while (!cospike_failed && (this->process_tokens(this->stream_depth, 0) > 0))
     ;
 
-  this->_trace_printers.stop();
-  if (this->_trace_file) {
-    gzclose(this->_trace_file);
-  }
+  if (this->_trace_mempool)
+    this->_trace_printers.stop();
 }

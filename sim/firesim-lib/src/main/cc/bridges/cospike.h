@@ -7,6 +7,7 @@
 #include <vector>
 #include <zlib.h>
 #include "bridges/cospike/thread_pool.h"
+#include "bridges/cospike/mem_pool.h"
 
 class cospike_t : public streaming_bridge_driver_t {
 public:
@@ -46,6 +47,8 @@ public:
   void finish() override { this->flush(); };
 
 private:
+  size_t record_trace(size_t max_batch_bytes, size_t min_batch_bytes);
+  size_t run_cosim(size_t max_batch_bytes, size_t min_batch_bytes);
   int invoke_cospike(uint8_t *buf);
   size_t process_tokens(int num_beats, size_t minimum_batch_beats);
   void flush();
@@ -76,9 +79,10 @@ private:
   int stream_idx;
   int stream_depth;
 
-  gzFile _trace_file = NULL;
+  bool _record_trace = false;
   int _file_idx = 0;
   threadpool_t<trace_t, std::string> _trace_printers;
+  mempool_t* _trace_mempool = NULL;
 };
 
 #endif // __COSPIKE_H
