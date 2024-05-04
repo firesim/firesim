@@ -2,9 +2,12 @@
 #ifndef __COSPIKE_H
 #define __COSPIKE_H
 
+#include "bridges/cospike/mem_pool.h"
+#include "bridges/cospike/thread_pool.h"
 #include "core/bridge_driver.h"
 #include <string>
 #include <vector>
+#include <zlib.h>
 
 class cospike_t : public streaming_bridge_driver_t {
 public:
@@ -44,33 +47,15 @@ public:
   void finish() override { this->flush(); };
 
 private:
+  size_t record_trace(size_t max_batch_bytes, size_t min_batch_bytes);
+  size_t run_cosim(size_t max_batch_bytes, size_t min_batch_bytes);
   int invoke_cospike(uint8_t *buf);
   size_t process_tokens(int num_beats, size_t minimum_batch_beats);
   void flush();
 
   std::vector<std::string> args;
 
-  // in bytes
-  uint32_t _valid_width;
-  uint32_t _iaddr_width;
-  uint32_t _insn_width;
-  uint32_t _wdata_width;
-  uint32_t _priv_width;
-  uint32_t _exception_width;
-  uint32_t _interrupt_width;
-  uint32_t _cause_width;
-  uint32_t _tval_width;
-
-  // in bytes
-  uint32_t _valid_offset;
-  uint32_t _iaddr_offset;
-  uint32_t _insn_offset;
-  uint32_t _wdata_offset;
-  uint32_t _priv_offset;
-  uint32_t _exception_offset;
-  uint32_t _interrupt_offset;
-  uint32_t _cause_offset;
-  uint32_t _tval_offset;
+  trace_cfg_t _trace_cfg;
 
   const char *_isa;
   uint32_t _vlen;
@@ -93,6 +78,11 @@ private:
   // stream config
   int stream_idx;
   int stream_depth;
+
+  bool _record_trace = false;
+  int _file_idx = 0;
+  threadpool_t<trace_t, std::string> _trace_printers;
+  mempool_t *_trace_mempool = nullptr;
 };
 
 #endif // __COSPIKE_H

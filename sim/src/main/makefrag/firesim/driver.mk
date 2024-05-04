@@ -25,7 +25,7 @@ DRIVER_H = \
 
 DRIVER_CC = \
 	$(addprefix $(driver_dir)/firesim/, $(addsuffix .cc, firesim_top)) \
-	$(wildcard $(addprefix $(firesim_lib_dir)/, $(addsuffix .cc, bridges/* fesvr/* bridges/tracerv/*)))  \
+	$(wildcard $(addprefix $(firesim_lib_dir)/, $(addsuffix .cc, bridges/* fesvr/* bridges/tracerv/* bridges/cospike/*)))  \
 	$(RISCV)/lib/libfesvr.a \
 	$(TESTCHIPIP_CSRC_DIR)/cospike_impl.cc \
 	$(TESTCHIPIP_CSRC_DIR)/testchip_tsi.cc \
