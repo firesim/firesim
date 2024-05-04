@@ -33,7 +33,7 @@ public:
   uint8_t *next_empty();
   void fill(size_t amount);
   buffer_t *cur_buf();
-  volatile bool next_buffer_full();
+  bool next_buffer_full();
   void advance_buffer();
 
 private:

@@ -67,7 +67,7 @@ buffer_t *mempool_t::cur_buf() {
   return buf;
 }
 
-volatile bool mempool_t::next_buffer_full() {
+bool mempool_t::next_buffer_full() {
   int next_head = (head + 1) % count;
   buffer_t *next_buffer = buffers[next_head];
   return next_buffer->almost_full();

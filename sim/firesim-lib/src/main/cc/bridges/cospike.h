@@ -82,7 +82,7 @@ private:
   bool _record_trace = false;
   int _file_idx = 0;
   threadpool_t<trace_t, std::string> _trace_printers;
-  mempool_t *_trace_mempool = NULL;
+  mempool_t *_trace_mempool = nullptr;
 };
 
 #endif // __COSPIKE_H
