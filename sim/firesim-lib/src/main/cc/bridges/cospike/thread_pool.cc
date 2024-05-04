@@ -3,7 +3,7 @@
 #include <inttypes.h>
 #include <zlib.h>
 
-void print_insn_logs(trace_t trace, const std::string& oname) {
+void print_insn_logs(trace_t trace, const std::string &oname) {
   gzFile trace_file = gzopen(oname.c_str(), "wb");
   trace_cfg_t &cfg = trace.cfg;
   uint8_t *buf = trace.buf->get_data();
@@ -55,7 +55,7 @@ void print_insn_logs(trace_t trace, const std::string& oname) {
   trace.buf->clear();
 }
 
-void print_buf(buffer_t *buf, const std::string& ofname) {
+void print_buf(buffer_t *buf, const std::string &ofname) {
   FILE *fp = fopen(ofname.c_str(), "w");
   uint64_t *data = (uint64_t *)buf->get_data();
   for (size_t i = 0; i < buf->bytes() / 8; i += 16) {

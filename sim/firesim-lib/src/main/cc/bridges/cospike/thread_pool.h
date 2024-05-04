@@ -125,7 +125,7 @@ struct trace_t {
 
 template <class T, class S>
 class threadpool_t {
-  using job_t = std::function<void (T, S)>;
+  using job_t = std::function<void(T, S)>;
 
 public:
   void start(uint32_t max_concurrency) {
@@ -204,7 +204,7 @@ private:
   std::queue<S> ofnames;
 };
 
-void print_insn_logs(trace_t trace, const std::string& oname);
-void print_buf(buffer_t *buf, const std::string& ofname);
+void print_insn_logs(trace_t trace, const std::string &oname);
+void print_buf(buffer_t *buf, const std::string &ofname);
 
 #endif //__THREAD_POOL_H__
