@@ -14,6 +14,7 @@
 #include <iostream>
 #include <fstream>
 #include <string>
+#include "mem_pool.h"
 
 // Create bitmask macro
 #define BIT_MASK(__ITYPE__, __ONE_COUNT__)                                     \
@@ -206,5 +207,6 @@ private:
 };
 
 void print_insn_logs(trace_t trace, std::string ofname);
+void print_buf(buffer_t* buf, std::string ofname);
 
 #endif //__THREAD_POOL_H__

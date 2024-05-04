@@ -2,6 +2,7 @@
 #include <fstream>
 #include <inttypes.h>
 #include <zlib.h>
+#include <algorithm>
 #include "thread_pool.h"
 
 void print_insn_logs(trace_t trace, std::string oname) {
@@ -61,4 +62,17 @@ void print_insn_logs(trace_t trace, std::string oname) {
   }
 /* os.close(); */
   gzclose(trace_file);
+}
+
+void print_buf(buffer_t* buf, std::string ofname) {
+  FILE* fp = fopen(ofname.c_str(), "w");
+  uint64_t* data = (uint64_t*)buf->get_data();
+  for (size_t i = 0; i < buf->bytes()/8; i += 16) {
+    for (size_t j = 0; j < std::min(buf->bytes()/8 - i, (size_t)16); j++) {
+      fprintf(fp, "%3" PRIu64 ",", data[i + j]);
+    }
+    fprintf(fp, "\n");
+  }
+  fclose(fp);
+  buf->clear();
 }
