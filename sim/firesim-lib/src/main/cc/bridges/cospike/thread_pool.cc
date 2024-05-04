@@ -36,17 +36,19 @@ void print_insn_logs(trace_t trace, std::string oname) {
             : 0;
     uint8_t priv = cur_buf[cfg._priv_offset];
 
-    gzprintf(trace_file,
-            "%lld %llu %llx %d %d %d %d %d %lx\n",
-            cfg._hartid,
-            time,
-            iaddr,
-            valid,
-            exception,
-            interrupt,
-            (cfg._wdata_width != 0),
-            (int)cause,
-            wdata);
+    if (valid || exception || cause) {
+      gzprintf(trace_file,
+          "%lld %llu %llx %d %d %d %d %d %lx\n",
+          cfg._hartid,
+          time,
+          iaddr,
+          valid,
+          exception,
+          interrupt,
+          (cfg._wdata_width != 0),
+          (int)cause,
+          wdata);
+    }
 
 /* os << std::dec << valid << " " << */
 /* exception << " " << */

@@ -197,9 +197,7 @@ size_t cospike_t::process_tokens(int num_beats, size_t minimum_batch_beats) {
   if (bytes_received > 0) {
     std::string ofname = "COSPIKE-TRACE-" +
       std::to_string(this->_hartid) + "-" +
-      std::to_string(this->_file_idx++);
-
-    printf("bytes_received: %u\n", bytes_received);
+      std::to_string(this->_file_idx++) + ".gz";
 
     this->_trace_printers.queue_job(print_insn_logs,
         trace_t((uint8_t*)OUTBUF, bytes_received, this->_trace_cfg),
