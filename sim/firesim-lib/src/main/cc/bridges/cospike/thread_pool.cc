@@ -39,7 +39,7 @@ void print_insn_logs(trace_t trace, const std::string &oname) {
 
     if (valid || exception || cause) {
       gzprintf(trace_file,
-               "%lld %llu %llx %d %d %d %d %d %lx\n",
+               "%ld %lu %lx %d %d %d %d %d %lx\n",
                cfg._hartid,
                time,
                iaddr,
