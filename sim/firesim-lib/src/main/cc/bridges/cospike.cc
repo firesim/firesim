@@ -74,18 +74,21 @@ cospike_t::cospike_t(simif_t &sim,
       this->_trace_printers.start(num_threads);
 
       size_t max_input_bytes = stream_depth * STREAM_WIDTH_BYTES;
-      size_t buffer_bytes = num_threads * max_input_bytes; // based on perf experiments
-      this->_trace_mempool = new mempool_t(
-          num_threads, buffer_bytes, max_input_bytes);
+      size_t buffer_bytes =
+          num_threads * max_input_bytes; // based on perf experiments
+      this->_trace_mempool =
+          new mempool_t(num_threads, buffer_bytes, max_input_bytes);
 
       std::filesystem::create_directory("COSPIKE-TRACES");
 
-      FILE* config_file = fopen("COSPIKE-CONFIG", "w");
-      fprintf(config_file, "num_threads: %d uncompressed_buffer_bytes: %lu\n",
-             num_threads, buffer_bytes);
+      FILE *config_file = fopen("COSPIKE-CONFIG", "w");
+      fprintf(config_file,
+              "num_threads: %d uncompressed_buffer_bytes: %lu\n",
+              num_threads,
+              buffer_bytes);
       fclose(config_file);
 
-      FILE* bootrom_file = fopen("FIRESIM-BOOTROM", "w");
+      FILE *bootrom_file = fopen("FIRESIM-BOOTROM", "w");
       fprintf(bootrom_file, "%s\n", bootrom);
       fclose(bootrom_file);
     }
