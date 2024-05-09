@@ -1,8 +1,0 @@
-{
-	"benchmark_name": "mempress",
-	"common_simulation_outputs": [
-		"uartlog"
-	],
-	"common_bootbinary": "../../../../../generators/mempress/software/src/mempress-rocc.riscv",
-	"common_rootfs": "../../../../../software/firemarshal/boards/default/installers/firesim/dummy.rootfs"
-}
