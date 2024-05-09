@@ -35,9 +35,7 @@ $(simulator_verilog).intermediate: $(FIRRTL_FILE) $(ANNO_FILE) $(FIRESIM_MAIN_CP
 		-ggcp $(PLATFORM_CONFIG_PACKAGE) \
 		-ggcs $(PLATFORM_CONFIG) \
 		--output-filename-base $(BASE_FILE_NAME) \
-		--no-dedup \
-		-FPGACNT $(TARGET_SPLIT_FPGA_CNT) \
-		-PIDX $(TARGET_SPLIT_IDX))
+		--no-dedup)
 	grep -sh ^ $(GENERATED_DIR)/firrtl_black_box_resource_files.f | \
 		xargs cat >> $(simulator_verilog) # Append blackboxes to FPGA wrapper, if any
 

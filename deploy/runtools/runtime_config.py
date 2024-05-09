@@ -177,10 +177,6 @@ class RuntimeHWConfig:
     """ A list of URIContainer objects, one for each URI that is able to be specified """
     uri_list: list[URIContainer]
 
-
-    """ Split Stuff """
-    split_config: str
-
     # Members that are initialized here also need to be initialized in
     # RuntimeBuildRecipeConfig.__init__
     def __init__(self, name: str, hwconfig_dict: Dict[str, Any]) -> None:
@@ -202,8 +198,6 @@ class RuntimeHWConfig:
         self.local_driver_base_dir = LOCAL_DRIVERS_BASE
 
         self.uri_list = []
-
-        self.split_config = ""
 
         if self.agfi is not None:
             self.platform = "f1"
@@ -533,7 +527,7 @@ class RuntimeHWConfig:
             prefix(f'export LD_LIBRARY_PATH={os.getenv("LD_LIBRARY_PATH", "")}'), \
             prefix('source sourceme-manager.sh --skip-ssh-setup'), \
             prefix('cd sim/'):
-            driverbuildcommand = f"make PLATFORM={self.get_platform()} TARGET_PROJECT={target_project} DESIGN={design} TARGET_CONFIG={target_config} PLATFORM_CONFIG={platform_config} TARGET_SPLIT_FPGA_CNT={target_split_fpga_cnt} TARGET_SPLIT_IDX={target_split_idx} {self.get_driver_build_target()}"
+            driverbuildcommand = f"make PLATFORM={self.get_platform()} TARGET_PROJECT={target_project} DESIGN={design} TARGET_CONFIG={target_config} PLATFORM_CONFIG={platform_config} {self.get_driver_build_target()}"
             buildresult = run(driverbuildcommand)
             self.handle_failure(buildresult, 'driver build', 'firesim/sim', driverbuildcommand)
 
@@ -610,9 +604,7 @@ class RuntimeBuildRecipeConfig(RuntimeHWConfig):
 
         self.uri_list = []
 
-        self.split_config = str(build_recipe_dict.get('TARGET_SPLIT_CONFIG'))
-
-        self.deploy_quintuplet = build_recipe_dict.get('PLATFORM', 'f1') + "-" + build_recipe_dict.get('TARGET_PROJECT', 'firesim') + "-" + build_recipe_dict['DESIGN'] + "-" + build_recipe_dict['TARGET_CONFIG'] + "-" + build_recipe_dict['PLATFORM_CONFIG'] + "-" + self.split_config
+        self.deploy_quintuplet = build_recipe_dict.get('PLATFORM', 'f1') + "-" + build_recipe_dict.get('TARGET_PROJECT', 'firesim') + "-" + build_recipe_dict['DESIGN'] + "-" + build_recipe_dict['TARGET_CONFIG'] + "-" + build_recipe_dict['PLATFORM_CONFIG']
 
         self.customruntimeconfig = build_recipe_dict['metasim_customruntimeconfig']
         # note whether we've built a copy of the simulation driver for this hwconf

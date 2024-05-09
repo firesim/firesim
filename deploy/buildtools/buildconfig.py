@@ -73,9 +73,6 @@ class BuildConfig:
     PLATFORM_CONFIG: str
     post_build_hook: str
     bitbuilder: BitBuilder
-    TARGET_SPLIT_CONFIG: str
-    TARGET_SPLIT_FPGA_CNT: int
-    TARGET_SPLIT_IDX: str
 
     def __init__(self,
             name: str,
@@ -97,11 +94,6 @@ class BuildConfig:
         self.TARGET_PROJECT = recipe_config_dict.get('TARGET_PROJECT', 'firesim')
         self.DESIGN = recipe_config_dict['DESIGN']
         self.TARGET_CONFIG = recipe_config_dict['TARGET_CONFIG']
-
-        self.TARGET_SPLIT_CONFIG = recipe_config_dict['TARGET_SPLIT_CONFIG']
-        split_configs = self.TARGET_SPLIT_CONFIG.split("-")
-        self.TARGET_SPLIT_FPGA_CNT = int(split_configs[0])
-        self.TARGET_SPLIT_IDX = split_configs[1]
 
         if 'deploy_triplet' in recipe_config_dict.keys() and 'deploy_quintuplet' in recipe_config_dict.keys():
             rootLogger.error("Cannot have both 'deploy_quintuplet' and 'deploy_triplet' in build config. Define only 'deploy_quintuplet'.")
@@ -158,7 +150,7 @@ class BuildConfig:
         Returns:
             Chisel triplet
         """
-        return f"{self.DESIGN}-{self.TARGET_CONFIG}-{self.PLATFORM_CONFIG}-{self.TARGET_SPLIT_CONFIG}"
+        return f"{self.DESIGN}-{self.TARGET_CONFIG}-{self.PLATFORM_CONFIG}"
 
     def get_effective_deploy_triplet(self) -> str:
         """Get the effective deploy triplet, i.e. the triplet version of
@@ -175,7 +167,7 @@ class BuildConfig:
         Returns:
             Chisel quintuplet
         """
-        return f"{self.PLATFORM}-{self.TARGET_PROJECT}-{self.DESIGN}-{self.TARGET_CONFIG}-{self.PLATFORM_CONFIG}-{self.TARGET_SPLIT_CONFIG}"
+        return f"{self.PLATFORM}-{self.TARGET_PROJECT}-{self.DESIGN}-{self.TARGET_CONFIG}-{self.PLATFORM_CONFIG}"
 
     def get_effective_deploy_quintuplet(self) -> str:
         """Get the effective deploy quintuplet, i.e. the value specified in
@@ -221,7 +213,7 @@ class BuildConfig:
         Returns:
             Fully specified make command.
         """
-        return f"""make PLATFORM={self.PLATFORM} TARGET_PROJECT={self.TARGET_PROJECT} DESIGN={self.DESIGN} TARGET_CONFIG={self.TARGET_CONFIG} PLATFORM_CONFIG={self.PLATFORM_CONFIG} TARGET_SPLIT_FPGA_CNT={self.TARGET_SPLIT_FPGA_CNT} TARGET_SPLIT_IDX={self.TARGET_SPLIT_IDX} {recipe}"""
+        return f"""make PLATFORM={self.PLATFORM} TARGET_PROJECT={self.TARGET_PROJECT} DESIGN={self.DESIGN} TARGET_CONFIG={self.TARGET_CONFIG} PLATFORM_CONFIG={self.PLATFORM_CONFIG} {recipe}"""
 
     def __repr__(self) -> str:
         return f"< {type(self)}(name={self.name!r}, build_config_file={self.build_config_file!r}) @{id(self)} >"

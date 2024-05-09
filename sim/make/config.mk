@@ -26,10 +26,6 @@ DRIVER_H ?=
 TARGET_CXX_FLAGS ?=
 TARGET_LD_FLAGS ?=
 
-TARGET_SPLIT_FPGA_CNT ?= 1
-TARGET_SPLIT_IDX ?= 0
-TARGET_SPLIT_CONFIG=$(TARGET_SPLIT_FPGA_CNT)-$(TARGET_SPLIT_IDX)
-
 ################################################################################
 # File and directory setup
 ################################################################################
@@ -37,8 +33,8 @@ TARGET_SPLIT_CONFIG=$(TARGET_SPLIT_FPGA_CNT)-$(TARGET_SPLIT_IDX)
 # The prefix used for all Golden Gate-generated files
 BASE_FILE_NAME := FireSim-generated
 
-name_quintuplet := $(PLATFORM)-$(TARGET_PROJECT)-$(DESIGN)-$(TARGET_CONFIG)-$(PLATFORM_CONFIG)-$(TARGET_SPLIT_CONFIG)
-long_name := $(DESIGN_PACKAGE).$(DESIGN).$(TARGET_CONFIG).$(TARGET_SPLIT_CONFIG)
+name_quintuplet := $(PLATFORM)-$(TARGET_PROJECT)-$(DESIGN)-$(TARGET_CONFIG)-$(PLATFORM_CONFIG)
+long_name := $(DESIGN_PACKAGE).$(DESIGN).$(TARGET_CONFIG)
 
 # The directory into which generated verilog and headers will be dumped
 # RTL simulations will also be built here
