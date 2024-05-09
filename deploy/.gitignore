@@ -9,5 +9,3 @@ generated-topology-diagrams/
 logs/*.log
 built-hwdb-entries/
 /firesim.py
-mailtrap.yaml
-github-bitstream-repo.yaml

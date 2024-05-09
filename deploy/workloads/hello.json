@@ -1,8 +1,0 @@
-{
-	"benchmark_name": "hello",
-	"common_simulation_outputs": [
-		"uartlog"
-	],
-	"common_bootbinary": "hello.riscv",
-	"common_rootfs": "../../../sw/firesim-software/boards/default/installers/firesim/dummy.rootfs"
-}

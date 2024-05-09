@@ -1,8 +1,0 @@
-{
-	"benchmark_name": "gemmini-padded-baremetal",
-	"common_simulation_outputs": [
-		"uartlog"
-	],
-	"common_bootbinary": "padded-baremetal",
-	"common_rootfs": "../../../../../software/firemarshal/boards/default/installers/firesim/dummy.rootfs"
-}

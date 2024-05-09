@@ -1,8 +1,0 @@
-{
-	"benchmark_name": "mt-hello-8",
-	"common_simulation_outputs": [
-		"uartlog"
-	],
-	"common_bootbinary": "mt-hello-8.riscv",
-	"common_rootfs": "../../../sw/firesim-software/boards/default/installers/firesim/dummy.rootfs"
-}

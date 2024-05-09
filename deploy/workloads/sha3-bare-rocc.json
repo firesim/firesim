@@ -1,8 +1,0 @@
-{
-	"benchmark_name": "sha3-bare-rocc",
-	"common_simulation_outputs": [
-		"uartlog"
-	],
-	"common_bootbinary": "sha3-rocc.riscv",
-	"common_rootfs": "../../../sw/firesim-software/boards/default/installers/firesim/dummy.rootfs"
-}
