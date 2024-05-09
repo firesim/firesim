@@ -134,7 +134,7 @@ def managerinit(args: argparse.Namespace):
     rootLogger.info("Creating initial config files from examples.")
     with hide('everything'):
         for conf_file in config_files:
-            m = local("""cp sample-backup-configs/fireaxe_local_config_{}.yaml config_{}.yaml""".format(conf_file, conf_file), capture=True)
+            m = local("""cp sample-backup-configs/sample_config_{}.yaml config_{}.yaml""".format(conf_file, conf_file), capture=True)
             rootLogger.debug(m)
             rootLogger.debug(m.stderr)
 
