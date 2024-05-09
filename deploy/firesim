@@ -10,7 +10,6 @@ from time import strftime, gmtime
 import logging
 import random
 import argcomplete # type: ignore
-import yaml
 
 from datetime import date
 import warnings
@@ -232,7 +231,6 @@ def managerinit(args: argparse.Namespace):
             "managerinit replace start",
             "managerinit replace end",
             bf_recipe_lines)
-
     else:
         rootLogger.info(f"Unknown platform {args.platform}. Skipping default config overrides.")
 
