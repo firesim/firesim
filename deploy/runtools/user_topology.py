@@ -746,120 +746,12 @@ class UserTopologies:
             if isinstance(pipe, FireSimPipeNode):
                 pipe.add_downlink_partition(server_edge)
 
-    def fireaxe_split_dual_rocket_tile_from_soc_config(self) -> None:
-        edges = [
-            ["firesim_dual_rocket_split_soc", "firesim_dual_rocket_split_tile_0"],
-            ["firesim_dual_rocket_split_soc", "firesim_dual_rocket_split_tile_1"]
-        ]
-
-        hwdb_entries = {
-            "firesim_dual_rocket_split_soc"    : True,
-            "firesim_dual_rocket_split_tile_0" : False,
-            "firesim_dual_rocket_split_tile_1" : False
-          }
-        self.fireaxe_split_topology_base_config(edges, hwdb_entries)
-
-    def firesim_split_quad_rocket_tiles_from_soc_3fpga_config(self) -> None:
-        edges = [
-            ["firesim_quad_rocket_3fpga_split_soc", "firesim_quad_rocket_3fpga_split_tiles_0"],
-            ["firesim_quad_rocket_3fpga_split_soc", "firesim_quad_rocket_3fpga_split_tiles_1"]
-        ]
-
-        hwdb_entries = {
-            "firesim_quad_rocket_3fpga_split_soc"     : True,
-            "firesim_quad_rocket_3fpga_split_tiles_0" : False,
-            "firesim_quad_rocket_3fpga_split_tiles_1" : False
-          }
-        self.fireaxe_split_topology_base_config(edges, hwdb_entries)
-
-    def fireaxe_split_dual_boom_tile_from_soc_config(self) -> None:
-        edges = [
-            ["firesim_dual_boom_split_soc", "firesim_dual_boom_split_tile_0"],
-            ["firesim_dual_boom_split_soc", "firesim_dual_boom_split_tile_1"]
-        ]
-
-        hwdb_entries = {
-            "firesim_dual_boom_split_soc"    : True,
-            "firesim_dual_boom_split_tile_0" : False,
-            "firesim_dual_boom_split_tile_1" : False
-          }
-        self.fireaxe_split_topology_base_config(edges, hwdb_entries)
-
     def fireaxe_xilinx_u250_split_rocket_tile_from_soc_config(self) -> None:
         hwdb_entries = {
             "xilinx_u250_firesim_rocket_split_soc"  : True,
             "xilinx_u250_firesim_rocket_split_tile" : False
         }
         self.fireaxe_two_node_base_config(hwdb_entries)
-
-    def fireaxe_split_fame5_dual_rocket_tile_from_soc_config(self) -> None:
-        hwdb_entries = {
-            "firesim_dual_rocket_split_fame5_soc"  : True,
-            "firesim_dual_rocket_split_fame5_tile" : False
-        }
-        self.fireaxe_two_node_base_config(hwdb_entries)
-
-    def fireaxe_split_fame5_mempress_from_soc_config(self) -> None:
-        hwdb_entries = {
-            "firesim_dual_mempress_rocket_split_fame5_soc"   : True,
-            "firesim_dual_mempress_rocket_split_fame5_accel" : False
-        }
-        self.fireaxe_two_node_base_config(hwdb_entries)
-
-    def fireaxe_split_fame5_quad_rocket_tile_from_soc_config(self) -> None:
-        hwdb_entries = {
-            "firesim_quad_rocket_split_fame5_soc"  : True,
-            "firesim_quad_rocket_split_fame5_tile" : False
-        }
-        self.fireaxe_two_node_base_config(hwdb_entries)
-
-    def fireaxe_split_fame5_octa_rocket_tile_from_soc_config(self) -> None:
-        hwdb_entries = {
-            "firesim_octa_rocket_split_fame5_soc"  : True,
-            "firesim_octa_rocket_split_fame5_tile" : False
-        }
-        self.fireaxe_two_node_base_config(hwdb_entries)
-
-    def fireaxe_split_fame5_octa_boom_tile_from_soc_config(self) -> None:
-        hwdb_entries = {
-            "firesim_octa_boom_split_fame5_soc"  : True,
-            "firesim_octa_boom_split_fame5_tile" : False
-        }
-        self.fireaxe_two_node_base_config(hwdb_entries)
-
-    def fireaxe_split_fame5_hexadeca_boom_tile_from_soc_config(self) -> None:
-        hwdb_entries = {
-            "firesim_hexadeca_boom_split_fame5_soc"  : True,
-            "firesim_hexadeca_boom_split_fame5_tile" : False
-        }
-        self.fireaxe_two_node_base_config(hwdb_entries)
-
-    def fireaxe_split_fame5_deca_small_boom_tiles_from_soc_config(self) -> None:
-        hwdb_entries = {
-            "firesim_deca_small_boom_split_fame5_tile"  : True,
-            "firesim_deca_small_boom_split_fame5_soc" : False
-        }
-        self.fireaxe_two_node_base_config(hwdb_entries)
-
-    def fireaxe_split_zstd_decomp_32spec_from_soc_config(self) -> None:
-        hwdb_entries = {
-            "firesim_zstd_decomp_32spec_split_soc"   : True,
-            "firesim_zstd_decomp_32spec_split_accel" : False
-        }
-        self.fireaxe_two_node_base_config(hwdb_entries)
-
-    def fireaxe_split_zstd_accels_from_soc_config(self) -> None:
-        edges = [
-            ["firesim_hyperscale_rocket_accels_split_soc", "firesim_hyperscale_rocket_accels_split_zstdcomp"],
-            ["firesim_hyperscale_rocket_accels_split_soc", "firesim_hyperscale_rocket_accels_split_zstddecomp"]
-        ]
-
-        hwdb_entries = {
-            "firesim_hyperscale_rocket_accels_split_soc"    : True,
-            "firesim_hyperscale_rocket_accels_split_zstdcomp" : False,
-            "firesim_hyperscale_rocket_accels_split_zstddecomp" : False
-          }
-        self.fireaxe_split_topology_base_config(edges, hwdb_entries)
 
     def fireaxe_split_rocket_tile_from_soc_two_node_network_config(self) -> None:
         self.roots = []
@@ -894,34 +786,6 @@ class UserTopologies:
           }
         self.fireaxe_split_topology_base_config(edges, hwdb_entries)
 
-    def fireaxe_xilinx_u250_sbus_ring_noc_quadrocket_tiles_from_soc_config(self) -> None:
-        edges = [
-            ["xilinx_u250_firesim_quadrocket_sbus_ring_noc_split_2", "xilinx_u250_firesim_quadrocket_sbus_ring_noc_split_0"],
-            ["xilinx_u250_firesim_quadrocket_sbus_ring_noc_split_2", "xilinx_u250_firesim_quadrocket_sbus_ring_noc_split_1"]
-        ]
-
-        hwdb_entries = {
-            "xilinx_u250_firesim_quadrocket_sbus_ring_noc_split_2"    : True,
-            "xilinx_u250_firesim_quadrocket_sbus_ring_noc_split_0"    : False,
-            "xilinx_u250_firesim_quadrocket_sbus_ring_noc_split_1"    : False,
-          }
-        self.fireaxe_split_topology_base_config(edges, hwdb_entries)
-
-    def fireaxe_split_hyperscale_accels_from_soc_config(self) -> None:
-        edges = [
-            ["xilinx_u250_firesim_hyperscale_rocket_accels_nic_split_soc", "xilinx_u250_firesim_hyperscale_rocket_accels_nic_split_zstdcomp"],
-            ["xilinx_u250_firesim_hyperscale_rocket_accels_nic_split_soc", "xilinx_u250_firesim_hyperscale_rocket_accels_nic_split_zstddecomp"]
-        ]
-
-        hwdb_entries = {
-            "xilinx_u250_firesim_hyperscale_rocket_accels_nic_split_soc"        : True,
-            "xilinx_u250_firesim_hyperscale_rocket_accels_nic_split_zstdcomp"   : False,
-            "xilinx_u250_firesim_hyperscale_rocket_accels_nic_split_zstddecomp" : False
-          }
-        self.fireaxe_split_topology_base_config(edges, hwdb_entries)
-
-
-
     def fireaxe_xilinx_u250_sbus_mesh_noc_eight_rocket_config(self) -> None:
         edges = [
             ["xilinx_u250_eight_rocket_mesh_2", "xilinx_u250_eight_rocket_mesh_0"],
@@ -939,41 +803,6 @@ class UserTopologies:
         hwdb_entries = {
             "xilinx_u250_firesim_rocket_soc_preserve"  : True,
             "xilinx_u250_firesim_rocket_tile_preserve" : False
-        }
-        self.fireaxe_two_node_base_config(hwdb_entries)
-
-    def fireaxe_xilinx_u250_split_sha3_from_soc_preserve_config(self) -> None:
-        hwdb_entries = {
-            "xilinx_u250_firesim_sha3_rocket_soc_preserve"  : True,
-            "xilinx_u250_firesim_sha3_rocket_accel_preserve" : False
-        }
-        self.fireaxe_two_node_base_config(hwdb_entries)
-
-    def fireaxe_xilinx_u250_split_gemmini_from_soc_preserve_config(self) -> None:
-        hwdb_entries = {
-            "xilinx_u250_firesim_gemmini_rocket_soc_preserve"  : True,
-            "xilinx_u250_firesim_gemmini_rocket_accel_preserve" : False
-        }
-        self.fireaxe_two_node_base_config(hwdb_entries)
-
-    def fireaxe_xilinx_u250_split_small_boom_config(self) -> None:
-        hwdb_entries = {
-            "xilinx_u250_firesim_small_boom_soc"     : True,
-            "xilinx_u250_firesim_small_boom_backend" : False
-        }
-        self.fireaxe_two_node_base_config(hwdb_entries)
-
-    def fireaxe_xilinx_u250_split_giga_boom_config(self) -> None:
-        hwdb_entries = {
-            "xilinx_u250_firesim_giga_boom_soc"     : True,
-            "xilinx_u250_firesim_giga_boom_backend" : False
-        }
-        self.fireaxe_two_node_base_config(hwdb_entries)
-
-    def fireaxe_xilinx_u250_golden_cove_40_config(self) -> None:
-        hwdb_entries = {
-            "xilinx_u250_firesim_40_golden_cove_boom_soc"     : True,
-            "xilinx_u250_firesim_40_golden_cove_boom_backend" : False
         }
         self.fireaxe_two_node_base_config(hwdb_entries)
 
