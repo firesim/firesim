@@ -178,9 +178,7 @@ class GenerateFireSimWrapper
       groupIdxToPorts(gidx).add(pn)
     }
 
-    val curGroupIdx = annos.collectFirst(_ match {
-      case PartitionIndexAnnotation(idx) => idx
-    }).getOrElse(0)
+    val curGroupIdx = p(FireAxePartitionIndex).getOrElse(0)
     val rhsGroupIdx = (curGroupIdx + 1) % nGroups
     val lhsGroupIdx = (curGroupIdx + nGroups - 1) % nGroups
 
@@ -541,9 +539,7 @@ class GenerateFireSimWrapper
 
   def execute(state: CircuitState): CircuitState = {
     val p = getConfigParams(state.annotations)
-    val partIdx = state.annotations.collectFirst(_ match {
-      case PartitionIndexAnnotation(idx) => idx
-    }).getOrElse(0)
+    val partIdx = p(FireAxePartitionIndex).getOrElse(0)
 
     // When performing the extract pass for a NoC, we only have one group
     val extractModuleGroupIdx = if (p(FireAxeNoCPartitionPass)) 0 else partIdx

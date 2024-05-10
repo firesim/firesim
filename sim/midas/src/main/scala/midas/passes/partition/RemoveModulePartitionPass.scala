@@ -43,25 +43,18 @@ class GenerateCutBridgeInGroupedWrapper
   ) (
     m: Module
   ): Module = {
-    val curGroupIdx = annos.collectFirst(_ match {
-      case PartitionIndexAnnotation(idx) => idx
-    }).getOrElse(0)
-
+    val p = getConfigParams(annos)
+    val curGroupIdx = p(FireAxePartitionIndex).getOrElse(0)
     val portNameToGroupIdxMap = annos.flatMap (anno => anno match {
       case FirrtlPortToNeighborRouterIdxAnno(rt, extractIdx, removeIdx) =>
         println(s"portmap ${rt.ref} ${extractIdx} ${removeIdx}")
         Some(rt.ref -> removeIdx)
       case _ => None
     }).toMap
+
     val ports = m.ports
     ports.foreach(port => println(s"removeModule port ${port.name}"))
 
-// println(s"portNameToGroupIdxMap")
-// println(s"${portNameToGroupIdxMap}")
-
-    val p = annos.collectFirst({
-      case midas.stage.phases.ConfigParametersAnnotation(p)  => p
-    }).get
     val nGroups = p(FireAxePartitionGlobalInfo).size
     val groupIdxToPorts = mutable.Map[Int, mutable.Set[String]]()
     portNameToGroupIdxMap.foreach { case (pn, gidx) =>

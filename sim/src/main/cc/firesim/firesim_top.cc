@@ -69,7 +69,6 @@ int firesim_top_t::simulation_run() {
     run_scheduled_tasks();
     peek_poke.step(get_largest_stepsize(), false);
     while (!peek_poke.is_done() && !terminated) {
-      //simif.sync_sockets();
       for (auto *bridge : registry.get_all_bridges()) {
         bridge->tick();
         if (bridge->terminate()) {
