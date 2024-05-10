@@ -171,7 +171,6 @@ trait GroupAndInsertWrapperPass {
             if (mn(mname)) Some(idx) else None
           }.collectFirst(_ match {
             case Some(x) => x
-            case None => 0
           }).getOrElse(0)
 
           insts(gidx).append(s)

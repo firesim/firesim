@@ -444,6 +444,18 @@ class UserTopologies:
         }
         self.fireaxe_two_node_base_config(hwdb_entries, 1)
 
+    def fireaxe_u250_dualrocket_config(self) -> None:
+        edges = [
+            ["xilinx_u250_firesim_dual_rocket_split_base", "xilinx_u250_firesim_dual_rocket_split_0"],
+            ["xilinx_u250_firesim_dual_rocket_split_base", "xilinx_u250_firesim_dual_rocket_split_1"]
+        ]
+        hwdb_entries = {
+            "xilinx_u250_firesim_dual_rocket_split_0" : 0,
+            "xilinx_u250_firesim_dual_rocket_split_1" : 1,
+            "xilinx_u250_firesim_dual_rocket_split_base"  : 2
+        }
+        self.fireaxe_split_topology_base_config(edges, hwdb_entries, 1)
+
     def fireaxe_split_rocket_tile_from_soc_two_node_network_config(self) -> None:
         self.roots = []
         hwdb_entries = {
@@ -468,8 +480,8 @@ class UserTopologies:
 
     def fireaxe_split_sbus_ring_noc_quadrocket_tiles_from_soc_config(self) -> None:
         edges = [
-            ["xilinx_u250_firesim_quadrocket_sbus_ring_noc_split_40MHz_2", "xilinx_u250_firesim_quadrocket_sbus_ring_noc_split_40MHz_0"],
-            ["xilinx_u250_firesim_quadrocket_sbus_ring_noc_split_40MHz_2", "xilinx_u250_firesim_quadrocket_sbus_ring_noc_split_40MHz_1"]
+            ["xilinx_u250_firesim_quadrocket_sbus_ring_noc_base", "xilinx_u250_firesim_quadrocket_sbus_ring_noc_split_40MHz_0"],
+            ["xilinx_u250_firesim_quadrocket_sbus_ring_noc_base", "xilinx_u250_firesim_quadrocket_sbus_ring_noc_split_40MHz_1"]
         ]
 
         hwdb_entries = {

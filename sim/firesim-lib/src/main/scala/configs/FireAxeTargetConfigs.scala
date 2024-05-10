@@ -42,12 +42,6 @@ class OctaTileMeshNoCTopoQSFPXilinxAlveoConfig extends Config(
   )) ++
   new BaseXilinxAlveoU250Config)
 
-class DualRocketTileQSFPXilinxAlveoConfig extends Config(
-  new WithFireAxeQSFPConfig(Seq(
-    (0 until 2).map(i => s"RocketTile_${i}")
-  )) ++
-  new BaseXilinxAlveoU250Config)
-
 class Sha3QSFPXilinxAlveoConfig extends Config(
   new WithFireAxeQSFPConfig(Seq(
     Seq("Sha3Accel")
@@ -67,3 +61,22 @@ class RocketTileQSFPBase extends Config(
 class RocketTileQSFPPartition0 extends Config(
   new WithPartitionIndex(0) ++
   new RocketTileQSFPXilinxAlveoConfig)
+
+class DualRocketTileQSFPXilinxAlveoConfig extends Config(
+  new WithFireAxeQSFPConfig(Seq(
+    Seq("RocketTile"),
+    Seq("RocketTile_1"),
+  )) ++
+  new BaseXilinxAlveoU250Config)
+
+class DualRocketTileQSFPBase extends Config(
+  new WithPartitionBase ++
+  new DualRocketTileQSFPXilinxAlveoConfig)
+
+class DualRocketTileQSFP0 extends Config(
+  new WithPartitionIndex(0) ++
+  new DualRocketTileQSFPXilinxAlveoConfig)
+
+class DualRocketTileQSFP1 extends Config(
+  new WithPartitionIndex(1) ++
+  new DualRocketTileQSFPXilinxAlveoConfig)

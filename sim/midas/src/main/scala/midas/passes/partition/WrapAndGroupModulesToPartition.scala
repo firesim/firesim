@@ -63,8 +63,6 @@ class WrapAndGroupModulesToPartition
     val dedupedState = deduplicateInstancesOnFAME5(groupedState)
 
     val (groups, groupWrappers) = getGroups(dedupedState)
-    print(s"- groups: ${groups}")
-    print(s"- groupsWrappers: ${groupWrappers}")
     val groupWrappedState = groups.zip(groupWrappers).foldLeft(dedupedState) {
       (s, gw) => wrapModule(s, gw._1, gw._2)
     }
