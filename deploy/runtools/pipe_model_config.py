@@ -69,7 +69,6 @@ class AbstractPipeToPipeConfig:
     # FIXME: get_local_driver_dir returns ../output in f1 while it returns ../sim/generated-src in local metasims
     # Just set it to user ../sim/generated-src for now
     def partition_config_file(self, hwconfig: RuntimeHWConfig) -> str:
-# runtime_conf_path = hwconfig.get_local_driver_dir()
         runtime_conf_path = os.path.join("../sim/generated-src", hwconfig.get_platform(), hwconfig.get_deployquintuplet_for_config())
         rootLogger.info(f"runtime_conf_path {runtime_conf_path}")
         return os.path.join(runtime_conf_path, GENERATED_PARTITION_PARAMS_FILE)

@@ -6,8 +6,9 @@ from __future__ import annotations
 import logging
 
 from runtools.firesim_topology_elements import FireSimPipeNode, FireSimSwitchNode, FireSimServerNode, FireSimSuperNodeServerNode, FireSimDummyServerNode, FireSimNode
+from runtools.simulation_data_classes import PartitionConfig
 
-from typing import Optional, Union, Callable, Sequence, TYPE_CHECKING, cast, List, Any
+from typing import Optional, Union, Callable, Sequence, TYPE_CHECKING, cast, List, Any, Dict
 if TYPE_CHECKING:
     from runtools.firesim_topology_with_passes import FireSimTopologyWithPasses
 
@@ -407,335 +408,25 @@ class UserTopologies:
         assert len(hwdb_entries) == self.no_net_num_nodes
         self.roots = [FireSimServerNode(hwdb_entries[x]) for x in range(self.no_net_num_nodes)]
 
-    def fireaxe_two_node_base_config(self, hwdb_entries) -> None:
+########################################################################
+
+    def fireaxe_two_node_base_config(self, hwdb_entries: Dict[str, int], batch: int) -> None:
       assert len(hwdb_entries) == 2
       self.roots = [FireSimPipeNode()]
       server_edge = []
       if isinstance(self.roots[0], FireSimPipeNode):
-          for (hwdb, base) in hwdb_entries.items():
-              server_edge.append(FireSimServerNode(hwdb, partitioned=True, base_partition=base))
+          for (hwdb, pid) in hwdb_entries.items():
+              base = (pid == len(hwdb_entries) - 1)
+              partition_config = PartitionConfig(True, batch, base, pid, len(hwdb_entries))
+              server_edge.append(FireSimServerNode(hwdb, partition_config=partition_config))
           self.roots[0].add_downlink_partition(server_edge)
 
-    #######################################################################
-    # QSFP / Fast mode / 90 MHz
-    #######################################################################
-    def qsfp_fastmode_one_small_rocket_90MHz_config(self) -> None:
-        hwdb_entries = {
-            "qsfp_fastmode_one_small_rocket_soc_90MHz"  : True,
-            "qsfp_fastmode_one_small_rocket_tile_90MHz" : False
-        }
-        self.fireaxe_two_node_base_config(hwdb_entries)
-
-    def qsfp_fastmode_two_small_rocket_90MHz_config(self) -> None:
-        hwdb_entries = {
-            "qsfp_fastmode_two_small_rocket_soc_90MHz"  : True,
-            "qsfp_fastmode_two_small_rocket_tile_90MHz" : False
-        }
-        self.fireaxe_two_node_base_config(hwdb_entries)
-
-    def qsfp_fastmode_three_small_rocket_90MHz_config(self) -> None:
-        hwdb_entries = {
-            "qsfp_fastmode_three_small_rocket_soc_90MHz"  : True,
-            "qsfp_fastmode_three_small_rocket_tile_90MHz" : False
-        }
-        self.fireaxe_two_node_base_config(hwdb_entries)
-
-    def qsfp_fastmode_four_small_rocket_90MHz_config(self) -> None:
-        hwdb_entries = {
-            "qsfp_fastmode_four_small_rocket_soc_90MHz"  : True,
-            "qsfp_fastmode_four_small_rocket_tile_90MHz" : False
-        }
-        self.fireaxe_two_node_base_config(hwdb_entries)
-
-    def qsfp_fastmode_five_small_rocket_90MHz_config(self) -> None:
-        hwdb_entries = {
-            "qsfp_fastmode_five_small_rocket_soc_90MHz"  : True,
-            "qsfp_fastmode_five_small_rocket_tile_90MHz" : False
-        }
-        self.fireaxe_two_node_base_config(hwdb_entries)
-
-    def qsfp_fastmode_six_small_rocket_90MHz_config(self) -> None:
-        hwdb_entries = {
-            "qsfp_fastmode_six_small_rocket_soc_90MHz"  : True,
-            "qsfp_fastmode_six_small_rocket_tile_90MHz" : False
-        }
-        self.fireaxe_two_node_base_config(hwdb_entries)
-
-    #######################################################################
-    # QSFP / Fast mode / 50 MHz
-    #######################################################################
-    def qsfp_fastmode_one_small_rocket_50MHz_config(self) -> None:
-        hwdb_entries = {
-            "qsfp_fastmode_one_small_rocket_soc_50MHz"  : True,
-            "qsfp_fastmode_one_small_rocket_tile_50MHz" : False
-        }
-        self.fireaxe_two_node_base_config(hwdb_entries)
-
-    def qsfp_fastmode_two_small_rocket_50MHz_config(self) -> None:
-        hwdb_entries = {
-            "qsfp_fastmode_two_small_rocket_soc_50MHz"  : True,
-            "qsfp_fastmode_two_small_rocket_tile_50MHz" : False
-        }
-        self.fireaxe_two_node_base_config(hwdb_entries)
-
-    def qsfp_fastmode_three_small_rocket_50MHz_config(self) -> None:
-        hwdb_entries = {
-            "qsfp_fastmode_three_small_rocket_soc_50MHz"  : True,
-            "qsfp_fastmode_three_small_rocket_tile_50MHz" : False
-        }
-        self.fireaxe_two_node_base_config(hwdb_entries)
-
-    def qsfp_fastmode_four_small_rocket_50MHz_config(self) -> None:
-        hwdb_entries = {
-            "qsfp_fastmode_four_small_rocket_soc_50MHz"  : True,
-            "qsfp_fastmode_four_small_rocket_tile_50MHz" : False
-        }
-        self.fireaxe_two_node_base_config(hwdb_entries)
-
-    def qsfp_fastmode_five_small_rocket_50MHz_config(self) -> None:
-        hwdb_entries = {
-            "qsfp_fastmode_five_small_rocket_soc_50MHz"  : True,
-            "qsfp_fastmode_five_small_rocket_tile_50MHz" : False
-        }
-        self.fireaxe_two_node_base_config(hwdb_entries)
-
-    def qsfp_fastmode_six_small_rocket_50MHz_config(self) -> None:
-        hwdb_entries = {
-            "qsfp_fastmode_six_small_rocket_soc_50MHz"  : True,
-            "qsfp_fastmode_six_small_rocket_tile_50MHz" : False
-        }
-        self.fireaxe_two_node_base_config(hwdb_entries)
-
-    #######################################################################
-    # QSFP / Fast mode / 10 MHz
-    #######################################################################
-    def qsfp_fastmode_one_small_rocket_10MHz_config(self) -> None:
-        hwdb_entries = {
-            "qsfp_fastmode_one_small_rocket_soc_10MHz"  : True,
-            "qsfp_fastmode_one_small_rocket_tile_10MHz" : False
-        }
-        self.fireaxe_two_node_base_config(hwdb_entries)
-
-    def qsfp_fastmode_two_small_rocket_10MHz_config(self) -> None:
-        hwdb_entries = {
-            "qsfp_fastmode_two_small_rocket_soc_10MHz"  : True,
-            "qsfp_fastmode_two_small_rocket_tile_10MHz" : False
-        }
-        self.fireaxe_two_node_base_config(hwdb_entries)
-
-    def qsfp_fastmode_three_small_rocket_10MHz_config(self) -> None:
-        hwdb_entries = {
-            "qsfp_fastmode_three_small_rocket_soc_10MHz"  : True,
-            "qsfp_fastmode_three_small_rocket_tile_10MHz" : False
-        }
-        self.fireaxe_two_node_base_config(hwdb_entries)
-
-    def qsfp_fastmode_four_small_rocket_10MHz_config(self) -> None:
-        hwdb_entries = {
-            "qsfp_fastmode_four_small_rocket_soc_10MHz"  : True,
-            "qsfp_fastmode_four_small_rocket_tile_10MHz" : False
-        }
-        self.fireaxe_two_node_base_config(hwdb_entries)
-
-    def qsfp_fastmode_five_small_rocket_10MHz_config(self) -> None:
-        hwdb_entries = {
-            "qsfp_fastmode_five_small_rocket_soc_10MHz"  : True,
-            "qsfp_fastmode_five_small_rocket_tile_10MHz" : False
-        }
-        self.fireaxe_two_node_base_config(hwdb_entries)
-
-    def qsfp_fastmode_six_small_rocket_10MHz_config(self) -> None:
-        hwdb_entries = {
-            "qsfp_fastmode_six_small_rocket_soc_10MHz"  : True,
-            "qsfp_fastmode_six_small_rocket_tile_10MHz" : False
-        }
-        self.fireaxe_two_node_base_config(hwdb_entries)
-
-    #######################################################################
-    # QSFP / Fast mode / 90 MHz
-    #######################################################################
-    def qsfp_exactmode_one_small_rocket_90MHz_config(self) -> None:
-        hwdb_entries = {
-            "qsfp_exactmode_one_small_rocket_soc_90MHz"  : True,
-            "qsfp_exactmode_one_small_rocket_tile_90MHz" : False
-        }
-        self.fireaxe_two_node_base_config(hwdb_entries)
-
-    def qsfp_exactmode_two_small_rocket_90MHz_config(self) -> None:
-        hwdb_entries = {
-            "qsfp_exactmode_two_small_rocket_soc_90MHz"  : True,
-            "qsfp_exactmode_two_small_rocket_tile_90MHz" : False
-        }
-        self.fireaxe_two_node_base_config(hwdb_entries)
-
-    def qsfp_exactmode_three_small_rocket_90MHz_config(self) -> None:
-        hwdb_entries = {
-            "qsfp_exactmode_three_small_rocket_soc_90MHz"  : True,
-            "qsfp_exactmode_three_small_rocket_tile_90MHz" : False
-        }
-        self.fireaxe_two_node_base_config(hwdb_entries)
-
-    def qsfp_exactmode_four_small_rocket_90MHz_config(self) -> None:
-        hwdb_entries = {
-            "qsfp_exactmode_four_small_rocket_soc_90MHz"  : True,
-            "qsfp_exactmode_four_small_rocket_tile_90MHz" : False
-        }
-        self.fireaxe_two_node_base_config(hwdb_entries)
-
-    def qsfp_exactmode_five_small_rocket_90MHz_config(self) -> None:
-        hwdb_entries = {
-            "qsfp_exactmode_five_small_rocket_soc_90MHz"  : True,
-            "qsfp_exactmode_five_small_rocket_tile_90MHz" : False
-        }
-        self.fireaxe_two_node_base_config(hwdb_entries)
-
-    def qsfp_exactmode_six_small_rocket_90MHz_config(self) -> None:
-        hwdb_entries = {
-            "qsfp_exactmode_six_small_rocket_soc_90MHz"  : True,
-            "qsfp_exactmode_six_small_rocket_tile_90MHz" : False
-        }
-        self.fireaxe_two_node_base_config(hwdb_entries)
-
-    #######################################################################
-    # QSFP / Fast mode / 50 MHz
-    #######################################################################
-    def qsfp_exactmode_one_small_rocket_50MHz_config(self) -> None:
-        hwdb_entries = {
-            "qsfp_exactmode_one_small_rocket_soc_50MHz"  : True,
-            "qsfp_exactmode_one_small_rocket_tile_50MHz" : False
-        }
-        self.fireaxe_two_node_base_config(hwdb_entries)
-
-    def qsfp_exactmode_two_small_rocket_50MHz_config(self) -> None:
-        hwdb_entries = {
-            "qsfp_exactmode_two_small_rocket_soc_50MHz"  : True,
-            "qsfp_exactmode_two_small_rocket_tile_50MHz" : False
-        }
-        self.fireaxe_two_node_base_config(hwdb_entries)
-
-    def qsfp_exactmode_three_small_rocket_50MHz_config(self) -> None:
-        hwdb_entries = {
-            "qsfp_exactmode_three_small_rocket_soc_50MHz"  : True,
-            "qsfp_exactmode_three_small_rocket_tile_50MHz" : False
-        }
-        self.fireaxe_two_node_base_config(hwdb_entries)
-
-    def qsfp_exactmode_four_small_rocket_50MHz_config(self) -> None:
-        hwdb_entries = {
-            "qsfp_exactmode_four_small_rocket_soc_50MHz"  : True,
-            "qsfp_exactmode_four_small_rocket_tile_50MHz" : False
-        }
-        self.fireaxe_two_node_base_config(hwdb_entries)
-
-    def qsfp_exactmode_five_small_rocket_50MHz_config(self) -> None:
-        hwdb_entries = {
-            "qsfp_exactmode_five_small_rocket_soc_50MHz"  : True,
-            "qsfp_exactmode_five_small_rocket_tile_50MHz" : False
-        }
-        self.fireaxe_two_node_base_config(hwdb_entries)
-
-    def qsfp_exactmode_six_small_rocket_50MHz_config(self) -> None:
-        hwdb_entries = {
-            "qsfp_exactmode_six_small_rocket_soc_50MHz"  : True,
-            "qsfp_exactmode_six_small_rocket_tile_50MHz" : False
-        }
-        self.fireaxe_two_node_base_config(hwdb_entries)
-
-    #######################################################################
-    # QSFP / Fast mode / 10 MHz
-    #######################################################################
-    def qsfp_exactmode_one_small_rocket_10MHz_config(self) -> None:
-        hwdb_entries = {
-            "qsfp_exactmode_one_small_rocket_soc_10MHz"  : True,
-            "qsfp_exactmode_one_small_rocket_tile_10MHz" : False
-        }
-        self.fireaxe_two_node_base_config(hwdb_entries)
-
-    def qsfp_exactmode_two_small_rocket_10MHz_config(self) -> None:
-        hwdb_entries = {
-            "qsfp_exactmode_two_small_rocket_soc_10MHz"  : True,
-            "qsfp_exactmode_two_small_rocket_tile_10MHz" : False
-        }
-        self.fireaxe_two_node_base_config(hwdb_entries)
-
-    def qsfp_exactmode_three_small_rocket_10MHz_config(self) -> None:
-        hwdb_entries = {
-            "qsfp_exactmode_three_small_rocket_soc_10MHz"  : True,
-            "qsfp_exactmode_three_small_rocket_tile_10MHz" : False
-        }
-        self.fireaxe_two_node_base_config(hwdb_entries)
-
-    def qsfp_exactmode_four_small_rocket_10MHz_config(self) -> None:
-        hwdb_entries = {
-            "qsfp_exactmode_four_small_rocket_soc_10MHz"  : True,
-            "qsfp_exactmode_four_small_rocket_tile_10MHz" : False
-        }
-        self.fireaxe_two_node_base_config(hwdb_entries)
-
-    def qsfp_exactmode_five_small_rocket_10MHz_config(self) -> None:
-        hwdb_entries = {
-            "qsfp_exactmode_five_small_rocket_soc_10MHz"  : True,
-            "qsfp_exactmode_five_small_rocket_tile_10MHz" : False
-        }
-        self.fireaxe_two_node_base_config(hwdb_entries)
-
-    def qsfp_exactmode_six_small_rocket_10MHz_config(self) -> None:
-        hwdb_entries = {
-            "qsfp_exactmode_six_small_rocket_soc_10MHz"  : True,
-            "qsfp_exactmode_six_small_rocket_tile_10MHz" : False
-        }
-        self.fireaxe_two_node_base_config(hwdb_entries)
-
-    #######################################################################
-    # FAME 5 sweep
-    #######################################################################
-    def qsfp_fame5_fastmode_one_large_boom_20MHz_config(self) -> None:
-        hwdb_entries = {
-            "qsfp_fame5_fastmode_one_large_boom_soc_20MHz"  : True,
-            "qsfp_fame5_fastmode_one_large_boom_tile_20MHz" : False
-        }
-        self.fireaxe_two_node_base_config(hwdb_entries)
-
-    def qsfp_fame5_fastmode_two_large_boom_20MHz_config(self) -> None:
-        hwdb_entries = {
-            "qsfp_fame5_fastmode_two_large_boom_soc_20MHz"  : True,
-            "qsfp_fame5_fastmode_two_large_boom_tile_20MHz" : False
-        }
-        self.fireaxe_two_node_base_config(hwdb_entries)
-
-    def qsfp_fame5_fastmode_three_large_boom_20MHz_config(self) -> None:
-        hwdb_entries = {
-            "qsfp_fame5_fastmode_three_large_boom_soc_20MHz"  : True,
-            "qsfp_fame5_fastmode_three_large_boom_tile_20MHz" : False
-        }
-        self.fireaxe_two_node_base_config(hwdb_entries)
-
-    def qsfp_fame5_fastmode_four_large_boom_20MHz_config(self) -> None:
-        hwdb_entries = {
-            "qsfp_fame5_fastmode_four_large_boom_soc_20MHz"  : True,
-            "qsfp_fame5_fastmode_four_large_boom_tile_20MHz" : False
-        }
-        self.fireaxe_two_node_base_config(hwdb_entries)
-
-    def qsfp_fame5_fastmode_five_large_boom_20MHz_config(self) -> None:
-        hwdb_entries = {
-            "qsfp_fame5_fastmode_five_large_boom_soc_20MHz"  : True,
-            "qsfp_fame5_fastmode_five_large_boom_tile_20MHz" : False
-        }
-        self.fireaxe_two_node_base_config(hwdb_entries)
-
-    def qsfp_fame5_fastmode_six_large_boom_20MHz_config(self) -> None:
-        hwdb_entries = {
-            "qsfp_fame5_fastmode_six_large_boom_soc_20MHz"  : True,
-            "qsfp_fame5_fastmode_six_large_boom_tile_20MHz" : False
-        }
-        self.fireaxe_two_node_base_config(hwdb_entries)
-
-
-    def fireaxe_split_topology_base_config(self, edges, hwdb_entries) -> None:
+    def fireaxe_split_topology_base_config(self, edges, hwdb_entries: Dict[str, int], batch: int) -> None:
         hwdb_to_server_map = {}
-        for (hwdb, base) in hwdb_entries.items():
-            server = FireSimServerNode(hwdb, partitioned=True, base_partition=base)
+        for (hwdb, pid) in hwdb_entries.items():
+            base = (pid == len(hwdb_entries) - 1)
+            partition_config = PartitionConfig(True, batch, base, pid, len(hwdb_entries))
+            server = FireSimServerNode(hwdb, partition_config=partition_config)
             hwdb_to_server_map[hwdb] = server
             rootLogger.info(f"user_topology {server.server_id_internal}")
 
@@ -748,24 +439,26 @@ class UserTopologies:
 
     def fireaxe_xilinx_u250_split_rocket_tile_from_soc_config(self) -> None:
         hwdb_entries = {
-            "xilinx_u250_firesim_rocket_split_soc"  : True,
-            "xilinx_u250_firesim_rocket_split_tile" : False
+            "xilinx_u250_firesim_rocket_split_soc"  : 1,
+            "xilinx_u250_firesim_rocket_split_tile" : 0
         }
-        self.fireaxe_two_node_base_config(hwdb_entries)
+        self.fireaxe_two_node_base_config(hwdb_entries, 1)
 
     def fireaxe_split_rocket_tile_from_soc_two_node_network_config(self) -> None:
         self.roots = []
         hwdb_entries = {
-            "firesim_rocket_nic_split_soc"  : True,
-            "firesim_rocket_nic_split_tile" : False
+            "firesim_rocket_nic_split_soc"  : 1,
+            "firesim_rocket_nic_split_tile" : 0
         }
 
         switch = FireSimSwitchNode()
         self.roots.append(switch)
         for _ in range(2):
             server_edge = []
-            for (hwdb, base) in hwdb_entries.items():
-                server = FireSimServerNode(hwdb, partitioned=True, base_partition=base)
+            for (hwdb, pid) in hwdb_entries.items():
+                base = (pid == len(hwdb_entries) - 1)
+                partition_config = PartitionConfig(True, 1, base, pid, len(hwdb_entries))
+                server = FireSimServerNode(hwdb, partition_config=partition_config)
                 server_edge.append(server)
                 if base:
                     switch.add_downlink(server)
@@ -780,11 +473,11 @@ class UserTopologies:
         ]
 
         hwdb_entries = {
-            "xilinx_u250_firesim_quadrocket_sbus_ring_noc_split_40MHz_2"    : True,
-            "xilinx_u250_firesim_quadrocket_sbus_ring_noc_split_40MHz_0"    : False,
-            "xilinx_u250_firesim_quadrocket_sbus_ring_noc_split_40MHz_1"    : False,
+            "xilinx_u250_firesim_quadrocket_sbus_ring_noc_split_40MHz_2"    : 2,
+            "xilinx_u250_firesim_quadrocket_sbus_ring_noc_split_40MHz_0"    : 0,
+            "xilinx_u250_firesim_quadrocket_sbus_ring_noc_split_40MHz_1"    : 1,
           }
-        self.fireaxe_split_topology_base_config(edges, hwdb_entries)
+        self.fireaxe_split_topology_base_config(edges, hwdb_entries, 0)
 
     def fireaxe_xilinx_u250_sbus_mesh_noc_eight_rocket_config(self) -> None:
         edges = [
@@ -793,18 +486,18 @@ class UserTopologies:
         ]
 
         hwdb_entries = {
-            "xilinx_u250_eight_rocket_mesh_2"    : True,
-            "xilinx_u250_eight_rocket_mesh_0"    : False,
-            "xilinx_u250_eight_rocket_mesh_1"    : False,
+            "xilinx_u250_eight_rocket_mesh_2"    : 2,
+            "xilinx_u250_eight_rocket_mesh_0"    : 0,
+            "xilinx_u250_eight_rocket_mesh_1"    : 1,
           }
-        self.fireaxe_split_topology_base_config(edges, hwdb_entries)
+        self.fireaxe_split_topology_base_config(edges, hwdb_entries, 0)
 
     def fireaxe_xilinx_u250_split_rocket_tile_from_soc_preserve_config(self) -> None:
         hwdb_entries = {
-            "xilinx_u250_firesim_rocket_soc_preserve"  : True,
-            "xilinx_u250_firesim_rocket_tile_preserve" : False
+            "xilinx_u250_firesim_rocket_soc_preserve"  : 1,
+            "xilinx_u250_firesim_rocket_tile_preserve" : 0
         }
-        self.fireaxe_two_node_base_config(hwdb_entries)
+        self.fireaxe_two_node_base_config(hwdb_entries, 0)
 
 #    ######Used only for tutorial purposes####################
 #    def example_sha3hetero_2config(self):

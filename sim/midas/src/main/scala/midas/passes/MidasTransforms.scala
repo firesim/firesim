@@ -25,7 +25,10 @@ private[midas] class MidasTransforms extends Transform {
       new EmitFirrtl("post-wrap-sram-models.fir"))
     else Seq()
 
-    val performExtractPass = if (p(FireAxeExtractPass)) {
+    val partition = p(FireAxePartitionGlobalInfo).isDefined
+    val extract   = p(FireAxePartitionIndex).isDefined
+
+    val performExtractPass = if (partition && extract) {
       println("PerformExtractPass")
       Seq(
         new CheckCombPathLength,
@@ -52,7 +55,7 @@ private[midas] class MidasTransforms extends Transform {
       Seq()
     }
 
-    val performRemovePass = if (p(FireAxeRemovePass)) {
+    val performRemovePass = if (partition && !extract) {
       println("PerformRemovePass")
       Seq(
         new CheckCombPathLength,
@@ -113,7 +116,7 @@ private[midas] class MidasTransforms extends Transform {
     // HACK : Only perfrom dedup when the current pass is not a remove module pass.
     // This is only a temporary solution.
     // Dedup here in 'AQB form' after lowering instance bulk connects
-    val optionalDedup = if (p(FireAxeRemovePass)) Seq() else Seq(new midas.passes.EnableAndRunDedupOnce)
+    val optionalDedup = if (partition && !extract) Seq() else Seq(new midas.passes.EnableAndRunDedupOnce)
 
     val xforms = Seq(
       new ResolveAndCheck,

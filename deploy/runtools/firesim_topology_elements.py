@@ -187,9 +187,6 @@ class FireSimServerNode(FireSimNode):
     server_id_internal: int
     mac_address: Optional[MacAddress]
     plusarg_passthrough: Optional[str]
-    partitioned: bool
-    base_partition: bool
-
 
     def __init__(self,
             server_hardware_config: Optional[Union[RuntimeHWConfig, str]] = None,
@@ -201,9 +198,7 @@ class FireSimServerNode(FireSimNode):
             hostdebug_config: Optional[HostDebugConfig] = None,
             synthprint_config: Optional[SynthPrintConfig] = None,
             partition_config: Optional[PartitionConfig] = None,
-            plusarg_passthrough: Optional[str] = None,
-            partitioned: bool = False,
-            base_partition: bool = False):
+            plusarg_passthrough: Optional[str] = None):
         super().__init__()
         self.server_hardware_config = server_hardware_config
         self.server_link_latency = server_link_latency
@@ -218,18 +213,19 @@ class FireSimServerNode(FireSimNode):
         self.server_id_internal = FireSimServerNode.SERVERS_CREATED
         self.mac_address = None
         self.plusarg_passthrough = plusarg_passthrough
-        self.partitioned = partitioned
-        self.base_partition = base_partition
         FireSimServerNode.SERVERS_CREATED += 1
 
     def mac_address_assignable(self) -> bool:
-        return (not self.partitioned) or (self.partitioned and self.base_partition)
+        assert self.partition_config is not None
+        return self.partition_config.mac_address_assignable()
 
     def is_leaf_partition(self) -> bool:
-        return self.partitioned and (not self.base_partition)
+        assert self.partition_config is not None
+        return self.partition_config.leaf_partition()
 
     def is_partition(self) -> bool:
-        return self.partitioned
+        assert self.partition_config is not None
+        return self.partition_config.partitioned
 
     def set_server_hardware_config(self, server_hardware_config: RuntimeHWConfig) -> None:
         rootLogger.info(f"set_server_hardware_config {self.server_id_internal} {self.server_hardware_config}")
@@ -246,7 +242,7 @@ class FireSimServerNode(FireSimNode):
         self.mac_address = macaddr
 
     def get_mac_address(self) -> MacAddress:
-# assert self.mac_address is not None
+        # assert self.mac_address is not None
         return self.mac_address
 
     def process_qcow2_rootfses(self, rootfses_list: List[Optional[str]]) -> List[Optional[str]]:

@@ -410,14 +410,16 @@ class RuntimeHWConfig:
         permissive_driver_args += command_linklatencies
         permissive_driver_args += command_netbws
         permissive_driver_args += command_shmemportnames
-        permissive_driver_args += [f"+batch-size={self.get_init_token_cnts(partition_config)}"]
+        permissive_driver_args += [f"+batch-size={partition_config.batch_size}"]
         permissive_driver_args += command_cutbridgeidxs
 
         # For QSFP metasims, assume that the partitions are connected in a ring-topology.
         # Then, when you know your FPGA idx & the total number of FPGAs, you know
         # your lhs & rhs neighbors to communicate with.
-        permissive_driver_args += [f"+partition-fpga-cnt={self.get_partition_fpga_cnt()}"]
-        permissive_driver_args += [f"+partition-fpga-idx={self.get_partition_fpga_idx()}"]
+        permissive_driver_args += [f"+partition-fpga-cnt={partition_config.fpga_cnt}"]
+        permissive_driver_args += [f"+partition-fpga-idx={partition_config.pidx}"]
+        if partition_config.partitioned and (not partition_config.is_base):
+            permissive_driver_args += [f"+partitioned=1"]
 
         driver_call = f"""{"sudo" if sudo else ""} ./{driver} +permissive {" ".join(permissive_driver_args)} {extra_plusargs} +permissive-off {" ".join(command_bootbinaries)} {extra_args} """
         base_command = f"""script -f -c 'stty intr ^] && {driver_call} && stty intr ^c' uartlog"""
@@ -499,10 +501,6 @@ class RuntimeHWConfig:
             rootLogger.warning(f'FPGA index {target_split_fpga_idx} is not a number')
             return self.get_partition_fpga_cnt() - 1
 
-    # HACK : for target preserving...
-    def get_init_token_cnts(self, partition_config: PartitionConfig) -> int:
-      return partition_config.batch_size
-
     def build_sim_driver(self) -> None:
         """ Build driver for running simulation """
         if self.driver_built:
@@ -516,9 +514,6 @@ class RuntimeHWConfig:
         design = quintuplet_pieces[2]
         target_config = quintuplet_pieces[3]
         platform_config = quintuplet_pieces[4]
-        target_split_fpga_cnt  = quintuplet_pieces[5]
-        target_split_idx = quintuplet_pieces[6]
-
         rootLogger.info(f"Building {self.driver_type_message} driver for {str(self.get_deployquintuplet_for_config())}")
 
         with InfoStreamLogger('stdout'), prefix(f'cd {get_deploy_dir()}/../'), \
@@ -829,7 +824,7 @@ class InnerRuntimeConfiguration:
         self.autocounter_config = AutoCounterConfig(runtime_dict.get('autocounter', {}))
         self.hostdebug_config = HostDebugConfig(runtime_dict.get('host_debug', {}))
         self.synthprint_config = SynthPrintConfig(runtime_dict.get('synth_print', {}))
-        self.partition_config = PartitionConfig(runtime_dict.get('partitioning', {}))
+        self.partition_config = PartitionConfig()
 
         dict_assert('plusarg_passthrough', runtime_dict['target_config'])
         self.default_plusarg_passthrough = runtime_dict['target_config']['plusarg_passthrough']

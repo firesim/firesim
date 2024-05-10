@@ -58,9 +58,6 @@ tracing:
 autocounter:
     read_rate: 0
 
-partitioning:
-    batch_size: 1
-
 workload:
     workload_name: linux-uniform.json
     terminate_on_completion: no

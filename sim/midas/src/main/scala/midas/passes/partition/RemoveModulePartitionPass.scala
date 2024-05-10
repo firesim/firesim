@@ -62,9 +62,7 @@ class GenerateCutBridgeInGroupedWrapper
     val p = annos.collectFirst({
       case midas.stage.phases.ConfigParametersAnnotation(p)  => p
     }).get
-    val ranges = p(FireAxePartitionInfo)
-    val nGroups = ranges.split("\\+").size
-
+    val nGroups = p(FireAxePartitionGlobalInfo).size
     val groupIdxToPorts = mutable.Map[Int, mutable.Set[String]]()
     portNameToGroupIdxMap.foreach { case (pn, gidx) =>
       if (!groupIdxToPorts.contains(gidx)) groupIdxToPorts(gidx) = mutable.Set[String]()

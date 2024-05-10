@@ -156,18 +156,25 @@ trait DedupFAME5InstancesPass {
 
 
 trait GroupAndInsertWrapperPass {
+  type InstGroup = mutable.ArrayBuffer[DefInstance]
   def wrapModulesByGroups(
     state: CircuitState,
-    moduleNames: Set[String],
-    groupSize: Int,
+    moduleNames: Seq[Set[String]],
     wrapperPfx: String): CircuitState = {
 
     def findAndRemoveModuleInstances(
-        stmt: Statement, 
-        insts: mutable.ArrayBuffer[DefInstance]): Statement = {
+        stmt: Statement,
+        insts: mutable.ArrayBuffer[InstGroup]): Statement = {
       stmt match {
-        case s @DefInstance(_, iname, mname, _) if (moduleNames(mname)) =>
-          insts.append(s)
+        case s @DefInstance(_, iname, mname, _) if (moduleNames.map(s => s(mname)).reduce(_ || _)) =>
+          val gidx = moduleNames.zipWithIndex.map { case(mn, idx) =>
+            if (mn(mname)) Some(idx) else None
+          }.collectFirst(_ match {
+            case Some(x) => x
+            case None => 0
+          }).getOrElse(0)
+
+          insts(gidx).append(s)
           EmptyStmt
         case s: DefInstance => s
         case s: DefWire => s
@@ -285,12 +292,17 @@ trait GroupAndInsertWrapperPass {
       instToGroupWrapperMap: mutable.Map[String, String],
       igraph: InstanceKeyGraph
     )(module: Module): Seq[DefModule] = {
-      val insts = mutable.ArrayBuffer[DefInstance]()
-      val instRemovedModuleBody = module.body.mapStmt(stmt => findAndRemoveModuleInstances(stmt, insts))
-      val groups = insts.grouped(groupSize).toSeq
-      groups.foreach { group => 
-          group.foreach(inst => println(s"${inst.name}"))
+      val groups = mutable.ArrayBuffer[InstGroup]()
+      val ngroups = moduleNames.size
+      for (i <- 0 until ngroups) {
+        groups.append(new InstGroup)
       }
+      val instRemovedModuleBody = module.body.mapStmt(stmt => findAndRemoveModuleInstances(stmt, groups))
+      groups.foreach { group =>
+          println("Grouped Modules")
+          group.foreach(inst => println(s"- ${inst.name}"))
+      }
+      println(s"groups.size ${groups.size}")
 
       val groupIdx = range(0, groups.size)
       val instPortMap = mutable.Map[(String, String), (String, String)]()
@@ -300,6 +312,10 @@ trait GroupAndInsertWrapperPass {
         val groupWrapperModuleName = s"${wrapperPfx}_${idx}"
 
         group.foreach{ dm => instToGroupWrapperMap(dm.name) = groupWrapperModuleName }
+
+        println(s"Generating a wrapper (${groupWrapperModuleName})")
+        println(s"- Grouped Modules")
+        group.foreach(inst => println(s"  - ${inst.name}"))
 
         generateWrapperForGroup(
           group,
@@ -313,7 +329,7 @@ trait GroupAndInsertWrapperPass {
         DefInstance(NoInfo, mod.name, mod.name)
       }
 
-      val instsToRemove = insts.map(_.name).toSet
+      val instsToRemove = groups.flatten.map(_.name).toSet
       val newModuleBody = Block(
         wrapperInsts.toSeq ++ 
         Seq(replaceConnectionToWrapper(instPortMap, instsToRemove)(instRemovedModuleBody))

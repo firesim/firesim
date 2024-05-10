@@ -48,9 +48,26 @@ class SynthPrintConfig:
 
 @dataclass
 class PartitionConfig:
+    partitioned: bool
     batch_size: int
-    preserve_target: int
+    is_base: bool
+    pidx: int
+    fpga_cnt: int
 
-    def __init__(self, args: Dict[str, Any]) -> None:
-        self.batch_size = args.get("batch_size", 1)
-        self.preserve_target = args.get("preserve_target", 0)
+    def __init__(self,
+                 partitioned: bool = False,
+                 batch_size: int = 0,
+                 base: bool = True,
+                 pidx: int = 0,
+                 fpga_cnt: int = 1) -> None:
+        self.partitioned = partitioned
+        self.batch_size = batch_size
+        self.is_base = base
+        self.pidx = pidx
+        self.fpga_cnt = fpga_cnt
+
+    def mac_address_assignable(self) -> bool:
+        return (not self.partitioned) or (self.partitioned and self.is_base)
+
+    def leaf_partition(self) -> bool:
+        return self.partitioned and (not self.is_base)

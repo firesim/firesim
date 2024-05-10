@@ -60,19 +60,23 @@ object PartitionNoCRouters {
     else name.substring(len - 5, len)
   }
 
-  def getNoCRouterIndexes(idxString: String): Seq[Seq[Int]] = {
-    val groupRanges = idxString.split("\\+")
-    val groupIndices = groupRanges.map { groupRange =>
-      val ranges = groupRange.split("\\.")
-      val indices = ranges.flatMap { range => 
-        val startEnd = range.split("\\~")
-        if (startEnd.size == 1) Seq(startEnd.head.toInt)
-        else (startEnd.head.toInt to startEnd.last.toInt).toSeq
-      }
-      indices.toSeq
-    }
-    groupIndices.toSeq
+  def getNoCRouterIndices(groups: Seq[Seq[String]]): Seq[Seq[Int]] = {
+    groups.map(g => g.map(_.toInt))
   }
+
+// def getNoCRouterIndexes(idxString: String): Seq[Seq[Int]] = {
+// val groupRanges = idxString.split("\\+")
+// val groupIndices = groupRanges.map { groupRange =>
+// val ranges = groupRange.split("\\.")
+// val indices = ranges.flatMap { range =>
+// val startEnd = range.split("\\~")
+// if (startEnd.size == 1) Seq(startEnd.head.toInt)
+// else (startEnd.head.toInt to startEnd.last.toInt).toSeq
+// }
+// indices.toSeq
+// }
+// groupIndices.toSeq
+// }
 }
 
 
@@ -290,21 +294,17 @@ class NoCPartitionRoutersPass
     val p = state.annotations.collectFirst({
       case midas.stage.phases.ConfigParametersAnnotation(p)  => p
     }).get
-    val ranges = p(FireAxePartitionInfo)
-    val groupCount = ranges.split("\\+").size
-    val routerIndicesByGroup = getNoCRouterIndexes(ranges)
-    val routerGroupIdx = state.annotations.collectFirst(_ match {
-      case PartitionIndexAnnotation(idx) => idx
-    }).getOrElse(0)
+    val routerIndicesByGroup = getNoCRouterIndices(p(FireAxePartitionGlobalInfo).get)
+    val groupCount = routerIndicesByGroup.size
 
     // when performing the remove pass, extract all the router nodes that is not in the current group
-    val extractNoC = p(FireAxeExtractPass)
-    val routerIndicesPartition = if (extractNoC) {
-      routerIndicesByGroup(routerGroupIdx)
-    } else {
-      (0 until groupCount).filter(_ != routerGroupIdx).flatMap { idx =>
-        routerIndicesByGroup(idx)
-      }
+    val routerIndicesPartition = p(FireAxePartitionIndex) match {
+      case Some(idx) => routerIndicesByGroup(idx)
+      case None =>
+        val ridx = groupCount - 1
+        (0 until groupCount).filter(_ != ridx).flatMap { idx =>
+          routerIndicesByGroup(idx)
+        }
     }
 
     // FIXME : This is brittle
@@ -1019,12 +1019,12 @@ class NoCConnectInterruptsPass extends Transform with DependencyAPIMigration {
     val p = state.annotations.collectFirst({
       case midas.stage.phases.ConfigParametersAnnotation(p)  => p
     }).get
-    val ranges = p(FireAxePartitionInfo)
-    val indicesByGroup = getNoCRouterIndexes(ranges)
+    val indicesByGroup = getNoCRouterIndices(p(FireAxePartitionGlobalInfo).get)
     val groupCnt = indicesByGroup.size
-    val curGroupIdx = state.annotations.collectFirst(_ match {
-      case PartitionIndexAnnotation(idx) => idx
-    }).getOrElse(0)
+    val curGroupIdx = p(FireAxePartitionIndex) match {
+      case Some(idx) => idx
+      case None => groupCnt - 1
+    }
     val indicesToSend = (curGroupIdx + 1 until (groupCnt-1)).map(indicesByGroup(_)).flatten
 
 // println(s"indicesToSend ${indicesToSend}")

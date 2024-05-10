@@ -19,42 +19,53 @@ import org.chipsalliance.cde.config.{Parameters, Config}
 class WrapAndGroupModulesToPartition
   extends Transform
   with DependencyAPIMigration 
-  with ModuleNameParser
-  with PromoteAndWrapByGroupPass
-  with GetNumInstancesPerFPGA {
+  with InsertWrapperPass
+  with GroupAndInsertWrapperPass
+  with PromoteSubmodulesByNamePass
+  with StateToLowFIRRTLPass
+  with DedupFAME5InstancesPass {
 
   import PartitionModulesInfo._
 
   def execute(state: CircuitState): CircuitState = {
     val p = getConfigParams(state.annotations)
+
     // If (Remove/Extract)ModuleNameAnnotation is found this is happening after the
-    // NoCPartitionExtract pass. Otherwise, just use the FireAxePartitionInfo
-    val partitionModuleNames = state.annotations.collectFirst(_ match {
-      case RemoveModuleNameAnnotation(name) => name
-      case ExtractModuleNameAnnotation(name) => name
-    }).getOrElse(p(FireAxePartitionInfo))
+    // NoCPartitionExtract pass. Otherwise, just use the FireAxePartitionGlobalInfo
+    val partitionModules = state.annotations.collectFirst(_ match {
+      case RemoveModuleNameAnnotation(name) => Seq(Seq(name))
+      case ExtractModuleNameAnnotation(name) => Seq(Seq(name))
+    }).getOrElse(p(FireAxePartitionGlobalInfo).get)
+    val partitionModuleWrappers = partitionModules.map(_.map(wrapperPfx + "_" + _))
 
-    println(s"partitionModuleNames ${partitionModuleNames}")
+    println("- Promote the modules to extract to top level")
+    val promotedState = partitionModules.flatten.foldLeft(state) { case (st, module) =>
+      promoteModules(st, module)
+    }
 
-    val partitionModules = parseModuleNames(partitionModuleNames)
-    val partitionModuleWrappers = partitionModules.map(wrapperPfx + "_" + _)
+    println("- Lower to LowFIRRTL")
+    val loweredState = toLowFirrtl(removePartial(promotedState))
 
-    // I hate this code, it is too ugly
-    val fpgaCount = state.annotations.collectFirst(_ match {
-      case PartitionFPGACountAnnotation(x) => x
-    }).getOrElse(2)
-    val fpgaCountIfNoCPart = if (p(FireAxeNoCPartitionPass)) 2 else fpgaCount
+    println(s"- Wrap the individual modules to extract")
+    val modulesWrappedState = (partitionModules.flatten).zip(
+                              (partitionModuleWrappers.flatten))
+                              .foldLeft(loweredState)(
+                                (st, mmw) => wrapModule(st, mmw._1, mmw._2)
+                              )
 
-    val groupSize = getNumInstancesPerFPGA(state, partitionModules, fpgaCountIfNoCPart)
-    val groupedState = promoteAndWrapByGroup(
-      state,
-      partitionModules,
-      partitionModuleWrappers, 
-      groupPfx,
-      groupSize)
+    println(s"- Wrap the modules to extract by groups of ${partitionModules.size}")
+    val groupedState = wrapModulesByGroups(
+        modulesWrappedState,
+        partitionModuleWrappers.map(_.toSet),
+        groupPfx)
 
-    val (groups, groupWrappers) = getGroups(groupedState)
-    val groupWrappedState = groups.zip(groupWrappers).foldLeft(groupedState) {
+    println(s"- Deduplicate instances to multithread")
+    val dedupedState = deduplicateInstancesOnFAME5(groupedState)
+
+    val (groups, groupWrappers) = getGroups(dedupedState)
+    print(s"- groups: ${groups}")
+    print(s"- groupsWrappers: ${groupWrappers}")
+    val groupWrappedState = groups.zip(groupWrappers).foldLeft(dedupedState) {
       (s, gw) => wrapModule(s, gw._1, gw._2)
     }
     groupWrappedState

@@ -239,24 +239,15 @@ class WithMultiCycleRams extends Config((site, here, up) => {
 class MTModels extends WithModelMultiThreading
 class MCRams extends WithMultiCycleRams
 
-case object FireAxeExtractPass extends Field[Boolean](false)
-case object FireAxeRemovePass extends Field[Boolean](false)
 case object FireAxeNoCPartitionPass extends Field[Boolean](false)
 case object FireAxeQSFPConnections extends Field[Boolean](false)
 case object FireAxePCISConnections extends Field[Boolean](false)
 case object FireAxePreserveTarget extends Field[Boolean](false)
-case object FireAxePartitionInfo extends Field[String]
+case object FireAxePartitionGlobalInfo extends Field[Option[Seq[Seq[String]]]](None)
+case object FireAxePartitionIndex extends Field[Option[Int]](None)
 
 class WithFireAxePreserveTarget extends Config((site, here, up) => {
   case midas.FireAxePreserveTarget => true
-})
-
-class WithFireAxeExtract extends Config((site, here, up) => {
-  case midas.FireAxeExtractPass => true
-})
-
-class WithFireAxeRemove extends Config((site, here, up) => {
-  case midas.FireAxeRemovePass => true
 })
 
 class WithFireAxeNoCPart extends Config((site, here, up) => {
@@ -271,29 +262,34 @@ class WithPCIS extends Config((site, here, up) => {
   case midas.FireAxePCISConnections => true
 })
 
-class WithPartitionConfig(info: String) extends Config((site, here, up) => {
-  case midas.FireAxePartitionInfo => info
+class WithPartitionGlobalInfo(info: Seq[Seq[String]]) extends Config((site, here, up) => {
+  case midas.FireAxePartitionGlobalInfo => Some(info)
 })
 
-class WithFireAxeQSFPConfig(info: String) extends Config(
+class WithPartitionBase extends Config((site, here, up) => {
+  case midas.FireAxePartitionIndex => None
+})
+
+class WithPartitionIndex(index: Int) extends Config((site, here, up) => {
+  case midas.FireAxePartitionIndex => Some(index)
+})
+
+class WithFireAxeQSFPConfig(info: Seq[Seq[String]]) extends Config(
   new WithQSFP ++
-  new WithPartitionConfig(info)
-)
+  new WithPartitionGlobalInfo(info))
 
-class WithFireAxePCISConfig(info: String) extends Config(
+class WithFireAxePCISConfig(info: Seq[Seq[String]]) extends Config(
   new WithPCIS ++
-  new WithPartitionConfig(info))
+  new WithPartitionGlobalInfo(info))
 
-class WithFireAxeQSFPNoCConfig(info: String) extends Config(
+class WithFireAxeQSFPNoCConfig(info: Seq[Seq[String]]) extends Config(
   new WithFireAxeNoCPart ++
   new WithFireAxeQSFPConfig(info))
 
-class WithFireAxePCISNoCConfig(info: String) extends Config(
+class WithFireAxePCISNoCConfig(info: Seq[Seq[String]]) extends Config(
   new WithFireAxeNoCPart ++
   new WithFireAxePCISConfig(info))
 
-class Extract extends WithFireAxeExtract
-class Remove extends WithFireAxeRemove
 class Preserve extends WithFireAxePreserveTarget
 
 /* Example config for just running midas using sbt */

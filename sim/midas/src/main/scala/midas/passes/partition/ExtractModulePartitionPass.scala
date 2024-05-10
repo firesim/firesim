@@ -30,7 +30,7 @@ class GenerateFireSimWrapper
   extends Transform
   with DependencyAPIMigration
   with GenCutBridgePass
-  {
+{
 
   import PartitionModulesInfo._
   import ExtractModulesPrunePassInfo._
@@ -171,9 +171,7 @@ class GenerateFireSimWrapper
     val p = annos.collectFirst({
       case midas.stage.phases.ConfigParametersAnnotation(p)  => p
     }).get
-    val ranges = p(FireAxePartitionInfo)
-    val nGroups = ranges.split("\\+").size
-
+    val nGroups = p(FireAxePartitionGlobalInfo).size
     val groupIdxToPorts = mutable.Map[Int, mutable.Set[String]]()
     portNameToGroupIdxMap.foreach { case (pn, gidx) =>
       if (!groupIdxToPorts.contains(gidx)) groupIdxToPorts(gidx) = mutable.Set[String]()
@@ -740,7 +738,6 @@ class PrunedExtraModulesAndAddBridgeAnnos extends Transform with DependencyAPIMi
 class ModifyTargetBoundaryForExtractPass
     extends Transform
     with DependencyAPIMigration
-    with ModuleNameParser
     with SkidBufferInsertionPass {
 
   import PartitionModulesInfo._
@@ -748,13 +745,12 @@ class ModifyTargetBoundaryForExtractPass
   def transformTargetBoundary(state: CircuitState): CircuitState = {
     val p = getConfigParams(state.annotations)
     val extractModuleNames = state.annotations.collectFirst(_ match {
-      case ExtractModuleNameAnnotation(names) => names
-    }).getOrElse(p(FireAxePartitionInfo))
+      case ExtractModuleNameAnnotation(names) => Seq(names)
+    }).getOrElse(p(FireAxePartitionGlobalInfo).get.flatten)
+    val extractModuleWrappers = extractModuleNames.map(wrapperPfx + "_" + _)
 
     println(s"extractModuleNames_2 ${extractModuleNames}")
 
-    val extractModules = parseModuleNames(extractModuleNames)
-    val extractModuleWrappers = extractModules.map(wrapperPfx + "_" + _)
     val skidBufferInsertedState = extractModuleWrappers.foldLeft(state) {
       (st, emn) => insertSkidBuffersToWrapper(st, emn, insertForIncoming = true)
     }

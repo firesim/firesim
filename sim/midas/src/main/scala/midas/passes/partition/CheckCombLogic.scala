@@ -5,7 +5,7 @@ import java.io.FileWriter
 import scala.collection.mutable
 import scala.Console.println
 
-import midas.{FireAxePartitionInfo, FireAxePreserveTarget}
+import midas.{FireAxePartitionGlobalInfo, FireAxePreserveTarget, FireAxePartitionIndex}
 import midas.widgets._
 import midas.stage._
 import midas.targetutils._
@@ -244,7 +244,7 @@ class CheckCombLogic extends Transform with DependencyAPIMigration {
 }
 
 
-class CheckCombPathLength extends CheckCombLogic with ModuleNameParser {
+class CheckCombPathLength extends CheckCombLogic {
   import firrtl.transforms.CheckCombLoops._
   import PartitionModulesInfo._
   import LogicGraphTypes._
@@ -355,11 +355,12 @@ class CheckCombPathLength extends CheckCombLogic with ModuleNameParser {
     val p = getConfigParams(state.annotations)
     val preserveTarget = p(FireAxePreserveTarget)
     if (preserveTarget) {
-      val partitionModuleNames = state.annotations.collectFirst(_ match {
-        case RemoveModuleNameAnnotation(name) => name
-        case ExtractModuleNameAnnotation(name) => name
-      }).getOrElse(p(FireAxePartitionInfo))
-      val partitionModules = parseModuleNames(partitionModuleNames)
+      val pglob = p(FireAxePartitionGlobalInfo).get
+      val pidx = p(FireAxePartitionIndex)
+      val partitionModules = pidx match {
+        case Some(idx) => pglob(idx)
+        case None => pglob.flatten
+      }
       CheckCombLogger.debug2(s"modules to check for comb stuff ${partitionModules}")
       run(state, partitionModules)
     } else {

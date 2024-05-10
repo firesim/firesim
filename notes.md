@@ -1,5 +1,7 @@
-# Config runtime
-- Need to add "+partitioned=1" to `plusarg_passthrough`
-
 # API
-- Cleanup partitioning API/manager
+- [x] Cleanup partitioning API/manager
+- [ ] Test 3 way partition config
+- [ ] Test NoC partition config
+
+# F1
+- [ ] Backport fro private
