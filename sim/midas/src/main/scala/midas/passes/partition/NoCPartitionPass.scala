@@ -21,7 +21,6 @@ import midas.targetutils._
 import midas.passes.EmitFirrtl
 import java.beans.Expression
 
-
 // The passes here assumes that we are attaching two CutBoundaryBridges for each partition,
 // and the partitioned are connected in a ring/mesh topology
 
@@ -454,8 +453,7 @@ class NoCReparentRouterGroupPass
         } else {
           s
         }
-      case s => 
-        s
+      case s => s
     })
 
     val newNoCPorts = nocModulePorts.filter { p => 
@@ -541,7 +539,6 @@ class RemoveDirectWireConnectionPass extends Transform with DependencyAPIMigrati
 
     val nocInstKeyPath = allNoCInstKeyPaths.head.takeRight(4)
     val nocMods = nocInstKeyPath.map(_.module).toSet
-
     val newCircuit = state.circuit.map( (x: DefModule) => x match {
       case m: Module if (nocMods.contains(m.name)) => onModule(m)
       case m => m
@@ -551,7 +548,6 @@ class RemoveDirectWireConnectionPass extends Transform with DependencyAPIMigrati
 
   private def onModule(m: Module): Module = {
     val wires = mutable.ArrayBuffer[String]()
-
     m.body.foreachStmt( stmt => stmt match {
       case w: DefWire => wires.append(w.name)
       case _ => ()
@@ -732,7 +728,6 @@ class NoCCollectModulesInPathAndRegroupPass
     val ports = fixer.ports
     val nonClockResetPorts = ports.filter(p => p.name != "clock" && p.name != "reset")
 
-
     // HACK : This is very hacky, basically it looks at the port name,
     // searchs for a number, and uses the first number to group ports
     val portToIndexMap = nonClockResetPorts.map { p => 
@@ -744,8 +739,6 @@ class NoCCollectModulesInPathAndRegroupPass
     portToIndexMap.foreach { pidx =>
       exprMap(pidx._1.name) = pidx._2
     }
-// println(s"exprMap ${exprMap}")
-
     val registerDefs = mutable.Set[DefRegister]()
     val regNameToIndex = mutable.Map[String, Int]()
     val stmtMap = mutable.Map[Statement, (Int, Int)]()
@@ -839,13 +832,14 @@ class NoCCollectModulesInPathAndRegroupPass
     childInstances.foreach { inst =>
       instConnGraph(inst._1.value) = mutable.Set[String]()
     }
-
     curModuleDef.body.foreachStmt(getInstConnGraph(instConnGraph)(_))
 
     // FIXME : don't really like the .get here. But I guess it is okay since
     // we perform the NoCPartitionRoutersPass first.
     // HACK : just ignore certain modules(extraAvoidInstances) since we kind of know the SoC structure anyways
-    val wrapperParentAnno = state.annotations.collectFirst({ case FirrtlPartWrapperParentAnnotation(it) => it }).get
+    val wrapperParentAnno = state.annotations.collectFirst({
+      case FirrtlPartWrapperParentAnnotation(it) => it
+    }).get
     val avoidInstance = wrapperParentAnno.instance
     val intSourceNames = childInstances.filter(x =>
           x._1.value.contains("plic_domain") ||
@@ -853,8 +847,8 @@ class NoCCollectModulesInPathAndRegroupPass
         ).map(_._1.value)
     val extraAvoidInstances = intSourceNames.toSeq :+ "fixedClockNode"
     val allAvoidInstances = (Seq(avoidInstance) ++ extraAvoidInstances).toSet
-    val reachableInsts = BFS(partWrapperInst, allAvoidInstances, instConnGraph)
 
+    val reachableInsts = BFS(partWrapperInst, allAvoidInstances, instConnGraph)
     reachableInsts.foreach { inst => println(s"reachable ${inst}") }
     val partGroupInstKeys = childInstances.filter { inst =>
       reachableInsts.contains(inst._1.value)
@@ -1022,10 +1016,6 @@ class NoCConnectInterruptsPass extends Transform with DependencyAPIMigration {
 
     val tileSet = tiles.map { tile => tile._1.value }.toSet
     val intSourceSet = intsources.map { int => int._1.value }.toSet
-
-// tileSet.foreach { tile => println(s"${tile}") }
-// intSourceSet.foreach { intSource => println(s"${intSource}") }
-
     val tileToIntSourceMap = mutable.Map[String, mutable.Set[String]]()
     val wrapperConsumedIntSources = mutable.Set[String]()
     curModuleDef.body.map( (stmt: Statement) => stmt match {
