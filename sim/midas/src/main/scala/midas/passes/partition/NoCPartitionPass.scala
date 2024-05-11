@@ -23,8 +23,7 @@ import java.beans.Expression
 
 
 // The passes here assumes that we are attaching two CutBoundaryBridges for each partition,
-// and the partitioned are connected in a ring topology
-
+// and the partitioned are connected in a ring/mesh topology
 
 class LowerStatePass
   extends Transform
