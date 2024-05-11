@@ -63,20 +63,6 @@ object PartitionNoCRouters {
   def getNoCRouterIndices(groups: Seq[Seq[String]]): Seq[Seq[Int]] = {
     groups.map(g => g.map(_.toInt))
   }
-
-// def getNoCRouterIndexes(idxString: String): Seq[Seq[Int]] = {
-// val groupRanges = idxString.split("\\+")
-// val groupIndices = groupRanges.map { groupRange =>
-// val ranges = groupRange.split("\\.")
-// val indices = ranges.flatMap { range =>
-// val startEnd = range.split("\\~")
-// if (startEnd.size == 1) Seq(startEnd.head.toInt)
-// else (startEnd.head.toInt to startEnd.last.toInt).toSeq
-// }
-// indices.toSeq
-// }
-// groupIndices.toSeq
-// }
 }
 
 
@@ -395,15 +381,23 @@ class NoCReparentRouterGroupPass
     val wrapperRemovedNoCBody = nocModuleDef.body.map ( (stmt: Statement) => stmt match {
       case DefInstance(_, iname, mname, _) if (mname == partWrapperModule) =>
         EmptyStmt
-      case Connect(_, WRef(lref), WSubField(WRef(ri), rref, rt, _)) if (nocModulePortNames.contains(lref._1) && ri._1 == partWrapperInst) =>
+      case Connect(_, WRef(lref), WSubField(WRef(ri), rref, rt, _)) if (
+        nocModulePortNames.contains(lref._1) &&
+        ri._1 == partWrapperInst
+      ) =>
         // move the port to the wrapper side
-        if (!nocToWrapperPorts.contains(lref._1)) nocToWrapperPorts(lref._1) = mutable.ArrayBuffer[String]()
+        if (!nocToWrapperPorts.contains(lref._1))
+          nocToWrapperPorts(lref._1) = mutable.ArrayBuffer[String]()
         nocToWrapperPorts(lref._1).append(rref)
         portsToRemove.add(lref._1)
         EmptyStmt
-      case Connect(_, WSubField(WRef(li), lref, _, _), WRef(rref)) if (nocModulePortNames.contains(rref._1) && li._1 == partWrapperInst) =>
+      case Connect(_, WSubField(WRef(li), lref, _, _), WRef(rref)) if (
+        nocModulePortNames.contains(rref._1) &&
+        li._1 == partWrapperInst
+      ) =>
         // move the port to the wrapper side
-        if (!nocToWrapperPorts.contains(rref._1)) nocToWrapperPorts(rref._1) = mutable.ArrayBuffer[String]()
+        if (!nocToWrapperPorts.contains(rref._1))
+          nocToWrapperPorts(rref._1) = mutable.ArrayBuffer[String]()
         nocToWrapperPorts(rref._1).append(lref)
         portsToRemove.add(rref._1)
         EmptyStmt
@@ -412,12 +406,16 @@ class NoCReparentRouterGroupPass
         if (li._1 == partWrapperInst) {
           val portName = ri._1 + "_" + rref
           portsToAdd.append(Port(NoInfo, portName, firrtl.ir.Output, rt))
-          parentConns.append(Connect(NoInfo, WSubField(WRef(partWrapperInst), lref), WSubField(WRef(nocInstKey.name), portName)))
+          parentConns.append(Connect(NoInfo,
+            WSubField(WRef(partWrapperInst), lref),
+            WSubField(WRef(nocInstKey.name), portName)))
           Connect(NoInfo, WRef(portName), WSubField(WRef(ri._1), rref))
         } else if (ri._1 == partWrapperInst) {
           val portName = li._1 + "_" + lref
           portsToAdd.append(Port(NoInfo, portName, firrtl.ir.Input, lt))
-          parentConns.append(Connect(NoInfo, WSubField(WRef(nocInstKey.name), portName), WSubField(WRef(partWrapperInst), rref)))
+          parentConns.append(Connect(NoInfo,
+            WSubField(WRef(nocInstKey.name), portName),
+            WSubField(WRef(partWrapperInst), rref)))
           Connect(NoInfo, WSubField(WRef(li._1), lref), WRef(portName))
         } else {
           s
@@ -427,7 +425,9 @@ class NoCReparentRouterGroupPass
         if (ri._1 == partWrapperInst) {
           val portName = ri._1 + "_" + rref
           portsToAdd.append(Port(NoInfo, portName, firrtl.ir.Input, rt))
-          parentConns.append(Connect(NoInfo, WSubField(WRef(nocInstKey.name), portName), WSubField(WRef(partWrapperInst), rref)))
+          parentConns.append(Connect(NoInfo,
+            WSubField(WRef(nocInstKey.name), portName),
+            WSubField(WRef(partWrapperInst), rref)))
           Connect(NoInfo, lexp, WRef(portName))
         } else {
           s
@@ -435,7 +435,8 @@ class NoCReparentRouterGroupPass
       case s@Connect(_, WSubField(WRef(li), lref, _, _), DoPrim(op, Seq(WRef(rref)), consts, tpe)) =>
         // move the port to the wrapper side, perform the current primop in the parent module
         if (li._1 == partWrapperInst && nocModulePortNames.contains(rref._1)) {
-          if (!nocToWrapperPorts.contains(rref._1)) nocToWrapperPorts(rref._1) = mutable.ArrayBuffer[String]()
+          if (!nocToWrapperPorts.contains(rref._1))
+            nocToWrapperPorts(rref._1) = mutable.ArrayBuffer[String]()
           nocToWrapperPorts(rref._1).append(lref)
           portsToRemove.add(rref._1)
           nocToWrapperPrimOps(rref._1) = (op, consts, tpe)
@@ -447,7 +448,9 @@ class NoCReparentRouterGroupPass
         if (ri._1 == partWrapperInst) {
           val portName = ri._1 + "_" + rref
           portsToAdd.append(Port(NoInfo, portName, firrtl.ir.Input, rt))
-          parentConns.append(Connect(NoInfo, WSubField(WRef(nocInstKey.name), portName), WSubField(WRef(partWrapperInst), rref)))
+          parentConns.append(Connect(NoInfo,
+            WSubField(WRef(nocInstKey.name), portName),
+            WSubField(WRef(partWrapperInst), rref)))
           DefNode(NoInfo, name, WRef(portName))
         } else {
           s
@@ -467,7 +470,10 @@ class NoCReparentRouterGroupPass
     val nocResetSources = mutable.Map[String, firrtl.ir.Expression]()
     val protocolNocModuleDef = moduleDefs(OfModule(parModule))
     val wrapperPulledProtocolNoC = protocolNocModuleDef.body.map ( (stmt: Statement) => stmt match {
-      case Connect(_, WSubField(WRef(li), lref, _, _), rexp) if (li._1 == nocInstKey.name && portsToRemove.contains(lref)) =>
+      case Connect(_, WSubField(WRef(li), lref, _, _), rexp) if (
+        li._1 == nocInstKey.name &&
+        portsToRemove.contains(lref)
+      ) =>
         val clockOrReset = getClockResetSfx(lref)
         if (clockOrReset == "clock") {
           nocClockSources(lref) = rexp
@@ -485,7 +491,10 @@ class NoCReparentRouterGroupPass
           Connect(NoInfo, WSubField(WRef(partWrapperInst), wrapperPort), rhs)
         }
         Block(conns.toSeq)
-      case Connect(_, lexp, WSubField(WRef(ri), rref, _, rf)) if (ri._1 == nocInstKey.name && portsToRemove.contains(rref)) =>
+      case Connect(_, lexp, WSubField(WRef(ri), rref, _, rf)) if (
+        ri._1 == nocInstKey.name &&
+        portsToRemove.contains(rref)
+      ) =>
         val wrapperPorts = nocToWrapperPorts(rref)
         val conns = wrapperPorts.map { wrapperPort =>
           Connect(NoInfo, lexp, WSubField(WRef(partWrapperInst), wrapperPort))
@@ -500,16 +509,14 @@ class NoCReparentRouterGroupPass
     val resetConns = nocResetSources.map { case(portName, src) =>
       Connect(NoInfo, WSubField(WRef(nocInstKey.Instance.value), portName), src)
     }
+
     val newProtocolNoCBody = Block(
-      Seq(
-        DefInstance(NoInfo, partWrapperInst, partWrapperModule),
-        wrapperPulledProtocolNoC) ++
+        Seq(DefInstance(NoInfo, partWrapperInst, partWrapperModule),
+            wrapperPulledProtocolNoC) ++
         clockConns.toSeq ++
         resetConns.toSeq ++
-        parentConns.toSeq
-      )
+        parentConns.toSeq)
     val newProtocolNoCModuleDef = protocolNocModuleDef.copy(body = newProtocolNoCBody)
-
     val transformedModules = state.circuit.modules.map {
       case m: Module if (m.name == curModule) =>
         newNoCModuleDef
@@ -527,11 +534,11 @@ class NoCReparentRouterGroupPass
 class RemoveDirectWireConnectionPass extends Transform with DependencyAPIMigration  {
   import PartitionNoCRouters._
 
-
   protected def execute(state: CircuitState): CircuitState = {
     val igraph = InstanceKeyGraph(state.circuit)
     val allNoCInstKeyPaths = igraph.findInstancesInHierarchy(NoCModule)
-    assert(allNoCInstKeyPaths.size == 1, "Currently only supports a single NoC configuration")
+    assert(allNoCInstKeyPaths.size == 1,
+      "Currently only supports a single NoC configuration")
 
     val nocInstKeyPath = allNoCInstKeyPaths.head.takeRight(4)
     val nocMods = nocInstKeyPath.map(_.module).toSet
@@ -584,7 +591,11 @@ class NoCCollectModulesInPathAndRegroupPass
 
   private  var cnt = 0
 
-  private def BFS(root: String, avoidInst: Set[String], instConnGraph: mutable.Map[String, mutable.Set[String]]): mutable.Set[String] = {
+  private def BFS(
+    root: String,
+    avoidInst: Set[String],
+    instConnGraph: mutable.Map[String, mutable.Set[String]]
+  ): mutable.Set[String] = {
     val queue = mutable.ArrayBuffer[String]()
     val visited = mutable.Set[String]()
     queue.append(root)
@@ -796,12 +807,6 @@ class NoCCollectModulesInPathAndRegroupPass
       stmtMap(defreg) = (idx, stmtLine(defreg))
     }
 
-
-// stmtMap.groupBy(_._2._1).foreach { hm =>
-// println(s"=========== ${hm._1} ${hm._2} ===========")
-// hm._2.foreach (stmt => println(s"${stmt}"))
-// }
-
     val splitFixers = stmtMap.groupBy(_._2._1).map { hm =>
       val idx = hm._1
       val stmts = hm._2.toSeq.sortBy(_._2._2).map(_._1)
@@ -873,7 +878,10 @@ class NoCCollectModulesInPathAndRegroupPass
         FirrtlPartWrapperParentAnnotation(target)
       case a@FirrtlPortToNeighborRouterIdxAnno(rt, _, _) =>
         val newPortName = portMap(rt.ref)
-        val newRt = rt.copy(module = curModuleInstKey.OfModule.value, ref = newPortName, component = Seq(OfModule(partWrapperModule)))
+        val newRt = rt.copy(
+          module = curModuleInstKey.OfModule.value,
+          ref = newPortName,
+          component = Seq(OfModule(partWrapperModule)))
         a.copy(target = newRt)
       case anno => anno
     }
@@ -881,7 +889,11 @@ class NoCCollectModulesInPathAndRegroupPass
     state.copy(circuit = transformedCircuit, annotations = transformedAnnos)
   }
 
-  private def getInstConnGraph(instConnGraph: mutable.Map[String, mutable.Set[String]])(stmt: Statement): Unit = {
+  private def getInstConnGraph(
+    instConnGraph: mutable.Map[String, mutable.Set[String]]
+  )(
+    stmt: Statement
+  ): Unit = {
     stmt match {
       case Connect(_, WSubField(WRef(li), lref, lt, lf), WSubField(WRef(ri), rref, rt, rf)) =>
         instConnGraph(ri._1).add(li._1)
@@ -908,11 +920,19 @@ class DedupClockAndResetPass
     val moduleDefs = state.circuit.modules.collect({ case m: Module => OfModule(m.name) -> m}).toMap
     val curModuleDef = moduleDefs(curModuleInstKey.OfModule)
     val newModuleBody = curModuleDef.body.map ( (stmt: Statement) => stmt match {
-      case Connect(_, WSubField(WRef(li), lref, _, _), WRef(rref)) if (li._1 == partWrapperInst && getClockResetSfx(rref._1) == "clock") =>
+      case Connect(_, WSubField(WRef(li), lref, _, _), WRef(rref)) if (
+        li._1 == partWrapperInst &&
+        getClockResetSfx(rref._1) == "clock"
+      ) =>
         Connect(NoInfo, WSubField(WRef(nextPartWrapperInst), "clock"), WRef(rref._1))
-      case Connect(_, WSubField(WRef(li), lref, _, _), WRef(rref)) if (li._1 == partWrapperInst && getClockResetSfx(rref._1) == "reset") =>
+      case Connect(_, WSubField(WRef(li), lref, _, _), WRef(rref)) if (
+        li._1 == partWrapperInst &&
+        getClockResetSfx(rref._1) == "reset"
+      ) =>
         Connect(NoInfo, WSubField(WRef(nextPartWrapperInst), "reset"), WRef(rref._1))
-      case Connect(_, WSubField(WRef(li), lref, _, _), WSubField(WRef(ri), rref, _, _)) if (li._1 == partWrapperInst) =>
+      case Connect(_, WSubField(WRef(li), lref, _, _), WSubField(WRef(ri), rref, _, _)) if (
+        li._1 == partWrapperInst
+      ) =>
         if (getClockResetSfx(rref) == "clock") {
           Connect(NoInfo, WSubField(WRef(nextPartWrapperInst), "clock"), WSubField(WRef(ri._1), rref))
         } else if (getClockResetSfx(rref) == "reset") {
@@ -920,7 +940,9 @@ class DedupClockAndResetPass
         } else {
           Connect(NoInfo, WSubField(WRef(nextPartWrapperInst), lref), WSubField(WRef(ri._1), rref))
         }
-      case Connect(_, WSubField(WRef(li), lref, _, _), WSubField(WRef(ri), rref, _, _)) if (ri._1 == partWrapperInst) =>
+      case Connect(_, WSubField(WRef(li), lref, _, _), WSubField(WRef(ri), rref, _, _)) if (
+        ri._1 == partWrapperInst
+      ) =>
         Connect(NoInfo, WSubField(WRef(li._1), lref), WSubField(WRef(nextPartWrapperInst), rref))
       case DefInstance(_, iname, mname, _) if (iname == partWrapperInst) =>
         DefInstance(NoInfo, nextPartWrapperInst, nextPartWrapperModule)
@@ -941,10 +963,14 @@ class DedupClockAndResetPass
 
     val defInst = DefInstance(NoInfo, prevPartWrapperInst, prevPartWrapperModule)
     val conns = curWrapperModule.ports.map { port =>
-      if (getClockResetSfx(port.name) == "clock") Connect(NoInfo, WSubField(WRef(prevPartWrapperInst), port.name), WRef("clock"))
-      else if (getClockResetSfx(port.name) == "reset") Connect(NoInfo, WSubField(WRef(prevPartWrapperInst), port.name), WRef("reset"))
-      else if (port.direction == firrtl.ir.Input) Connect(NoInfo, WSubField(WRef(prevPartWrapperInst), port.name), WRef(port.name))
-      else Connect(NoInfo, WRef(port.name), WSubField(WRef(prevPartWrapperInst), port.name))
+      if (getClockResetSfx(port.name) == "clock")
+        Connect(NoInfo, WSubField(WRef(prevPartWrapperInst), port.name), WRef("clock"))
+      else if (getClockResetSfx(port.name) == "reset")
+        Connect(NoInfo, WSubField(WRef(prevPartWrapperInst), port.name), WRef("reset"))
+      else if (port.direction == firrtl.ir.Input)
+        Connect(NoInfo, WSubField(WRef(prevPartWrapperInst), port.name), WRef(port.name))
+      else
+        Connect(NoInfo, WRef(port.name), WSubField(WRef(prevPartWrapperInst), port.name))
     }
     val wrapperBody = Block(Seq(defInst) ++ conns)
     val wrapperModule = Module(NoInfo, partWrapperModule, dedupedWrapperPorts, wrapperBody)
@@ -1048,13 +1074,6 @@ class NoCConnectInterruptsPass extends Transform with DependencyAPIMigration {
     assert(groupCnt > 2,
       "There is no reason why we want to perform a ring topology partition " +
       "when there are only two FPGAs. Consider using the basic partitioning scheme")
-
-// val interruptSourcesToSend = indicesToSend.flatMap { idx =>
-// assert(idx != curGroupIdx)
-// tileToIntSourceMap(getTilePRCIDomainName(idx)).toSeq
-// }.toSet
-
-// interruptSourcesToSend.foreach { src => println(s"interruptSourcesToSend ${src}") }
 
     val passThroughIntPortsToAdd = mutable.ArrayBuffer[(Port, Port)]()
     val newModuleBody = curModuleDef.body.map((stmt: Statement) => stmt match {
@@ -1205,7 +1224,9 @@ class NoCConnectHartIdPass extends Transform with DependencyAPIMigration {
     val tileToRemovePortMap = mutable.Map[String, String]()
     val digitTopModule = moduleDefs(digiTopInstKey.OfModule)
     val removeHartIdDigiTopBody = digitTopModule.body.map ( (stmt: Statement) => stmt match {
-      case Connect(_, WSubField(WRef(li), lref, _, _), WSubField(WRef(ri), rref, _, _)) if (ri._1 == tileHartIdNexusNodeInst) =>
+      case Connect(_, WSubField(WRef(li), lref, _, _), WSubField(WRef(ri), rref, _, _)) if (
+        ri._1 == tileHartIdNexusNodeInst
+      ) =>
         tilePortToHartIdPortMap((li._1, lref)) = rref
         tileToRemovePortMap(li._1) = lref
         EmptyStmt
