@@ -65,7 +65,7 @@ simif_emul_t::simif_emul_t(const TargetConfig &config,
     int qsfp_chan = (fpga_idx == 0) ? idx : (config.qsfp.num_channels - 1 - idx);
 
     // TODO : add argument in firesim manager
-    bool noc_part = false;
+    bool noc_part = true;
     bool comb_logic = true;
 
     if (comb_logic) {

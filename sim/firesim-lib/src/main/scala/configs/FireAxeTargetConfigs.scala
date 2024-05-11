@@ -25,15 +25,6 @@ class RocketTileQSFPXilinxAlveoConfig extends Config(
   new WithFireAxeQSFPConfig(Seq(Seq("RocketTile"))) ++
   new BaseXilinxAlveoU250Config)
 
-class QuadTileRingNoCTopoQSFPXilinxAlveoConfig extends Config(
-  new WithFireAxeQSFPNoCConfig(Seq(
-    Seq("0", "1"),
-    Seq("2", "3"),
-    // base group has to be put last
-    (4 until 10).map(i => s"${i}")
-  )) ++
-  new BaseXilinxAlveoU250Config)
-
 class OctaTileMeshNoCTopoQSFPXilinxAlveoConfig extends Config(
   new WithFireAxeQSFPNoCConfig(Seq(
     Seq("0", "1", "4", "5"),
@@ -80,3 +71,25 @@ class DualRocketTileQSFP0 extends Config(
 class DualRocketTileQSFP1 extends Config(
   new WithPartitionIndex(1) ++
   new DualRocketTileQSFPXilinxAlveoConfig)
+
+
+class QuadTileRingNoCTopoQSFPXilinxAlveoConfig extends Config(
+  new WithFireAxeQSFPNoCConfig(Seq(
+    Seq("0", "1"),
+    Seq("2", "3"),
+    // base group has to be put last
+    (4 until 10).map(i => s"${i}")
+  )) ++
+  new BaseXilinxAlveoU250Config)
+
+class QuadTileRingNoCBase extends Config(
+  new WithPartitionBase ++
+  new QuadTileRingNoCTopoQSFPXilinxAlveoConfig)
+
+class QuadTileRingNoC0 extends Config(
+  new WithPartitionIndex(0) ++
+  new QuadTileRingNoCTopoQSFPXilinxAlveoConfig)
+
+class QuadTileRingNoC1 extends Config(
+  new WithPartitionIndex(1) ++
+  new QuadTileRingNoCTopoQSFPXilinxAlveoConfig)

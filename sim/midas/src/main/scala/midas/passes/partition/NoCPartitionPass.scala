@@ -653,8 +653,10 @@ class NoCCollectModulesInPathAndRegroupPass
     val childInstances = igraph.getChildInstanceMap(curModuleInstKey.OfModule)
 
     // FIXME : Better way to identify TLFIFOFixer?
-    val fixers = childInstances.filter { inst => (inst._1.value == "fixer") || (inst._2.value.contains("TLFIFOFixer")) }
-// fixers.foreach { fixer => println(s"Found fixer ${fixer._1.value} of ${fixer._2.value}") }
+    val fixers = childInstances.filter { inst =>
+      (inst._1.value == "fixer") ||
+      (inst._2.value.contains("TLFIFOFixer"))
+    }
     assert(fixers.size < 2, "Can only have a single fixer per module at the moment")
 
     if (fixers.size > 0) {
@@ -841,7 +843,10 @@ class NoCCollectModulesInPathAndRegroupPass
     // HACK : just ignore certain modules(extraAvoidInstances) since we kind of know the SoC structure anyways
     val wrapperParentAnno = state.annotations.collectFirst({ case FirrtlPartWrapperParentAnnotation(it) => it }).get
     val avoidInstance = wrapperParentAnno.instance
-    val intSourceNames = childInstances.filter(_._1.value.contains("intsource")).map(_._1.value)
+    val intSourceNames = childInstances.filter(x =>
+          x._1.value.contains("plic_domain") ||
+          x._1.value.contains("clint_domain")
+        ).map(_._1.value)
     val extraAvoidInstances = intSourceNames.toSeq :+ "fixedClockNode"
     val allAvoidInstances = (Seq(avoidInstance) ++ extraAvoidInstances).toSet
     val reachableInsts = BFS(partWrapperInst, allAvoidInstances, instConnGraph)
@@ -976,8 +981,16 @@ class NoCConnectInterruptsPass extends Transform with DependencyAPIMigration {
     val childInstances = igraph.getChildInstanceMap(curModuleInstKey.OfModule)
 
     // FIXME : Better way to identify IntSyncCrossingSource?
-    val intsources = childInstances.filter { inst => (inst._2.value.contains("IntSyncCrossingSource")) }
-    val tiles = childInstances.filter {  inst => (inst._2.value.contains("TilePRCIDomain")) }
+    val intsources = childInstances.filter { inst =>
+      inst._1.value.contains("plic_domain") ||
+      inst._1.value.contains("clint_domain")
+    }
+    val tiles = childInstances.filter { inst =>
+      (inst._2.value.contains("TilePRCIDomain"))
+    }
+
+    println(s"NoCConnectInterruptsPass tiles: ${tiles}")
+    println(s"NoCConnectInterruptsPass intsources: ${intsources}")
 
     val moduleDefs = state.circuit.modules.collect({ case m: Module => OfModule(m.name) -> m}).toMap
     val curModuleDef = moduleDefs(curModuleInstKey.OfModule)
@@ -1005,6 +1018,9 @@ class NoCConnectInterruptsPass extends Transform with DependencyAPIMigration {
     tileToIntSourceMap.foreach { entr =>
       println(s"tileToInterruptSources ${entr}")
     }
+    wrapperConsumedIntSources.foreach { s =>
+      println(s"wrapperConsumedIntSources ${s}")
+    }
 
     // HACK : This assumes that the router node indices matches the core indices.
     // E.g., core 0 is connected to router 0, core 1 is connected to router 1...
@@ -1025,41 +1041,54 @@ class NoCConnectInterruptsPass extends Transform with DependencyAPIMigration {
       case Some(idx) => idx
       case None => groupCnt - 1
     }
-    val indicesToSend = (curGroupIdx + 1 until (groupCnt-1)).map(indicesByGroup(_)).flatten
-
-// println(s"indicesToSend ${indicesToSend}")
+    val indexStart = curGroupIdx + 1
+    val indexEnd   = groupCnt - 1
+    val indicesToSend = (indexStart until indexEnd).map(indicesByGroup(_)).flatten
+    println(s"indicesToSend ${indicesToSend}")
     assert(groupCnt > 2,
       "There is no reason why we want to perform a ring topology partition " +
       "when there are only two FPGAs. Consider using the basic partitioning scheme")
 
-// val interruptSourcesToReceive = indicesToReceive.flatMap { idx =>
+// val interruptSourcesToSend = indicesToSend.flatMap { idx =>
+// assert(idx != curGroupIdx)
 // tileToIntSourceMap(getTilePRCIDomainName(idx)).toSeq
-// }.distinct
+// }.toSet
 
-    val interruptSourcesToSend = indicesToSend.flatMap { idx =>
-      assert(idx != curGroupIdx)
-      tileToIntSourceMap(getTilePRCIDomainName(idx)).toSeq
-    }.toSet
-
-// interruptSourcesToSend.foreach { src => println(s"Send source ${src}") }
+// interruptSourcesToSend.foreach { src => println(s"interruptSourcesToSend ${src}") }
 
     val passThroughIntPortsToAdd = mutable.ArrayBuffer[(Port, Port)]()
     val newModuleBody = curModuleDef.body.map((stmt: Statement) => stmt match {
-      case s@Connect(_, WSubField(WRef(li), lref, _, _), WSubField(WRef(ri), rref, rt, _)) =>
-        if (interruptSourcesToSend.contains(ri._1)) {
-          val inPortName = ri._1 + "_in_" + rref
-          val outPortName = ri._1 + "_out_" + rref
-          val inPort = Port(NoInfo, inPortName, firrtl.ir.Input, rt)
-          val outPort = Port(NoInfo, outPortName, firrtl.ir.Output, rt)
-          passThroughIntPortsToAdd.append((inPort, outPort))
-          val intSrcToWrapperInConn = Connect(NoInfo, WSubField(WRef(partWrapperInst), inPortName), WSubField(WRef(ri._1), rref))
-          val wrapperToTileConn = Connect(NoInfo, WSubField(WRef(li._1), lref), WSubField(WRef(partWrapperInst), outPortName))
-          Block(Seq(intSrcToWrapperInConn, wrapperToTileConn))
-        } else {
-          s
-        }
+      case s@Connect(_,
+        WSubField(WRef(li), lref, _, _),
+        WSubField(WRef(ri), rref, rt, _))
+        if (
+          li._1.contains("tile_prci_domain") &&
+          intSourceSet.contains(ri._1)
+        )  =>
+          val tile_idx = getTilePRCIIndex(li._1)
+          println(s"extracted tile_idx ${tile_idx}")
+
+          if (indicesToSend.contains(tile_idx)) {
+            val inPortName = ri._1 + "_in_" + rref
+            val outPortName = ri._1 + "_out_" + rref
+            val inPort  = Port(NoInfo, inPortName,  firrtl.ir.Input,  rt)
+            val outPort = Port(NoInfo, outPortName, firrtl.ir.Output, rt)
+            passThroughIntPortsToAdd.append((inPort, outPort))
+
+            val intSrcToWrapperInConn = Connect(NoInfo,
+              WSubField(WRef(partWrapperInst), inPortName),
+              WSubField(WRef(ri._1), rref))
+            val wrapperToTileConn = Connect(NoInfo,
+              WSubField(WRef(li._1), lref),
+              WSubField(WRef(partWrapperInst), outPortName))
+            Block(Seq(intSrcToWrapperInConn, wrapperToTileConn))
+          } else {
+            s
+          }
       case s => s
     })
+
+    println(s"passThroughIntPortsToAdd ${passThroughIntPortsToAdd}")
 
     val partWrapper = moduleDefs(OfModule(partWrapperModule))
     val newWrapperPorts = partWrapper.ports.filter { p => wrapperConsumedIntSources.contains(p.name) } ++
@@ -1100,6 +1129,7 @@ class NoCConnectInterruptsPass extends Transform with DependencyAPIMigration {
         Seq(OfModule(partWrapperModule)))
       intPortNeighborGroupAnnos.append(FirrtlPortToNeighborRouterIdxAnno(rt, prevGroupIdx, nextGroupIdx))
     }
+    println(s"intPortNeighborGroupAnnos ${intPortNeighborGroupAnnos}")
     passThroughIntPortsToAdd.foreach { ports =>
       val inport = ports._1
       val outport = ports._2
@@ -1128,6 +1158,11 @@ class NoCConnectInterruptsPass extends Transform with DependencyAPIMigration {
     val base = "tile_prci_domain"
     if (idx == 0) base
     else base + s"_${idx}"
+  }
+  private def getTilePRCIIndex(name: String): Int = {
+    println(s"getTilePRCIIndex ${name}")
+    if (name.contains("tile_prci_domain_auto")) 0
+    else name.split("_")(3).toInt
   }
 }
 

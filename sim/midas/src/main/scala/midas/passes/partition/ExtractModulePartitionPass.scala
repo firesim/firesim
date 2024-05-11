@@ -171,14 +171,17 @@ class GenerateFireSimWrapper
     val p = annos.collectFirst({
       case midas.stage.phases.ConfigParametersAnnotation(p)  => p
     }).get
-    val nGroups = p(FireAxePartitionGlobalInfo).size
+    val nGroups = p(FireAxePartitionGlobalInfo).get.size
     val groupIdxToPorts = mutable.Map[Int, mutable.Set[String]]()
     portNameToGroupIdxMap.foreach { case (pn, gidx) =>
       if (!groupIdxToPorts.contains(gidx)) groupIdxToPorts(gidx) = mutable.Set[String]()
       groupIdxToPorts(gidx).add(pn)
     }
 
-    val curGroupIdx = p(FireAxePartitionIndex).getOrElse(0)
+    val curGroupIdx = p(FireAxePartitionIndex) match {
+      case Some(idx) => idx
+      case None => nGroups - 1
+    }
     val rhsGroupIdx = (curGroupIdx + 1) % nGroups
     val lhsGroupIdx = (curGroupIdx + nGroups - 1) % nGroups
 

@@ -478,29 +478,15 @@ class UserTopologies:
             pipe.add_downlink_partition(server_edge)
             self.roots.append(pipe)
 
-    def fireaxe_split_sbus_ring_noc_quadrocket_tiles_from_soc_config(self) -> None:
+    def fireaxe_quadrocket_ring_noc_config(self) -> None:
         edges = [
-            ["xilinx_u250_firesim_quadrocket_sbus_ring_noc_base", "xilinx_u250_firesim_quadrocket_sbus_ring_noc_split_40MHz_0"],
-            ["xilinx_u250_firesim_quadrocket_sbus_ring_noc_base", "xilinx_u250_firesim_quadrocket_sbus_ring_noc_split_40MHz_1"]
+            ["u250_quad_rocket_ring_base", "u250_quad_rocket_ring_0"],
+            ["u250_quad_rocket_ring_base", "u250_quad_rocket_ring_1"]
         ]
-
         hwdb_entries = {
-            "xilinx_u250_firesim_quadrocket_sbus_ring_noc_split_40MHz_2"    : 2,
-            "xilinx_u250_firesim_quadrocket_sbus_ring_noc_split_40MHz_0"    : 0,
-            "xilinx_u250_firesim_quadrocket_sbus_ring_noc_split_40MHz_1"    : 1,
-          }
-        self.fireaxe_split_topology_base_config(edges, hwdb_entries, 0)
-
-    def fireaxe_xilinx_u250_sbus_mesh_noc_eight_rocket_config(self) -> None:
-        edges = [
-            ["xilinx_u250_eight_rocket_mesh_2", "xilinx_u250_eight_rocket_mesh_0"],
-            ["xilinx_u250_eight_rocket_mesh_2", "xilinx_u250_eight_rocket_mesh_1"]
-        ]
-
-        hwdb_entries = {
-            "xilinx_u250_eight_rocket_mesh_2"    : 2,
-            "xilinx_u250_eight_rocket_mesh_0"    : 0,
-            "xilinx_u250_eight_rocket_mesh_1"    : 1,
+            "u250_quad_rocket_ring_base"    : 2,
+            "u250_quad_rocket_ring_0"    : 0,
+            "u250_quad_rocket_ring_1"    : 1,
           }
         self.fireaxe_split_topology_base_config(edges, hwdb_entries, 0)
 

@@ -44,7 +44,12 @@ class GenerateCutBridgeInGroupedWrapper
     m: Module
   ): Module = {
     val p = getConfigParams(annos)
-    val curGroupIdx = p(FireAxePartitionIndex).getOrElse(0)
+    val nGroups = p(FireAxePartitionGlobalInfo).get.size
+    val curGroupIdx = p(FireAxePartitionIndex) match {
+      case Some(idx) => idx
+      case None => nGroups - 1
+    }
+
     val portNameToGroupIdxMap = annos.flatMap (anno => anno match {
       case FirrtlPortToNeighborRouterIdxAnno(rt, extractIdx, removeIdx) =>
         println(s"portmap ${rt.ref} ${extractIdx} ${removeIdx}")
@@ -55,7 +60,6 @@ class GenerateCutBridgeInGroupedWrapper
     val ports = m.ports
     ports.foreach(port => println(s"removeModule port ${port.name}"))
 
-    val nGroups = p(FireAxePartitionGlobalInfo).size
     val groupIdxToPorts = mutable.Map[Int, mutable.Set[String]]()
     portNameToGroupIdxMap.foreach { case (pn, gidx) =>
       if (!groupIdxToPorts.contains(gidx)) groupIdxToPorts(gidx) = mutable.Set[String]()
