@@ -37,9 +37,11 @@ class GenerateFireSimWrapper
 
   protected val bridgeModulesToAdd = mutable.ArrayBuffer[ExtModule]()
 
-  def genBridgeModuleAndInstance(instanceName: String,
-                                 moduleName: String,
-                                 ports: Seq[Port]): DefInstance = {
+  def genBridgeModuleAndInstance(
+    instanceName: String,
+    moduleName: String,
+    ports: Seq[Port]
+  ): DefInstance = {
     val addedModuleName = moduleName + "Added"
     bridgeModulesToAdd.append(
       ExtModule(
@@ -147,7 +149,8 @@ class GenerateFireSimWrapper
       m: DefModule,
       annos: AnnotationSeq,
       cutBridgeModules: mutable.ArrayBuffer[ExtModule],
-      cutBridgeAnnos: mutable.ArrayBuffer[Annotation]): Statement = {
+      cutBridgeAnnos: mutable.ArrayBuffer[Annotation]
+    ): Statement = {
     val (peekPokeBridge, resetPulseBridge, clockBridge) = genDefaultBridges()
     val extractedModule         = DefInstance(name=extractModuleInstanceName, module=m.name)
     val buildtopReset           = DefWire(info=NoInfo, name="buildtopReset", tpe=ResetType)
@@ -525,7 +528,8 @@ class GenerateFireSimWrapper
       m: DefModule,
       annos: AnnotationSeq,
       cutBridgeModules: mutable.ArrayBuffer[ExtModule],
-      cutBridgeAnnos: mutable.ArrayBuffer[Annotation]): DefModule = {
+      cutBridgeAnnos: mutable.ArrayBuffer[Annotation]
+    ): DefModule = {
     val p = annos.collectFirst({
       case midas.stage.phases.ConfigParametersAnnotation(p)  => p
     }).get

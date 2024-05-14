@@ -6,7 +6,7 @@ from __future__ import annotations
 import logging
 
 from runtools.firesim_topology_elements import FireSimPipeNode, FireSimSwitchNode, FireSimServerNode, FireSimSuperNodeServerNode, FireSimDummyServerNode, FireSimNode
-from runtools.simulation_data_classes import PartitionConfig
+from runtools.simulation_data_classes import PartitionConfig, PartitionMode
 
 from typing import Optional, Union, Callable, Sequence, TYPE_CHECKING, cast, List, Any, Dict
 if TYPE_CHECKING:
@@ -410,22 +410,22 @@ class UserTopologies:
 
 ########################################################################
 
-    def fireaxe_two_node_base_config(self, hwdb_entries: Dict[str, int], batch: int) -> None:
+    def fireaxe_two_node_base_config(self, hwdb_entries: Dict[str, int], mode: PartitionMode) -> None:
       assert len(hwdb_entries) == 2
       self.roots = [FireSimPipeNode()]
       server_edge = []
       if isinstance(self.roots[0], FireSimPipeNode):
           for (hwdb, pid) in hwdb_entries.items():
               base = (pid == len(hwdb_entries) - 1)
-              partition_config = PartitionConfig(True, batch, base, pid, len(hwdb_entries))
+              partition_config = PartitionConfig(True, len(hwdb_entries), base, pid, mode)
               server_edge.append(FireSimServerNode(hwdb, partition_config=partition_config))
           self.roots[0].add_downlink_partition(server_edge)
 
-    def fireaxe_split_topology_base_config(self, edges, hwdb_entries: Dict[str, int], batch: int) -> None:
+    def fireaxe_split_topology_base_config(self, edges, hwdb_entries: Dict[str, int], mode: PartitionMode) -> None:
         hwdb_to_server_map = {}
         for (hwdb, pid) in hwdb_entries.items():
             base = (pid == len(hwdb_entries) - 1)
-            partition_config = PartitionConfig(True, batch, base, pid, len(hwdb_entries))
+            partition_config = PartitionConfig(True, len(hwdb_entries), base, pid, mode)
             server = FireSimServerNode(hwdb, partition_config=partition_config)
             hwdb_to_server_map[hwdb] = server
             rootLogger.info(f"user_topology {server.server_id_internal}")
@@ -437,12 +437,19 @@ class UserTopologies:
             if isinstance(pipe, FireSimPipeNode):
                 pipe.add_downlink_partition(server_edge)
 
-    def fireaxe_xilinx_u250_split_rocket_tile_from_soc_config(self) -> None:
+    def fireaxe_rocket_fastmode_config(self) -> None:
         hwdb_entries = {
             "xilinx_u250_firesim_rocket_split_soc"  : 1,
             "xilinx_u250_firesim_rocket_split_tile" : 0
         }
-        self.fireaxe_two_node_base_config(hwdb_entries, 1)
+        self.fireaxe_two_node_base_config(hwdb_entries, PartitionMode.FAST_MODE)
+
+    def fireaxe_rocket_exactmode_config(self) -> None:
+        hwdb_entries = {
+            "xilinx_u250_firesim_rocket_soc_exact"  : 1,
+            "xilinx_u250_firesim_rocket_tile_exact" : 0
+        }
+        self.fireaxe_two_node_base_config(hwdb_entries, PartitionMode.EXACT_MODE)
 
     def fireaxe_u250_dualrocket_config(self) -> None:
         edges = [
@@ -454,7 +461,7 @@ class UserTopologies:
             "xilinx_u250_firesim_dual_rocket_split_1" : 1,
             "xilinx_u250_firesim_dual_rocket_split_base"  : 2
         }
-        self.fireaxe_split_topology_base_config(edges, hwdb_entries, 1)
+        self.fireaxe_split_topology_base_config(edges, hwdb_entries, PartitionMode.FAST_MODE)
 
     def fireaxe_split_rocket_tile_from_soc_two_node_network_config(self) -> None:
         self.roots = []
@@ -469,7 +476,7 @@ class UserTopologies:
             server_edge = []
             for (hwdb, pid) in hwdb_entries.items():
                 base = (pid == len(hwdb_entries) - 1)
-                partition_config = PartitionConfig(True, 1, base, pid, len(hwdb_entries))
+                partition_config = PartitionConfig(True, len(hwdb_entries), base, pid, PartitionMode.FAST_MODE)
                 server = FireSimServerNode(hwdb, partition_config=partition_config)
                 server_edge.append(server)
                 if base:
@@ -480,22 +487,15 @@ class UserTopologies:
 
     def fireaxe_quadrocket_ring_noc_config(self) -> None:
         edges = [
-            ["u250_quad_rocket_ring_base", "u250_quad_rocket_ring_0"],
-            ["u250_quad_rocket_ring_base", "u250_quad_rocket_ring_1"]
+            ["xilinx_u250_quad_rocket_ring_base", "xilinx_u250_quad_rocket_ring_0"],
+            ["xilinx_u250_quad_rocket_ring_base", "xilinx_u250_quad_rocket_ring_1"]
         ]
         hwdb_entries = {
-            "u250_quad_rocket_ring_base"    : 2,
-            "u250_quad_rocket_ring_0"    : 0,
-            "u250_quad_rocket_ring_1"    : 1,
+            "xilinx_u250_quad_rocket_ring_base"    : 2,
+            "xilinx_u250_quad_rocket_ring_0"    : 0,
+            "xilinx_u250_quad_rocket_ring_1"    : 1,
           }
-        self.fireaxe_split_topology_base_config(edges, hwdb_entries, 0)
-
-    def fireaxe_xilinx_u250_split_rocket_tile_from_soc_preserve_config(self) -> None:
-        hwdb_entries = {
-            "xilinx_u250_firesim_rocket_soc_preserve"  : 1,
-            "xilinx_u250_firesim_rocket_tile_preserve" : 0
-        }
-        self.fireaxe_two_node_base_config(hwdb_entries, 0)
+        self.fireaxe_split_topology_base_config(edges, hwdb_entries, PartitionMode.NOC_PARTITION)
 
 #    ######Used only for tutorial purposes####################
 #    def example_sha3hetero_2config(self):

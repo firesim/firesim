@@ -3,6 +3,7 @@ from __future__ import annotations
 from dataclasses import dataclass
 
 from typing import Dict, Any
+from enum import Enum
 
 @dataclass
 class TracerVConfig:
@@ -46,28 +47,45 @@ class SynthPrintConfig:
         self.end = args.get("end", "-1")
         self.cycle_prefix = args.get("cycle_prefix", True) == True
 
+class PartitionMode(Enum):
+  FAST_MODE     = 1
+  EXACT_MODE    = 2
+  NOC_PARTITION = 3
+
 @dataclass
 class PartitionConfig:
     partitioned: bool
-    batch_size: int
-    is_base: bool
-    pidx: int
     fpga_cnt: int
+    base: bool
+    pidx: int
+    batch_size: int
+    fpga_topo: str
 
     def __init__(self,
                  partitioned: bool = False,
-                 batch_size: int = 0,
+                 fpga_cnt: int = 1,
                  base: bool = True,
                  pidx: int = 0,
-                 fpga_cnt: int = 1) -> None:
+                 mode: PartitionMode = PartitionMode.FAST_MODE) -> None:
         self.partitioned = partitioned
-        self.batch_size = batch_size
-        self.is_base = base
-        self.pidx = pidx
         self.fpga_cnt = fpga_cnt
+        self.base = base
+        self.pidx = pidx
+        if mode == PartitionMode.FAST_MODE:
+          self.batch_size = 1
+          self.fpga_topo = 'fast_mode'
+        elif mode == PartitionMode.EXACT_MODE:
+          self.batch_size = 0
+          self.fpga_topo = 'exact_mode'
+        elif mode == PartitionMode.NOC_PARTITION:
+          self.batch_size = 0
+          self.fpga_topo = 'noc_mode'
+        else:
+          print(f'Unrecognized partition mode {mode}')
+          exit(1)
 
     def mac_address_assignable(self) -> bool:
-        return (not self.partitioned) or (self.partitioned and self.is_base)
+        return (not self.partitioned) or (self.partitioned and self.base)
 
     def leaf_partition(self) -> bool:
-        return self.partitioned and (not self.is_base)
+        return self.partitioned and (not self.base)

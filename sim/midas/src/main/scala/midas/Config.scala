@@ -290,10 +290,4 @@ class WithFireAxePCISNoCConfig(info: Seq[Seq[String]]) extends Config(
   new WithFireAxeNoCPart ++
   new WithFireAxePCISConfig(info))
 
-class Preserve extends WithFireAxePreserveTarget
-
-/* Example config for just running midas using sbt */
-// class QuadTileRingNoCTopoQSFPXilinxAlveoConfig extends Config(
-// new WithWiringTransform ++
-// new WithFireAxeQSFPNoCConfig("0~1+2~3+4~9") ++
-// new XilinxAlveoConfig)
+class ExactMode extends WithFireAxePreserveTarget

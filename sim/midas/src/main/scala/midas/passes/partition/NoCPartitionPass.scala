@@ -1162,15 +1162,11 @@ class NoCConnectInterruptsPass extends Transform with DependencyAPIMigration {
     state.copy(circuit = transformedCircuit, annotations = transformedAnnos)
   }
 
-  private def getTilePRCIDomainName(idx: Int): String = {
-    val base = "tile_prci_domain"
-    if (idx == 0) base
-    else base + s"_${idx}"
-  }
   private def getTilePRCIIndex(name: String): Int = {
     println(s"getTilePRCIIndex ${name}")
-    if (name.contains("tile_prci_domain_auto")) 0
-    else name.split("_")(3).toInt
+    val sname = name.split("_")
+    if (sname.size < 4) 0 // "tile_prci_domain"
+    else sname(3).toInt   // "tile_prci_domain_#
   }
 }
 

@@ -410,16 +410,28 @@ class RuntimeHWConfig:
         permissive_driver_args += command_linklatencies
         permissive_driver_args += command_netbws
         permissive_driver_args += command_shmemportnames
-        permissive_driver_args += [f"+batch-size={partition_config.batch_size}"]
-        permissive_driver_args += command_cutbridgeidxs
 
-        # For QSFP metasims, assume that the partitions are connected in a ring-topology.
-        # Then, when you know your FPGA idx & the total number of FPGAs, you know
-        # your lhs & rhs neighbors to communicate with.
-        permissive_driver_args += [f"+partition-fpga-cnt={partition_config.fpga_cnt}"]
-        permissive_driver_args += [f"+partition-fpga-idx={partition_config.pidx}"]
-        if partition_config.partitioned and (not partition_config.is_base):
-            permissive_driver_args += [f"+partitioned=1"]
+        if partition_config.partitioned:
+          partition_fpga_topo = 0
+          if partition_config.fpga_topo == 'fast_mode':
+            partition_fpga_topo = 0
+          elif partition_config.fpga_topo == 'exact_mode':
+            partition_fpga_topo = 1
+          elif partition_config.fpga_topo == 'noc_mode':
+            partition_fpga_topo = 2
+          permissive_driver_args += [f"+partition-fpga-topo={partition_fpga_topo}"]
+
+          # For QSFP metasims, assume that the partitions are connected in a ring-topology.
+          # Then, when you know your FPGA idx & the total number of FPGAs, you know
+          # your lhs & rhs neighbors to communicate with.
+          permissive_driver_args += [f"+partition-fpga-cnt={partition_config.fpga_cnt}"]
+          permissive_driver_args += [f"+partition-fpga-idx={partition_config.pidx}"]
+          permissive_driver_args += [f"+batch-size={partition_config.batch_size}"]
+          permissive_driver_args += command_cutbridgeidxs
+
+          # Disable heartbeat checking for non-base partitions
+          if not partition_config.base:
+              permissive_driver_args += [f"+partitioned=1"]
 
         driver_call = f"""{"sudo" if sudo else ""} ./{driver} +permissive {" ".join(permissive_driver_args)} {extra_plusargs} +permissive-off {" ".join(command_bootbinaries)} {extra_args} """
         base_command = f"""script -f -c 'stty intr ^] && {driver_call} && stty intr ^c' uartlog"""

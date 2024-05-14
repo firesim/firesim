@@ -10,6 +10,7 @@
 #include <memory>
 #include <unistd.h>
 #include <cassert>
+#include <string.h>
 
 simif_emul_t::simif_emul_t(const TargetConfig &config,
                            const std::vector<std::string> &args)
@@ -21,6 +22,8 @@ simif_emul_t::simif_emul_t(const TargetConfig &config,
   bool fastloadmem = false;
   int fpga_cnt = 0;
   int fpga_idx = 0;
+  bool noc_part   = false;
+  bool comb_logic = false;
   for (auto arg : args) {
     if (arg.find("+fastloadmem") == 0) {
       fastloadmem = true;
@@ -44,6 +47,13 @@ simif_emul_t::simif_emul_t(const TargetConfig &config,
     if (arg.find("+partition-fpga-idx=") == 0) {
       fpga_idx = atoi(arg.c_str() + 20);
     }
+    if (arg.find("+partition-fpga-topo=") == 0) {
+      int fpga_topo_str = atoi(arg.c_str() + 21);
+      if (fpga_topo_str == 1)
+        comb_logic = true;
+      else if (fpga_topo_str == 2)
+        noc_part = true;
+    }
   }
 
   for (int i = 0; i < config.qsfp.num_channels; i++) {
@@ -58,15 +68,15 @@ simif_emul_t::simif_emul_t(const TargetConfig &config,
     int next_fpga_idx = (fpga_idx + 1) % fpga_cnt;
     int prev_fpga_idx = (fpga_idx + fpga_cnt - 1) % fpga_cnt;
 
-    assert(fpga_cnt <= 3);
+    printf("noc_part: %d comb_logic: %d\n", noc_part, comb_logic);
+
+    // TODO : add argument in firesim manager
+    if (!noc_part)
+      assert(fpga_cnt <= 3);
 
     // If this is FPGA-0, reverse the qsfp channel shmem setup order to 
     // avoid deadlocks
     int qsfp_chan = (fpga_idx == 0) ? idx : (config.qsfp.num_channels - 1 - idx);
-
-    // TODO : add argument in firesim manager
-    bool noc_part = true;
-    bool comb_logic = true;
 
     if (comb_logic) {
       qsfp_chan = idx;
