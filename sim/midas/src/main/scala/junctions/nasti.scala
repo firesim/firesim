@@ -668,7 +668,7 @@ object AXI4NastiAssigner {
     nasti.b.ready := axi4.b.ready
   }
 
-  def toAXI4(axi4: AXI4Bundle, nasti: NastiIO)(implicit p: Parameters): Unit = {
+  def toAXI4Slave(axi4: AXI4Bundle, nasti: NastiIO)(implicit p: Parameters): Unit = {
     // HACK: Nasti and Diplomatic have diverged to the point where it's no
     // longer safe to emit a partial connect leaf fields. Onus is on the
     // invoker to check widths.
@@ -721,5 +721,60 @@ object AXI4NastiAssigner {
     nasti.b.bits.user := chisel3.DontCare
     // Echo is not a AXI4 standard signal.
     axi4.b.ready := nasti.b.ready
+  }
+
+  def toAXI4Master(axi4: AXI4Bundle, nasti: NastiIO)(implicit p: Parameters): Unit = {
+    // HACK: Nasti and Diplomatic have diverged to the point where it's no
+    // longer safe to emit a partial connect leaf fields. Onus is on the
+    // invoker to check widths.
+    nasti.aw.valid      := axi4.aw.valid
+    nasti.aw.bits.id    := axi4.aw.bits.id
+    nasti.aw.bits.addr  := axi4.aw.bits.addr
+    nasti.aw.bits.len   := axi4.aw.bits.len
+    nasti.aw.bits.size  := axi4.aw.bits.size
+    nasti.aw.bits.burst := axi4.aw.bits.burst
+    nasti.aw.bits.lock  := axi4.aw.bits.lock
+    nasti.aw.bits.cache := axi4.aw.bits.cache
+    nasti.aw.bits.prot  := axi4.aw.bits.prot
+    nasti.aw.bits.qos   := axi4.aw.bits.qos
+    nasti.aw.bits.user  := chisel3.DontCare
+    //nasti.aw.bits.echo  := chisel3.DontCare
+    axi4.aw.ready       := nasti.aw.ready
+
+    nasti.ar.valid      := axi4.ar.valid
+    nasti.ar.bits.id    := axi4.ar.bits.id
+    nasti.ar.bits.addr  := axi4.ar.bits.addr
+    nasti.ar.bits.len   := axi4.ar.bits.len
+    nasti.ar.bits.size  := axi4.ar.bits.size
+    nasti.ar.bits.burst := axi4.ar.bits.burst
+    nasti.ar.bits.lock  := axi4.ar.bits.lock
+    nasti.ar.bits.cache := axi4.ar.bits.cache
+    nasti.ar.bits.prot  := axi4.ar.bits.prot
+    nasti.ar.bits.qos   := axi4.ar.bits.qos
+    nasti.ar.bits.user  := chisel3.DontCare
+    //nasti.ar.bits.echo  := chisel3.DontCare
+    axi4.ar.ready       := nasti.ar.ready
+
+    nasti.w.valid     := axi4.w.valid
+    nasti.w.bits.data := axi4.w.bits.data
+    nasti.w.bits.strb := axi4.w.bits.strb
+    nasti.w.bits.last := axi4.w.bits.last
+    nasti.w.bits.user := chisel3.DontCare
+    axi4.w.ready      := nasti.w.ready
+
+    axi4.r.valid      := nasti.r.valid
+    axi4.r.bits.id    := nasti.r.bits.id
+    axi4.r.bits.data  := nasti.r.bits.data
+    axi4.r.bits.resp  := nasti.r.bits.resp
+    axi4.r.bits.last  := nasti.r.bits.last
+    nasti.r.bits.user := chisel3.DontCare
+    nasti.r.ready     := axi4.r.ready
+
+    axi4.b.valid     := nasti.b.valid
+    axi4.b.bits.id   := nasti.b.bits.id
+    axi4.b.bits.resp := nasti.b.bits.resp
+    nasti.b.bits.user := chisel3.DontCare
+    // Echo is not a AXI4 standard signal.
+    nasti.b.ready := axi4.b.ready
   }
 }

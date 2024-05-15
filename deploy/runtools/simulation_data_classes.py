@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 
-from typing import Dict, Any
+from typing import Dict, Any, List
 from enum import Enum
 
 @dataclass
@@ -61,6 +61,11 @@ class PartitionConfig:
     batch_size: int
     fpga_topo: str
 
+    slot0_bar4: str
+    slot0_offset: List[str]
+    slot1_bar4: str
+    slot1_offset: List[str]
+
     def __init__(self,
                  partitioned: bool = False,
                  fpga_cnt: int = 1,
@@ -83,6 +88,11 @@ class PartitionConfig:
         else:
           print(f'Unrecognized partition mode {mode}')
           exit(1)
+
+        self.slot0_bar4 = ???
+        self.slot0_offset = [???, ???]
+        self.slot1_bar4 =  ???
+        self.slot1_offset =  [???, ???]
 
     def mac_address_assignable(self) -> bool:
         return (not self.partitioned) or (self.partitioned and self.base)

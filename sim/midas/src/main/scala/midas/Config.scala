@@ -17,6 +17,8 @@ import java.io.{File}
 case object FPGATopQSFPBitWidth extends Field[Int](256)
 case object QSFPStreamBitWidth extends Field[Int](QSFPBridgeStreamConstants.streamWidthBits)
 case object FPGATopQSFPBRAMQueueDepth extends Field[Int](256)
+case object F1ShimHasQSFPPorts extends Field[Boolean](false)
+case object F1ShimHasPCIMPorts extends Field[Boolean](false)
 case object MetasimPrintfEnable extends Field[Boolean](false)
 
 // Provides a function to elaborate the top-level platform shim
@@ -124,6 +126,7 @@ class F1Config extends Config(new Config((site, here, up) => {
 }) ++ new SimConfig)
 
 class XilinxAlveoU250Config extends Config(new Config((site, here, up) => {
+  case F1ShimHasQSFPPorts => true
   case HostMemNumChannels => 1
   case PreLinkCircuitPath => Some("firesim_top")
   case PostLinkCircuitPath => Some("firesim_top")
@@ -224,7 +227,23 @@ class WithWiringTransform extends Config((site, here, up) => {
   case TargetTransforms => Dependency[firrtl.passes.wiring.WiringTransform] +: up(TargetTransforms, site)
 })
 
+class WithPCIMPorts extends Config((site, here, up) => {
+  case F1ShimHasPCIMPorts => true
+  case FPGAStreamEngineInstantiatorKey =>
+    (e: StreamEngineParameters, p: Parameters) =>
+    new FPGAManagedStreamEngine(p, e)
+  case FPGAManagedAXI4Key   => Some(FPGAManagedAXI4Params(
+    size                = BigInt(1) << 64,  // 128GB (size of Bar 4)
+    dataBits            = 512,                  // 512 bits set by FireSim default
+    idBits              = 6,                    // 6 is a guess; based upon CPUManagedAXI4Params
+    writeTransferSizes  = TransferSizes(512/8), // Default for Firesim
+    readTransferSizes   = TransferSizes(512/8), // Default for Firesim
+    interleavedId       = Some(0)               // Interleaved not currentlky supported therefore 0
+  ))
+})
+
 class BaseF1Config extends Config(
+  new WithPCIMPorts ++
   new WithWiringTransform ++
   new F1Config
 )
@@ -240,9 +259,10 @@ class MTModels extends WithModelMultiThreading
 class MCRams extends WithMultiCycleRams
 
 case object FireAxeNoCPartitionPass extends Field[Boolean](false)
-case object FireAxeQSFPConnections extends Field[Boolean](false)
-case object FireAxePCISConnections extends Field[Boolean](false)
-case object FireAxePreserveTarget extends Field[Boolean](false)
+case object FireAxeQSFPConnections  extends Field[Boolean](false)
+case object FireAxePCIMConnections  extends Field[Boolean](false)
+case object FireAxePCISConnections  extends Field[Boolean](false)
+case object FireAxePreserveTarget   extends Field[Boolean](false)
 case object FireAxePartitionGlobalInfo extends Field[Option[Seq[Seq[String]]]](None)
 case object FireAxePartitionIndex extends Field[Option[Int]](None)
 
@@ -260,6 +280,10 @@ class WithQSFP extends Config((site, here, up) => {
 
 class WithPCIS extends Config((site, here, up) => {
   case midas.FireAxePCISConnections => true
+})
+
+class WithPCIM extends Config((site, here, up) => {
+  case midas.FireAxePCIMConnections => true
 })
 
 class WithPartitionGlobalInfo(info: Seq[Seq[String]]) extends Config((site, here, up) => {
@@ -280,6 +304,10 @@ class WithFireAxeQSFPConfig(info: Seq[Seq[String]]) extends Config(
 
 class WithFireAxePCISConfig(info: Seq[Seq[String]]) extends Config(
   new WithPCIS ++
+  new WithPartitionGlobalInfo(info))
+
+class WithFireAxePCIMConfig(info: Seq[Seq[String]]) extends Config(
+  new WithPCIM ++
   new WithPartitionGlobalInfo(info))
 
 class WithFireAxeQSFPNoCConfig(info: Seq[Seq[String]]) extends Config(

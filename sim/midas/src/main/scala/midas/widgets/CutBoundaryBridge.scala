@@ -49,10 +49,9 @@ class CutBoundaryBridgeIO(cutParams: CutBoundaryParams) extends Bundle {
   val in    = Output(UInt(cutParams.inTokenBits.W))
 }
 
-
 class PCISCutBoundaryBridge(cutParams: CutBoundaryParams)(implicit p: Parameters)
     extends BlackBox
-    with Bridge[HostPortIO[CutBoundaryBridgeIO], PCISCutBoundaryBridgeModule]{
+    with Bridge[HostPortIO[CutBoundaryBridgeIO], PCISCutBoundaryBridgeModule] {
   val io = IO(new CutBoundaryBridgeIO(cutParams))
   val bridgeIO = HostPort(io)
   val constructorArg = Some(CutBoundaryKey(cutParams))
@@ -61,7 +60,16 @@ class PCISCutBoundaryBridge(cutParams: CutBoundaryParams)(implicit p: Parameters
 
 class QSFPCutBoundaryBridge(cutParams: CutBoundaryParams)(implicit p: Parameters)
     extends BlackBox
-    with Bridge[HostPortIO[CutBoundaryBridgeIO], QSFPCutBoundaryBridgeModule]{
+    with Bridge[HostPortIO[CutBoundaryBridgeIO], QSFPCutBoundaryBridgeModule] {
+  val io = IO(new CutBoundaryBridgeIO(cutParams))
+  val bridgeIO = HostPort(io)
+  val constructorArg = Some(CutBoundaryKey(cutParams))
+  generateAnnotations()
+}
+
+class PCIMCutBoundaryBridge(cutParams: CutBoundaryParams)(implicit p: Parameters)
+  extends BlackBox
+  with Bridge[HostPortIO[CutBoundaryBridgeIO], PCIMCutBoundaryBridgeModule] {
   val io = IO(new CutBoundaryBridgeIO(cutParams))
   val bridgeIO = HostPort(io)
   val constructorArg = Some(CutBoundaryKey(cutParams))
@@ -377,13 +385,24 @@ abstract class CutBoundaryBridgeModule(
 
     override def genPartitioningConstants(sb: StringBuilder): Unit = {
       println(s"wrapper.instanceName ${wrapper.instanceName}")
-      val pfx = "CutBoundaryBridgeModule_"
-      val len = wrapper.instanceName.size
       val idx = wrapper.instanceName.split("\\D+").filter(_.nonEmpty).toList.last.toInt
       sb.append(s"#define TO_HOST_TRANSACTIONS_${idx}   ${toHostDMATransactions}\n")
       sb.append(s"#define FROM_HOST_TRANSACTIONS_${idx} ${fromHostDMATransactions}\n")
     }
   }
+}
+
+class PCIMCutBoundaryBridgeModule(key: CutBoundaryKey)(implicit p: Parameters)
+  extends CutBoundaryBridgeModule(key)(p)
+  with StreamToPeerFPGA
+  with StreamFromHostCPU {
+
+  val fromHostCPUQueueDepth = TOKEN_QUEUE_DEPTH * fromHostDMATransactions * 2
+  val peerFPGAMaxAddrRangeInBeats = TOKEN_QUEUE_DEPTH * toHostDMATransactions * 2
+
+  override def bridgeDriverClassName  = "pcim_cutbridge_t"
+  override def bridgeDriverHeaderName = "pcim_cutbridge"
+  override def bridgeDriverArgs       = Seq()
 }
 
 class QSFPCutBoundaryBridgeModule(key: CutBoundaryKey)(implicit p: Parameters)

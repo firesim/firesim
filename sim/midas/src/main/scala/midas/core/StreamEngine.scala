@@ -17,6 +17,8 @@ import midas.widgets._
   */
 case object StreamEngineInstantiatorKey extends Field[(StreamEngineParameters, Parameters) => StreamEngine]
 
+// Key intended for PCIM on AWS P2P support
+case object FPGAStreamEngineInstantiatorKey extends Field[(StreamEngineParameters, Parameters) => StreamEngine]
 
 /**
   * Parameters that define a stream that are defined by bridges and collected

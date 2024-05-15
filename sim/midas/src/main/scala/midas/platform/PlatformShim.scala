@@ -34,6 +34,10 @@ abstract class PlatformShim(implicit p: Parameters) extends LazyModule()(p) {
     top.module.genPartitioningConstants(sb, target)
   }
 
+  def genPeerToPeerAddrMap(sb: StringBuilder, target: String): Unit = {
+    top.module.genPeerToPeerAddrMap(sb, target)
+  }
+
   // Emit a `XDCPathToCircuitAnnotation` with the pre- and post-link circuit
   // paths provided in the configuration. These locate the design within the
   // context of the larger FPGA design.

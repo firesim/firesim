@@ -187,6 +187,7 @@ class FPGATop(implicit p: Parameters) extends LazyModule with HasWidgets {
   require(p(HostMemNumChannels) <= 4, "Midas-level simulation harnesses support up to 4 channels")
   require(p(CtrlNastiKey).dataBits == 32, "Simulation control bus must be 32-bits wide per AXI4-lite specification")
   val master = addWidget(new SimulationMaster)
+  val p2p_ctrl = addWidget(new P2PControlBridge)
 
   val bridgeAnnos                                                                              = p(SimWrapperKey).annotations.collect { case ba: BridgeIOAnnotation => ba }
   val bridgeModuleMap: ListMap[BridgeIOAnnotation, BridgeModule[_ <: Record with HasChannels]] =
@@ -348,6 +349,11 @@ class FPGATop(implicit p: Parameters) extends LazyModule with HasWidgets {
     .collect { case b: StreamFromQSFP => b }
   val hasFromQSFPStreams       = bridgesWithFromQSFPStreams.nonEmpty
 
+  // Below separates bridges for P2P (between 2 FPGAs) using partial functions
+  val bridgesWithToPeerFPGAStreams = bridgeModuleMap.values
+    .collect { case b: StreamToPeerFPGA => b }
+  val hasToFPGAStreams         = bridgesWithToPeerFPGAStreams.nonEmpty
+
   def printStreamSummary(streams: Iterable[StreamParameters], header: String): Unit = {
     val summaries = streams.toList match {
       case Nil => "None" :: Nil
@@ -373,16 +379,15 @@ class FPGATop(implicit p: Parameters) extends LazyModule with HasWidgets {
     println(s"QSFP bits at FPGATop ${p(FPGATopQSFPBitWidth)}")
   }
 
-  val (streamingEngine, cpuManagedAXI4NodeTuple, fpgaManagedAXI4NodeTuple) =
-    if (toCPUStreamParams.isEmpty && fromCPUStreamParams.isEmpty) { (None, None, None) }
+  val toPeerFPGAStreamParams   = bridgesWithToPeerFPGAStreams.map { _.streamSourceParams } // for p2p
+
+  val (streamingEngine, cpuManagedAXI4NodeTuple) =
+    if (toCPUStreamParams.isEmpty && fromCPUStreamParams.isEmpty) { (None, None) }
     else {
+      // CPU Streaming Engine (AWS PCIS)
       val streamEngineParams = StreamEngineParameters(toCPUStreamParams.toSeq, fromCPUStreamParams.toSeq)
       val streamingEngine    = addWidget(p(StreamEngineInstantiatorKey)(streamEngineParams, p))
 
-      require(
-        streamingEngine.fpgaManagedAXI4NodeOpt.isEmpty || p(FPGAManagedAXI4Key).nonEmpty,
-        "Selected StreamEngine uses the FPGA-managed AXI4 interface but it is not available on this platform.",
-      )
       require(
         streamingEngine.cpuManagedAXI4NodeOpt.isEmpty || p(CPUManagedAXI4Key).nonEmpty,
         "Selected StreamEngine uses the CPU-managed AXI4 interface, but it is not available on this platform.",
@@ -409,6 +414,19 @@ class FPGATop(implicit p: Parameters) extends LazyModule with HasWidgets {
         }
         (node, params)
       }
+      (Some(streamingEngine), cpuManagedAXI4NodeTuple)
+    }
+
+    val (fpgaStreamingEngine, fpgaManagedAXI4NodeTuple) =
+      if (toPeerFPGAStreamParams.isEmpty) { (None, None) }
+      else {
+        // FPGA Streaming Enginer (AWS PCIM)
+        val fpgaStreamEngineParams = StreamEngineParameters(toPeerFPGAStreamParams.toSeq, Seq())
+        val fpgaStreamingEngine    = addWidget(p(FPGAStreamEngineInstantiatorKey)(fpgaStreamEngineParams, p))
+        require(
+          fpgaStreamingEngine.fpgaManagedAXI4NodeOpt.isEmpty || p(FPGAManagedAXI4Key).nonEmpty,
+          "Selected StreamEngine uses the FPGA-managed AXI4 interface but it is not available on this platform.",
+          )
 
       val fpgaManagedAXI4NodeTuple = p(FPGAManagedAXI4Key).map { params =>
         val node = AXI4SlaveNode(
@@ -430,7 +448,7 @@ class FPGATop(implicit p: Parameters) extends LazyModule with HasWidgets {
           )
         )
 
-        streamingEngine.fpgaManagedAXI4NodeOpt match {
+        fpgaStreamingEngine.fpgaManagedAXI4NodeOpt match {
           case Some(engineNode) =>
             node := AXI4IdIndexer(params.idBits) := AXI4Buffer() := engineNode
           case None             =>
@@ -438,7 +456,7 @@ class FPGATop(implicit p: Parameters) extends LazyModule with HasWidgets {
         }
         (node, params)
       }
-      (Some(streamingEngine), cpuManagedAXI4NodeTuple, fpgaManagedAXI4NodeTuple)
+      (Some(fpgaStreamingEngine), fpgaManagedAXI4NodeTuple)
     }
 
   def genHeader(sb: StringBuilder): Unit = {
@@ -447,6 +465,10 @@ class FPGATop(implicit p: Parameters) extends LazyModule with HasWidgets {
 
   def genPartitioningConstants(sb: StringBuilder): Unit = {
     super.genWidgetPartitioningConstants(sb)
+  }
+
+  def genPeerToPeerAddrMap(sb: StringBuilder): Unit = {
+    super.genWidgetPeerToPeerAddrMap(sb)
   }
 
   lazy val module = new FPGATopImp(this)
@@ -463,15 +485,36 @@ class FPGATopImp(outer: FPGATop)(implicit p: Parameters) extends LazyModuleImp(o
   val qsfpBitWidth = p(FPGATopQSFPBitWidth)
   val qsfp = IO(Vec(outer.qsfpCnt, QSFPBundle(qsfpBitWidth)))
 
+  outer.p2p_ctrl.fpga.pcis_araddr.valid := false.B
+  outer.p2p_ctrl.fpga.pcis_araddr.bits  := 0.U
+  outer.p2p_ctrl.fpga.pcis_awaddr.valid := false.B
+  outer.p2p_ctrl.fpga.pcis_awaddr.bits  := 0.U
+
+  outer.p2p_ctrl.fpga.pcim_araddr.valid := false.B
+  outer.p2p_ctrl.fpga.pcim_araddr.bits  := 0.U
+  outer.p2p_ctrl.fpga.pcim_awaddr.valid := false.B
+  outer.p2p_ctrl.fpga.pcim_awaddr.bits  := 0.U
+
   val cpu_managed_axi4 = outer.cpuManagedAXI4NodeTuple.map { case (node, params) =>
-    val port = IO(Flipped(AXI4Bundle(params.axi4BundleParams)))
+    println("Creating AXI4 Slave for cpu managed node")
+    val port = IO(Flipped(AXI4Bundle(params.axi4BundleParams))) // Flipped makes AXIMaster a slave
     node.out.head._1 <> port
+    outer.p2p_ctrl.fpga.pcis_araddr.valid := port.ar.fire
+    outer.p2p_ctrl.fpga.pcis_araddr.bits  := port.ar.bits.addr
+    outer.p2p_ctrl.fpga.pcis_awaddr.valid := port.aw.fire
+    outer.p2p_ctrl.fpga.pcis_awaddr.bits  := port.aw.bits.addr
     port
   }
 
   val fpga_managed_axi4 = outer.fpgaManagedAXI4NodeTuple.map { case (node, params) =>
+    println("Creating AXI4 Master for FPGA managed node")
     val port = IO(AXI4Bundle(params.axi4BundleParams))
-    port <> node.in.head._1
+    val np = node.in.head._1
+    port <> np
+    outer.p2p_ctrl.fpga.pcim_araddr.valid := np.ar.fire
+    outer.p2p_ctrl.fpga.pcim_awaddr.valid := np.aw.fire
+    outer.p2p_ctrl.fpga.pcim_araddr.bits  := np.ar.bits.addr
+    outer.p2p_ctrl.fpga.pcim_awaddr.bits  := np.aw.bits.addr
     port
   }
   // Hack: Don't touch the ports so that we can use FPGATop as top-level in ML simulation
@@ -504,6 +547,7 @@ class FPGATopImp(outer: FPGATop)(implicit p: Parameters) extends LazyModuleImp(o
   outer.printStreamSummary(outer.fromCPUStreamParams, "Bridge Streams From CPU:")
   outer.printStreamSummary(outer.toQSFPStreamParams, "Bridge Streams To QSFP")
   outer.printStreamSummary(outer.fromQSFPStreamParams, "Bridge Streams From QSFP")
+  outer.printStreamSummary(outer.toPeerFPGAStreamParams, "Bridge Streams To FPGA")
 
   // TODO: need to add qsfp1 stuff in here
   QSFPPortLocHint()
@@ -551,7 +595,7 @@ class FPGATopImp(outer: FPGATop)(implicit p: Parameters) extends LazyModuleImp(o
     }
   }
 
-
+  // Connect CPU bridges to CPU stream
   outer.streamingEngine.map { streamingEngine =>
     val toHost = streamingEngine.streamsToHostCPU
     for (((sink, src), idx) <- toHost.zip(outer.bridgesWithToHostCPUStreams).zipWithIndex) {
@@ -572,6 +616,21 @@ class FPGATopImp(outer: FPGATop)(implicit p: Parameters) extends LazyModuleImp(o
       )
       sink.streamDeq <> src
     }
+  }
+
+   // Connect PCIM bridges to FPGA streaming engine
+  outer.fpgaStreamingEngine.map { streamingEngine =>
+    val toPeer = streamingEngine.streamsToHostCPU
+    for (((sink, src), idx) <- toPeer.zip(outer.bridgesWithToPeerFPGAStreams).zipWithIndex) {
+      val allocatedIdx = src.toPeerFPGAStreamIdx
+      require(
+        allocatedIdx == idx,
+        s"Allocated to-peer-fpga stream index ${allocatedIdx} does not match stream vector index ${idx}.",
+      )
+      sink <> src.streamEnq
+    }
+    // Receving peer-to-peer transactions happens on PCI-S
+    // Hence the receiving side of the stream should is included in outer.streamingEngine
   }
 
   outer.genCtrlIO(ctrl)
@@ -679,5 +738,9 @@ class FPGATopImp(outer: FPGATop)(implicit p: Parameters) extends LazyModuleImp(o
 
   def genPartitioningConstants(sb: StringBuilder, target: String)(implicit p: Parameters) = {
     outer.genPartitioningConstants(sb)
+  }
+
+  def genPeerToPeerAddrMap(sb: StringBuilder, target: String)(implicit p: Parameters) = {
+    outer.genPeerToPeerAddrMap(sb)
   }
 }

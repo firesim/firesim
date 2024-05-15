@@ -7,6 +7,7 @@
 #include <string>
 
 #include "core/stream_engine.h"
+#include "cpu_managed_stream.h"
 
 class simif_t;
 
@@ -62,7 +63,8 @@ struct StreamParameters {
                    uint64_t toHostStreamDoneInitAddr,
                    uint64_t toHostStreamFlushAddr,
                    uint64_t toHostStreamFlushDoneAddr)
-      : stream_name(stream_name), buffer_capacity(buffer_capacity),
+      : stream_name(stream_name),
+        buffer_capacity(buffer_capacity),
         toHostPhysAddrHighAddr(toHostPhysAddrHighAddr),
         toHostPhysAddrLowAddr(toHostPhysAddrLowAddr),
         bytesAvailableAddr(bytesAvailableAddr),
@@ -123,6 +125,11 @@ public:
       unsigned index,
       const std::vector<std::string> &args,
       std::vector<FPGAManagedStreams::StreamParameters> &&to_cpu);
+};
+
+class BiDirectionalManagedStreamIO : 
+  public FPGAManagedStreamIO,
+  public CPUManagedStreamIO {
 };
 
 #endif // __BRIDGES_FPGA_MANAGED_STREAM_H

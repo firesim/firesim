@@ -19,6 +19,21 @@ struct AXI4Config {
   uint64_t strb_bits() const { return data_bits / 8; }
 
   /**
+   * Return the number of data bits.
+   */
+  uint64_t get_data_bits() const { return data_bits; }
+
+  /**
+   * Return the number of addr bits.
+   */
+  uint64_t get_addr_bits() const { return addr_bits; }
+
+  /**
+   * Return the number of id bits.
+   */
+  uint64_t get_id_bits() const { return id_bits; }
+
+  /**
    * Return the number of bytes in a beat.
    */
   uint64_t beat_bytes() const { return strb_bits(); }

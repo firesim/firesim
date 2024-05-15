@@ -264,6 +264,9 @@ abstract class WidgetImp(wrapper: Widget) extends LazyModuleImp(wrapper) {
 
   def genPartitioningConstants(sb: StringBuilder): Unit = {
   }
+
+  def genPeerToPeerAddrMap(sb: StringBuilder): Unit = {
+  }
 }
 
 object Widget {
@@ -352,6 +355,10 @@ trait HasWidgets {
 
   def genWidgetPartitioningConstants(sb: StringBuilder): Unit = {
     widgets.foreach((w: Widget) => w.module.genPartitioningConstants(sb))
+  }
+
+  def genWidgetPeerToPeerAddrMap(sb: StringBuilder): Unit = {
+    widgets.foreach((w: Widget) => w.module.genPeerToPeerAddrMap(sb))
   }
 
   def printWidgets: Unit = {

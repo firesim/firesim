@@ -49,4 +49,18 @@ object PartitionModulesInfo {
     val groupWrappers = groups.map { g => groupWrapperPfx + "_" + g }
     (groups, groupWrappers)
   }
+
+  def getCutBridgeType(p: Parameters): String = {
+    val isQSFP = p(FireAxeQSFPConnections)
+    val isPCIM = p(FireAxePCIMConnections)
+    val isPCIS = p(FireAxePCISConnections)
+
+    if (isQSFP && isPCIM) assert(false)
+    if (isQSFP && isPCIS) assert(false)
+    if (isPCIS && isPCIM) assert(false)
+
+    if (isQSFP)      "QSFP"
+    else if (isPCIM) "PCIM"
+    else             "PCIS"
+  }
 }

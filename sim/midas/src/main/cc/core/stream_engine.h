@@ -90,6 +90,9 @@ public:
    */
   void push_flush(unsigned int stream_no);
 
+  int cpu_to_fpga_cnt() { return cpu_to_fpga_streams.size(); }
+  int fpga_to_cpu_cnt() { return fpga_to_cpu_streams.size(); }
+
 protected:
   std::vector<std::unique_ptr<FPGAToCPUStreamDriver>> fpga_to_cpu_streams;
   std::vector<std::unique_ptr<CPUToFPGAStreamDriver>> cpu_to_fpga_streams;

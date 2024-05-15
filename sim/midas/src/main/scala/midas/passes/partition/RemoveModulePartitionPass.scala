@@ -39,6 +39,7 @@ class GenerateCutBridgeInGroupedWrapper
     cutBridgeAnnos: mutable.ArrayBuffer[Annotation],
     cutBridgeModules: mutable.ArrayBuffer[ExtModule],
     circuitMain: String,
+    cutBridgeType: String,
     annos: AnnotationSeq
   ) (
     m: Module
@@ -74,9 +75,6 @@ class GenerateCutBridgeInGroupedWrapper
     println(s"lhsGroupIdx ${lhsGroupIdx} curGroupIdx ${curGroupIdx} rhsGroupIdx ${rhsGroupIdx}")
 
     // FIXME : how should be properly propagate the reset signal ??????
-
-    val cutBridgeType = if (p(FireAxeQSFPConnections)) "QSFP" else "PCIS"
-
     val lhsPortNames = groupIdxToPorts(lhsGroupIdx)
     val lhsPorts = ports.filter { port => lhsPortNames.contains(port.name) }
     val lhsCutBridgeInfo = generateCutBridge(
@@ -365,10 +363,11 @@ class GenerateCutBridgeInGroupedWrapper
 
   def execute(state: CircuitState): CircuitState = {
     val p = getConfigParams(state.annotations)
-    val cutBridgeType = if (p(FireAxeQSFPConnections)) "QSFP" else "PCIS"
+    val cutBridgeType = getCutBridgeType(p)
     val cutBridgeAnnos = mutable.ArrayBuffer[Annotation]()
     val cutBridgeModules = mutable.ArrayBuffer[ExtModule]()
     val (groups, _) = getGroups(state)
+
     val moduleBodyReplacedWithBridgeCircuit = state.circuit.map {
       val annos = state.annotations
       val replaceModuleBody: Module => Module = if (p(FireAxeNoCPartitionPass)) {
@@ -376,6 +375,7 @@ class GenerateCutBridgeInGroupedWrapper
           cutBridgeAnnos,
           cutBridgeModules,
           state.circuit.main,
+          cutBridgeType,
           annos)
       } else if (p(FireAxePreserveTarget)) {
         replaceModuleBodyWithTargetPreservingCutBridge(

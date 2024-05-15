@@ -4,6 +4,7 @@
 #include "bridges/clock.h"
 #include "bridges/loadmem.h"
 #include "bridges/master.h"
+#include "bridges/p2p_control.h"
 #include "core/bridge_driver.h"
 #include "core/simif.h"
 #include "core/stream_engine.h"
@@ -124,6 +125,10 @@ int simulation_t::execute_simulation_flow() {
       fprintf(stderr, "Invalid FireSim fingerprint\n");
       exit(EXIT_FAILURE);
     }
+  }
+
+  if (auto *fpga_stream = registry.get_fpga_stream_engine()) {
+    fpga_stream->init();
   }
 
   if (auto *stream = registry.get_stream_engine()) {

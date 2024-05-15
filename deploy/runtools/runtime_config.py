@@ -387,6 +387,8 @@ class RuntimeHWConfig:
         print_cycle_prefix = "+print-no-cycle-prefix" if not synthprint_config.cycle_prefix else ""
 
         command_cutbridgeidxs = array_to_plusargs(cutbridge_idxs, "+cutbridgeidx")
+        peer_pcis_offsets = self.get_peer_pcis_offsets(slotid, partition_config)
+        command_pcisoffsets = array_to_plusargs(peer_pcis_offsets, "+peer-pcis-offset")
 
         # TODO supernode support
         dwarf_file_name = "+dwarf-file-name=" + all_bootbinaries[0] + "-dwarf"
@@ -428,6 +430,8 @@ class RuntimeHWConfig:
             permissive_driver_args += [f"+partition-fpga-idx={partition_config.pidx}"]
             permissive_driver_args += [f"+batch-size={partition_config.batch_size}"]
             permissive_driver_args += command_cutbridgeidxs
+            permissive_driver_args += command_pcisoffsets
+            permissive_driver_args += [f"+slotid={slotid}"]
 
             # Disable heartbeat checking for non-base partitions
             if not partition_config.base:
@@ -438,6 +442,12 @@ class RuntimeHWConfig:
         screen_wrapped = f"""screen -S {screen_name} -d -m bash -c "{base_command}"; sleep 1"""
 
         return screen_wrapped
+
+    def get_peer_pcis_offsets(self, my_slot_id: int, pcfg: PartitionConfig) -> List[str]:
+        if my_slot_id == 0:
+            return [hex(int(x, 16) + int(pcfg.slot1_bar4, 16)) for x in pcfg.slot1_offset]
+        else:
+            return [hex(int(x, 16) + int(pcfg.slot0_bar4, 16)) for x in pcfg.slot0_offset]
 
     def get_kill_simulation_command(self) -> str:
         driver = self.get_local_driver_binaryname()

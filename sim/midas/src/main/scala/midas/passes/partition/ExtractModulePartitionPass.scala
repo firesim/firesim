@@ -31,7 +31,6 @@ class GenerateFireSimWrapper
   with DependencyAPIMigration
   with GenCutBridgePass
 {
-
   import PartitionModulesInfo._
   import ExtractModulesPrunePassInfo._
 
@@ -205,7 +204,7 @@ class GenerateFireSimWrapper
 
     // FIXME : Dedup lhs rhs cut bridge module body generation
     // lhs bridge
-    val cutBridgeType = if (p(FireAxeQSFPConnections)) "QSFP" else "PCIS"
+    val cutBridgeType = getCutBridgeType(p)
     val lhsCutBridgeInfo = generateCutBridge(
       circuitMain,
       "lhsCutBridge",
@@ -328,7 +327,7 @@ class GenerateFireSimWrapper
     val p = annos.collectFirst({
       case midas.stage.phases.ConfigParametersAnnotation(p)  => p
     }).get
-    val cutBridgeType = if (p(FireAxeQSFPConnections)) "QSFP" else "PCIS"
+    val cutBridgeType = getCutBridgeType(p)
     val cutBridgeInfo = generateCutBridge(circuitMain, "cut_bridge", m.ports, inModule=false, cutBridgeType)
     val cutBridgeInst = cutBridgeInfo.inst
     val inPorts       = cutBridgeInfo.inPorts
@@ -442,8 +441,7 @@ class GenerateFireSimWrapper
     val p = annos.collectFirst({
       case midas.stage.phases.ConfigParametersAnnotation(p)  => p
     }).get
-    val cutBridgeType = if (p(FireAxeQSFPConnections)) "QSFP" else "PCIS"
-
+    val cutBridgeType = getCutBridgeType(p)
 
     // Collect all the input & output port names that have combinational
     // dependencies between then within this module

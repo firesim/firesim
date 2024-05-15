@@ -1,5 +1,6 @@
 // See LICENSE for license details.
 
+#include <cassert>
 #include "widget_registry.h"
 
 #include "bridges/fased_memory_timing_model.h"
@@ -20,5 +21,18 @@ void widget_registry_t::add_widget(bridge_driver_t *widget) {
 }
 
 void widget_registry_t::add_widget(StreamEngine *widget) {
-  stream_engine.reset(widget);
+  fprintf(stdout, "widget_registry_t::add_widget(StreamEngine)\n");
+  fprintf(stdout, "cpu2fpga: %d, fpga2cpu: %d\n",
+      widget->cpu_to_fpga_cnt(),
+      widget->fpga_to_cpu_cnt());
+
+  if (stream_engine.get() == nullptr) {
+    if (fpga_stream_engine.get() != nullptr) {
+      fprintf(stdout, "PCIM stream engine driver registered before PCIS\n");
+      assert(false);
+    }
+    stream_engine.reset(widget);
+  } else if (fpga_stream_engine.get() == nullptr) {
+    fpga_stream_engine.reset(widget);
+  }
 }

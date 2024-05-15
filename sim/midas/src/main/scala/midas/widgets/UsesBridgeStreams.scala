@@ -12,6 +12,7 @@ import midas.core.{
   FromCPUStreamAllocatorKey,
   ToQSFPStreamAllocatorKey,
   FromQSFPStreamAllocatorKey, 
+  ToPeerFPGAStreamAllocatorKey,
   StreamSinkParameters,
   StreamSourceParameters,
 }
@@ -179,4 +180,31 @@ trait StreamToQSFP extends StreamTo { self: Widget =>
   override def streamEnq = _streamEnq.getWrappedValue
 
   override def toHostStreamWidthBits = QSFPBridgeStreamConstants.streamWidthBits
+}
+
+/**
+  *  Adds a stream interface that will be enqueued to by the BridgeModule.
+  */
+trait StreamToPeerFPGA extends StreamTo { self: Widget =>
+  def peerFPGAMaxAddrRangeInBeats: Int
+
+  final val (toPeerFPGAStreamName, toPeerFPGAStreamIdx) = p(ToPeerFPGAStreamAllocatorKey)
+    .allocate(s"${getWName.toUpperCase}_to_PeerFPGA_stream")
+
+  final def streamSourceParams = StreamSourceParameters(
+    toPeerFPGAStreamName,
+    toPeerFPGAStreamIdx,
+    peerFPGAMaxAddrRangeInBeats,
+    BridgeStreamConstants.streamWidthBits/8)
+
+  private val _streamEnq = InModuleBody {
+    val streamToPeerFPGA= IO(BridgeStreamConstants.streamChiselType)
+    streamToPeerFPGA
+  }
+
+  // This hides some diplomacy complexity from the user in cases where the
+  // implicit conversion from the wrapped value to the decoupled does not work.
+  override def streamEnq = _streamEnq.getWrappedValue
+
+  def toHostStreamWidthBits = BridgeStreamConstants.streamWidthBits
 }

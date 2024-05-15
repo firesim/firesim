@@ -4,6 +4,7 @@
 #include "bridges/fased_memory_timing_model.h"
 #include "bridges/heartbeat.h"
 #include "bridges/peek_poke.h"
+#include "bridges/p2p_control.h"
 #include "core/bridge_driver.h"
 #include "core/simif.h"
 #include "core/simulation.h"
@@ -69,6 +70,9 @@ int firesim_top_t::simulation_run() {
     run_scheduled_tasks();
     peek_poke.step(get_largest_stepsize(), false);
     while (!peek_poke.is_done() && !terminated) {
+      auto &p2p_control = registry.get_widget<p2p_control_t>();
+      p2p_control.print_incoming_pcis_addrs();
+
       for (auto *bridge : registry.get_all_bridges()) {
         bridge->tick();
         if (bridge->terminate()) {

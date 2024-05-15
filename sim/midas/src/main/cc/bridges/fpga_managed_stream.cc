@@ -4,8 +4,11 @@
 #include <assert.h>
 #include <cstring>
 #include <iostream>
+#include <inttypes.h>
+#include <stdio.h>
 
 void FPGAManagedStreams::FPGAToCPUDriver::init() {
+  fprintf(stdout, "PCIM Peer Base Addr: 0x%" PRIx64 "\n", buffer_base_fpga);
   mmio_write(params.toHostPhysAddrHighAddr, (uint32_t)(buffer_base_fpga >> 32));
   mmio_write(params.toHostPhysAddrLowAddr, (uint32_t)buffer_base_fpga);
 }
@@ -65,16 +68,33 @@ FPGAManagedStreamWidget::FPGAManagedStreamWidget(
   assert(index == 0 && "only one managed stream engine is allowed");
 
   auto &io = simif.get_fpga_managed_stream_io();
-  char *fpga_address_memory_base = io.get_memory_base();
-  uint64_t offset = 0;
+
+  int idx = 0;
+  bool found = false;
+  std::vector<uint64_t> pcis_offsets;
+  do {
+    std::string peer_pcis_offset_args = std::string("+peer-pcis-offset") + std::to_string(idx) + std::string("=");
+    found = false;
+    for (auto &arg: args) {
+      if (arg.find(peer_pcis_offset_args) == 0) {
+        found = true;
+        char *str = const_cast<char *>(arg.c_str() + peer_pcis_offset_args.length());
+        pcis_offsets.push_back(strtoul(str, NULL, 16));
+      }
+    }
+    idx++;
+  } while (found);
+
+  idx = 0;
   for (auto &&params : to_cpu) {
     uint32_t capacity = params.buffer_capacity;
+    uint64_t offset = pcis_offsets[idx];
     fpga_to_cpu_streams.push_back(
         std::make_unique<FPGAManagedStreams::FPGAToCPUDriver>(
-            std::move(params),
-            (void *)(fpga_address_memory_base + offset),
-            offset,
-            io));
-    offset += capacity;
+          std::move(params),
+          (void *)(offset),
+          offset,
+          io));
+    idx++;
   }
 }
