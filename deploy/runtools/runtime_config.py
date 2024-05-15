@@ -436,8 +436,7 @@ class RuntimeHWConfig:
             permissive_driver_args += [f"+slotid={slotid}"]
 
             # Disable heartbeat checking for non-base partitions
-            if not partition_config.base:
-                permissive_driver_args += [f"+partitioned=1"]
+            permissive_driver_args += [f"+partitioned=1"]
 
         driver_call = f"""{need_sudo} ./{driver} +permissive {" ".join(permissive_driver_args)} {extra_plusargs} +permissive-off {" ".join(command_bootbinaries)} {extra_args} """
         base_command = f"""script -f -c 'stty intr ^] && {driver_call} && stty intr ^c' uartlog"""
