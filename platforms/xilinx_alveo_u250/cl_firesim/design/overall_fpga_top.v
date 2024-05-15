@@ -57,6 +57,7 @@ module overall_fpga_top (
     //ddr4_sdram_c3_odt,
     //ddr4_sdram_c3_par,
     //ddr4_sdram_c3_reset_n,
+    default_300mhz_clk0_clk_n,
     default_300mhz_clk0_clk_p,
     default_300mhz_clk1_clk_n,
     default_300mhz_clk1_clk_p,
