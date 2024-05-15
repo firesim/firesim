@@ -135,7 +135,7 @@ xilinx_u250_quad_rocket_ring_base:
   PLATFORM: xilinx_alveo_u250
   TARGET_PROJECT: firesim
   DESIGN: FireSim
-  TARGET_CONFIG: WithDefaultFireSimBridges_WithFireSimConfigTweaks_chipyard.QuadRocketSbusRingNoCConfig
+  TARGET_CONFIG: FireSimQuadRocketSbusRingNoCConfig
   PLATFORM_CONFIG: QuadTileRingNoCBase
   deploy_quintuplet: null
   platform_config_args:
@@ -149,7 +149,7 @@ xilinx_u250_quad_rocket_ring_0:
   PLATFORM: xilinx_alveo_u250
   TARGET_PROJECT: firesim
   DESIGN: FireSim
-  TARGET_CONFIG: WithDefaultFireSimBridges_WithFireSimConfigTweaks_chipyard.QuadRocketSbusRingNoCConfig
+  TARGET_CONFIG: FireSimQuadRocketSbusRingNoCConfig
   PLATFORM_CONFIG: QuadTileRingNoC0
   deploy_quintuplet: null
   platform_config_args:
@@ -163,7 +163,7 @@ xilinx_u250_quad_rocket_ring_1:
   PLATFORM: xilinx_alveo_u250
   TARGET_PROJECT: firesim
   DESIGN: FireSim
-  TARGET_CONFIG: WithDefaultFireSimBridges_WithFireSimConfigTweaks_chipyard.QuadRocketSbusRingNoCConfig
+  TARGET_CONFIG: FireSimQuadRocketSbusRingNoCConfig
   PLATFORM_CONFIG: QuadTileRingNoC1
   deploy_quintuplet: null
   platform_config_args:

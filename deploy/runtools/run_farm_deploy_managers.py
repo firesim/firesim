@@ -335,8 +335,7 @@ class InstanceDeployManager(metaclass=abc.ABCMeta):
         if has_sudo():
             run("sudo rm -rf /dev/shm/*")
         else:
-            pass
-            #run("find /dev/shm -user $UID -exec rm -rf {} \;")
+            run("rm -rf $(find /dev/shm -user $UID | grep -vi Flex)")
 
     def start_pipe_slots(self) -> None:
         for slotno in range(len(self.parent_node.pipe_slots)):
