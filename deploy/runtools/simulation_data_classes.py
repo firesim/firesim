@@ -89,10 +89,10 @@ class PartitionConfig:
           print(f'Unrecognized partition mode {mode}')
           exit(1)
 
-        self.slot0_bar4 = ???
-        self.slot0_offset = [???, ???]
-        self.slot1_bar4 =  ???
-        self.slot1_offset =  [???, ???]
+        self.slot0_bar4 = "0"
+        self.slot0_offset = ["0", "0"]
+        self.slot1_bar4 =  "0"
+        self.slot1_offset =  ["0", "0"]
 
     def mac_address_assignable(self) -> bool:
         return (not self.partitioned) or (self.partitioned and self.base)

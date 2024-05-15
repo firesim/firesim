@@ -7,6 +7,8 @@ import org.chipsalliance.cde.config._
 import freechips.rocketchip.util._
 import freechips.rocketchip.diplomacy.InModuleBody
 import midas.MetasimPrintfEnable
+import midas.targetutils.{FireSimQueueHelper}
+import midas.targetutils.xdc
 
 object P2PLogger {
   def logInfo(format: String, args: Bits*)(implicit p: Parameters) {
@@ -58,43 +60,47 @@ class P2PControlBridge(implicit p: Parameters)
 
     val QUEUE_DEPTH = 200
 
-    val awAddrQ = Module(new BRAMQueue(QUEUE_DEPTH)(UInt(64.W)))
-    val arAddrQ = Module(new BRAMQueue(QUEUE_DEPTH)(UInt(64.W)))
+    val awAddrQIO = FireSimQueueHelper.makeIO(UInt(64.W), QUEUE_DEPTH,
+                      isFireSim=true, overrideStyle=Some(xdc.RAMStyles.ULTRA))
+    val arAddrQIO = FireSimQueueHelper.makeIO(UInt(64.W), QUEUE_DEPTH,
+                      isFireSim=true, overrideStyle=Some(xdc.RAMStyles.ULTRA))
 
-    awAddrQ.io.enq.valid := fpga.pcis_awaddr.valid
-    awAddrQ.io.enq.bits  := fpga.pcis_awaddr.bits
+    awAddrQIO.enq.valid := fpga.pcis_awaddr.valid
+    awAddrQIO.enq.bits  := fpga.pcis_awaddr.bits
 
-    arAddrQ.io.enq.valid := fpga.pcis_araddr.valid
-    arAddrQ.io.enq.bits  := fpga.pcis_araddr.bits
+    arAddrQIO.enq.valid := fpga.pcis_araddr.valid
+    arAddrQIO.enq.bits  := fpga.pcis_araddr.bits
 
-    genROReg(awAddrQ.io.deq.valid, "aw_addr_deq_valid")
-    genROReg(awAddrQ.io.deq.bits(31, 0) ,  "aw_addr_deq_bits_lo")
-    genROReg(awAddrQ.io.deq.bits(63, 32) , "aw_addr_deq_bits_hi")
-    Pulsify(genWORegInit(awAddrQ.io.deq.ready, "aw_addr_deq_ready", false.B), pulseLength = 1)
+    genROReg(awAddrQIO.deq.valid, "aw_addr_deq_valid")
+    genROReg(awAddrQIO.deq.bits(31, 0) ,  "aw_addr_deq_bits_lo")
+    genROReg(awAddrQIO.deq.bits(63, 32) , "aw_addr_deq_bits_hi")
+    Pulsify(genWORegInit(awAddrQIO.deq.ready, "aw_addr_deq_ready", false.B), pulseLength = 1)
 
-    genROReg(arAddrQ.io.deq.valid, "ar_addr_deq_valid")
-    genROReg(arAddrQ.io.deq.bits(31, 0) ,  "ar_addr_deq_bits_lo")
-    genROReg(arAddrQ.io.deq.bits(63, 32) , "ar_addr_deq_bits_hi")
-    Pulsify(genWORegInit(arAddrQ.io.deq.ready, "ar_addr_deq_ready", false.B), pulseLength = 1)
+    genROReg(arAddrQIO.deq.valid, "ar_addr_deq_valid")
+    genROReg(arAddrQIO.deq.bits(31, 0) ,  "ar_addr_deq_bits_lo")
+    genROReg(arAddrQIO.deq.bits(63, 32) , "ar_addr_deq_bits_hi")
+    Pulsify(genWORegInit(arAddrQIO.deq.ready, "ar_addr_deq_ready", false.B), pulseLength = 1)
 
-    val awAddrQ2 = Module(new BRAMQueue(QUEUE_DEPTH)(UInt(64.W)))
-    val arAddrQ2 = Module(new BRAMQueue(QUEUE_DEPTH)(UInt(64.W)))
+    val awAddrQ2IO = FireSimQueueHelper.makeIO(UInt(64.W), QUEUE_DEPTH,
+                      isFireSim=true, overrideStyle=Some(xdc.RAMStyles.ULTRA))
+    val arAddrQ2IO = FireSimQueueHelper.makeIO(UInt(64.W), QUEUE_DEPTH,
+                      isFireSim=true, overrideStyle=Some(xdc.RAMStyles.ULTRA))
 
-    awAddrQ2.io.enq.valid := fpga.pcim_awaddr.valid
-    awAddrQ2.io.enq.bits  := fpga.pcim_awaddr.bits
+    awAddrQ2IO.enq.valid := fpga.pcim_awaddr.valid
+    awAddrQ2IO.enq.bits  := fpga.pcim_awaddr.bits
 
-    arAddrQ2.io.enq.valid := fpga.pcim_araddr.valid
-    arAddrQ2.io.enq.bits  := fpga.pcim_araddr.bits
+    arAddrQ2IO.enq.valid := fpga.pcim_araddr.valid
+    arAddrQ2IO.enq.bits  := fpga.pcim_araddr.bits
 
-    genROReg(awAddrQ2.io.deq.valid, "m_aw_addr_deq_valid")
-    genROReg(awAddrQ2.io.deq.bits(31, 0) ,  "m_aw_addr_deq_bits_lo")
-    genROReg(awAddrQ2.io.deq.bits(63, 32) , "m_aw_addr_deq_bits_hi")
-    Pulsify(genWORegInit(awAddrQ2.io.deq.ready, "m_aw_addr_deq_ready", false.B), pulseLength = 1)
+    genROReg(awAddrQ2IO.deq.valid, "m_aw_addr_deq_valid")
+    genROReg(awAddrQ2IO.deq.bits(31, 0) ,  "m_aw_addr_deq_bits_lo")
+    genROReg(awAddrQ2IO.deq.bits(63, 32) , "m_aw_addr_deq_bits_hi")
+    Pulsify(genWORegInit(awAddrQ2IO.deq.ready, "m_aw_addr_deq_ready", false.B), pulseLength = 1)
 
-    genROReg(arAddrQ2.io.deq.valid, "m_ar_addr_deq_valid")
-    genROReg(arAddrQ2.io.deq.bits(31, 0) ,  "m_ar_addr_deq_bits_lo")
-    genROReg(arAddrQ2.io.deq.bits(63, 32) , "m_ar_addr_deq_bits_hi")
-    Pulsify(genWORegInit(arAddrQ2.io.deq.ready, "m_ar_addr_deq_ready", false.B), pulseLength = 1)
+    genROReg(arAddrQ2IO.deq.valid, "m_ar_addr_deq_valid")
+    genROReg(arAddrQ2IO.deq.bits(31, 0) ,  "m_ar_addr_deq_bits_lo")
+    genROReg(arAddrQ2IO.deq.bits(63, 32) , "m_ar_addr_deq_bits_hi")
+    Pulsify(genWORegInit(arAddrQ2IO.deq.ready, "m_ar_addr_deq_ready", false.B), pulseLength = 1)
 
     genCRFile()
 

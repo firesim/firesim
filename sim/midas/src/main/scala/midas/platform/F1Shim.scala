@@ -63,7 +63,7 @@ class F1Shim(implicit p: Parameters) extends PlatformShim {
         io_pcis.b.valid  := false.B
         io_pcis.b.bits   := DontCare
       case Some(axi4) =>
-        AXI4NastiAssigner.toAXI4(axi4, io_pcis)
+        AXI4NastiAssigner.toAXI4Slave(axi4, io_pcis)
     }
 
     if (p(F1ShimHasPCIMPorts)) {
