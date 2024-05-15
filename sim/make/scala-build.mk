@@ -32,7 +32,38 @@
 SBT_COMMAND ?= shell
 .PHONY: sbt
 sbt:
-	cd $(base_dir) && $(SBT) ";project $(FIRESIM_SBT_PROJECT); $(SBT_COMMAND)"
+	cd $(firesim_base_dir) && $(SBT) ";project $(FIRESIM_SBT_PROJECT); $(SBT_COMMAND)"
+
+# Scala invocation options
+JAVA_HEAP_SIZE ?= 16G
+# Disable the SBT supershell as interacts poorly with scalatest output and breaks
+# the runtime config generator.
+export JAVA_TOOL_OPTIONS ?= -Xmx$(JAVA_HEAP_SIZE) -Xss8M -Djava.io.tmpdir=$(firesim_base_dir)/.java_tmp
+export SBT_OPTS ?= -Dsbt.ivy.home=$(firesim_base_dir)/.ivy2 -Dsbt.global.base=$(firesim_base_dir)/.sbt -Dsbt.boot.directory=$(firesim_base_dir)/.sbt/boot/ -Dsbt.color=always -Dsbt.supershell=false -Dsbt.server.forcestart=true
+SBT ?= java -jar $(chipyard_dir)/scripts/sbt-launch.jar $(SBT_OPTS)
+
+# (1) - directory of the build.sbt used to compile the fat jar
+# (2) - classpath of the fat jar
+# (3) - main class
+# (4) - main class arguments
+define run_jar_scala_main
+	cd $(1) && java -cp $(2) $(3) $(4)
+endef
+
+# (1) - build.sbt path
+# (2) - sbt project
+# (3) - main class
+# (4) - main class arguments
+define run_scala_main
+	cd $(1) && $(SBT) ";project $(2); runMain $(3) $(4)"
+endef
+
+# (1) - build.sbt path
+# (2) - sbt project to assemble
+# (3) - classpath file(s) to create
+define run_sbt_assembly
+	cd $(1) && $(SBT) ";project $(2); set assembly / assemblyOutputPath := file(\"$(3)\"); assembly" && touch $(3)
+endef
 
 ################################################################################
 # Target Configuration
@@ -78,9 +109,7 @@ FIRESIM_MAIN_CP := $(BUILD_DIR)/firesim-main.jar
 FIRESIM_MAIN_CP_TARGETS := $(subst :, ,$(FIRESIM_MAIN_CP))
 $(FIRESIM_MAIN_CP): $(SCALA_BUILDTOOL_DEPS) $(firesim_main_srcs) $(firesim_test_srcs)
 	@mkdir -p $(@D)
-	$(call run_sbt_assembly,$(FIRESIM_SBT_PROJECT),$(FIRESIM_MAIN_CP))
-
-ifneq ($(FIRESIM_SBT_PROJECT),$(TARGET_SBT_PROJECT))
+	$(call run_sbt_assembly,$(firesim_base_dir),$(FIRESIM_SBT_PROJECT),$(FIRESIM_MAIN_CP))
 
 target_srcs = \
 	$(call fs_lookup_srcs_by_multiple_type, $(TARGET_SOURCE_DIRS), 'src/main/scala', $(SCALA_EXT)) \
@@ -91,13 +120,8 @@ TARGET_CP := $(BUILD_DIR)/target.jar
 TARGET_CP_TARGETS ?= $(subst :, ,$(TARGET_CP))
 $(TARGET_CP): $(target_srcs) | $(FIRESIM_MAIN_CP)
 	@mkdir -p $(@D)
-	$(call run_sbt_assembly,$(TARGET_SBT_PROJECT),$(TARGET_CP))
+	$(call run_sbt_assembly,$(chipyard_dir),$(TARGET_SBT_PROJECT),$(TARGET_CP))
 
-else
-
-TARGET_CP := $(FIRESIM_MAIN_CP)
-
-endif
 
 .PHONY: firesim-main-classpath target-classpath
 firesim-main-classpath: $(FIRESIM_MAIN_CP)

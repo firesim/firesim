@@ -94,6 +94,8 @@ class TracerVBridgeModule(key: TraceBundleWidths)(implicit p: Parameters)
     })
     private val pcWidth   = traces.map(_.iaddr.getWidth).max
     private val insnWidth = traces.map(_.insn.getWidth).max
+    println(s"TracerVBridge: Max {Iaddr, Insn} Widths = {$pcWidth, $insnWidth}")
+    require(pcWidth + 1 <= 64, "Instruction address + 1 bit (for valid) must fit in 64b (for SW-side of bridge)")
     val cycleCountWidth   = 64
 
     // Set after trigger-dependent memory-mapped registers have been set, to
@@ -211,7 +213,7 @@ class TracerVBridgeModule(key: TraceBundleWidths)(implicit p: Parameters)
     val allTraceArms = traces.grouped(armWidth).toSeq
 
     // an intermediate value used to build allStreamBits
-    val allUintTraces = allTraceArms.map(arm => arm.map((trace => Cat(trace.valid, trace.iaddr).pad(64))).reverse)
+    val allUintTraces = allTraceArms.map(arm => arm.map((trace => Cat(trace.valid, trace.iaddr.pad(63)))).reverse)
 
     // Literally each arm of the mux, these are directly the bits that get put into the bump
     val allStreamBits =

@@ -1,4 +1,3 @@
-
 .. include:: Running-Sims-Top-Template.rst
 
 Setting up the manager configuration
@@ -10,7 +9,7 @@ parts of this file necessary for our purposes. You can find full descriptions of
 all of the parameters in the :ref:`manager-configuration-files` section.
 
 If you open up this file, you will see the following default config (assuming
-you have not modified it):
+you have not modified it)(note the ``default_platform`` value might be different):
 
 .. include:: DOCS_EXAMPLE_config_runtime.yaml
    :code: yaml
@@ -93,4 +92,3 @@ As a final sanity check, in the mappings we changed, the ``config_runtime.yaml``
 
 
 .. include:: Running-Sims-Bottom-Template.rst
-

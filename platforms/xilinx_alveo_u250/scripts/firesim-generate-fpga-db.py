@@ -36,7 +36,7 @@ def get_bdfs() -> List[str]:
     return bdfs
 
 def call_fpga_util(args: List[str]) -> None:
-    progScript = scriptPath / 'fpga-util.py'
+    progScript = Path('/usr/local/bin/firesim-fpga-util.py')
     assert progScript.exists(), f"Unable to find {progScript}"
     pProg = subprocess.Popen(
         [str(progScript.resolve().absolute())] + args,

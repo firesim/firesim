@@ -2,7 +2,7 @@
 
 $(FIRRTL_FILE) $(ANNO_FILE): $(TARGET_CP)
 	@mkdir -p $(@D)
-	$(call run_jar_scala_main,$(TARGET_CP),chipyard.Generator,\
+	$(call run_jar_scala_main,$(chipyard_dir),$(TARGET_CP),chipyard.Generator,\
 		--target-dir $(GENERATED_DIR) \
 		--name $(long_name) \
 		--top-module $(DESIGN_PACKAGE).$(DESIGN) \

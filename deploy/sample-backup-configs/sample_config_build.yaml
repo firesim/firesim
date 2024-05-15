@@ -45,11 +45,16 @@ builds_to_run:
     # Config for RHSResearch Nitefury II
     # - nitefury_firesim_rocket_singlecore_no_nic
 
-    # Configs for Xilinx Alveo U250/U280
-    # - alveo_u250_firesim_rocket_singlecore_no_nic
-    # - alveo_u250_firesim_gemmini_rocket_singlecore_no_nic
+    # Configs for Xilinx Alveo U2*0s
     # - alveo_u200_firesim_rocket_singlecore_no_nic
+    # - alveo_u250_firesim_rocket_singlecore_no_nic
     # - alveo_u280_firesim_rocket_singlecore_no_nic
+    #
+    # - alveo_u250_firesim_rocket_quadcore_no_nic
+    # - alveo_u250_firesim_boom_singlecore_no_nic
+    # - alveo_u250_firesim_rocket_singlecore_nic
+    #
+    # - alveo_u250_firesim_gemmini_rocket_singlecore_no_nic
 
     # Config for Xilinx VCU118
     # - xilinx_vcu118_firesim_rocket_singlecore_4GB_no_nic

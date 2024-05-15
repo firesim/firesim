@@ -1,0 +1,5 @@
+#!/bin/bash
+
+set -ex
+
+xvsecctl -b ${1} -F ${2} -c ${3} -p ${4}
