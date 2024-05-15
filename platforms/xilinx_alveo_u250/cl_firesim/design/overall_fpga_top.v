@@ -824,55 +824,55 @@ module overall_fpga_top (
         .io_master_r_bits_user(),    // UNUSED at top level
 
         // special NIC master interface
-        .io_dma_aw_ready(PCIE_M_AXI_awready),
-        .io_dma_aw_valid(PCIE_M_AXI_awvalid),
-        .io_dma_aw_bits_addr(PCIE_M_AXI_awaddr),
-        .io_dma_aw_bits_len(PCIE_M_AXI_awlen),
-        .io_dma_aw_bits_size(PCIE_M_AXI_awsize),
-        .io_dma_aw_bits_burst(2'h1), // PCIE_M_AXI_awburst
-        .io_dma_aw_bits_lock(1'h0), // PCIE_M_AXI_awlock
-        .io_dma_aw_bits_cache(4'h0), // PCIE_M_AXI_awcache
-        .io_dma_aw_bits_prot(3'h0), //unused? (could connect?) PCIE_M_AXI_awprot
-        .io_dma_aw_bits_qos(4'h0), // PCIE_M_AXI_awqos
-        .io_dma_aw_bits_region(4'h0), // PCIE_M_AXI_awregion
-        .io_dma_aw_bits_id(PCIE_M_AXI_awid),
-        .io_dma_aw_bits_user(1'h0),
+        .io_pcis_aw_ready(PCIE_M_AXI_awready),
+        .io_pcis_aw_valid(PCIE_M_AXI_awvalid),
+        .io_pcis_aw_bits_addr(PCIE_M_AXI_awaddr),
+        .io_pcis_aw_bits_len(PCIE_M_AXI_awlen),
+        .io_pcis_aw_bits_size(PCIE_M_AXI_awsize),
+        .io_pcis_aw_bits_burst(2'h1), // PCIE_M_AXI_awburst
+        .io_pcis_aw_bits_lock(1'h0), // PCIE_M_AXI_awlock
+        .io_pcis_aw_bits_cache(4'h0), // PCIE_M_AXI_awcache
+        .io_pcis_aw_bits_prot(3'h0), //unused? (could connect?) PCIE_M_AXI_awprot
+        .io_pcis_aw_bits_qos(4'h0), // PCIE_M_AXI_awqos
+        .io_pcis_aw_bits_region(4'h0), // PCIE_M_AXI_awregion
+        .io_pcis_aw_bits_id(PCIE_M_AXI_awid),
+        .io_pcis_aw_bits_user(1'h0),
 
-        .io_dma_w_ready(PCIE_M_AXI_wready),
-        .io_dma_w_valid(PCIE_M_AXI_wvalid),
-        .io_dma_w_bits_data(PCIE_M_AXI_wdata),
-        .io_dma_w_bits_last(PCIE_M_AXI_wlast),
-        .io_dma_w_bits_id(4'h0),
-        .io_dma_w_bits_strb(PCIE_M_AXI_wstrb),
-        .io_dma_w_bits_user(1'h0),
+        .io_pcis_w_ready(PCIE_M_AXI_wready),
+        .io_pcis_w_valid(PCIE_M_AXI_wvalid),
+        .io_pcis_w_bits_data(PCIE_M_AXI_wdata),
+        .io_pcis_w_bits_last(PCIE_M_AXI_wlast),
+        .io_pcis_w_bits_id(4'h0),
+        .io_pcis_w_bits_strb(PCIE_M_AXI_wstrb),
+        .io_pcis_w_bits_user(1'h0),
 
-        .io_dma_b_ready(PCIE_M_AXI_bready),
-        .io_dma_b_valid(PCIE_M_AXI_bvalid),
-        .io_dma_b_bits_resp(PCIE_M_AXI_bresp),
-        .io_dma_b_bits_id(PCIE_M_AXI_bid),
-        .io_dma_b_bits_user(),    // UNUSED at top level
+        .io_pcis_b_ready(PCIE_M_AXI_bready),
+        .io_pcis_b_valid(PCIE_M_AXI_bvalid),
+        .io_pcis_b_bits_resp(PCIE_M_AXI_bresp),
+        .io_pcis_b_bits_id(PCIE_M_AXI_bid),
+        .io_pcis_b_bits_user(),    // UNUSED at top level
 
-        .io_dma_ar_ready(PCIE_M_AXI_arready),
-        .io_dma_ar_valid(PCIE_M_AXI_arvalid),
-        .io_dma_ar_bits_addr(PCIE_M_AXI_araddr),
-        .io_dma_ar_bits_len(PCIE_M_AXI_arlen),
-        .io_dma_ar_bits_size(PCIE_M_AXI_arsize),
-        .io_dma_ar_bits_burst(2'h1), // PCIE_M_AXI_arburst
-        .io_dma_ar_bits_lock(1'h0), // PCIE_M_AXI_arlock
-        .io_dma_ar_bits_cache(4'h0), // PCIE_M_AXI_arcache
-        .io_dma_ar_bits_prot(3'h0), // PCIE_M_AXI_arprot
-        .io_dma_ar_bits_qos(4'h0), // PCIE_M_AXI_arqos
-        .io_dma_ar_bits_region(4'h0), // PCIE_M_AXI_arregion
-        .io_dma_ar_bits_id(PCIE_M_AXI_arid),
-        .io_dma_ar_bits_user(1'h0),
+        .io_pcis_ar_ready(PCIE_M_AXI_arready),
+        .io_pcis_ar_valid(PCIE_M_AXI_arvalid),
+        .io_pcis_ar_bits_addr(PCIE_M_AXI_araddr),
+        .io_pcis_ar_bits_len(PCIE_M_AXI_arlen),
+        .io_pcis_ar_bits_size(PCIE_M_AXI_arsize),
+        .io_pcis_ar_bits_burst(2'h1), // PCIE_M_AXI_arburst
+        .io_pcis_ar_bits_lock(1'h0), // PCIE_M_AXI_arlock
+        .io_pcis_ar_bits_cache(4'h0), // PCIE_M_AXI_arcache
+        .io_pcis_ar_bits_prot(3'h0), // PCIE_M_AXI_arprot
+        .io_pcis_ar_bits_qos(4'h0), // PCIE_M_AXI_arqos
+        .io_pcis_ar_bits_region(4'h0), // PCIE_M_AXI_arregion
+        .io_pcis_ar_bits_id(PCIE_M_AXI_arid),
+        .io_pcis_ar_bits_user(1'h0),
 
-        .io_dma_r_ready(PCIE_M_AXI_rready),
-        .io_dma_r_valid(PCIE_M_AXI_rvalid),
-        .io_dma_r_bits_resp(PCIE_M_AXI_rresp),
-        .io_dma_r_bits_data(PCIE_M_AXI_rdata),
-        .io_dma_r_bits_last(PCIE_M_AXI_rlast),
-        .io_dma_r_bits_id(PCIE_M_AXI_rid),
-        .io_dma_r_bits_user(),    // UNUSED at top level
+        .io_pcis_r_ready(PCIE_M_AXI_rready),
+        .io_pcis_r_valid(PCIE_M_AXI_rvalid),
+        .io_pcis_r_bits_resp(PCIE_M_AXI_rresp),
+        .io_pcis_r_bits_data(PCIE_M_AXI_rdata),
+        .io_pcis_r_bits_last(PCIE_M_AXI_rlast),
+        .io_pcis_r_bits_id(PCIE_M_AXI_rid),
+        .io_pcis_r_bits_user(),    // UNUSED at top level
 
         // `include "firesim_ila_insert_ports.v"
 
