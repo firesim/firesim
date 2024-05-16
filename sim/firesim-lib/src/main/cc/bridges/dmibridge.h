@@ -7,7 +7,6 @@
 
 class loadmem_t;
 class firesim_dtm_t;
-// shcho: added firesim_loadmm
 class firesim_loadmem_t;
 
 struct DMIBRIDGEMODULE_struct {
@@ -45,7 +44,6 @@ public:
 
 private:
   const DMIBRIDGEMODULE_struct mmio_addrs;
-  // shcho: add loadmem widget as a class attr
   loadmem_t &loadmem_widget;
 
   firesim_dtm_t *fesvr;
@@ -62,7 +60,6 @@ private:
   // Tell the widget to start enqueuing tokens
   void go();
 
-  // shcho: add fsver <-> widget data interactions and loadmem helpers
   void send();
   void recv();
 

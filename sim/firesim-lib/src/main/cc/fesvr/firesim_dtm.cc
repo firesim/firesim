@@ -1,14 +1,17 @@
 // See LICENSE for license details
 #include "firesim_dtm.h"
 
-firesim_dtm_t::firesim_dtm_t(int argc, char **argv, bool has_loadmem)
-    : testchip_dtm_t(argc, argv, has_loadmem), is_busy(false) {
+firesim_dtm_t::firesim_dtm_t(int argc, char **argv, bool can_have_loadmem)
+    : testchip_dtm_t(argc, argv, can_have_loadmem), is_busy(false) {
   idle_counts = 10;
   std::vector<std::string> args(argv + 1, argv + argc);
   for (auto &arg : args) {
     if (arg.find("+idle-counts=") == 0)
       idle_counts = atoi(arg.c_str() + 13);
   }
+
+  // always use loadmem if the target supports it
+  has_loadmem = can_have_loadmem;
 }
 
 void firesim_dtm_t::idle() {
@@ -18,17 +21,6 @@ void firesim_dtm_t::idle() {
   is_busy = true;
 }
 
-// void firesim_dtm_t::load_mem_write(addr_t addr,
-//                                    size_t nbytes,
-//                                   const void *src) {
-//  assert(false && "dtm_t doesn't support loadmem requests");
-// }
-
-// void firesim_dtm_t::load_mem_read(addr_t addr, size_t nbytes, void *dst) {
-//   assert(false && "dtm_t doesn't support loadmem requests");
-// }
-
-// shcho: add relevant loadmem function
 void firesim_dtm_t::send_loadmem_word(uint32_t word) {
   loadmem_out_data.push_back(word);
 }
@@ -56,15 +48,11 @@ void firesim_dtm_t::load_mem_read(addr_t addr, size_t nbytes, void *dst) {
   }
 }
 
-void firesim_dtm_t::tick() { switch_to_host(); }
-
 bool firesim_dtm_t::has_loadmem_reqs() {
-  printf("check if loadmem_req eixsts");
   return (!loadmem_write_reqs.empty() || !loadmem_read_reqs.empty());
 }
 
 bool firesim_dtm_t::recv_loadmem_write_req(firesim_loadmem_t &loadmem) {
-  printf("write req recevied on server side");
   if (loadmem_write_reqs.empty())
     return false;
   auto r = loadmem_write_reqs.front();
@@ -75,7 +63,6 @@ bool firesim_dtm_t::recv_loadmem_write_req(firesim_loadmem_t &loadmem) {
 }
 
 bool firesim_dtm_t::recv_loadmem_read_req(firesim_loadmem_t &loadmem) {
-  printf("read req recevied on server side");
   if (loadmem_read_reqs.empty())
     return false;
   auto r = loadmem_read_reqs.front();
