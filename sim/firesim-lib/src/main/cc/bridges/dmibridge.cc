@@ -28,9 +28,29 @@ dmibridge_t::dmibridge_t(simif_t &simif,
 
   // This particular selection is vestigial. You may change it freely.
   step_size = 2004765L;
+
+  // During the initial program phase speed up when FESVR is called
+  // (i.e. speed up program loading when loadmem isn't/can't be used)
+  // (disabled by default)
+  fast_fesvr = false;
+
+  // This particular selection is correlated to the amount of reset cycles.
+  // It should be larger than the reset period.
+  wait_ticks = 8;
+
+  // This particular selection is vestigial. You may change it freely.
+  // This * wait_ticks is should be larger than the reset period.
+  loading_step_size = fast_fesvr ? 8 : step_size;
+
   for (auto &arg : args) {
     if (arg.find("+fesvr-step-size=") == 0) {
       step_size = atoi(arg.c_str() + 17);
+    }
+    if (arg.find("+fesvr-enable-early-fast") == 0) {
+      fast_fesvr = true;
+    }
+    if (arg.find("+fesvr-wait-ticks=") == 0) {
+      wait_ticks = atoi(arg.c_str() + 18);
     }
     if (arg.find(prog_arg) == 0) {
       std::string clean_target_args =
@@ -83,7 +103,14 @@ void dmibridge_t::init() {
   // built here, as the bridge constructor may be invoked from a thread other
   // than the one it will run on later in meta-simulations.
   fesvr = new firesim_dtm_t(dmi_argc, dmi_argv, has_mem);
-  write(mmio_addrs.step_size, step_size);
+  if (fast_fesvr) {
+    printf("dmibridge_t::init set FESVR step-size to %" PRIu32 " initially\n",
+           loading_step_size);
+    write(mmio_addrs.step_size, loading_step_size);
+  } else {
+    write(mmio_addrs.step_size, step_size);
+    fesvr->set_loaded_in_target(true); // pre-set to unblock fs_dtm_t::reset
+  }
   go();
 }
 
@@ -157,6 +184,13 @@ void dmibridge_t::tick() {
   if (!read(mmio_addrs.done))
     return;
 
+  if (wait_ticks != 0) {
+    wait_ticks -= 1;
+    printf("dmibridge_t::tick skipping tick\n");
+    go();
+    return;
+  }
+
   // req from the host, resp from the target
   // in(to) the target, out from the target
 
@@ -189,6 +223,18 @@ void dmibridge_t::tick() {
       write(mmio_addrs.in_bits_op, in_req.op);
       write(mmio_addrs.in_bits_data, in_req.data);
       write(mmio_addrs.in_valid, 1);
+    }
+
+    if (fast_fesvr) {
+      if (fesvr->loaded_in_host()) {
+        if (!fesvr->req_valid()) {
+          fesvr->set_loaded_in_target(true); // done w/ firesim loading
+          printf("dmibridge_t::tick reverting FESVR step-size to %" PRIu32 "\n",
+                 step_size);
+          write(mmio_addrs.step_size, step_size);
+          fast_fesvr = false; // only write this user-defined step size once
+        }
+      }
     }
 
     // Move forward step_size iterations

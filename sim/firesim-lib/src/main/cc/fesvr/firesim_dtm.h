@@ -17,6 +17,8 @@ public:
   ~firesim_dtm_t() {}
 
   bool busy() { return is_busy; };
+  bool loaded_in_host() { return is_loaded_in_host; };
+  void set_loaded_in_target(bool loaded) { is_loaded_in_target = loaded; };
 
   bool recv_loadmem_write_req(firesim_loadmem_t &loadmem);
   bool recv_loadmem_read_req(firesim_loadmem_t &loadmem);
@@ -27,6 +29,8 @@ public:
 
 protected:
   void idle() override;
+
+  void reset() override;
 
   void load_mem_write(addr_t addr, size_t nbytes, const void *src) override;
   void load_mem_read(addr_t addr, size_t nbytes, void *dst) override;
@@ -45,5 +49,12 @@ protected:
 private:
   size_t idle_counts;
   bool is_busy;
+  // program load has completed in the host thread (i.e. all fesvr xacts for
+  // program load have been sent by fesvr)
+  bool is_loaded_in_host;
+  // program load has completed in the target thread (i.e. all in-flight fesvr
+  // xacts for program load have been synced/drained by the target
+  // thread/bridge)
+  bool is_loaded_in_target;
 };
 #endif // __FIRESIM_DTM_H
