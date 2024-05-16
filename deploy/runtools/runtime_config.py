@@ -455,7 +455,7 @@ class RuntimeHWConfig:
         driver = self.get_local_driver_binaryname()
         need_sudo = "sudo" if is_on_aws() else ""
         # Note that pkill only works for names <=15 characters
-        return """{need_sudo} pkill -SIGKILL {driver}""".format(driver=driver[:15])
+        return f"""{need_sudo} pkill -SIGKILL {driver}""".format(driver=driver[:15])
 
     def handle_failure(self, buildresult: _stdoutString, what: str, dir: Path|str, cmd: str) -> None:
         """ A helper function for a nice error message when used in conjunction with the run() function"""
