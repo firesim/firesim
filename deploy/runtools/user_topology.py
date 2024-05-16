@@ -439,8 +439,8 @@ class UserTopologies:
 
     def fireaxe_rocket_fastmode_config(self) -> None:
         hwdb_entries = {
-            "xilinx_u250_firesim_rocket_split_soc"  : 1,
-            "xilinx_u250_firesim_rocket_split_tile" : 0
+            "firesim_rocket_split_soc_tracerv"  : 1,
+            "firesim_rocket_split_tile_tracerv" : 0
         }
         self.fireaxe_two_node_base_config(hwdb_entries, PartitionMode.FAST_MODE)
 

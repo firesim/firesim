@@ -25,6 +25,10 @@ class RocketTileQSFPXilinxAlveoConfig extends Config(
   new WithFireAxeQSFPConfig(Seq(Seq("RocketTile"))) ++
   new BaseXilinxAlveoU250Config)
 
+class RocketTileF1Config extends Config(
+  new WithFireAxePCIMConfig(Seq(Seq("RocketTile"))) ++
+  new BaseF1Config)
+
 class OctaTileMeshNoCTopoQSFPXilinxAlveoConfig extends Config(
   new WithFireAxeQSFPNoCConfig(Seq(
     Seq("0", "1", "4", "5"),
@@ -52,6 +56,14 @@ class RocketTileQSFPBase extends Config(
 class RocketTileQSFPPartition0 extends Config(
   new WithPartitionIndex(0) ++
   new RocketTileQSFPXilinxAlveoConfig)
+
+class RocketTileF1PCIMBase extends Config(
+  new WithPartitionBase ++
+  new RocketTileF1Config)
+
+class RocketTileF1PCIMPartition0 extends Config(
+  new WithPartitionIndex(0) ++
+  new RocketTileF1Config)
 
 class DualRocketTileQSFPXilinxAlveoConfig extends Config(
   new WithFireAxeQSFPConfig(Seq(

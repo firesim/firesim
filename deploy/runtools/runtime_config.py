@@ -386,10 +386,6 @@ class RuntimeHWConfig:
         disable_asserts = "+disable-asserts" if (hostdebug_config.disable_synth_asserts) else ""
         print_cycle_prefix = "+print-no-cycle-prefix" if not synthprint_config.cycle_prefix else ""
 
-        command_cutbridgeidxs = array_to_plusargs(cutbridge_idxs, "+cutbridgeidx")
-        peer_pcis_offsets = self.get_peer_pcis_offsets(slotid, partition_config)
-        command_pcisoffsets = array_to_plusargs(peer_pcis_offsets, "+peer-pcis-offset")
-
         # TODO supernode support
         dwarf_file_name = "+dwarf-file-name=" + all_bootbinaries[0] + "-dwarf"
 
@@ -431,11 +427,16 @@ class RuntimeHWConfig:
             permissive_driver_args += [f"+partition-fpga-cnt={partition_config.fpga_cnt}"]
             permissive_driver_args += [f"+partition-fpga-idx={partition_config.pidx}"]
             permissive_driver_args += [f"+batch-size={partition_config.batch_size}"]
-            permissive_driver_args += command_cutbridgeidxs
-            permissive_driver_args += command_pcisoffsets
             permissive_driver_args += [f"+slotid={slotid}"]
 
-            # Disable heartbeat checking for non-base partitions
+            command_cutbridgeidxs = array_to_plusargs(cutbridge_idxs, "+cutbridgeidx")
+            permissive_driver_args += command_cutbridgeidxs
+
+            peer_pcis_offsets = self.get_peer_pcis_offsets(slotid, partition_config)
+            command_pcisoffsets = array_to_plusargs(peer_pcis_offsets, "+peer-pcis-offset")
+            permissive_driver_args += command_pcisoffsets
+
+            # Disable heartbeat checking for partitions
             permissive_driver_args += [f"+partitioned=1"]
 
         driver_call = f"""{need_sudo} ./{driver} +permissive {" ".join(permissive_driver_args)} {extra_plusargs} +permissive-off {" ".join(command_bootbinaries)} {extra_args} """
@@ -454,7 +455,7 @@ class RuntimeHWConfig:
         driver = self.get_local_driver_binaryname()
         need_sudo = "sudo" if is_on_aws() else ""
         # Note that pkill only works for names <=15 characters
-        return f"""{need_sudo} pkill -SIGKILL {driver[:15]}"""
+        return """{need_sudo} pkill -SIGKILL {driver}""".format(driver=driver[:15])
 
     def handle_failure(self, buildresult: _stdoutString, what: str, dir: Path|str, cmd: str) -> None:
         """ A helper function for a nice error message when used in conjunction with the run() function"""
