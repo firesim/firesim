@@ -216,8 +216,10 @@ class FireSimServerNode(FireSimNode):
         FireSimServerNode.SERVERS_CREATED += 1
 
     def mac_address_assignable(self) -> bool:
-        assert self.partition_config is not None
-        return self.partition_config.mac_address_assignable()
+        if self.partition_config is None:
+            return True
+        else:
+            return self.partition_config.mac_address_assignable()
 
     def is_leaf_partition(self) -> bool:
         assert self.partition_config is not None
