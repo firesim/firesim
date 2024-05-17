@@ -4,7 +4,6 @@
 #include "bridges/clock.h"
 #include "bridges/loadmem.h"
 #include "bridges/master.h"
-#include "bridges/p2p_control.h"
 #include "core/bridge_driver.h"
 #include "core/simif.h"
 #include "core/stream_engine.h"

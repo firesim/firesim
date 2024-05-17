@@ -187,7 +187,6 @@ class FPGATop(implicit p: Parameters) extends LazyModule with HasWidgets {
   require(p(HostMemNumChannels) <= 4, "Midas-level simulation harnesses support up to 4 channels")
   require(p(CtrlNastiKey).dataBits == 32, "Simulation control bus must be 32-bits wide per AXI4-lite specification")
   val master = addWidget(new SimulationMaster)
-  val p2p_ctrl = addWidget(new P2PControlBridge)
 
   val bridgeAnnos                                                                              = p(SimWrapperKey).annotations.collect { case ba: BridgeIOAnnotation => ba }
   val bridgeModuleMap: ListMap[BridgeIOAnnotation, BridgeModule[_ <: Record with HasChannels]] =
@@ -485,24 +484,10 @@ class FPGATopImp(outer: FPGATop)(implicit p: Parameters) extends LazyModuleImp(o
   val qsfpBitWidth = p(FPGATopQSFPBitWidth)
   val qsfp = IO(Vec(outer.qsfpCnt, QSFPBundle(qsfpBitWidth)))
 
-  outer.p2p_ctrl.fpga.pcis_araddr.valid := false.B
-  outer.p2p_ctrl.fpga.pcis_araddr.bits  := 0.U
-  outer.p2p_ctrl.fpga.pcis_awaddr.valid := false.B
-  outer.p2p_ctrl.fpga.pcis_awaddr.bits  := 0.U
-
-  outer.p2p_ctrl.fpga.pcim_araddr.valid := false.B
-  outer.p2p_ctrl.fpga.pcim_araddr.bits  := 0.U
-  outer.p2p_ctrl.fpga.pcim_awaddr.valid := false.B
-  outer.p2p_ctrl.fpga.pcim_awaddr.bits  := 0.U
-
   val cpu_managed_axi4 = outer.cpuManagedAXI4NodeTuple.map { case (node, params) =>
     println("Creating AXI4 Slave for cpu managed node")
     val port = IO(Flipped(AXI4Bundle(params.axi4BundleParams))) // Flipped makes AXIMaster a slave
     node.out.head._1 <> port
-    outer.p2p_ctrl.fpga.pcis_araddr.valid := port.ar.fire
-    outer.p2p_ctrl.fpga.pcis_araddr.bits  := port.ar.bits.addr
-    outer.p2p_ctrl.fpga.pcis_awaddr.valid := port.aw.fire
-    outer.p2p_ctrl.fpga.pcis_awaddr.bits  := port.aw.bits.addr
     port
   }
 
@@ -511,10 +496,6 @@ class FPGATopImp(outer: FPGATop)(implicit p: Parameters) extends LazyModuleImp(o
     val port = IO(AXI4Bundle(params.axi4BundleParams))
     val np = node.in.head._1
     port <> np
-    outer.p2p_ctrl.fpga.pcim_araddr.valid := np.ar.fire
-    outer.p2p_ctrl.fpga.pcim_awaddr.valid := np.aw.fire
-    outer.p2p_ctrl.fpga.pcim_araddr.bits  := np.ar.bits.addr
-    outer.p2p_ctrl.fpga.pcim_awaddr.bits  := np.aw.bits.addr
     port
   }
   // Hack: Don't touch the ports so that we can use FPGATop as top-level in ML simulation
