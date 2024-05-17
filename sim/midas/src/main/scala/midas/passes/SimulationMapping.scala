@@ -48,12 +48,12 @@ private[passes] class SimulationMapping(targetName: String) extends firrtl.Trans
       fileSuffix = ".partition.const.h")
     c.genPartitioningHeader(psb.getBuilder, targetName)
 
+    // Golden Gate-generated Peer to Peer addr map
+    // This file encodes AXI4 address ranges for bridges
+    // that expects to receive PCIS transactions from a peer FPGA
+    // that sends requests out on PCIM.
     val p2psb = new OutputFileBuilder(
-      """// Golden Gate-generated Peer to Peer addr map
-        |// This file encodes AXI4 address ranges for bridges
-        |// that expects to receive PCIS transactions from a peer FPGA
-        |// that sends requests out on PCIM.
-        |""".stripMargin,
+      "",
       fileSuffix = ".peer2peer.const.yaml")
     c.genPeerToPeerAddrMap(p2psb.getBuilder, targetName)
 

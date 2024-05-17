@@ -20,7 +20,7 @@ simif_emul_t::simif_emul_t(const TargetConfig &config,
   // Parse arguments.
   memsize = 1L << config.mem.addr_bits;
   bool fastloadmem = false;
-  int fpga_cnt = 0;
+  int fpga_cnt = 1;
   int fpga_idx = 0;
   bool noc_part   = false;
   bool comb_logic = false;

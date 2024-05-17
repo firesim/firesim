@@ -2,9 +2,8 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 
-from typing import Dict, Any, List, Optional
+from typing import Dict, Any, List, Optional, Tuple
 from enum import Enum
-from runtools.runtime_config import RuntimeHWConfig
 
 @dataclass
 class TracerVConfig:
@@ -48,22 +47,46 @@ class SynthPrintConfig:
         self.end = args.get("end", "-1")
         self.cycle_prefix = args.get("cycle_prefix", True) == True
 
+class FireAxeEdge:
+    """
+    Connects to partition nodes u, v
+    pidx : partition index of the nodes creating the edge
+    bidx : bridge index of the edge
+    """
+    u_pidx: int
+    u_bidx: int
+    v_pidx: int
+    v_bidx: int
+
+    def __init__(self, u_pidx: int, u_bidx: int, v_pidx: int, v_bidx: int) -> None:
+        self.u_bidx = u_bidx
+        self.u_pidx = u_pidx
+        self.v_bidx = v_bidx
+        self.v_pidx = v_pidx
+
 class PartitionMode(Enum):
-  FAST_MODE     = 1
-  EXACT_MODE    = 2
-  NOC_MODE      = 3
+    FAST_MODE     = 1
+    EXACT_MODE    = 2
+    NOC_MODE      = 3
 
 class PartitionNode:
+    """
+    Partitioning information for a single FireSimServerNode
+    hwdb  : FireSimHWDB
+    pidx  : partition index
+    edges : my_bridge -> (neighbor_bridge, neighbor_node)
+    """
     hwdb: str
-    pidx: int                       # partition idx
-    edges: Dict[int, Tuple[int, PartitionNode]] # my bridge idx -> (your bridge idx, PartitionNode)
+    pidx: int
+    edges: Dict[int, Tuple[int, PartitionNode]]
 
     def __init__(self, hwdb: str, pidx: int) -> None:
         self.hwdb = hwdb
         self.pidx = pidx
+        self.edges = dict()
 
     def sort_edges_by_bridge_idx(self) -> None:
-        self.edges = dict(sorted(edges.items()))
+        self.edges = dict(sorted(self.edges.items()))
 
     def add_edge(self, bidx: int, nbidx: int, node: PartitionNode) -> None:
         self.edges[bidx] = (nbidx, node)
@@ -71,6 +94,9 @@ class PartitionNode:
 
 @dataclass
 class PartitionConfig:
+    """
+    Provides information to a FireSimServerNode about the global partitioning topology
+    """
     node: Optional[PartitionNode]
     fpga_cnt: int
     pidx_to_slotid: Dict[int, int]
@@ -78,20 +104,31 @@ class PartitionConfig:
     mode: PartitionMode
 
     def __init__(self,
-                 node: None,
+                 node: Optional[PartitionNode] = None,
                  pidx_to_slotid: Dict[int, int] = dict(),
                  mode: PartitionMode = PartitionMode.FAST_MODE) -> None:
         self.node = node
-        self.fpga_cnt = min(len(pidx_to_slotid.keys()), 1)
+        self.fpga_cnt = max(len(pidx_to_slotid.keys()), 1)
         self.pidx_to_slotid = pidx_to_slotid
         self.pcim_slot_offset = list()
         self.mode = mode
+
+    def get_hwdb(self) -> str:
+        assert self.node is not None
+        return self.node.hwdb
+
+    def get_edges(self) -> Dict[int, Tuple[int, PartitionNode]]:
+        assert self.node is not None
+        return self.node.edges
 
     def add_pcim_slot_offset(self, slot: int, offset: int) -> None:
         self.pcim_slot_offset.append((slot, offset))
 
     def is_base(self) -> bool:
-        return self.node.pidx == (self.fpga_cnt - 1)
+        if self.node is None:
+            return True
+        else:
+          return self.node.pidx == (self.fpga_cnt - 1)
 
     def is_partitioned(self) -> bool:
         return self.fpga_cnt > 1
@@ -106,7 +143,7 @@ class PartitionConfig:
           exit(1)
 
     def metasim_partition_topo_args(self) -> int:
-        if not self.mode.FAST_MODE:
+        if self.mode.FAST_MODE:
             return 0
         elif self.mode.EXACT_MODE:
             return 1
@@ -123,4 +160,4 @@ class PartitionConfig:
         return self.is_partitioned() and (not self.is_base())
 
     def get_pcim_slot_and_bridge_offsets(self) -> List[str]:
-        [f'{slotid},{bridgeoffset}' for (slotid, bridgeoffset) in self.pcim_slot_offset]
+        return [f'{slotid},{bridgeoffset}' for (slotid, bridgeoffset) in self.pcim_slot_offset]

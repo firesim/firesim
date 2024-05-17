@@ -140,7 +140,7 @@ FPGAManagedStreamWidget::FPGAManagedStreamWidget(
   }
 }
 
-uint64_t FPGAManagedStreamWid::get_p2p_bar_address(char *dir_name)
+uint64_t FPGAManagedStreamWidget::get_p2p_bar_address(char *dir_name)
 {
   int ret;
   uint64_t physical_addr;

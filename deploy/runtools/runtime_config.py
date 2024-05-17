@@ -412,6 +412,8 @@ class RuntimeHWConfig:
         permissive_driver_args += command_shmemportnames
 
         if partition_config.is_partitioned():
+            assert partition_config.node is not None
+
             # For QSFP metasims, assume that the partitions are connected in a ring-topology.
             # Then, when you know your FPGA idx & the total number of FPGAs, you know
             # your lhs & rhs neighbors to communicate with.
@@ -429,7 +431,7 @@ class RuntimeHWConfig:
             permissive_driver_args += command_cutbridgeidxs
 
             peer_pcis_offsets = partition_config.get_pcim_slot_and_bridge_offsets()
-            command_pcisoffsets = array_to_plusargs(peer_pcim_offsets, "+peer-pcis-offset")
+            command_pcisoffsets = array_to_plusargs(peer_pcis_offsets, "+peer-pcis-offset")
             permissive_driver_args += command_pcisoffsets
 
         driver_call = f"""{need_sudo} ./{driver} +permissive {" ".join(permissive_driver_args)} {extra_plusargs} +permissive-off {" ".join(command_bootbinaries)} {extra_args} """

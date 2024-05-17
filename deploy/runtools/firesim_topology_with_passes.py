@@ -20,7 +20,7 @@ from runtools.utils import MacAddress
 from runtools.simulation_data_classes import TracerVConfig, AutoCounterConfig, HostDebugConfig, SynthPrintConfig, PartitionConfig
 
 from runtools.run_farm_deploy_managers import InstanceDeployManager
-from typing import Dict, Any, cast, List, Set, TYPE_CHECKING, Callable
+from typing import Dict, Any, cast, List, Set, TYPE_CHECKING, Callable, Optional
 if TYPE_CHECKING:
     from runtools.run_farm import RunFarm
     from runtools.runtime_config import RuntimeHWDB, RuntimeBuildRecipes
@@ -686,9 +686,9 @@ class FireSimTopologyWithPasses:
 
         execute(screens, hosts=all_run_farm_ips)
 
-    def get_bridge_offset(self, hwcfg: RuntimeHWConfig, bridge_idx: int) -> int:
-        platform = resolved_neighbor_hw_cfg.platform()
-        quintuplet = resolved_neighbor_hw_cfg.get_deployquintuplet_for_config()
+    def get_bridge_offset(self, hwcfg: RuntimeHWConfig, bridge_idx: int) -> Optional[int]:
+        platform = hwcfg.get_platform()
+        quintuplet = hwcfg.get_deployquintuplet_for_config()
         rootLogger.info("""neighbor platform: {} quintuplet: {}""".format(
             platform, quintuplet))
         driver_path = os.path.join("../sim/generated-src", platform, quintuplet)
@@ -696,16 +696,18 @@ class FireSimTopologyWithPasses:
 
         if not os.path.exists(p2p_config_file):
             rootLogger.info("Skipping PCIM offset setting")
-            return 0
+            return None
 
         with open(p2p_config_file, 'r') as f:
             data = yaml.safe_load(f)
-            for (bridge_name, bridge_info) in data.items():
-              cur_bridge_idx = int(bridge_name.split('_')[1])
-              if ('PCIMCUTBOUNDARYBRIDGE' in bridge_name) and (cur_bridge_idx == bridge_idx):
-                  return bridge_info['bufferBaseAddress']
+            rootLogger.info(f"p2p yaml data  {data}")
+            if data is not None:
+              for (bridge_name, bridge_info) in data.items():
+                cur_bridge_idx = int(bridge_name.split('_')[1])
+                if ('PCIMCUTBOUNDARYBRIDGE' in bridge_name) and (cur_bridge_idx == bridge_idx):
+                    return bridge_info['bufferBaseAddress']
         rootLogger.info("""Could not find bridge offset for {} bridge_idx {}""".format(p2p_config_file, bridge_idx))
-        return 0
+        return None
 
     def pass_set_partition_configs(self) -> None:
         servers = self.firesimtopol.get_dfs_order_servers()
@@ -715,10 +717,10 @@ class FireSimTopologyWithPasses:
             runtimehwconfig_lookup_fn = self.build_recipes.get_runtimehwconfig_from_name
 
         for server in servers:
-            if not server.partition_config.is_partitioned():
+            if not server.is_partition():
                 continue
-            pidx_to_slotid = server.partition_config.pidx_to_slotid
-            edges = server.partition_config.node.edges
+            pidx_to_slotid = server.get_partition_config().pidx_to_slotid
+            edges = server.get_partition_config().get_edges()
             for (nbidx, nnode) in edges.values():
                 neighbor_hwdb = nnode.hwdb
                 neighbor_slotid = pidx_to_slotid[nnode.pidx]
@@ -726,10 +728,11 @@ class FireSimTopologyWithPasses:
                     neighbor_slotid, neighbor_hwdb, nbidx))
 
                 resolved_neighbor_hw_cfg = runtimehwconfig_lookup_fn(neighbor_hwdb)
-                bridge_offset = self.get_bridge_offset(resolved_neighbor_hw_cfg, nbidx)
-                server.partition_config.add_pcim_slot_offset(neighbor_slotid, bridge_offset)
+                bridge_offset_opt = self.get_bridge_offset(resolved_neighbor_hw_cfg, nbidx)
+                if bridge_offset_opt is not None:
+                    server.partition_config.add_pcim_slot_offset(neighbor_slotid, bridge_offset_opt)
             rootLogger.info("""pcim slotid bridgeoffset pairs for {}: {}""".format(
-              server.partition_config.node.hwdb, server.partition_config.pcim_slot_offset))
+              server.partition_config.get_hwdb(), server.partition_config.pcim_slot_offset))
 
     def run_workload_passes(self, use_mock_instances_for_testing: bool) -> None:
         """ extra passes needed to do runworkload. """
@@ -852,8 +855,15 @@ class FireSimTopologyWithPasses:
             rootLogger.info("""{}/{} simulations are still running.""".format(runningsims, totalsims))
             rootLogger.info("-"*80)
 
+
+        servers = self.firesimtopol.get_dfs_order_servers()
+        is_partitioned = False
+        for server in servers:
+            if isinstance(server, FireSimServerNode):
+                is_partitioned = is_partitioned or server.is_partition()
+
         # is networked if a switch node is the root
-        is_networked = isinstance(self.firesimtopol.roots[0], FireSimSwitchNode) or isinstance(self.firesimtopol.roots[0], FireSimPipeNode)
+        is_networked = isinstance(self.firesimtopol.roots[0], FireSimSwitchNode) or is_partitioned
 
         # run polling loop
         while True:

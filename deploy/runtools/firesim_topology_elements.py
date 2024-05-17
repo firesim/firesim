@@ -227,7 +227,11 @@ class FireSimServerNode(FireSimNode):
 
     def is_partition(self) -> bool:
         assert self.partition_config is not None
-        return self.partition_config.partitioned
+        return self.partition_config.is_partitioned()
+
+    def get_partition_config(self) -> PartitionConfig:
+        assert self.partition_config is not None
+        return self.partition_config
 
     def set_server_hardware_config(self, server_hardware_config: RuntimeHWConfig) -> None:
         rootLogger.info(f"set_server_hardware_config {self.server_id_internal} {self.server_hardware_config}")

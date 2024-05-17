@@ -300,15 +300,15 @@ class CPUManagedStreamEngine(p: Parameters, val params: StreamEngineParameters) 
     override def genPeerToPeerAddrMap(sb: StringBuilder): Unit = {
       sourceDriverParameters.foreach({ dp =>
         sb.append(s"${dp.name}:\n")
-        sb.append(s"\tbufferBaseAddress: ${dp.bufferBaseAddress}\n")
-        sb.append(s"\tbufferCapacity:    ${dp.bufferCapacity}\n")
-        sb.append(s"\tbufferWidthBytes:  ${dp.bufferWidthBytes}\n")
+        sb.append(s"  bufferBaseAddress: ${dp.bufferBaseAddress}\n")
+        sb.append(s"  bufferCapacity:    ${dp.bufferCapacity}\n")
+        sb.append(s"  bufferWidthBytes:  ${dp.bufferWidthBytes}\n")
       })
       sinkDriverParameters.foreach({ dp =>
         sb.append(s"${dp.name}:\n")
-        sb.append(s"\tbufferBaseAddress: ${dp.bufferBaseAddress}\n")
-        sb.append(s"\tbufferCapacity:    ${dp.bufferCapacity}\n")
-        sb.append(s"\tbufferWidthBytes:  ${dp.bufferWidthBytes}\n")
+        sb.append(s"  bufferBaseAddress: ${dp.bufferBaseAddress}\n")
+        sb.append(s"  bufferCapacity:    ${dp.bufferCapacity}\n")
+        sb.append(s"  bufferWidthBytes:  ${dp.bufferWidthBytes}\n")
       })
     }
   }
