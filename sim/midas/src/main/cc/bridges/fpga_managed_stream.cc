@@ -71,6 +71,39 @@ FPGAManagedStreamWidget::FPGAManagedStreamWidget(
 
   int idx = 0;
   bool found = false;
+  char *resource_name[8] = {};
+
+  // TODO : Currently using the number of FPGAs in the partition as a proxy of the AWS instance type
+  // Need a better way of doing this...
+  int f1_instance_fpga_cnt = 2;
+  std::string fpga_cnt_arg = std::string("+partition-fpga-cnt=");
+  for (auto &arg: args) {
+    if (arg.find(fpga_cnt_arg) == 0) {
+      char *str = const_cast<char *>(arg.c_str()) + fpga_cnt_arg.length();
+      int fpga_cnt = atoi(str);
+      f1_instance_fpga_cnt = fpga_cnt > 2 ? 8 : 2;
+    }
+  }
+
+  if (f1_instance_fpga_cnt == 2) {
+    resource_name[0] = "0000:00:1b.0";
+    resource_name[1] = "0000:00:1d.0";
+  } else if (f1_instance_fpga_cnt == 8) {
+    resource_name[0] = "0000:00:0f.0";
+    resource_name[1] = "0000:00:11.0";
+    resource_name[2] = "0000:00:13.0";
+    resource_name[3] = "0000:00:15.0";
+    resource_name[4] = "0000:00:17.0";
+    resource_name[5] = "0000:00:19.0";
+    resource_name[6] = "0000:00:1b.0";
+    resource_name[7] = "0000:00:1d.0";
+  }
+
+  uint64_t p2p_bar4_addrs[f1_instance_fpga_cnt];
+  for (int slotid = 0; slotid < f1_instance_fpga_cnt; slotid++) {
+    p2p_bar4_addrs[slotid] = get_p2p_bar_address(resource_name[slotid]);
+  }
+
   std::vector<uint64_t> pcis_offsets;
   do {
     std::string peer_pcis_offset_args = std::string("+peer-pcis-offset") + std::to_string(idx) + std::string("=");
@@ -79,7 +112,15 @@ FPGAManagedStreamWidget::FPGAManagedStreamWidget(
       if (arg.find(peer_pcis_offset_args) == 0) {
         found = true;
         char *str = const_cast<char *>(arg.c_str() + peer_pcis_offset_args.length());
-        pcis_offsets.push_back(strtoul(str, NULL, 16));
+        int slotid, bridge_offset;
+        char trailingjunk;
+        sscanf(str, "%d,%d%c", slotid, bridge_offset);
+        uint64_t offset = p2p_bar4_addrs[slotid] + bridge_offset;
+        printf("P2P neighbor slotid: %d, p2p_bar4_addrs: 0x%" PRIx64 " bridge_offset: 0x%x\n",
+            slotid,
+            p2p_bar4_addrs[slotid],
+            bridge_offset);
+        pcis_offsets.push_back(offset);
       }
     }
     idx++;
@@ -97,4 +138,51 @@ FPGAManagedStreamWidget::FPGAManagedStreamWidget(
           io));
     idx++;
   }
+}
+
+uint64_t FPGAManagedStreamWid::get_p2p_bar_address(char *dir_name)
+{
+  int ret;
+  uint64_t physical_addr;
+  if (!dir_name) {
+    printf("dir_name is null\n");
+    assert(false);
+  }
+
+  char sysfs_name[256];
+  ret = snprintf(sysfs_name, sizeof(sysfs_name),
+      "/sys/bus/pci/devices/%s/resource", dir_name);
+
+  if (ret < 0) {
+    printf("Error building the sysfs path for resource\n");
+    assert(false);
+  }
+  if ((size_t)ret >= sizeof(sysfs_name)) {
+    printf("sysfs path too long for resource\n");
+    assert(false);
+  }
+
+  FILE *fp = fopen(sysfs_name, "r");
+  if (!fp) {
+    printf("Error opening %s\n", sysfs_name);
+    assert(false);
+  }
+
+#ifndef FPGA_BAR_PER_PF_MAX
+#define FPGA_BAR_PER_PF_MAX 5
+#endif
+
+  for (size_t i = 0; i < FPGA_BAR_PER_PF_MAX; ++i) {
+    uint64_t addr_begin = 0, addr_end = 0, flags = 0;
+    ret = fscanf(fp, "0x%lx 0x%lx 0x%lx\n", &addr_begin, &addr_end, &flags);
+    if (ret < 3 || addr_begin == 0) {
+      continue;
+    }
+    if (i == 4) {
+      physical_addr = addr_begin;
+    }
+  }
+
+  fclose(fp);
+  return physical_addr;
 }

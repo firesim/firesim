@@ -6,7 +6,7 @@ from __future__ import annotations
 import logging
 
 from runtools.firesim_topology_elements import FireSimPipeNode, FireSimSwitchNode, FireSimServerNode, FireSimSuperNodeServerNode, FireSimDummyServerNode, FireSimNode
-from runtools.simulation_data_classes import PartitionConfig, PartitionMode
+from runtools.simulation_data_classes import PartitionConfig, PartitionMode, PartitionNeighbor
 
 from typing import Optional, Union, Callable, Sequence, TYPE_CHECKING, cast, List, Any, Dict
 if TYPE_CHECKING:
@@ -409,6 +409,34 @@ class UserTopologies:
         self.roots = [FireSimServerNode(hwdb_entries[x]) for x in range(self.no_net_num_nodes)]
 
 ########################################################################
+
+    def fireaxe_topology_config(self,
+                       hwdb_entries: Dict[int, str],
+                       topo: Dict[int, List[PartitionNeighbor]],
+                       slotid_to_pidx: List[int],
+                       mode: PartitionMode) -> None:
+        pidx_to_slotid = dict()
+        for (sid, pid) in enumerate(slotid_to_pidx):
+            pidx_to_slotid[pid] = sid
+
+        for pidx in slotid_to_pidx:
+            hwdb = hwdb_entries[pidx]
+            partition_config = PartitionConfig(pidx, pidx_to_slotid, hwdb_entries, topo, mode)
+            server = FireSimServerNode(hwdb, partition_config=partition_config)
+            self.roots.append(server)
+
+    def fireaxe_rocket_fastmode_config(self) -> None:
+        hwdb_entries = {
+            0 : "firesim_rocket_split_tile_tracerv",
+            1 : "firesim_rocket_split_soc_tracerv"
+        }
+        slotid_to_pidx = [0, 1]
+        topo = {
+            0: PartitionNeighbor(1, 0),
+            1: PartitionNeighbor(0, 0)
+        }
+        mode = PartitionMode.FAST_MODE
+        self.fireaxe_topology_config(hwdb_entries, topo, slotid_to_pidx, mode)
 
     def fireaxe_two_node_base_config(self, hwdb_entries: Dict[str, int], mode: PartitionMode) -> None:
       assert len(hwdb_entries) == 2

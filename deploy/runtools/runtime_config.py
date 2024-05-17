@@ -411,45 +411,32 @@ class RuntimeHWConfig:
         permissive_driver_args += command_netbws
         permissive_driver_args += command_shmemportnames
 
-        if partition_config.partitioned:
-            partition_fpga_topo = 0
-            if partition_config.fpga_topo == 'fast_mode':
-                partition_fpga_topo = 0
-            elif partition_config.fpga_topo == 'exact_mode':
-                partition_fpga_topo = 1
-            elif partition_config.fpga_topo == 'noc_mode':
-                partition_fpga_topo = 2
-            permissive_driver_args += [f"+partition-fpga-topo={partition_fpga_topo}"]
-
+        if partition_config.is_partitioned():
             # For QSFP metasims, assume that the partitions are connected in a ring-topology.
             # Then, when you know your FPGA idx & the total number of FPGAs, you know
             # your lhs & rhs neighbors to communicate with.
+            permissive_driver_args += [f"+partition-fpga-topo={partition_config.metasim_partition_topo_args()}"]
             permissive_driver_args += [f"+partition-fpga-cnt={partition_config.fpga_cnt}"]
-            permissive_driver_args += [f"+partition-fpga-idx={partition_config.pidx}"]
-            permissive_driver_args += [f"+batch-size={partition_config.batch_size}"]
+            permissive_driver_args += [f"+partition-fpga-idx={partition_config.node.pidx}"]
+
+            # Disable heartbeat checking for partitions
+            permissive_driver_args += [f"+partitioned=1"]
+
             permissive_driver_args += [f"+slotid={slotid}"]
+            permissive_driver_args += [f"+batch-size={partition_config.batch_size()}"]
 
             command_cutbridgeidxs = array_to_plusargs(cutbridge_idxs, "+cutbridgeidx")
             permissive_driver_args += command_cutbridgeidxs
 
-            peer_pcis_offsets = self.get_peer_pcis_offsets(slotid, partition_config)
-            command_pcisoffsets = array_to_plusargs(peer_pcis_offsets, "+peer-pcis-offset")
+            peer_pcis_offsets = partition_config.get_pcim_slot_and_bridge_offsets()
+            command_pcisoffsets = array_to_plusargs(peer_pcim_offsets, "+peer-pcis-offset")
             permissive_driver_args += command_pcisoffsets
-
-            # Disable heartbeat checking for partitions
-            permissive_driver_args += [f"+partitioned=1"]
 
         driver_call = f"""{need_sudo} ./{driver} +permissive {" ".join(permissive_driver_args)} {extra_plusargs} +permissive-off {" ".join(command_bootbinaries)} {extra_args} """
         base_command = f"""script -f -c 'stty intr ^] && {driver_call} && stty intr ^c' uartlog"""
         screen_wrapped = f"""screen -S {screen_name} -d -m bash -c "{base_command}"; sleep 1"""
 
         return screen_wrapped
-
-    def get_peer_pcis_offsets(self, my_slot_id: int, pcfg: PartitionConfig) -> List[str]:
-        if my_slot_id == 0:
-            return [hex(int(x, 16) + int(pcfg.slot1_bar4, 16)) for x in pcfg.slot1_offset]
-        else:
-            return [hex(int(x, 16) + int(pcfg.slot0_bar4, 16)) for x in pcfg.slot0_offset]
 
     def get_kill_simulation_command(self) -> str:
         driver = self.get_local_driver_binaryname()

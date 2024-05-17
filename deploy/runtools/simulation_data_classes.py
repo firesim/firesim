@@ -2,8 +2,9 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 
-from typing import Dict, Any, List
+from typing import Dict, Any, List, Optional
 from enum import Enum
+from runtools.runtime_config import RuntimeHWConfig
 
 @dataclass
 class TracerVConfig:
@@ -50,52 +51,76 @@ class SynthPrintConfig:
 class PartitionMode(Enum):
   FAST_MODE     = 1
   EXACT_MODE    = 2
-  NOC_PARTITION = 3
+  NOC_MODE      = 3
+
+class PartitionNode:
+    hwdb: str
+    pidx: int                       # partition idx
+    edges: Dict[int, Tuple[int, PartitionNode]] # my bridge idx -> (your bridge idx, PartitionNode)
+
+    def __init__(self, hwdb: str, pidx: int) -> None:
+        self.hwdb = hwdb
+        self.pidx = pidx
+
+    def sort_edges_by_bridge_idx(self) -> None:
+        self.edges = dict(sorted(edges.items()))
+
+    def add_edge(self, bidx: int, nbidx: int, node: PartitionNode) -> None:
+        self.edges[bidx] = (nbidx, node)
+        self.sort_edges_by_bridge_idx()
 
 @dataclass
 class PartitionConfig:
-    partitioned: bool
+    node: Optional[PartitionNode]
     fpga_cnt: int
-    base: bool
-    pidx: int
-    batch_size: int
-    fpga_topo: str
-
-    slot0_bar4: str
-    slot0_offset: List[str]
-    slot1_bar4: str
-    slot1_offset: List[str]
+    pidx_to_slotid: Dict[int, int]
+    pcim_slot_offset: List[Tuple[int, int]] # slotid, bridge offset of neighbor
+    mode: PartitionMode
 
     def __init__(self,
-                 partitioned: bool = False,
-                 fpga_cnt: int = 1,
-                 base: bool = True,
-                 pidx: int = 0,
+                 node: None,
+                 pidx_to_slotid: Dict[int, int] = dict(),
                  mode: PartitionMode = PartitionMode.FAST_MODE) -> None:
-        self.partitioned = partitioned
-        self.fpga_cnt = fpga_cnt
-        self.base = base
-        self.pidx = pidx
-        if mode == PartitionMode.FAST_MODE:
-          self.batch_size = 1
-          self.fpga_topo = 'fast_mode'
-        elif mode == PartitionMode.EXACT_MODE:
-          self.batch_size = 0
-          self.fpga_topo = 'exact_mode'
-        elif mode == PartitionMode.NOC_PARTITION:
-          self.batch_size = 0
-          self.fpga_topo = 'noc_mode'
+        self.node = node
+        self.fpga_cnt = min(len(pidx_to_slotid.keys()), 1)
+        self.pidx_to_slotid = pidx_to_slotid
+        self.pcim_slot_offset = list()
+        self.mode = mode
+
+    def add_pcim_slot_offset(self, slot: int, offset: int) -> None:
+        self.pcim_slot_offset.append((slot, offset))
+
+    def is_base(self) -> bool:
+        return self.node.pidx == (self.fpga_cnt - 1)
+
+    def is_partitioned(self) -> bool:
+        return self.fpga_cnt > 1
+
+    def batch_size(self) -> int:
+        if self.mode == PartitionMode.FAST_MODE:
+          return 1
+        elif (self.mode == PartitionMode.EXACT_MODE) or (self.mode == PartitionMode.NOC_MODE):
+          return 0
         else:
-          print(f'Unrecognized partition mode {mode}')
+          print(f'Unrecognized partition mode {self.mode}')
           exit(1)
 
-        self.slot0_bar4 = "0x70000000000"
-        self.slot0_offset = ["0x0000"]
-        self.slot1_bar4 =  "0x78000000000"
-        self.slot1_offset =  ["0x0000"]
+    def metasim_partition_topo_args(self) -> int:
+        if not self.mode.FAST_MODE:
+            return 0
+        elif self.mode.EXACT_MODE:
+            return 1
+        elif self.mode.NOC_MODE:
+            return 2
+        else:
+            print("Unrecognized topology")
+            exit(1)
 
     def mac_address_assignable(self) -> bool:
-        return (not self.partitioned) or (self.partitioned and self.base)
+        return (not self.is_partitioned()) or (self.is_partitioned() and self.is_base())
 
     def leaf_partition(self) -> bool:
-        return self.partitioned and (not self.base)
+        return self.is_partitioned() and (not self.is_base())
+
+    def get_pcim_slot_and_bridge_offsets(self) -> List[str]:
+        [f'{slotid},{bridgeoffset}' for (slotid, bridgeoffset) in self.pcim_slot_offset]

@@ -8,6 +8,7 @@ import pprint
 import logging
 import datetime
 import sys
+import yaml
 from fabric.api import env, parallel, execute, run, local, warn_only # type: ignore
 from colorama import Fore, Style # type: ignore
 from functools import reduce
@@ -685,6 +686,51 @@ class FireSimTopologyWithPasses:
 
         execute(screens, hosts=all_run_farm_ips)
 
+    def get_bridge_offset(self, hwcfg: RuntimeHWConfig, bridge_idx: int) -> int:
+        platform = resolved_neighbor_hw_cfg.platform()
+        quintuplet = resolved_neighbor_hw_cfg.get_deployquintuplet_for_config()
+        rootLogger.info("""neighbor platform: {} quintuplet: {}""".format(
+            platform, quintuplet))
+        driver_path = os.path.join("../sim/generated-src", platform, quintuplet)
+        p2p_config_file = os.path.join(driver_path, "FireSim-generated.peer2peer.const.yaml")
+
+        if not os.path.exists(p2p_config_file):
+            rootLogger.info("Skipping PCIM offset setting")
+            return 0
+
+        with open(p2p_config_file, 'r') as f:
+            data = yaml.safe_load(f)
+            for (bridge_name, bridge_info) in data.items():
+              cur_bridge_idx = int(bridge_name.split('_')[1])
+              if ('PCIMCUTBOUNDARYBRIDGE' in bridge_name) and (cur_bridge_idx == bridge_idx):
+                  return bridge_info['bufferBaseAddress']
+        rootLogger.info("""Could not find bridge offset for {} bridge_idx {}""".format(p2p_config_file, bridge_idx))
+        return 0
+
+    def pass_set_partition_configs(self) -> None:
+        servers = self.firesimtopol.get_dfs_order_servers()
+
+        runtimehwconfig_lookup_fn = self.hwdb.get_runtimehwconfig_from_name
+        if self.default_metasim_mode:
+            runtimehwconfig_lookup_fn = self.build_recipes.get_runtimehwconfig_from_name
+
+        for server in servers:
+            if not server.partition_config.is_partitioned():
+                continue
+            pidx_to_slotid = server.partition_config.pidx_to_slotid
+            edges = server.partition_config.node.edges
+            for (nbidx, nnode) in edges.values():
+                neighbor_hwdb = nnode.hwdb
+                neighbor_slotid = pidx_to_slotid[nnode.pidx]
+                rootLogger.info("""neighbor slot: {} hwdb: {} bridge: {}""".format(
+                    neighbor_slotid, neighbor_hwdb, nbidx))
+
+                resolved_neighbor_hw_cfg = runtimehwconfig_lookup_fn(neighbor_hwdb)
+                bridge_offset = self.get_bridge_offset(resolved_neighbor_hw_cfg, nbidx)
+                server.partition_config.add_pcim_slot_offset(neighbor_slotid, bridge_offset)
+            rootLogger.info("""pcim slotid bridgeoffset pairs for {}: {}""".format(
+              server.partition_config.node.hwdb, server.partition_config.pcim_slot_offset))
+
     def run_workload_passes(self, use_mock_instances_for_testing: bool) -> None:
         """ extra passes needed to do runworkload. """
         self.run_farm.post_launch_binding(use_mock_instances_for_testing)
@@ -700,6 +746,9 @@ class FireSimTopologyWithPasses:
         localcap = local("""mkdir -p {}""".format(self.workload.job_monitoring_dir), capture=True)
         rootLogger.debug("[localhost] " + str(localcap))
         rootLogger.debug("[localhost] " + str(localcap.stderr))
+
+        # Setup partition configs
+        self.pass_set_partition_configs()
 
         # boot up as usual
         self.boot_simulation_passes(False, skip_instance_binding=True)
