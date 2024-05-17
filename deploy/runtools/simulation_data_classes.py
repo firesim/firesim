@@ -143,11 +143,11 @@ class PartitionConfig:
           exit(1)
 
     def metasim_partition_topo_args(self) -> int:
-        if self.mode.FAST_MODE:
+        if self.mode == PartitionMode.FAST_MODE:
             return 0
-        elif self.mode.EXACT_MODE:
+        elif self.mode == PartitionMode.EXACT_MODE:
             return 1
-        elif self.mode.NOC_MODE:
+        elif self.mode == PartitionMode.NOC_MODE:
             return 2
         else:
             print("Unrecognized topology")

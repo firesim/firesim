@@ -467,6 +467,21 @@ class UserTopologies:
         mode = PartitionMode.EXACT_MODE
         self.fireaxe_topology_config(hwdb_entries, edges, slotid_to_pidx, mode)
 
+    def fireaxe_ring_noc_config(self) -> None:
+        hwdb_entries = {
+            0 : "xilinx_u250_quad_rocket_ring_0",
+            1 : "xilinx_u250_quad_rocket_ring_1",
+            2 : "xilinx_u250_quad_rocket_ring_base"
+        }
+        slotid_to_pidx = [0, 1, 2]
+        edges = [
+            FireAxeEdge(0, 0, 2, 1),
+            FireAxeEdge(2, 0, 1, 1),
+            FireAxeEdge(1, 0, 0, 1)
+        ]
+        mode = PartitionMode.NOC_MODE
+        self.fireaxe_topology_config(hwdb_entries, edges, slotid_to_pidx, mode)
+
 #    ######Used only for tutorial purposes####################
 #    def example_sha3hetero_2config(self):
 #        self.roots= [FireSimSwitchNode()]
