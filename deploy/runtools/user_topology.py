@@ -436,7 +436,8 @@ class UserTopologies:
         servers: Dict[int, FireSimServerNode] = dict()
         for (pidx, node) in pidx_to_partition_node.items():
             partition_cfg = PartitionConfig(node, pidx_to_slotid, mode)
-            servers[pidx_to_slotid[node.pidx]] = FireSimServerNode(partition_cfg.get_hwdb(), partition_config=partition_cfg)
+            servers[pidx_to_slotid[node.pidx]] = FireSimServerNode(partition_cfg.get_hwdb(),
+                                                                   partition_config=partition_cfg)
 
         # Sort the servers by their sim slot id
         servers = dict(sorted(servers.items()))

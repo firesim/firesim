@@ -751,7 +751,9 @@ class FireSimTopologyWithPasses:
         rootLogger.debug("[localhost] " + str(localcap.stderr))
 
         # Setup partition configs
-        self.pass_set_partition_configs()
+        with TemporaryDirectory() as uridir:
+            self.pass_fetch_URI_resolve_runtime_cfg(uridir)
+            self.pass_set_partition_configs()
 
         # boot up as usual
         self.boot_simulation_passes(False, skip_instance_binding=True)
