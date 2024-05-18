@@ -4,6 +4,9 @@
 #include <assert.h>
 #include <cstring>
 #include <iostream>
+#include <sstream>
+#include <vector>
+#include <string>
 #include <inttypes.h>
 #include <stdio.h>
 
@@ -84,6 +87,7 @@ FPGAManagedStreamWidget::FPGAManagedStreamWidget(
       f1_instance_fpga_cnt = fpga_cnt > 2 ? 8 : 2;
     }
   }
+/* printf("f1_instance_fpga_cnt: %d\n", f1_instance_fpga_cnt); */
 
   if (f1_instance_fpga_cnt == 2) {
     resource_name[0] = "0000:00:1b.0";
@@ -111,15 +115,21 @@ FPGAManagedStreamWidget::FPGAManagedStreamWidget(
     for (auto &arg: args) {
       if (arg.find(peer_pcis_offset_args) == 0) {
         found = true;
-        char *str = const_cast<char *>(arg.c_str() + peer_pcis_offset_args.length());
-        int slotid, bridge_offset;
-        char trailingjunk;
-        sscanf(str, "%d,%d%c", slotid, bridge_offset);
+        char *c_str = const_cast<char *>(arg.c_str() + peer_pcis_offset_args.length());
+        std::string cpp_str = c_str;
+        std::stringstream ss(cpp_str);
+        std::string token;
+        std::vector<std::string> words;
+        while (getline(ss, token, ',')) {
+          words.push_back(token);
+        }
+
+        int slotid = std::stoi(words[0]);
+        int bridge_offset = std::stoi(words[1]);
         uint64_t offset = p2p_bar4_addrs[slotid] + bridge_offset;
-        printf("P2P neighbor slotid: %d, p2p_bar4_addrs: 0x%" PRIx64 " bridge_offset: 0x%x\n",
-            slotid,
-            p2p_bar4_addrs[slotid],
-            bridge_offset);
+        printf("P2P neighbor slotid: %d, p2p_bar4_addrs: 0x%" PRIx64 " bridge_offset: 0x%x offset: 0x%" PRIx64 "\n",
+            slotid, p2p_bar4_addrs[slotid], bridge_offset, offset);
+
         pcis_offsets.push_back(offset);
       }
     }
@@ -140,8 +150,7 @@ FPGAManagedStreamWidget::FPGAManagedStreamWidget(
   }
 }
 
-uint64_t FPGAManagedStreamWidget::get_p2p_bar_address(char *dir_name)
-{
+uint64_t FPGAManagedStreamWidget::get_p2p_bar_address(char *dir_name) {
   int ret;
   uint64_t physical_addr;
   if (!dir_name) {
@@ -182,7 +191,7 @@ uint64_t FPGAManagedStreamWidget::get_p2p_bar_address(char *dir_name)
       physical_addr = addr_begin;
     }
   }
-
+  printf("get_p2p_bar_address physical_addr: 0x%" PRIx64 "\n", physical_addr);
   fclose(fp);
   return physical_addr;
 }
