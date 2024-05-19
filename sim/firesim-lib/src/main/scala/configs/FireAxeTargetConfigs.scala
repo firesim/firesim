@@ -3,6 +3,7 @@ package firesim.configs
 import org.chipsalliance.cde.config.Config
 import midas._
 
+// DOC include start: F1 Rocket Partition
 //////////////////////////////////////////////////////////////////////////////
 // - F1 partition a RocketTile out
 // - Connect FPGAs using PCIe peer to peer communication scheme
@@ -10,17 +11,20 @@ import midas._
 // FPGA 0 (RocketTile) ----------- FPGA 1 (SoC subsystem)
 //////////////////////////////////////////////////////////////////////////////
 class RocketTileF1Config extends Config(
-  new WithPCIM ++
-  new WithPartitionGlobalInfo(Seq(Seq("RocketTile"))) ++
+  new WithPCIM ++ // Use PCIM (PCIe peer to peer) communication scheme
+  new WithPartitionGlobalInfo(Seq( // Specify the modules to partition out
+    Seq("RocketTile")
+  )) ++
   new BaseF1Config)
 
 class RocketTileF1PCIMBase extends Config(
-  new WithPartitionBase ++
+  new WithPartitionBase ++ // Base partition (SoC subsystem)
   new RocketTileF1Config)
 
 class RocketTileF1PCIMPartition0 extends Config(
-  new WithPartitionIndex(0) ++
+  new WithPartitionIndex(0) ++ // Partition 0 containing the partitioned RocketTile
   new RocketTileF1Config)
+// DOC include end: F1 Rocket Partition
 
 //////////////////////////////////////////////////////////////////////////////
 // - Xilinx U250 partition a RocketTile out
@@ -29,9 +33,10 @@ class RocketTileF1PCIMPartition0 extends Config(
 // FPGA 0 (RocketTile) ----------- FPGA 1 (SoC subsystem)
 //////////////////////////////////////////////////////////////////////////////
 class RocketTileQSFPXilinxAlveoConfig extends Config(
-  new WithQSFP ++
+  new WithQSFP ++ // Use QSFP FPGA to FPGA connections. This will instantiate Aurora IPs in the FPGA shell.
   new WithPartitionGlobalInfo(Seq(Seq("RocketTile"))) ++
-  new BaseXilinxAlveoU250Config)
+  new BaseXilinxAlveoU250Config // Xilinx U250 config
+)
 
 class RocketTileQSFPBase extends Config(
   new WithPartitionBase ++
@@ -70,6 +75,7 @@ class DualRocketTileQSFP1 extends Config(
   new WithPartitionIndex(1) ++
   new DualRocketTileQSFPXilinxAlveoConfig)
 
+// DOC include start: Xilinx U250 Ring NoC Partition
 //////////////////////////////////////////////////////////////////////////////
 // - Xilinx U250 partition a ring NoC onto 3 FPGA connected as a ring
 //
@@ -85,8 +91,8 @@ class DualRocketTileQSFP1 extends Config(
 //                  - SoC subsystem
 //////////////////////////////////////////////////////////////////////////////
 class QuadTileRingNoCTopoQSFPXilinxAlveoConfig extends Config(
-  new WithQSFP ++
-  new WithFireAxeNoCPart ++
+  new WithQSFP ++ // FireSim will instantiate Aurora IPs
+  new WithFireAxeNoCPart ++ // Compiler will detect NoC router nodes to partition
   new WithPartitionGlobalInfo(Seq(
     Seq("0", "1"),
     Seq("2", "3"),
@@ -106,6 +112,7 @@ class QuadTileRingNoCU250Partition0 extends Config(
 class QuadTileRingNoCU250Partition1 extends Config(
   new WithPartitionIndex(1) ++
   new QuadTileRingNoCTopoQSFPXilinxAlveoConfig)
+// DOC include end: Xilinx U250 Ring NoC Partition
 
 //////////////////////////////////////////////////////////////////////////////
 // - F1 partition a ring NoC onto 3 FPGA connected as a ring

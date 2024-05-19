@@ -1,3 +1,5 @@
+.. _FAME-5:
+
 Optimizing FPGA Resource Utilization
 ====================================
 

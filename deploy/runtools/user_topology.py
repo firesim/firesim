@@ -410,6 +410,7 @@ class UserTopologies:
 
 ########################################################################
 
+    # DOC include start: user_topology.py fireaxe_topology_config
     def fireaxe_topology_config(self,
                        hwdb_entries: Dict[int, str],
                        edges: List[FireAxeEdge],
@@ -442,46 +443,72 @@ class UserTopologies:
         # Sort the servers by their sim slot id
         servers = dict(sorted(servers.items()))
         self.roots = list(servers.values())
+    # DOC include end: user_topology.py fireaxe_topology_config
 
+    
+    # DOC include start: user_topology.py fireaxe_rocket_fastmode_config
     def fireaxe_rocket_fastmode_config(self) -> None:
+        # DOC include start: fireaxe_fastmode_config hwdb_entries
         hwdb_entries = {
             0 : "f1_rocket_split_soc_fast",
             1 : "f1_rocket_split_tile_fast"
         }
+        # DOC include end: fireaxe_fastmode_config hwdb_entries
+        # DOC include start: fireaxe_fastmode_config slot_to_pidx
         slotid_to_pidx = [0, 1]
+        # DOC include end: fireaxe_fastmode_config slot_to_pidx
+        # DOC include start: fireaxe_fastmode_config edges
         edges = [
             FireAxeEdge(0, 0, 1, 0)
         ]
+        # DOC include end: fireaxe_fastmode_config edges
+        # DOC include start: fireaxe_fastmode_config mode
         mode = PartitionMode.FAST_MODE
+        # DOC include end: fireaxe_fastmode_config mode
+        # DOC include start: fireaxe_fastmode_config summing it all up
         self.fireaxe_topology_config(hwdb_entries, edges, slotid_to_pidx, mode)
+        # DOC include end: fireaxe_fastmode_config summing it all up
+    # DOC include end: user_topology.py fireaxe_rocket_fastmode_config
 
+    # DOC include start: user_topology.py fireaxe_rocket_exactmode_config
     def fireaxe_rocket_exactmode_config(self) -> None:
         hwdb_entries = {
-            0 : "xilinx_u250_firesim_rocket_tile_exact",
-            1 : "xilinx_u250_firesim_rocket_soc_exact"
+            0 : "f1_firesim_rocket_tile_exact",
+            1 : "f1_firesim_rocket_soc_exact"
         }
         slotid_to_pidx = [0, 1]
         edges = [
+            # DOC include start: fireaxe_rocket_exactmode_config edge 0
             FireAxeEdge(0, 0, 1, 0),
+            # DOC include end: fireaxe_rocket_exactmode_config edge 0
+            # DOC include start: fireaxe_rocket_exactmode_config edge 1
             FireAxeEdge(0, 1, 1, 1)
+            # DOC include end: fireaxe_rocket_exactmode_config edge 1
         ]
+        # DOC include start: fireaxe_rocket_exactmode_config mode
         mode = PartitionMode.EXACT_MODE
+        # DOC include end: fireaxe_rocket_exactmode_config mode
         self.fireaxe_topology_config(hwdb_entries, edges, slotid_to_pidx, mode)
+    # DOC include end: user_topology.py fireaxe_rocket_exactmode_config
 
+    # DOC include start: user_topology.py fireaxe_ring_noc_config
     def fireaxe_ring_noc_config(self) -> None:
         hwdb_entries = {
-            0 : "f1_quad_rocket_ring_0",
-            1 : "f1_quad_rocket_ring_1",
-            2 : "f1_quad_rocket_ring_base"
+            0 : "xilinx_u250_quad_rocket_ring_0",
+            1 : "xilinx_u250_quad_rocket_ring_1",
+            2 : "xilinx_u250_quad_rocket_ring_base"
         }
         slotid_to_pidx = [0, 1, 2]
+        # DOC include start: fireaxe_ring_noc_config edges
         edges = [
             FireAxeEdge(0, 0, 2, 1),
             FireAxeEdge(2, 0, 1, 1),
             FireAxeEdge(1, 0, 0, 1)
         ]
+        # DOC include end: fireaxe_ring_noc_config edges
         mode = PartitionMode.NOC_MODE
         self.fireaxe_topology_config(hwdb_entries, edges, slotid_to_pidx, mode)
+    # DOC include end: user_topology.py fireaxe_ring_noc_config
 
 #    ######Used only for tutorial purposes####################
 #    def example_sha3hetero_2config(self):

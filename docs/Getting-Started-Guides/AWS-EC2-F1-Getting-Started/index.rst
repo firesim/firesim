@@ -1,3 +1,5 @@
+.. _AWS-F1-Getting-Started-Guide:
+
 AWS EC2 F1 Getting Started Guide
 =====================================
 
