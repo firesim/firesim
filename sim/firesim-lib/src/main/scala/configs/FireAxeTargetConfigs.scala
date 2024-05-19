@@ -119,7 +119,7 @@ class QuadTileRingNoCTopoF1Config extends Config(
     // base group has to be put last
     (4 until 10).map(i => s"${i}")
   )) ++
-  new BaseXilinxAlveoU250Config)
+  new BaseF1Config)
 
 class QuadTileRingNoCF1Base extends Config(
   new WithPartitionBase ++

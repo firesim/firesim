@@ -242,7 +242,7 @@ class WithPCIMPorts extends Config((site, here, up) => {
   ))
 })
 
-class BaseF1Config extends Config(
+class EC2F1Config extends Config(
   new WithPCIMPorts ++
   new WithWiringTransform ++
   new F1Config
