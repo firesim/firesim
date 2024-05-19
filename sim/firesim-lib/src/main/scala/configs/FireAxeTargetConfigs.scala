@@ -3,50 +3,34 @@ package firesim.configs
 import org.chipsalliance.cde.config.Config
 import midas._
 
-class RocketTilePCISF1Config extends Config(
-  new WithFireAxePCISConfig(Seq(
-    Seq("RocketTile")
-  )) ++
-  new BaseF1Config)
-
-class DualRocketTilePCISF1Config extends Config(
-  new WithFireAxePCISConfig(Seq(
-    (0 until 2).map(i => s"RocketTile_${i}")
-  )) ++
-  new BaseF1Config)
-
-class QuadRocketTilePCISF1Config extends Config(
-  new WithFireAxePCISConfig(Seq(
-    (0 until 4).map(i => s"RocketTile_${i}")
-  )) ++
-  new BaseF1Config)
-
-class RocketTileQSFPXilinxAlveoConfig extends Config(
-  new WithFireAxeQSFPConfig(Seq(Seq("RocketTile"))) ++
-  new BaseXilinxAlveoU250Config)
-
+//////////////////////////////////////////////////////////////////////////////
+// - F1 partition a RocketTile out
+// - Connect FPGAs using PCIe peer to peer communication scheme
+//
+// FPGA 0 (RocketTile) ----------- FPGA 1 (SoC subsystem)
+//////////////////////////////////////////////////////////////////////////////
 class RocketTileF1Config extends Config(
-  new WithFireAxePCIMConfig(Seq(Seq("RocketTile"))) ++
+  new WithPCIM ++
+  new WithPartitionGlobalInfo(Seq(Seq("RocketTile"))) ++
   new BaseF1Config)
 
-class OctaTileMeshNoCTopoQSFPXilinxAlveoConfig extends Config(
-  new WithFireAxeQSFPNoCConfig(Seq(
-    Seq("0", "1", "4", "5"),
-    Seq("2", "3", "6", "7"),
-    (8 until 16).map(i => s"${i}")
-  )) ++
-  new BaseXilinxAlveoU250Config)
+class RocketTileF1PCIMBase extends Config(
+  new WithPartitionBase ++
+  new RocketTileF1Config)
 
-class Sha3QSFPXilinxAlveoConfig extends Config(
-  new WithFireAxeQSFPConfig(Seq(
-    Seq("Sha3Accel")
-  )) ++
-  new BaseXilinxAlveoU250Config)
+class RocketTileF1PCIMPartition0 extends Config(
+  new WithPartitionIndex(0) ++
+  new RocketTileF1Config)
 
-class BoomQSFPXilinxAlveoConfig extends Config(
-  new WithFireAxeQSFPConfig(Seq(
-    Seq("BoomBackend")
-  ))++
+//////////////////////////////////////////////////////////////////////////////
+// - Xilinx U250 partition a RocketTile out
+// - Connect FPGAs using QSFP cables
+//
+// FPGA 0 (RocketTile) ----------- FPGA 1 (SoC subsystem)
+//////////////////////////////////////////////////////////////////////////////
+class RocketTileQSFPXilinxAlveoConfig extends Config(
+  new WithQSFP ++
+  new WithPartitionGlobalInfo(Seq(Seq("RocketTile"))) ++
   new BaseXilinxAlveoU250Config)
 
 class RocketTileQSFPBase extends Config(
@@ -57,16 +41,18 @@ class RocketTileQSFPPartition0 extends Config(
   new WithPartitionIndex(0) ++
   new RocketTileQSFPXilinxAlveoConfig)
 
-class RocketTileF1PCIMBase extends Config(
-  new WithPartitionBase ++
-  new RocketTileF1Config)
-
-class RocketTileF1PCIMPartition0 extends Config(
-  new WithPartitionIndex(0) ++
-  new RocketTileF1Config)
-
+//////////////////////////////////////////////////////////////////////////////
+// - Xilinx U250 partition RocketTiles onto separate FPGAs
+// - Connect FPGAs using QSFP cables
+//
+// FPGA 0 (RocketTile)     FPGA 1 (RocketTile_1)
+//             \            /
+//              \          /
+//           FPGA 2 (base SoC)
+//////////////////////////////////////////////////////////////////////////////
 class DualRocketTileQSFPXilinxAlveoConfig extends Config(
-  new WithFireAxeQSFPConfig(Seq(
+  new WithQSFP ++
+  new WithPartitionGlobalInfo(Seq(
     Seq("RocketTile"),
     Seq("RocketTile_1"),
   )) ++
@@ -84,9 +70,24 @@ class DualRocketTileQSFP1 extends Config(
   new WithPartitionIndex(1) ++
   new DualRocketTileQSFPXilinxAlveoConfig)
 
-
+//////////////////////////////////////////////////////////////////////////////
+// - Xilinx U250 partition a ring NoC onto 3 FPGA connected as a ring
+//
+//        FPGA 0     ------------------ FPGA 1
+// - router 0 & tile 0               - router 2 & tile 2
+// - router 1 & tile 1               - router 3 & tile 3
+//                \                     /
+//                 \                   /
+//                  \                 /
+//                   \               /
+//                         FPGA 2
+//                  - router nodes 4 ~ 10
+//                  - SoC subsystem
+//////////////////////////////////////////////////////////////////////////////
 class QuadTileRingNoCTopoQSFPXilinxAlveoConfig extends Config(
-  new WithFireAxeQSFPNoCConfig(Seq(
+  new WithQSFP ++
+  new WithFireAxeNoCPart ++
+  new WithPartitionGlobalInfo(Seq(
     Seq("0", "1"),
     Seq("2", "3"),
     // base group has to be put last
@@ -94,14 +95,40 @@ class QuadTileRingNoCTopoQSFPXilinxAlveoConfig extends Config(
   )) ++
   new BaseXilinxAlveoU250Config)
 
-class QuadTileRingNoCBase extends Config(
+class QuadTileRingNoCU250Base extends Config(
   new WithPartitionBase ++
   new QuadTileRingNoCTopoQSFPXilinxAlveoConfig)
 
-class QuadTileRingNoC0 extends Config(
+class QuadTileRingNoCU250Partition0 extends Config(
   new WithPartitionIndex(0) ++
   new QuadTileRingNoCTopoQSFPXilinxAlveoConfig)
 
-class QuadTileRingNoC1 extends Config(
+class QuadTileRingNoCU250Partition1 extends Config(
   new WithPartitionIndex(1) ++
   new QuadTileRingNoCTopoQSFPXilinxAlveoConfig)
+
+//////////////////////////////////////////////////////////////////////////////
+// - F1 partition a ring NoC onto 3 FPGA connected as a ring
+//////////////////////////////////////////////////////////////////////////////
+class QuadTileRingNoCTopoF1Config extends Config(
+  new WithPCIM ++
+  new WithFireAxeNoCPart ++
+  new WithPartitionGlobalInfo(Seq(
+    Seq("0", "1"),
+    Seq("2", "3"),
+    // base group has to be put last
+    (4 until 10).map(i => s"${i}")
+  )) ++
+  new BaseXilinxAlveoU250Config)
+
+class QuadTileRingNoCF1Base extends Config(
+  new WithPartitionBase ++
+  new QuadTileRingNoCTopoF1Config)
+
+class QuadTileRingNoCF1Partition0 extends Config(
+  new WithPartitionIndex(0) ++
+  new QuadTileRingNoCTopoF1Config)
+
+class QuadTileRingNoCF1Partition1 extends Config(
+  new WithPartitionIndex(1) ++
+  new QuadTileRingNoCTopoF1Config)

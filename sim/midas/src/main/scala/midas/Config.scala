@@ -298,24 +298,4 @@ class WithPartitionIndex(index: Int) extends Config((site, here, up) => {
   case midas.FireAxePartitionIndex => Some(index)
 })
 
-class WithFireAxeQSFPConfig(info: Seq[Seq[String]]) extends Config(
-  new WithQSFP ++
-  new WithPartitionGlobalInfo(info))
-
-class WithFireAxePCISConfig(info: Seq[Seq[String]]) extends Config(
-  new WithPCIS ++
-  new WithPartitionGlobalInfo(info))
-
-class WithFireAxePCIMConfig(info: Seq[Seq[String]]) extends Config(
-  new WithPCIM ++
-  new WithPartitionGlobalInfo(info))
-
-class WithFireAxeQSFPNoCConfig(info: Seq[Seq[String]]) extends Config(
-  new WithFireAxeNoCPart ++
-  new WithFireAxeQSFPConfig(info))
-
-class WithFireAxePCISNoCConfig(info: Seq[Seq[String]]) extends Config(
-  new WithFireAxeNoCPart ++
-  new WithFireAxePCISConfig(info))
-
 class ExactMode extends WithFireAxePreserveTarget

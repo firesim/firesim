@@ -445,8 +445,8 @@ class UserTopologies:
 
     def fireaxe_rocket_fastmode_config(self) -> None:
         hwdb_entries = {
-            0 : "xilinx_u250_firesim_rocket_split_tile",
-            1 : "xilinx_u250_firesim_rocket_split_soc"
+            0 : "f1_rocket_split_soc_fast",
+            1 : "f1_rocket_split_tile_fast"
         }
         slotid_to_pidx = [0, 1]
         edges = [
@@ -470,9 +470,9 @@ class UserTopologies:
 
     def fireaxe_ring_noc_config(self) -> None:
         hwdb_entries = {
-            0 : "xilinx_u250_quad_rocket_ring_0",
-            1 : "xilinx_u250_quad_rocket_ring_1",
-            2 : "xilinx_u250_quad_rocket_ring_base"
+            0 : "f1_quad_rocket_ring_0",
+            1 : "f1_quad_rocket_ring_1",
+            2 : "f1_quad_rocket_ring_base"
         }
         slotid_to_pidx = [0, 1, 2]
         edges = [
