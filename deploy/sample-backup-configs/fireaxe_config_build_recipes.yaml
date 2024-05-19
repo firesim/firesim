@@ -171,7 +171,7 @@ f1_quad_rocket_ring_1:
   TARGET_PROJECT: firesim
   DESIGN: FireSim
   TARGET_CONFIG: FireSimQuadRocketSbusRingNoCConfig
-  PLATFORM_CONFIG: QuadTileRingNoCF1Partition0
+  PLATFORM_CONFIG: QuadTileRingNoCF1Partition1
   deploy_quintuplet: null
   platform_config_args:
     fpga_frequency: 90
