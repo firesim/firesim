@@ -71,6 +71,7 @@ class WithAutoCounterPrintf extends Config((site, here, up) => {
 })
 
 class BaseF1Config extends Config(
+  new WithPCIMPorts ++
   new WithWiringTransform ++
   new WithAsyncResetReplacement ++
   new midas.F1Config

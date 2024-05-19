@@ -247,6 +247,7 @@ class BaseF1Config extends Config(
   new WithWiringTransform ++
   new F1Config
 )
+
 class WithModelMultiThreading extends Config((site, here, up) => {
   case midas.EnableModelMultiThreading => true
 })
