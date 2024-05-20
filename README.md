@@ -154,14 +154,6 @@ In this special issue, we describe the automated instance-multithreading optimiz
 
 [Article PDF](https://davidbiancolin.github.io/papers/firesim-micro21.pdf)
 
-### **ISCA 2024**: FireAxe: Partitioned FPGA-Accelerated Simulation of Large-Scale RTL Designs
-
-Our paper from ISCA 2024 explains how the FireSim compiler can partition the design across multiple FPGAs to simulate scale-up SoC designs.
-
-> Joonho Whangbo, Edwin Lim, Chengyi Lux Zhang, Kevin Anderson, Abraham Gonzalez, Raghav Gupta, Nivedha Krishnakumar, Sagar Karandikar, Borivoje Nikolić, Yakun Sophia Shao, and Krste Asanović, “FireAxe: Partitioned FPGA-Accelerated Simulation of Large-Scale RTL Designs”, To appear, In Proceedings of the 51th ACM/IEEE International Symposium on Computer Architecture (ISCA 2024), Buenos Aires, Argentina, June 2024.
-
-[FireAxe PDF](https://joonho3020.github.io/assets/ISCA2024-FireAxe.pdf)
-
 ### **ISCA@50 Retrospective: 1996-2020**: FireSim: FPGA-Accelerated Cycle-Exact Scale-Out System Simulation in the Public Cloud
 
 This retrospective paper, included in the "ISCA@50 Retrospective: 1996-2020" collection, provides an update and retrospective
@@ -175,6 +167,14 @@ the Public Cloud**. *In ISCA@50 Retrospective: 1996-2020*,
 Edited by José F. Martínez and Lizy K. John, June 2023.
 
 [Retrospective PDF](https://sites.coecis.cornell.edu/isca50retrospective/files/2023/06/Karandikar_2018_FireSim.pdf)
+
+### **ISCA 2024**: FireAxe: Partitioned FPGA-Accelerated Simulation of Large-Scale RTL Designs
+
+Our paper from ISCA 2024 explains how the FireSim compiler can partition the design across multiple FPGAs to simulate scale-up SoC designs.
+
+> Joonho Whangbo, Edwin Lim, Chengyi Lux Zhang, Kevin Anderson, Abraham Gonzalez, Raghav Gupta, Nivedha Krishnakumar, Sagar Karandikar, Borivoje Nikolić, Yakun Sophia Shao, and Krste Asanović, “FireAxe: Partitioned FPGA-Accelerated Simulation of Large-Scale RTL Designs”, To appear, In Proceedings of the 51th ACM/IEEE International Symposium on Computer Architecture (ISCA 2024), Buenos Aires, Argentina, June 2024.
+
+[FireAxe PDF](https://joonho3020.github.io/assets/ISCA2024-FireAxe.pdf)
 
 
 You can find other publications, including publications that *use* FireSim on the [FireSim Website](https://fires.im/publications/).
