@@ -30,14 +30,16 @@ public:
 
 private:
   uint32_t mmio_read(size_t addr) override { return read(addr); }
-  void mmio_write(size_t addr, uint32_t value) override { return write(addr, value); }
+  void mmio_write(size_t addr, uint32_t value) override {
+    return write(addr, value);
+  }
   size_t
   cpu_managed_axi4_write(size_t addr, const char *data, size_t size) override;
   size_t cpu_managed_axi4_read(size_t addr, char *data, size_t size) override;
   uint64_t get_beat_bytes() const override {
     return config.cpu_managed->beat_bytes();
   }
-  char* get_memory_base() override { return NULL; }
+  char *get_memory_base() override { return NULL; }
 
   int edma_write_fd;
   int edma_read_fd;

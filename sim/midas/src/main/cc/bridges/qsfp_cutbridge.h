@@ -1,14 +1,11 @@
 #ifndef __QSFP_CUTBRIDGE_H__
 #define __QSFP_CUTBRIDGE_H__
 
-
-#include <vector>
 #include <cstdint>
+#include <vector>
 
 #include "core/bridge_driver.h"
 #include "core/stream_engine.h"
-
-
 
 struct QSFPCUTBOUNDARYBRIDGEMODULE_struct {
   uint64_t input_tokens;
@@ -33,10 +30,10 @@ public:
   static char KIND;
 
   qsfp_cutbridge_t(simif_t &simif,
-                 StreamEngine &stream,
-                 const QSFPCUTBOUNDARYBRIDGEMODULE_struct &mmio_addrs,
-                 const int idx,
-                 const std::vector<std::string> &args);
+                   StreamEngine &stream,
+                   const QSFPCUTBOUNDARYBRIDGEMODULE_struct &mmio_addrs,
+                   const int idx,
+                   const std::vector<std::string> &args);
   void init() override;
   void tick() override;
 

@@ -1,22 +1,19 @@
 #ifndef __PCIS_CUTBOUNDARY_H__
 #define __PCIS_CUTBOUNDARY_H__
 
-
-#include <vector>
 #include <cstdint>
+#include <vector>
 
 #include "core/bridge_driver.h"
 #include "core/stream_engine.h"
 
 #define BIGTOKEN_BITS 512
-#define BIGTOKEN_BYTES (BIGTOKEN_BITS/8)
+#define BIGTOKEN_BYTES (BIGTOKEN_BITS / 8)
 #define EXTRA_BYTES 1
 
-#define firesplit_printf(...)                                          \
-  fprintf(stdout, __VA_ARGS__);                                        \
+#define firesplit_printf(...)                                                  \
+  fprintf(stdout, __VA_ARGS__);                                                \
   fflush(stdout);
-
-
 
 struct PCISCUTBOUNDARYBRIDGEMODULE_struct {
   uint64_t input_tokens;
@@ -36,21 +33,19 @@ struct PCISCUTBOUNDARYBRIDGEMODULE_struct {
   uint64_t garbage_rx_cnt;
 };
 
-
-
 class pcis_cutbridge_t final : public streaming_bridge_driver_t {
 public:
   static char KIND;
 
   pcis_cutbridge_t(simif_t &sim,
-                StreamEngine &stream,
-                const PCISCUTBOUNDARYBRIDGEMODULE_struct &mmio_addrs,
-                int dma_no,
-                const std::vector<std::string> &args,
-                int stream_to_cpu_idx,
-                int to_host_dma_transactions,
-                int stream_from_cpu_idx,
-                int from_host_dma_transactions);
+                   StreamEngine &stream,
+                   const PCISCUTBOUNDARYBRIDGEMODULE_struct &mmio_addrs,
+                   int dma_no,
+                   const std::vector<std::string> &args,
+                   int stream_to_cpu_idx,
+                   int to_host_dma_transactions,
+                   int stream_from_cpu_idx,
+                   int from_host_dma_transactions);
 
   ~pcis_cutbridge_t() override;
 
@@ -62,8 +57,8 @@ private:
   const PCISCUTBOUNDARYBRIDGEMODULE_struct mmio_addrs;
   uint64_t HOST_LATENCY_INJECTION_CYCLES = 0;
 
-  char* pcie_write_buf[2];
-  char* pcie_read_buf[2];
+  char *pcie_write_buf[2];
+  char *pcie_read_buf[2];
   int currentround = 0;
 
   const int stream_to_cpu_idx;

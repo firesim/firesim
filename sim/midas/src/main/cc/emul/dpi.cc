@@ -21,8 +21,8 @@
 /**
  * Helper to encode sequential elements into a packed structure.
  *
- * Note: This requires the input struct to be made of only 'bits', and for it to be packed.
- * So that it can be a svBitVecVal (i.e. uint32_t).
+ * Note: This requires the input struct to be made of only 'bits', and for it to
+ * be packed. So that it can be a svBitVecVal (i.e. uint32_t).
  *
  * Note: Also requires the struct to be N*64b wide.
  *
@@ -252,10 +252,7 @@ void rev_tick(bool rst, qsfp_t &qsfp, const uint32_t *io) {
   std::cout << "QSFP::rev_tick tx_valid: " << tx_valid
             << " rx_ready: " << rx_ready << std::endl;
 #endif
-  qsfp.tick(rst,
-            tx_valid,
-            tx_bits,
-            rx_ready);
+  qsfp.tick(rst, tx_valid, tx_bits, rx_ready);
 }
 
 // host -> rtl
@@ -270,13 +267,13 @@ void fwd_put(qsfp_t &qsfp, uint32_t *io) {
   w.putScalar(qsfp.tx_ready());
 
 #ifdef DEBUG_QSFP
- for (int i = 0; i < qsfp.SHMEM_BITSBY64; i++) {
-   std::cout << "QSFP::fwd_put rx_bits_by_idx(" << i << "): "
-             << qsfp.rx_bits_by_idx(i) << std::endl;
- }
- std::cout << "QSFP::fwd_put tx_ready: " << qsfp.tx_ready() << " "
-           << "rx_valid: " << qsfp.rx_valid() << " "
-           << "SHMEM_BITSBY64: " << qsfp.SHMEM_BITSBY64 << std::endl;
+  for (int i = 0; i < qsfp.SHMEM_BITSBY64; i++) {
+    std::cout << "QSFP::fwd_put rx_bits_by_idx(" << i
+              << "): " << qsfp.rx_bits_by_idx(i) << std::endl;
+  }
+  std::cout << "QSFP::fwd_put tx_ready: " << qsfp.tx_ready() << " "
+            << "rx_valid: " << qsfp.rx_valid() << " "
+            << "SHMEM_BITSBY64: " << qsfp.SHMEM_BITSBY64 << std::endl;
 #endif
 }
 } // namespace QSFP
@@ -308,8 +305,7 @@ void simulator_tick(
     /* OUTPUT */ uint32_t *mem_2_out,
     /* OUTPUT */ uint32_t *mem_3_out,
     /* OUTPUT */ uint32_t *qsfp0_in,
-    /* OUTPUT */ uint32_t *qsfp1_in
-  ) {
+    /* OUTPUT */ uint32_t *qsfp1_in) {
   try {
     // The driver ucontext is initialized before spawning the VCS
     // context, so these pointers should be initialized.
@@ -324,12 +320,8 @@ void simulator_tick(
     std::array<const uint32_t *, 4> mem_in{
         mem_0_in, mem_1_in, mem_2_in, mem_3_in};
 
-    std::array<const uint32_t *, 2> qsfp_out {
-      qsfp0_out, qsfp1_out
-    };
-    std::array<uint32_t *, 2> qsfp_in {
-      qsfp0_in, qsfp1_in
-    };
+    std::array<const uint32_t *, 2> qsfp_out{qsfp0_out, qsfp1_out};
+    std::array<uint32_t *, 2> qsfp_in{qsfp0_in, qsfp1_in};
 
     AXI4::fwd_tick(reset, *simulator->master, ctrl_in);
     if (cpu_managed_axi4) {

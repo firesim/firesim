@@ -1,6 +1,4 @@
 // See LICENSE for license details
-#include <stdio.h>
-#include <inttypes.h>
 #include "firesim_tsi.h"
 #include <inttypes.h>
 #include <stdio.h>

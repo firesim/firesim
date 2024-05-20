@@ -1,7 +1,7 @@
 // See LICENSE for license details.
 
-#include <cassert>
 #include "widget_registry.h"
+#include <cassert>
 
 #include "bridges/fased_memory_timing_model.h"
 #include "core/bridge_driver.h"
@@ -22,9 +22,10 @@ void widget_registry_t::add_widget(bridge_driver_t *widget) {
 
 void widget_registry_t::add_widget(StreamEngine *widget) {
   fprintf(stdout, "widget_registry_t::add_widget(StreamEngine)\n");
-  fprintf(stdout, "cpu2fpga: %d, fpga2cpu: %d\n",
-      widget->cpu_to_fpga_cnt(),
-      widget->fpga_to_cpu_cnt());
+  fprintf(stdout,
+          "cpu2fpga: %d, fpga2cpu: %d\n",
+          widget->cpu_to_fpga_cnt(),
+          widget->fpga_to_cpu_cnt());
 
   if (stream_engine.get() == nullptr) {
     if (fpga_stream_engine.get() != nullptr) {

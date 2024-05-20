@@ -4,7 +4,8 @@
 #include <stdlib.h>
 
 // NOTE
-// - Currently there is no need to use a abstract class for the pipe implementation. Just for future...
+// - Currently there is no need to use a abstract class for the pipe
+// implementation. Just for future...
 class BasePipe {
 public:
   BasePipe(int pipeNo);

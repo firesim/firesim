@@ -91,7 +91,7 @@ public:
    */
   StreamEngine *get_stream_engine() { return stream_engine.get(); }
 
-    /**
+  /**
    * Returns a pointer to the fpga stream engine widget, if one exists.
    */
   StreamEngine *get_fpga_stream_engine() { return fpga_stream_engine.get(); }

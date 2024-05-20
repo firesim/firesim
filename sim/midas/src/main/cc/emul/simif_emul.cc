@@ -7,22 +7,21 @@
 #include "core/simulation.h"
 #include "emul/mm.h"
 #include "emul/mmio.h"
-#include <memory>
-#include <unistd.h>
 #include <cassert>
+#include <memory>
 #include <string.h>
+#include <unistd.h>
 
 simif_emul_t::simif_emul_t(const TargetConfig &config,
                            const std::vector<std::string> &args)
-    : simif_t(config),
-      master(std::make_unique<mmio_t>(config.ctrl)) {
+    : simif_t(config), master(std::make_unique<mmio_t>(config.ctrl)) {
 
   // Parse arguments.
   memsize = 1L << config.mem.addr_bits;
   bool fastloadmem = false;
   int fpga_cnt = 1;
   int fpga_idx = 0;
-  bool noc_part   = false;
+  bool noc_part = false;
   bool comb_logic = false;
   for (auto arg : args) {
     if (arg.find("+fastloadmem") == 0) {
@@ -62,7 +61,7 @@ simif_emul_t::simif_emul_t(const TargetConfig &config,
 
   printf("qsfp_num_chans: %d\n", config.qsfp.num_channels);
 
- for (int idx = 0; idx < config.qsfp.num_channels; idx++) {
+  for (int idx = 0; idx < config.qsfp.num_channels; idx++) {
     char qsfp_owned_name[257];
     char qsfp_other_name[257];
     int next_fpga_idx = (fpga_idx + 1) % fpga_cnt;
@@ -74,17 +73,26 @@ simif_emul_t::simif_emul_t(const TargetConfig &config,
     if (!noc_part)
       assert(fpga_cnt <= 3);
 
-    // If this is FPGA-0, reverse the qsfp channel shmem setup order to 
+    // If this is FPGA-0, reverse the qsfp channel shmem setup order to
     // avoid deadlocks
-    int qsfp_chan = (fpga_idx == 0) ? idx : (config.qsfp.num_channels - 1 - idx);
+    int qsfp_chan =
+        (fpga_idx == 0) ? idx : (config.qsfp.num_channels - 1 - idx);
 
     if (comb_logic) {
       qsfp_chan = idx;
     }
 
     if (fpga_cnt <= 2) {
-      sprintf(qsfp_owned_name, "/qsfp%03d_%03d_to_%03d", qsfp_chan, fpga_idx, next_fpga_idx);
-      sprintf(qsfp_other_name, "/qsfp%03d_%03d_to_%03d", qsfp_chan, next_fpga_idx, fpga_idx);
+      sprintf(qsfp_owned_name,
+              "/qsfp%03d_%03d_to_%03d",
+              qsfp_chan,
+              fpga_idx,
+              next_fpga_idx);
+      sprintf(qsfp_other_name,
+              "/qsfp%03d_%03d_to_%03d",
+              qsfp_chan,
+              next_fpga_idx,
+              fpga_idx);
     } else if (noc_part) {
       if (qsfp_chan == 0) {
         sprintf(qsfp_owned_name, "/qsfp_%02d_to_%02d", fpga_idx, prev_fpga_idx);

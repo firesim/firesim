@@ -276,7 +276,7 @@ void simplenic_t::init() {
 // #define TOKENVERIFY
 
 void simplenic_t::tick() {
-/* #define DEBUG_NIC_PRINT */
+  /* #define DEBUG_NIC_PRINT */
 
   while (true) { // break when we don't have 5k tokens
     uint32_t tokens_this_round = SIMLATENCY_BT;
@@ -299,9 +299,9 @@ void simplenic_t::tick() {
 
 #ifdef DEBUG_NIC_PRINT
     niclog_printf("send pcis_read_bufs[%d][%d]: %d\n",
-        currentround,
-        BUFBYTES,
-        pcis_read_bufs[currentround][BUFBYTES]);
+                  currentround,
+                  BUFBYTES,
+                  pcis_read_bufs[currentround][BUFBYTES]);
 #endif
 
 

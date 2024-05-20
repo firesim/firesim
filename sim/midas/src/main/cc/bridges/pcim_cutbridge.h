@@ -1,9 +1,8 @@
 #ifndef __PCIM_CUTBOUNDARY_H__
 #define __PCIM_CUTBOUNDARY_H__
 
-
-#include <vector>
 #include <cstdint>
+#include <vector>
 
 #include "core/bridge_driver.h"
 #include "core/stream_engine.h"
@@ -26,17 +25,15 @@ struct PCIMCUTBOUNDARYBRIDGEMODULE_struct {
   uint64_t garbage_rx_cnt;
 };
 
-
-
 class pcim_cutbridge_t final : public streaming_bridge_driver_t {
 public:
   static char KIND;
 
   pcim_cutbridge_t(simif_t &sim,
-                StreamEngine &stream,
-                const PCIMCUTBOUNDARYBRIDGEMODULE_struct &mmio_addrs,
-                int idx,
-                const std::vector<std::string> &args);
+                   StreamEngine &stream,
+                   const PCIMCUTBOUNDARYBRIDGEMODULE_struct &mmio_addrs,
+                   int idx,
+                   const std::vector<std::string> &args);
 
   ~pcim_cutbridge_t() override;
 

@@ -3,32 +3,32 @@
 
 #include "core/config.h"
 
-#include <errno.h>
-#include <stdio.h>
+#include <array>
+#include <cassert>
 #include <cstddef>
 #include <cstdint>
-#include <cstring>
-#include <queue>
-#include <vector>
-#include <iostream>
-#include <cassert>
 #include <cstdlib>
-#include <string>
+#include <cstring>
+#include <errno.h>
+#include <fcntl.h>
 #include <iomanip>
-#include <array>
-#include <fcntl.h> 
-#include <sys/stat.h>
-#include <sys/mman.h>
+#include <iostream>
+#include <queue>
 #include <semaphore.h>
-#include <unistd.h>
+#include <stdio.h>
+#include <string>
+#include <sys/mman.h>
+#include <sys/stat.h>
 #include <time.h>
+#include <unistd.h>
+#include <vector>
 
 /**
  *  @brief Staging container for QSFP aurora transactions
  *
- *  Aurora interface transactions bound for the RTL-simulator and back are queued
- *  up in this data structure as they wait to be driven into and out of the
- *  verilator/VCS design.
+ *  Aurora interface transactions bound for the RTL-simulator and back are
+ * queued up in this data structure as they wait to be driven into and out of
+ * the verilator/VCS design.
  *
  *  Used for outward and inward QSFP data movement (see simif_t::to_qsfp,
  *  simit_t::from_qsfp).
@@ -43,13 +43,10 @@ public:
   bool tx_ready();
   bool channel_up();
 
-  void tick(bool reset,
-            bool tx_valid,
-            std::vector<uint64_t> tx_bits,
-            bool rx_ready);
+  void
+  tick(bool reset, bool tx_valid, std::vector<uint64_t> tx_bits, bool rx_ready);
 
-  void setup_shmem(char *owned_name,
-                   char *other_name);
+  void setup_shmem(char *owned_name, char *other_name);
 
   uint64_t SHMEM_EXTRABYTES = 24;
   uint64_t SHMEM_NUMBYTES = 0;
@@ -64,13 +61,9 @@ public:
       }
     }
 
-    int len() {
-      return (int)bits.size();
-    }
+    int len() { return (int)bits.size(); }
 
-    uint64_t bits_by_64(int idx) {
-      return bits[idx];
-    }
+    uint64_t bits_by_64(int idx) { return bits[idx]; }
   };
 
 private:

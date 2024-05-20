@@ -63,8 +63,7 @@ struct StreamParameters {
                    uint64_t toHostStreamDoneInitAddr,
                    uint64_t toHostStreamFlushAddr,
                    uint64_t toHostStreamFlushDoneAddr)
-      : stream_name(stream_name),
-        buffer_capacity(buffer_capacity),
+      : stream_name(stream_name), buffer_capacity(buffer_capacity),
         toHostPhysAddrHighAddr(toHostPhysAddrHighAddr),
         toHostPhysAddrLowAddr(toHostPhysAddrLowAddr),
         bytesAvailableAddr(bytesAvailableAddr),
@@ -130,9 +129,7 @@ private:
   uint64_t get_p2p_bar_address(char *dir_name);
 };
 
-class BiDirectionalManagedStreamIO : 
-  public FPGAManagedStreamIO,
-  public CPUManagedStreamIO {
-};
+class BiDirectionalManagedStreamIO : public FPGAManagedStreamIO,
+                                     public CPUManagedStreamIO {};
 
 #endif // __BRIDGES_FPGA_MANAGED_STREAM_H

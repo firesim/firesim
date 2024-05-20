@@ -5,11 +5,11 @@
 
 #include <atomic>
 #include <condition_variable>
+#include <iostream>
 #include <memory>
 #include <mutex>
 #include <thread>
 #include <vector>
-#include <iostream>
 
 #include "bridges/cpu_managed_stream.h"
 #include "bridges/fpga_managed_stream.h"
@@ -74,7 +74,7 @@ public:
   void write(size_t addr, uint32_t data) override;
   uint32_t read(size_t addr) override;
 
-  //void sync_sockets() override;
+  // void sync_sockets() override;
 
   /**
    * Returns a pointer to the CPU-managed AXI4 IF at the metasimulation

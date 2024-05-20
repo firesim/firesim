@@ -20,7 +20,7 @@ public:
   bool simulation_timed_out() override { return !terminated; }
 
 private:
-  simif_t& simif;
+  simif_t &simif;
   /// Reference to the peek-poke bridge.
   peek_poke_t &peek_poke;
   /// Flag to indicate that the simulation was terminated.
