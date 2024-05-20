@@ -35,8 +35,6 @@ pcim_cutbridge_t::pcim_cutbridge_t(
   }
 }
 
-pcim_cutbridge_t::~pcim_cutbridge_t() {}
-
 void pcim_cutbridge_t::init() {
   write(mmio_addrs.init_simulator_tokens, this->PCIM_INIT_TOKENS);
   write(mmio_addrs.init_simulator_tokens_valid, 1);

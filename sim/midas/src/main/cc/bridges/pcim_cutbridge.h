@@ -34,9 +34,6 @@ public:
                    const PCIMCUTBOUNDARYBRIDGEMODULE_struct &mmio_addrs,
                    int idx,
                    const std::vector<std::string> &args);
-
-  ~pcim_cutbridge_t() override;
-
   void init() override;
   void tick() override;
 

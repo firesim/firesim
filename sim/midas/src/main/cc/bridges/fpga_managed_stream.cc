@@ -74,7 +74,7 @@ FPGAManagedStreamWidget::FPGAManagedStreamWidget(
 
   int idx = 0;
   bool found = false;
-  char *resource_name[8] = {};
+  const char *resource_name[8] = {};
 
   // TODO : Currently using the number of FPGAs in the partition as a proxy of
   // the AWS instance type Need a better way of doing this...
@@ -153,7 +153,7 @@ FPGAManagedStreamWidget::FPGAManagedStreamWidget(
   }
 }
 
-uint64_t FPGAManagedStreamWidget::get_p2p_bar_address(char *dir_name) {
+uint64_t FPGAManagedStreamWidget::get_p2p_bar_address(const char *dir_name) {
   int ret;
   uint64_t physical_addr;
   if (!dir_name) {

@@ -152,7 +152,7 @@ void pcis_cutbridge_t::init() {
     assert(false);
   }
 
-  printf("pcis_cutbridge_t::init[%d] token_bytes_received %d\n",
+  printf("pcis_cutbridge_t::init[%d] token_bytes_received %lu\n",
          this->bridge_idx,
          token_bytes_received);
 
@@ -168,7 +168,7 @@ void pcis_cutbridge_t::init() {
                                        pcie_write_buf[currentround],
                                        FROM_HOST_PER_TRANSACTION_BYTES,
                                        0);
-  printf("pcis_cutbridge_t::init[%d] token_bytes_pushed %d\n",
+  printf("pcis_cutbridge_t::init[%d] token_bytes_pushed %lu\n",
          this->bridge_idx,
          token_bytes_pushed);
 

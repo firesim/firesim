@@ -32,7 +32,7 @@ public:
   qsfp_cutbridge_t(simif_t &simif,
                    StreamEngine &stream,
                    const QSFPCUTBOUNDARYBRIDGEMODULE_struct &mmio_addrs,
-                   const int idx,
+                   int idx,
                    const std::vector<std::string> &args);
   void init() override;
   void tick() override;

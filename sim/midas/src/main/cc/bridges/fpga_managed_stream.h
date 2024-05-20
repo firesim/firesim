@@ -126,7 +126,7 @@ public:
       std::vector<FPGAManagedStreams::StreamParameters> &&to_cpu);
 
 private:
-  uint64_t get_p2p_bar_address(char *dir_name);
+  uint64_t get_p2p_bar_address(const char *dir_name);
 };
 
 class BiDirectionalManagedStreamIO : public FPGAManagedStreamIO,
