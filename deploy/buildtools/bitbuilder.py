@@ -110,10 +110,10 @@ class BitBuilder(metaclass=abc.ABCMeta):
         # - technically I don't know how long these descriptions are allowed to be,
         # but it's at least 2048 chars, so I'll leave these here for now as sanity
         # checks.
-# assert len(tag_build_quintuplet) <= 255, "ERR: does not support tags longer than 256 chars for build_quintuplet"
-# assert len(tag_deploy_quintuplet) <= 255, "ERR: does not support tags longer than 256 chars for deploy_quintuplet"
-# assert len(tag_build_triplet) <= 255, "ERR: does not support tags longer than 256 chars for build_triplet"
-# assert len(tag_deploy_triplet) <= 255, "ERR: does not support tags longer than 256 chars for deploy_triplet"
+        assert len(tag_build_quintuplet) <= 255, "ERR: does not support tags longer than 256 chars for build_quintuplet"
+        assert len(tag_deploy_quintuplet) <= 255, "ERR: does not support tags longer than 256 chars for deploy_quintuplet"
+        assert len(tag_build_triplet) <= 255, "ERR: does not support tags longer than 256 chars for build_triplet"
+        assert len(tag_deploy_triplet) <= 255, "ERR: does not support tags longer than 256 chars for deploy_triplet"
 
         is_dirty_str = local("if [[ $(git status --porcelain) ]]; then echo '-dirty'; fi", capture=True)
         hash = local("git rev-parse HEAD", capture=True)
