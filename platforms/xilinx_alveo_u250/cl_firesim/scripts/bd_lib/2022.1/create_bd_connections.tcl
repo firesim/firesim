@@ -70,6 +70,8 @@ connect_bd_net -net ddr4_0_c0_ddr4_ui_clk \
 connect_bd_net -net resetn_inv_0_Res \
    [get_bd_pins clk_wiz_0/reset] \
    [get_bd_pins ddr4_0/sys_rst] \
+   [get_bd_pins clk_wiz_aurora_0/reset] \
+   [get_bd_pins clk_wiz_aurora_1/reset] \
    [get_bd_pins resetn_inv_0/Res]
 
 connect_bd_net -net rst_ddr4_0_300M_interconnect_aresetn \
