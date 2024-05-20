@@ -22,6 +22,10 @@ connect_bd_net -net proc_sys_reset_0_interconnect_aresetn \
    [get_bd_pins axi_clock_converter_0/m_axi_aresetn] \
    [get_bd_pins axi_clock_converter_1/m_axi_aresetn] \
    [get_bd_pins axi_dwidth_converter_0/s_axi_aresetn] \
+   [get_bd_pins axis_clock_converter_0/m_axis_aresetn] \
+   [get_bd_pins axis_clock_converter_1/s_axis_aresetn] \
+   [get_bd_pins axis_clock_converter_2/m_axis_aresetn] \
+   [get_bd_pins axis_clock_converter_3/s_axis_aresetn] \
    [get_bd_pins proc_sys_reset_0/interconnect_aresetn]
 
 connect_bd_net -net sys_clk_net \
