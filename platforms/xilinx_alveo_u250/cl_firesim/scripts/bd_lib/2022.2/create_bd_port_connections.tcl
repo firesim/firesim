@@ -1,1 +1,0 @@
-../2022.1/create_bd_port_connections.tcl
