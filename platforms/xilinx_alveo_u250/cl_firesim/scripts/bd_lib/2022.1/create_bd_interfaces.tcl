@@ -4,12 +4,6 @@ proc create_ddr_sdram_intf_port { name } {
    return [ create_bd_intf_port -mode Master -vlnv xilinx.com:interface:ddr4_rtl:1.0 $name ]
 }
 set ddr4_sdram_c0 [ create_ddr_sdram_intf_port ddr4_sdram_c0 ]
-<<<<<<< HEAD
-#set ddr4_sdram_c1 [ create_ddr_sdram_intf_port ddr4_sdram_c1 ]
-#set ddr4_sdram_c2 [ create_ddr_sdram_intf_port ddr4_sdram_c2 ]
-#set ddr4_sdram_c3 [ create_ddr_sdram_intf_port ddr4_sdram_c3 ]
-=======
->>>>>>> origin
 
 proc create_300mhz_clk_intf_port { name } {
    set shared_clk_props [ list \
@@ -22,9 +16,7 @@ proc create_300mhz_clk_intf_port { name } {
 set default_300mhz_clk0 [ create_300mhz_clk_intf_port default_300mhz_clk0 ]
 set default_300mhz_clk1 [ create_300mhz_clk_intf_port default_300mhz_clk1 ]
 set default_300mhz_clk2 [ create_300mhz_clk_intf_port default_300mhz_clk2 ]
-#set default_300mhz_clk3 [ create_300mhz_clk_intf_port default_300mhz_clk3 ]
-#set default_300mhz_clk4 [ create_300mhz_clk_intf_port default_300mhz_clk4 ]
-#set default_300mhz_clk5 [ create_300mhz_clk_intf_port default_300mhz_clk5 ]
+set default_300mhz_clk3 [ create_300mhz_clk_intf_port default_300mhz_clk3 ]
 
 set pci_express_x16 [ create_bd_intf_port -mode Master -vlnv xilinx.com:interface:pcie_7x_mgt_rtl:1.0 pci_express_x16 ]
 
@@ -53,10 +45,6 @@ proc create_ddr_intf_port { name firesim_freq_hz } {
    return $i
 }
 set DDR4_0_S_AXI [ create_ddr_intf_port DDR4_0_S_AXI $firesim_freq_hz ]
-<<<<<<< HEAD
-#set DDR4_1_S_AXI [ create_ddr_intf_port DDR4_1_S_AXI $firesim_freq_hz ]
-#set DDR4_2_S_AXI [ create_ddr_intf_port DDR4_2_S_AXI $firesim_freq_hz ]
-#set DDR4_3_S_AXI [ create_ddr_intf_port DDR4_3_S_AXI $firesim_freq_hz ]
 
 proc create_qsfp_clk_intf_port { name } {
    set i [ create_bd_intf_port -mode Slave -vlnv xilinx.com:interface:diff_clock_rtl:1.0 $name ]
@@ -72,8 +60,6 @@ set qsfp0_156mhz [ create_qsfp_clk_intf_port qsfp0_156mhz ]
 set qsfp1_156mhz [ create_qsfp_clk_intf_port qsfp1_156mhz ]
 set qsfp0_4x [ create_qsfp_intf_port qsfp0_4x ]
 set qsfp1_4x [ create_qsfp_intf_port qsfp1_4x ]
-=======
->>>>>>> origin
 
 # Create ports
 
