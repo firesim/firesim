@@ -7,6 +7,8 @@ module overall_fpga_top(
     `DDR4_PDEF(ddr4_sdram_c0),
 
     `DIFF_CLK_PDEF(default_300mhz_clk0),
+    `DIFF_CLK_PDEF(default_300mhz_clk1),
+    `DIFF_CLK_PDEF(default_300mhz_clk2),
 
     input wire [15:0] pci_express_x16_rxn,
     input wire [15:0] pci_express_x16_rxp,
@@ -57,6 +59,8 @@ module overall_fpga_top(
 	`undef DDR4_PAR
 
 	`DIFF_CLK_CONNECT(default_300mhz_clk0, default_300mhz_clk0)
+	`DIFF_CLK_CONNECT(default_300mhz_clk1, default_300mhz_clk1)
+	`DIFF_CLK_CONNECT(default_300mhz_clk2, default_300mhz_clk2)
 
 	`define AMBA_AXI4
 	`define AMBA_AXI_CACHE
