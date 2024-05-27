@@ -77,7 +77,7 @@ For instance, `slotid_to_pidx = [2, 1, 0]` will map partition index 2 to simulat
    :start-after: DOC include start: fireaxe_fastmode_config slot_to_pidx
    :end-before: DOC include end: fireaxe_fastmode_config slot_to_pidx
 
-We need to specfiy the SoC partition topology to run FireAxe simulations.
+We need to specify the SoC partition topology to run FireAxe simulations.
 The below figure depicts the current SoC partition topology.
 The `pidx` indicates the partition index : idx 0 corresponds to `f1_rocket_split_soc_fast` and idx 1 corresponds to `f1_rocket_split_tile_fast`.
 In FireAxe, each partition contains a set of bridges that are used to communicate with other partitions. The bridges attached to a partition all have a unique id starting from zero.
