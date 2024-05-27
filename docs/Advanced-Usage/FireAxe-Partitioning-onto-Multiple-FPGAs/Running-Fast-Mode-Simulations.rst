@@ -68,7 +68,7 @@ The `hwdb_entries` is a dictionary mapping the parition index to the `hwdb` name
    :start-after: DOC include start: fireaxe_fastmode_config hwdb_entries
    :end-before: DOC include end: fireaxe_fastmode_config hwdb_entries
 
-The `slot_to_pidx` is a list mapping the parition index to the FPGA slot id.
+The `slot_to_pidx` is a list mapping the partition index to the FPGA slot id.
 The list entries are the partition indices and the slotid is dictated by the position of the list.
 For instance, `slotid_to_pidx = [2, 1, 0]` will map partition index 2 to simulation slot 0, partition index 1 to simulation slot 1 and partition index 0 to simulation slot 2.
 
