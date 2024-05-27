@@ -33,7 +33,7 @@ Fast-Mode
 When the partition boundary is latency insensitive (i.e., the interface is ready-valid or credit based),
 you can use the fast-mode to perform partitioned simulations.
 Similar to exact-mode, users can choose the modules to partition out.
-However, in the fast-mode, it provides higher simulation throughput by trading
+However, fast-mode provides higher simulation throughput by trading
 off simulation accuracy with performance. By injecting a single cycle of latency
 on the partition boundary, simulated design will run nearly 2x faster than the exact-mode.
 
