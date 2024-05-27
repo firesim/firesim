@@ -50,7 +50,7 @@ to partition out with the selected routers. The NoC-partition-mode works only wh
 Supported Platforms
 =====================
 
-As all FireSim simulations, FireAxe can be run on both F1 and local FPGAs.
+Like all FireSim simulations, FireAxe can be run on both F1 and local FPGAs.
 
 EC2 F1
 -------
