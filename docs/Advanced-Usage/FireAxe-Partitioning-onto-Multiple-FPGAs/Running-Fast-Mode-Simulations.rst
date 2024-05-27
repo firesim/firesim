@@ -33,7 +33,7 @@ For instance, in the above example, modules "A", "B" will be grouped and extract
 
 As in the above example, we can use `WithPartitionBase` and `WithPartitionIndex(idx)` to specify the partitions.
 
-2. Building Partitioned Sims : config_build_recipes.yaml
+2. Building Partitioned Sims : `config_build_recipes.yaml`
 --------------------------------------------------------
 
 Now, we can specify the `config_build_recipes.yaml`.
