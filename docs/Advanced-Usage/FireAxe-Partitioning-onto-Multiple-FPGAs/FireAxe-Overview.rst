@@ -57,7 +57,7 @@ EC2 F1
 To improve simulation performance on AWS EC2 F1 cloud FPGAs, we utilize their
 direct peer-to-peer inter-FPGA PCIe communication mechanism to reduce token
 exchange latency `AWS PCIe Peer to Peer Guides <https://github.com/awslabs/aws-fpga-app-notes/tree/master/Using-PCIe-Peer2Peer>`_.
-The f1.16xlarge and f1.4xlarge instances each contain multiple FPGAs(8 or 2 respectively)
+The f1.16xlarge and f1.4xlarge instances each contain multiple FPGAs (8 or 2 respectively)
 that can send and receive AXI4 transactions directly to/from one another without
 going through the host. This provides the simulator up to 1MHz target frequency.
 
