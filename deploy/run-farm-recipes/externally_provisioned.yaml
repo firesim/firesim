@@ -40,15 +40,6 @@ args:
     #       override_simulation_dir: /scratch/specific-build-host-build-dir
     #       override_platform: EC2InstanceDeployManager
     run_farm_host_specs:
-        - three_fpgas_spec:
-            # REQUIRED: number of FPGAs on the machine
-            num_fpgas: 3
-            # REQUIRED: number of metasims this machine can host
-            num_metasims: 0
-            # REQUIRED: whether it is acceptable to use machines of this spec
-            # to host ONLY switches (e.g. any attached FPGAs are "wasted")
-            use_for_switch_only: false
-
         - four_fpgas_spec:
             # REQUIRED: number of FPGAs on the machine
             num_fpgas: 4
@@ -56,20 +47,6 @@ args:
             num_metasims: 0
             # REQUIRED: whether it is acceptable to use machines of this spec
             # to host ONLY switches (e.g. any attached FPGAs are "wasted")
-            use_for_switch_only: false
-
-        - two_fpgas_spec:
-            # REQUIRED: number of FPGAs on the machine
-            num_fpgas: 2
-            # REQUIRED: number of metasims this machine can host
-            num_metasims: 0
-            # REQUIRED: whether it is acceptable to use machines of this spec
-            # to host ONLY switches (e.g. any attached FPGAs are "wasted")
-            use_for_switch_only: false
-
-        - six_fpgas_spec:
-            num_fpgas: 6
-            num_metasims: 0
             use_for_switch_only: false
 
         - four_metasims_spec:
@@ -87,12 +64,83 @@ args:
             num_metasims: 0
             use_for_switch_only: false
 
-        - sixteen_metasims_spec:
-            num_fpgas: 0
-            num_metasims: 16
+        - one_fpgas_spec:
+            num_fpgas: 1
+            num_metasims: 0
             use_for_switch_only: false
-        
-        - two_metasims_spec:
-            num_fpgas: 0
-            num_metasims: 2
+
+        - two_fpgas_spec:
+            num_fpgas: 2
+            num_metasims: 0
             use_for_switch_only: false
+
+        - three_fpgas_spec:
+            num_fpgas: 3
+            num_metasims: 0
+            use_for_switch_only: false
+
+        - four_fpgas_spec:
+            num_fpgas: 4
+            num_metasims: 0
+            use_for_switch_only: false
+
+        - five_fpgas_spec:
+            num_fpgas: 5
+            num_metasims: 0
+            use_for_switch_only: false
+
+        - six_fpgas_spec:
+            num_fpgas: 6
+            num_metasims: 0
+            use_for_switch_only: false
+
+        - seven_fpgas_spec:
+            num_fpgas: 7
+            num_metasims: 0
+            use_for_switch_only: false
+
+        - eight_fpgas_spec:
+            num_fpgas: 8
+            num_metasims: 0
+            use_for_switch_only: false
+
+        - nine_fpgas_spec:
+            num_fpgas: 9
+            num_metasims: 0
+            use_for_switch_only: false
+
+        - ten_fpgas_spec:
+            num_fpgas: 10
+            num_metasims: 0
+            use_for_switch_only: false
+
+        - eleven_fpgas_spec:
+            num_fpgas: 11
+            num_metasims: 0
+            use_for_switch_only: false
+
+        - twelve_fpgas_spec:
+            num_fpgas: 12
+            num_metasims: 0
+            use_for_switch_only: false
+
+        - thirteen_fpgas_spec:
+            num_fpgas: 13
+            num_metasims: 0
+            use_for_switch_only: false
+
+        - fourteen_fpgas_spec:
+            num_fpgas: 14
+            num_metasims: 0
+            use_for_switch_only: false
+
+        - fifteen_fpgas_spec:
+            num_fpgas: 15
+            num_metasims: 0
+            use_for_switch_only: false
+
+        - sixteen_fpgas_spec:
+            num_fpgas: 16
+            num_metasims: 0
+            use_for_switch_only: false
+

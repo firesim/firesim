@@ -8,8 +8,6 @@ designs onto multiple FPGAs*, overcoming the single-FPGA limitation for monolith
 
 Partition Modes
 ==================
-FireSim uses host-decoupling to control the advancement of the simulator, and
-this causes weird things to happen when the design is partitioned across multiple FPGAs.
 FireAxe provides users with three options (modes) to perform partitioning : exact-mode, fast-mode and the NoC-partition-mode.
 These options are passed on to the compiler which will generate the correct circuitry
 to deal with the odd things that happen on the partition interface.
@@ -61,7 +59,7 @@ direct peer-to-peer inter-FPGA PCIe communication mechanism to reduce token
 exchange latency `AWS PCIe Peer to Peer Guides <https://github.com/awslabs/aws-fpga-app-notes/tree/master/Using-PCIe-Peer2Peer>`_.
 The f1.16xlarge and f1.4xlarge instances each contain multiple FPGAs(8 or 2 respectively)
 that can send and receive AXI4 transactions directly to/from one another without
-going through the host. This provides the simulator up to 1MHz target frequency.
+going through the host. This provides the simulator up to 1MHz of simulation throughput.
 
 Local FPGAs w/ QSFP Cables
 ---------------------------
@@ -69,5 +67,5 @@ For on-premises FPGAs, we achieve an even lower link latency by utilizing cheap,
 off-the-shelf `QSFP direct-attach-cables <https://www.10gtek.com/qsfp28dac>`_ and
 integrating IP for the `Aurora <https://docs.amd.com/v/u/en-US/aurora_64b66b_ds528>`_
 protocol into the FPGA shell. This exposes an AXI4-Stream interface to FireAxe.
-This ultra-low-latency interconnect enabled us to achieve a target simulation
-frequency of 2MHz.
+This ultra-low-latency interconnect enabled us to achieve a simulation
+throughput of 2MHz.

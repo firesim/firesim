@@ -248,7 +248,6 @@ class FireSimServerNode(FireSimNode):
         self.mac_address = macaddr
 
     def get_mac_address(self) -> MacAddress:
-        # assert self.mac_address is not None
         return self.mac_address
 
     def process_qcow2_rootfses(self, rootfses_list: List[Optional[str]]) -> List[Optional[str]]:

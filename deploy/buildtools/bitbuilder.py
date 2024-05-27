@@ -685,6 +685,7 @@ class XilinxAlveoBitBuilder(BitBuilder):
         local_cl_dir = f"{local_results_dir}/{fpga_build_postfix}"
         bit_path = f"{local_cl_dir}/vivado_proj/firesim.bit"
         mcs_path = f"{local_cl_dir}/vivado_proj/firesim.mcs"
+        mcs_secondary_path = f"{local_cl_dir}/vivado_proj/firesim_secondary.mcs"
         tar_staging_path = f"{local_cl_dir}/{self.build_config.PLATFORM}"
         tar_name = "firesim.tar.gz"
 
