@@ -42,7 +42,7 @@ Again, we have to specify the `user_topology.py` to run FireAxe simulations.
 We should go over a couple of changes that are made compared to the fast-mode configuration.
 
 First of all the FireAxe topology specified by `edges` has changed.
-This is because in the exact-mode, the comiler has to generate multiple communication channels (or edges) in between the partitions in order to model combinational logic correctly.
+This is because in the exact-mode, the compiler has to generate multiple communication channels (or edges) in between the partitions in order to model combinational logic correctly.
 
 The partitioning topology now looks like this:
 
