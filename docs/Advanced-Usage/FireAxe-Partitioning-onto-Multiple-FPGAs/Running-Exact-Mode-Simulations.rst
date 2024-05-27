@@ -16,8 +16,8 @@ We will be reusing the FireAxe target configurations from :ref:`fast-mode<FIREAX
    :start-after: DOC include start: F1 Rocket Partition
    :end-before: DOC include end: F1 Rocket Partition
 
-2. Building Partitioned Sims : config_build_recipes.yaml
---------------------------------------------------------
+2. Building Partitioned Sims : `config_build_recipes.yaml`
+----------------------------------------------------------
 
 We can specify the `config_build_recipes.yaml` at this point.
 One thing to note is that we added the `ExactMode_` in the `PLATFORM_CONFIG` field.
@@ -28,7 +28,7 @@ This indicates to the FireAxe compiler to perform additional steps while partiti
    :start-after: DOC include start: F1 Exact Rocket Partition Build Recipe
    :end-before: DOC include end: F1 Exact Rocket Partition Build Recipe
 
-3. Running Partitioned Simulations : user_topology.py
+3. Running Partitioned Simulations : `user_topology.py`
 --------------------------------------------------------
 
 Again, we have to specify the `user_topology.py` to run FireAxe simulations.

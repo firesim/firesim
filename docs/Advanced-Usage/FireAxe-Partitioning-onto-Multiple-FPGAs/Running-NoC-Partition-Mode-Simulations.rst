@@ -28,8 +28,8 @@ The indices in `WithPartitionGlobalInfo` now indicates the router node indices.
    :start-after: DOC include start: Xilinx U250 Ring NoC Partition
    :end-before: DOC include end: Xilinx U250 Ring NoC Partition
 
-2. Building Partitioned Sims : config_build_recipes.yaml
---------------------------------------------------------
+2. Building Partitioned Sims : `config_build_recipes.yaml`
+-----------------------------------------------------------
 
 We can specify the `config_build_recipes.yaml` at this point.
 
@@ -38,7 +38,7 @@ We can specify the `config_build_recipes.yaml` at this point.
    :start-after: DOC include start: Xilinx U250 NoC Partition Build Recipe
    :end-before: DOC include end: Xilinx U250 NoC Partition Build Recipe
 
-3. Running Partitioned Simulations : user_topology.py
+3. Running Partitioned Simulations : `user_topology.py`
 --------------------------------------------------------
 
 Once again, we need to specify the FireAxe topology to run simulations.
@@ -61,8 +61,8 @@ We can specify the above topology as below:
    :start-after: DOC include start: fireaxe_ring_noc_config edges
    :end-before: DOC include end: fireaxe_ring_noc_config edges
 
-4. Running Partitioned Simulations : config_runtime.yaml
---------------------------------------------------------
+4. Running Partitioned Simulations : `config_runtime.yaml`
+-----------------------------------------------------------
 
 Now we can update `config_runtime.yaml` to run FireAxe simulations.
 

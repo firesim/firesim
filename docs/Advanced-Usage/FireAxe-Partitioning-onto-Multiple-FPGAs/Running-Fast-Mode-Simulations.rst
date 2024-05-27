@@ -47,7 +47,7 @@ partition configs that we defined in the above step.
 
 You can now use the good old `firesim buildbitstream` command to build bitstreams of these partition configurations.
 
-3. Running Partitioned Simulations : user_topology.py
+3. Running Partitioned Simulations : `user_topology.py`
 --------------------------------------------------------
 
 Once the bitstreams are built and you copied the hwdb entries into `config_hwdb.yaml`,
