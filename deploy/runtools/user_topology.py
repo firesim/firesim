@@ -3,16 +3,12 @@ from UserToplogies and thus can instantiate your topology. """
 
 from __future__ import annotations
 
-import logging
-
 from runtools.firesim_topology_elements import FireSimPipeNode, FireSimSwitchNode, FireSimServerNode, FireSimSuperNodeServerNode, FireSimDummyServerNode, FireSimNode
 from runtools.simulation_data_classes import PartitionConfig, PartitionMode, PartitionNode, FireAxeEdge
 
 from typing import Optional, Union, Callable, Sequence, TYPE_CHECKING, cast, List, Any, Dict
 if TYPE_CHECKING:
     from runtools.firesim_topology_with_passes import FireSimTopologyWithPasses
-
-rootLogger = logging.getLogger()
 
 class UserTopologies:
     """ A class that just separates out user-defined/configurable topologies

@@ -292,7 +292,7 @@ class RuntimeHWConfig:
     def get_local_driver_dir(self) -> str:
         """ Get the relative local directory that contains the driver used to
         run this sim. """
-        print(f"get_local_driver_dir {self.get_deployquintuplet_for_config()}")
+        rootLogger.info(f"get_local_driver_dir {self.get_deployquintuplet_for_config()}")
         return self.local_driver_base_dir + "/" + self.get_platform() + "/" + self.get_deployquintuplet_for_config() + "/"
 
     def get_local_driver_path(self) -> str:
@@ -444,7 +444,7 @@ class RuntimeHWConfig:
         driver = self.get_local_driver_binaryname()
         need_sudo = "sudo" if is_on_aws() else ""
         # Note that pkill only works for names <=15 characters
-        return f"""{need_sudo} pkill -SIGKILL {driver}""".format(driver=driver[:15])
+         return f"""{need_sudo} pkill -SIGKILL {driver[:15]}"""
 
     def handle_failure(self, buildresult: _stdoutString, what: str, dir: Path|str, cmd: str) -> None:
         """ A helper function for a nice error message when used in conjunction with the run() function"""
@@ -493,7 +493,7 @@ class RuntimeHWConfig:
                     local(f"tar xvf {destination} -C {temp_dir}")
 
                     # read string from metadata
-                    cap = local(f"cat {temp_dir}/xilinx_alveo_u250/metadata", capture=True)
+                    cap = local(f"cat {temp_dir}/{self.platform}/metadata", capture=True)
                     metadata = firesim_description_to_tags(cap)
 
                     self.set_platform(metadata['firesim-deployquintuplet'].split("-")[0])

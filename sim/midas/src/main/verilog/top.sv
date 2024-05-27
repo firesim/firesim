@@ -16,6 +16,7 @@
 `define QSFP_DATA_BITS 0
 `endif
 
+// SV structs has to be 64b aligned (by adding paddings) for VCS metasims
 `define QSFP_STRUCT(name, defname) \
   typedef struct packed {                                                \
     bit [61:0]                         padding;                          \
