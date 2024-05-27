@@ -1,7 +1,7 @@
 FireAxe Partitioning onto Multiple FPGAs
 =============================================
 
-Although the FPGA capacity has become large enough to simulate large SoCs, there
+Although FPGA capacity has become large enough to simulate many large SoCs, there
 still are cases when your design does not fit on a single FPGA.
 When the design contains multiple duplicate modules, you should refer to the
 :ref:`Multithreading<FAME-5>` section first. When the design doesn't fit even with :ref:`Multithreading<FAME-5>`,
