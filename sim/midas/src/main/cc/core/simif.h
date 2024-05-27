@@ -46,8 +46,6 @@ public:
    */
   virtual void write(size_t addr, uint32_t data) = 0;
 
-  // virtual void sync_sockets() = 0;
-
   /**
    * @brief 32b MMIO read, issued over the simulation control bus (AXI4-lite).
    *

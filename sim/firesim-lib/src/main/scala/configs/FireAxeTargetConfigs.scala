@@ -12,7 +12,11 @@ import midas._
 //////////////////////////////////////////////////////////////////////////////
 class RocketTileF1Config extends Config(
   new WithPCIM ++ // Use PCIM (PCIe peer to peer) communication scheme
-  new WithPartitionGlobalInfo(Seq( // Specify the modules to partition out
+  // WithPartitionGlobalInfo takes in a Seq of Seq
+  // The inner Seq specifies the list of modules that should be grouped together in a single partition.
+  // The outer Seq specifies the list of partition groups.
+  // Each partition group is mapped onto a separate FPGA.
+  new WithPartitionGlobalInfo(Seq(
     Seq("RocketTile")
   )) ++
   new BaseF1Config)

@@ -104,6 +104,7 @@ object PromotePassthroughConnections extends Transform with DependencyAPIMigrati
       sink -> source.head
     }).toMap
 
+
     def onStmt(s: Statement): Statement = s.map(onStmt) match {
       case c@Connect(_, lhs, _) =>
         val sinkNode = lhs match {
@@ -125,8 +126,8 @@ object PromotePassthroughConnections extends Transform with DependencyAPIMigrati
         }
       case o => o
     }
-    val updatedTopModule = topModule.map(onStmt)
 
+    val updatedTopModule = topModule.map(onStmt)
     state.copy(circuit = state.circuit.copy(modules =
       updatedTopModule +: state.circuit.modules.filterNot(_.name == state.circuit.main)))
   }
