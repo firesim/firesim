@@ -23,17 +23,15 @@ The partitioned simulation will behave *exactly* the same as when running the ta
 This is usesful when the partition boundary is not latency insensitive (i.e. the interface is not ready-valid interface nor credit based)
 and when the boundary contains combinational logic running through it.
 
-Example modules that can be partitioned out are RoCC accelerators as the ports to access the
+An example of a module that can be partitioned out using the exact-mode is a RoCC accelerator since the ports to access the
 page-table-walker boundaries are combinationally dependent to each other.
-However, when running baremetal tests, address translations are unnecessary
-and users can use the fast-mode to partition out RoCC accelerators.
 
 Fast-Mode
 ----------
 When the partition boundary is latency insensitive (i.e., the interface is ready-valid or credit based),
 you can use the fast-mode to perform partitioned simulations.
-Similarily as in the exact-mode, users can choose the modules to partition out.
-However, in the fast-mode, it provides higher simulation throughput by trading
+Similar to exact-mode, users can choose the modules to partition out.
+However, fast-mode provides higher simulation throughput by trading
 off simulation accuracy with performance. By injecting a single cycle of latency
 on the partition boundary, simulated design will run nearly 2x faster than the exact-mode.
 
@@ -50,14 +48,14 @@ to partition out with the selected routers. The NoC-partition-mode works only wh
 Supported Platforms
 =====================
 
-As all FireSim simulations, FireAxe can be run on both F1 and local FPGAs.
+Like all FireSim simulations, FireAxe can be run on both F1 and local FPGAs.
 
 EC2 F1
 -------
 To improve simulation performance on AWS EC2 F1 cloud FPGAs, we utilize their
 direct peer-to-peer inter-FPGA PCIe communication mechanism to reduce token
 exchange latency `AWS PCIe Peer to Peer Guides <https://github.com/awslabs/aws-fpga-app-notes/tree/master/Using-PCIe-Peer2Peer>`_.
-The f1.16xlarge and f1.4xlarge instances each contain multiple FPGAs(8 or 2 respectively)
+The f1.16xlarge and f1.4xlarge instances each contain multiple FPGAs (8 or 2 respectively)
 that can send and receive AXI4 transactions directly to/from one another without
 going through the host. This provides the simulator up to 1MHz of simulation throughput.
 
