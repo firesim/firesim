@@ -25,10 +25,8 @@ The partitioned simulation will behave *exactly* the same as when running the ta
 This is usesful when the partition boundary is not latency insensitive (i.e. the interface is not ready-valid interface nor credit based)
 and when the boundary contains combinational logic running through it.
 
-Example modules that can be partitioned out are RoCC accelerators as the ports to access the
+An example of a module that can be partitioned out using the exact-mode is a RoCC accelerator since the ports to access the
 page-table-walker boundaries are combinationally dependent to each other.
-However, when running baremetal tests, address translations are unnecessary
-and users can use the fast-mode to partition out RoCC accelerators.
 
 Fast-Mode
 ----------
