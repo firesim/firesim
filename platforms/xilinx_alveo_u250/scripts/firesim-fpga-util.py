@@ -14,7 +14,7 @@ from typing import Dict, Any, List
 
 scriptPath = Path(__file__).resolve().parent
 # firesim specific location of where to read/write database file
-dbPath = Path("/opt/firesim-db.json")
+dbPath = Path() # must be overridden by cmdline
 
 def program_fpga(vivado: Path, serial: str, bitstream: str) -> None:
     progTcl = scriptPath / 'program_fpga.tcl'
@@ -33,7 +33,12 @@ def program_fpga(vivado: Path, serial: str, bitstream: str) -> None:
 
 # mapping functions
 
+def set_fpga_db(db: Path) -> None:
+    global dbPath
+    dbPath = db
+
 def get_fpga_db() -> Dict[Any, Any]:
+    global dbPath
     if dbPath.exists():
         with open(dbPath, 'r') as f:
             return json.load(f)
@@ -73,6 +78,7 @@ def main(args: List[str]) -> int:
     megroup.add_argument("--all-bdfs", help="Use all BDFs (PCI-E manipulation)", action="store_true")
     parser.add_argument("--vivado-bin", help="Explicit path to 'vivado'", type=Path)
     parser.add_argument("--hw-server-bin", help="Explicit path to 'hw_server'", type=Path)
+    parser.add_argument("--fpga-db", help="Explicit path to FPGA DB file (used to resolve BDFs to serial numbers or obtain all serial numbers of FPGAs)", type=Path, required=True)
     megroup2 = parser.add_mutually_exclusive_group(required=True)
     megroup2.add_argument("--bitstream", help="The bitstream to flash onto FPGA(s)", type=Path)
     megroup2.add_argument("--disconnect-bdf", help="Disconnect BDF(s)", action="store_true")
@@ -107,6 +113,9 @@ def main(args: List[str]) -> int:
         execvArgs += ['--vivado-bin', str(parsed_args.vivado_bin), '--hw-server-bin', str(parsed_args.hw_server_bin)]
         print(f":INFO: Running: {execvArgs}")
         os.execv(execvArgs[0], execvArgs)
+
+    # use cmdline db file
+    set_fpga_db(parsed_args.fpga_db)
 
     def is_bdf_arg(parsed_args) -> bool:
         return parsed_args.bus_id or parsed_args.bdf or parsed_args.extended_bdf or parsed_args.all_bdfs

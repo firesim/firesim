@@ -54,6 +54,9 @@ class Inst(metaclass=abc.ABCMeta):
 
     sim_dir: Optional[str]
 
+    # location of fpga db file specifying fpga's available
+    fpga_db: Optional[str]
+
     # instances parameterized by this
     instance_deploy_manager: InstanceDeployManager
 
@@ -61,7 +64,7 @@ class Inst(metaclass=abc.ABCMeta):
 
     metasimulation_enabled: bool
 
-    def __init__(self, run_farm: RunFarm, max_sim_slots_allowed: int, instance_deploy_manager: Type[InstanceDeployManager], sim_dir: Optional[str] = None, metasimulation_enabled: bool = False) -> None:
+    def __init__(self, run_farm: RunFarm, max_sim_slots_allowed: int, instance_deploy_manager: Type[InstanceDeployManager], sim_dir: Optional[str] = None, fpga_db: Optional[str] = None, metasimulation_enabled: bool = False) -> None:
         super().__init__()
 
         self.run_farm = run_farm
@@ -73,6 +76,7 @@ class Inst(metaclass=abc.ABCMeta):
         self.sim_slots = []
 
         self.sim_dir = sim_dir
+        self.fpga_db = fpga_db
         self.metasimulation_enabled = metasimulation_enabled
 
         self.instance_deploy_manager = instance_deploy_manager(self)
@@ -85,6 +89,13 @@ class Inst(metaclass=abc.ABCMeta):
     def get_sim_dir(self) -> str:
         assert self.sim_dir is not None
         return self.sim_dir
+
+    def set_fpga_db(self, f: str) -> None:
+        self.fpga_db = f
+
+    def get_fpga_db(self) -> str:
+        assert self.fpga_db is not None
+        return self.fpga_db
 
     def get_host(self) -> str:
         assert self.host is not None
@@ -365,7 +376,7 @@ class AWSEC2F1(RunFarm):
 
             insts: List[Tuple[Inst, Optional[Union[EC2InstanceResource, MockBoto3Instance]]]] = []
             for _ in range(num_insts):
-                insts.append((Inst(self, num_sim_slots, dispatch_dict[platform], simulation_dir, self.metasimulation_enabled), None))
+                insts.append((Inst(self, num_sim_slots, dispatch_dict[platform], simulation_dir, None, self.metasimulation_enabled), None))
             self.run_farm_hosts_dict[inst_handle] = insts
             self.mapper_consumed[inst_handle] = 0
 
@@ -540,6 +551,7 @@ class ExternallyProvisioned(RunFarm):
         dispatch_dict = dict([(x.__name__, x) for x in inheritors(InstanceDeployManager)])
 
         default_platform = self.args.get("default_platform")
+        default_fpga_db = self.args.get("default_fpga_db")
 
         runhost_specs = dict()
         for specinfo in self.args["run_farm_host_specs"]:
@@ -578,8 +590,9 @@ class ExternallyProvisioned(RunFarm):
                 num_sims = host_spec.get("num_fpgas")
             platform = host_spec.get("override_platform", default_platform)
             simulation_dir = host_spec.get("override_simulation_dir", self.default_simulation_dir)
+            fpga_db = host_spec.get("override_fpga_db", default_fpga_db)
 
-            inst = Inst(self, num_sims, dispatch_dict[platform], simulation_dir, self.metasimulation_enabled)
+            inst = Inst(self, num_sims, dispatch_dict[platform], simulation_dir, fpga_db, self.metasimulation_enabled)
             inst.set_host(ip_addr)
             assert not ip_addr in self.run_farm_hosts_dict, f"Duplicate host name found in 'run_farm_hosts': {ip_addr}"
             self.run_farm_hosts_dict[ip_addr] = [(inst, None)]
