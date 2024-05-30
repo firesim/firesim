@@ -143,8 +143,8 @@ class PartitionConfig:
           exit(1)
 
     def metasim_partition_topo_args(self) -> int:
-        if (self.mode == PartitionMode.FAST_MODE) or
-           (self.mode == PartitionMode.EXACT_MODE) or
+        if (self.mode == PartitionMode.FAST_MODE) or \
+           (self.mode == PartitionMode.EXACT_MODE) or \
            (self.mode == PartitionMode.NOC_MODE):
             return int(self.mode)
         else:
