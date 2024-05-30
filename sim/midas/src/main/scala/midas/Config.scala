@@ -223,10 +223,6 @@ class HostDebugFeatures extends Config((site, here, up) => {
   case GenerateTokenIrrevocabilityAssertions => true
 })
 
-class WithWiringTransform extends Config((site, here, up) => {
-  case TargetTransforms => Dependency[firrtl.passes.wiring.WiringTransform] +: up(TargetTransforms, site)
-})
-
 class WithPCIMPorts extends Config((site, here, up) => {
   case F1ShimHasPCIMPorts => true
   case FPGAStreamEngineInstantiatorKey =>
@@ -244,20 +240,8 @@ class WithPCIMPorts extends Config((site, here, up) => {
 
 class EC2F1Config extends Config(
   new WithPCIMPorts ++
-  new WithWiringTransform ++
   new F1Config
 )
-
-class WithModelMultiThreading extends Config((site, here, up) => {
-  case midas.EnableModelMultiThreading => true
-})
-
-class WithMultiCycleRams extends Config((site, here, up) => {
-  case midas.GenerateMultiCycleRamModels => true
-})
-
-class MTModels extends WithModelMultiThreading
-class MCRams extends WithMultiCycleRams
 
 case object FireAxeNoCPartitionPass extends Field[Boolean](false)
 case object FireAxeQSFPConnections  extends Field[Boolean](false)
@@ -277,14 +261,20 @@ class WithFireAxeNoCPart extends Config((site, here, up) => {
 
 class WithQSFP extends Config((site, here, up) => {
   case midas.FireAxeQSFPConnections => true
+  case midas.FireAxePCIMConnections => false
+  case midas.FireAxePCISConnections => false
 })
 
 class WithPCIS extends Config((site, here, up) => {
+  case midas.FireAxeQSFPConnections => false
+  case midas.FireAxePCIMConnections => false
   case midas.FireAxePCISConnections => true
 })
 
 class WithPCIM extends Config((site, here, up) => {
+  case midas.FireAxeQSFPConnections => false
   case midas.FireAxePCIMConnections => true
+  case midas.FireAxePCISConnections => false
 })
 
 class WithPartitionGlobalInfo(info: Seq[Seq[String]]) extends Config((site, here, up) => {

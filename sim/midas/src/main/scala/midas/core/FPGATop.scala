@@ -4,6 +4,7 @@ package midas
 package core
 
 import junctions._
+import midas.PrintfLogger
 import midas.widgets._
 import midas.passes.HostClockSource
 import chisel3._
@@ -127,58 +128,6 @@ class QSFPBundle(qsfpBitWidth: Int) extends Bundle {
 object QSFPBundle {
   def apply(qsfpBitWidth: Int)(implicit p: Parameters): QSFPBundle = {
     new QSFPBundle(qsfpBitWidth)
-  }
-}
-
-class SerialIO(val w: Int) extends Bundle {
-  val in = Flipped(Decoupled(UInt(w.W)))
-  val out = Decoupled(UInt(w.W))
-
-  def flipConnect(other: SerialIO) {
-    in <> other.out
-    other.in <> out
-  }
-}
-
-class SerialWidthAdapter(narrowW: Int, wideW: Int) extends Module {
-  require(wideW > narrowW)
-  require(wideW % narrowW == 0)
-  val io = IO(new Bundle {
-    val narrow = new SerialIO(narrowW)
-    val wide = new SerialIO(wideW)
-  })
-
-  val beats = wideW / narrowW
-  val narrow_beats = RegInit(0.U(log2Ceil(beats).W))
-  val narrow_last_beat = narrow_beats === (beats-1).U
-  val narrow_data = Reg(Vec(beats-1, UInt(narrowW.W)))
-
-  val wide_beats = RegInit(0.U(log2Ceil(beats).W))
-  val wide_last_beat = wide_beats === (beats-1).U
-
-  io.narrow.in.ready := Mux(narrow_last_beat, io.wide.out.ready, true.B)
-  when (io.narrow.in.fire()) {
-    narrow_beats := Mux(narrow_last_beat, 0.U, narrow_beats + 1.U)
-    when (!narrow_last_beat) { narrow_data(narrow_beats) := io.narrow.in.bits }
-  }
-  io.wide.out.valid := narrow_last_beat && io.narrow.in.valid
-  io.wide.out.bits := Cat(io.narrow.in.bits, narrow_data.asUInt)
-
-  io.narrow.out.valid := io.wide.in.valid
-  io.narrow.out.bits := io.wide.in.bits.asTypeOf(Vec(beats, UInt(narrowW.W)))(wide_beats)
-  when (io.narrow.out.fire()) {
-    wide_beats := Mux(wide_last_beat, 0.U, wide_beats + 1.U)
-  }
-  io.wide.in.ready := wide_last_beat && io.narrow.out.ready
-}
-
-object FPGATopLogger {
-  def logInfo(format: String, args: Bits*)(implicit p: Parameters) {
-    val loginfo_cycles = RegInit(0.U(64.W))
-    loginfo_cycles := loginfo_cycles + 1.U
-
-    printf("cy: %d, ", loginfo_cycles)
-    printf(Printable.pack(format, args:_*))
   }
 }
 
@@ -494,8 +443,7 @@ class FPGATopImp(outer: FPGATop)(implicit p: Parameters) extends LazyModuleImp(o
   val fpga_managed_axi4 = outer.fpgaManagedAXI4NodeTuple.map { case (node, params) =>
     println("Creating AXI4 Master for FPGA managed node")
     val port = IO(AXI4Bundle(params.axi4BundleParams))
-    val np = node.in.head._1
-    port <> np
+    port <> node.in.head._1
     port
   }
   // Hack: Don't touch the ports so that we can use FPGATop as top-level in ML simulation
@@ -530,7 +478,6 @@ class FPGATopImp(outer: FPGATop)(implicit p: Parameters) extends LazyModuleImp(o
   outer.printStreamSummary(outer.fromQSFPStreamParams, "Bridge Streams From QSFP")
   outer.printStreamSummary(outer.toPeerFPGAStreamParams, "Bridge Streams To FPGA")
 
-  // TODO: need to add qsfp1 stuff in here
   QSFPPortLocHint()
 
   outer.bridgesWithToQSFPStreams.zip(outer.bridgesWithFromQSFPStreams).zipWithIndex.foreach { x =>
@@ -558,19 +505,19 @@ class FPGATopImp(outer: FPGATop)(implicit p: Parameters) extends LazyModuleImp(o
 
     if (p(MetasimPrintfEnable)) {
       when (qsfp(idx).rx.fire()) {
-        FPGATopLogger.logInfo("FPGATop qsfp(%d).rx.fire\n", idx.U)
+        PrintfLogger.logInfo("FPGATop qsfp(%d).rx.fire\n", idx.U)
         for (i <- 0 until qsfpBitWidth / 64) {
           val start = i * 64
           val end = (i + 1) * 64
-          FPGATopLogger.logInfo("FPGATop bits(%d, %d): 0x%x\n", (end-1).U, start.U, qsfp(idx).rx.bits(end-1, start))
+          PrintfLogger.logInfo("FPGATop bits(%d, %d): 0x%x\n", (end-1).U, start.U, qsfp(idx).rx.bits(end-1, start))
         }
       }
       when (qsfp(idx).tx.fire()) {
-        FPGATopLogger.logInfo("FPGATop qsfp(%d).tx.fire\n", idx.U)
+        PrintfLogger.logInfo("FPGATop qsfp(%d).tx.fire\n", idx.U)
         for (i <- 0 until qsfpBitWidth / 64) {
           val start = i * 64
           val end = (i + 1) * 64
-          FPGATopLogger.logInfo("FPGATop bits(%d, %d): 0x%x\n", (end-1).U, start.U, qsfp(idx).tx.bits(end-1, start))
+          PrintfLogger.logInfo("FPGATop bits(%d, %d): 0x%x\n", (end-1).U, start.U, qsfp(idx).tx.bits(end-1, start))
         }
       }
     }

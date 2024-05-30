@@ -4,7 +4,7 @@ import chisel3._
 import chisel3.util._
 import org.chipsalliance.cde.config._
 import freechips.rocketchip.util._
-import midas.MetasimPrintfEnable
+import midas.{MetasimPrintfEnable, PrintfLogger}
 
 
 object TokensBatchedAtOnceConsts {
@@ -22,16 +22,6 @@ object DMAUtil {
   }
 }
 import DMAUtil._
-
-object CutBoundaryBridgeLogger {
-  def logInfo(format: String, args: Bits*)(implicit p: Parameters) {
-    val loginfo_cycles = RegInit(0.U(64.W))
-    loginfo_cycles := loginfo_cycles + 1.U
-
-    printf("cy: %d, ", loginfo_cycles)
-    printf(Printable.pack(format, args:_*))
-  }
-}
 
 case class CutBoundaryParams(
   inTokenBits: Int,
@@ -248,15 +238,11 @@ abstract class CutBoundaryBridgeModule(
       tokenOutQueue.io.enq.ready,
       initSimulatorDone)
 
-// val combDeqTokenFire = DecoupledHelper(
-// hPort.toHost.hValid,
-// inputTokens === 0.U)
-
     val metasimPrintfEnable = p(MetasimPrintfEnable)
     when (deqTokenFire.fire) {
       outputTokens := outputTokens + 1.U
       if (metasimPrintfEnable) {
-        CutBoundaryBridgeLogger.logInfo("CutBoundaryBridge %d toHostTokenFire 0x%x\n",
+        PrintfLogger.logInfo("CutBoundaryBridge %d toHostTokenFire 0x%x\n",
           outTokenBits.U, hPort.hBits.out)
       }
     }
@@ -264,18 +250,10 @@ abstract class CutBoundaryBridgeModule(
     when (enqTokenFire.fire) {
       inputTokens := inputTokens + 1.U
       if (metasimPrintfEnable) {
-        CutBoundaryBridgeLogger.logInfo("CutBoundaryBridge %d fromHostTokenFire 0x%x\n",
+        PrintfLogger.logInfo("CutBoundaryBridge %d fromHostTokenFire 0x%x\n",
           inTokenBits.U, hPort.hBits.in)
       }
     }
-
-// when (combDeqTokenFire.fire) {
-// combInitTokens := combInitTokens + 1.U
-// if (metasimPrintfEnable) {
-// CutBoundaryBridgeLogger.logInfo("CutBoundaryBridge combInitTokensFire %d\n",
-// combInitTokens)
-// }
-// }
 
     when (hPort.toHost.hValid && hPort.toHost.hReady) {
       toHostFireCnt := toHostFireCnt + 1.U
@@ -288,7 +266,6 @@ abstract class CutBoundaryBridgeModule(
     tokenOutQueue.io.enq.valid := deqTokenFire.fire(tokenOutQueue.io.enq.ready)
     tokenOutQueue.io.enq.bits := hPort.hBits.out
     hPort.toHost.hReady := deqTokenFire.fire(hPort.toHost.hValid)
-// combDeqTokenFire.fire(hPort.toHost.hValid)
 
     // tokenOutQueue to tokenSlicer
     tokenSlicer.io.token <> tokenOutQueue.io.deq
@@ -325,7 +302,7 @@ abstract class CutBoundaryBridgeModule(
     when (rejectRxStreamFire.fire) {
       garbageCnt := garbageCnt + 1.U
       if (metasimPrintfEnable) {
-        CutBoundaryBridgeLogger.logInfo("rejectToken(%d) 0x%x\n",
+        PrintfLogger.logInfo("rejectToken(%d) 0x%x\n",
           garbageCnt, filterQueue.io.deq.bits)
       }
     }
@@ -359,7 +336,7 @@ abstract class CutBoundaryBridgeModule(
         initSimulatorDone := true.B
       }
       if (metasimPrintfEnable) {
-        CutBoundaryBridgeLogger.logInfo("InitTokenEnq %d\n", curInitTokens)
+        PrintfLogger.logInfo("InitTokenEnq %d\n", curInitTokens)
       }
     } .elsewhen (initSimulatorTokensValid && initSimulatorTokens === 0.U) {
       initSimulatorDone := true.B

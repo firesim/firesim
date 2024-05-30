@@ -92,9 +92,6 @@ class Top(w: Int) extends Module {
   io.success := bar.io.success
 }
 
-
-
-
 trait GoldenGateCompilerTest { this: TestSuite =>
   protected def annos: AnnotationSeq = Seq()
 

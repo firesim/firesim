@@ -8,9 +8,6 @@ import chisel3._
 import chisel3.util._
 import freechips.rocketchip.util.DecoupledHelper
 
-
-
-
 class TL(w: Int) extends Bundle {
   val a = Decoupled(UInt(w.W))
   val d = Flipped(Decoupled(UInt(w.W)))

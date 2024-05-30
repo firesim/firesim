@@ -26,9 +26,6 @@ import freechips.rocketchip.diplomacy._
 import freechips.rocketchip.util.DecoupledHelper
 import org.chipsalliance.cde.config.{Config, Field, Parameters}
 
-///////////////////////////////////////////////////////////////////////////////
-
-
 class TLBundle extends Bundle {
   val a = Decoupled(UInt(4.W))
   val d = Flipped(Decoupled(UInt(4.W)))

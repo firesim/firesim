@@ -8,7 +8,6 @@ import freechips.rocketchip.amba.axi4._
 import org.chipsalliance.cde.config.Parameters
 import freechips.rocketchip.diplomacy._
 
-import midas.targetutils.{FireSimQueueHelper}
 import midas.widgets._
 import midas.targetutils.{FireSimQueueHelper}
 
@@ -26,7 +25,8 @@ class FPGAManagedStreamEngine(p: Parameters, val params: StreamEngineParameters)
   // NOTE : Instead of waiting util we have 4kB of data, just send an
   // AXI4 transaction for each beat.
   // Sending 4KB wastes PCIe BW especially for when P2P is used for partitioning.
-  val pageBytes = beatBytes
+  val streamEngineForP2P = p(F1ShimHasPCIMPorts)
+  val pageBytes = if (streamEngineForP2P) beatBytes else 4096
   val pageBeats = pageBytes / beatBytes
 
   def maxFlightForStream(params: StreamSourceParameters): Int =
@@ -86,9 +86,6 @@ class FPGAManagedStreamEngine(p: Parameters, val params: StreamEngineParameters)
       val toHostPhysAddrLow  = Reg(UInt(32.W))
       val bytesConsumedByCPU = RegInit(0.U(log2Ceil(cpuBufferSizeBytes + 1).W))
 
-      val addrIndexBits = log2Ceil(cpuBufferSizeBytes)
-      println(s"FPGAManagedStream addrIndexBits ${addrIndexBits}")
-
       // This sets up a double buffer that should give full throughput for a
       // single stream system. This queue could be grown under a multi-stream system.
       val outgoingQueueIO = FireSimQueueHelper.makeIO(UInt(BridgeStreamConstants.streamWidthBits.W), 2 * pageBeats, isFireSim=true)
@@ -112,8 +109,11 @@ class FPGAManagedStreamEngine(p: Parameters, val params: StreamEngineParameters)
       val beatsToSendMinus1                      = RegInit(0.U(log2Ceil(pageBeats + 1).W))
 
       // Ensure we do not cross page boundaries per AXI4 spec.
-      val beatsToPageBoundary = pageBeats.U
-// pageBeats.U - writePtr(log2Ceil(pageBytes) - 1, log2Ceil(beatBytes))
+      val beatsToPageBoundary = if (streamEngineForP2P) {
+        pageBeats.U
+      } else {
+        pageBeats.U - writePtr(log2Ceil(pageBytes) - 1, log2Ceil(beatBytes))
+      }
       assert((beatsToPageBoundary > 0.U) && (beatsToPageBoundary <= (pageBeats.U)))
 
       // Establish the largest AXI4 write request we can make, by doing a min
@@ -136,11 +136,13 @@ class FPGAManagedStreamEngine(p: Parameters, val params: StreamEngineParameters)
         !doneInit || (!(RegNext(bytesConsumedByCPU) =/= 0.U) || (bytesConsumedByCPU === 0.U)),
         "Back-to-back MMIO accesses, or incorrect toggling on bytesConsumedByCPU",
       )
-// when(bytesConsumedByCPU =/= 0.U) {
-// bytesConsumedByCPU := 0.U
-// writeCredits       := writeCredits + bytesConsumedByCPU
-// readCredits        := readCredits - bytesConsumedByCPU
-// }
+      if (!streamEngineForP2P) {
+        when(bytesConsumedByCPU =/= 0.U) {
+          bytesConsumedByCPU := 0.U
+          writeCredits       := writeCredits + bytesConsumedByCPU
+          readCredits        := readCredits - bytesConsumedByCPU
+        }
+      }
 
       val doFlush, inFlush                   = RegInit(false.B)
       val flushBeatsToIssue, flushBeatsToAck = RegInit(0.U(log2Ceil(cpuBufferDepthBeats + 1).W))
@@ -170,7 +172,9 @@ class FPGAManagedStreamEngine(p: Parameters, val params: StreamEngineParameters)
             state             := sendData
             beatsToSendMinus1 := writeableBeatsMinus1
             writePtr          := writePtr + (writeableBeats * beatBytes.U)
-// writeCredits      := writeCredits + bytesConsumedByCPU - (writeableBeats * beatBytes.U)
+            if (!streamEngineForP2P) {
+              writeCredits      := writeCredits + bytesConsumedByCPU - (writeableBeats * beatBytes.U)
+            }
             flushBeatsToIssue := Mux(flushBeatsToIssue < writeableBeats, 0.U, flushBeatsToIssue - writeableBeats)
           }
         }
@@ -215,7 +219,9 @@ class FPGAManagedStreamEngine(p: Parameters, val params: StreamEngineParameters)
       val ackBeats = inflightBeatCounts.io.deq.bits.numBeats
       val ackFlush = inflightBeatCounts.io.deq.bits.isFlush
       when(axi4.b.fire) {
-// readCredits := readCredits + (ackBeats * beatBytes.U) - bytesConsumedByCPU
+        if (!streamEngineForP2P) {
+          readCredits := readCredits + (ackBeats * beatBytes.U) - bytesConsumedByCPU
+        }
         when(ackFlush) {
           val remainingBeatsToAck = Mux(ackBeats < flushBeatsToAck, flushBeatsToAck - ackBeats, 0.U)
           flushBeatsToAck := remainingBeatsToAck
