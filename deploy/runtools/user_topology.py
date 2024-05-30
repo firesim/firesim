@@ -4,7 +4,7 @@ from UserToplogies and thus can instantiate your topology. """
 from __future__ import annotations
 
 from runtools.firesim_topology_elements import FireSimPipeNode, FireSimSwitchNode, FireSimServerNode, FireSimSuperNodeServerNode, FireSimDummyServerNode, FireSimNode
-from runtools.simulation_data_classes import PartitionConfig, PartitionMode, PartitionNode, FireAxeEdge
+from runtools.simulation_data_classes import PartitionConfig, PartitionMode, PartitionNode, FireAxeEdge, FireAxeNodeBridgePair
 
 from typing import Optional, Union, Callable, Sequence, TYPE_CHECKING, cast, List, Any, Dict
 if TYPE_CHECKING:
@@ -424,10 +424,10 @@ class UserTopologies:
 
         # Add edges to nodes
         for edge in edges:
-            u_node = pidx_to_partition_node[edge.u_pidx]
-            v_node = pidx_to_partition_node[edge.v_pidx]
-            u_node.add_edge(edge.u_bidx, edge.v_bidx, v_node)
-            v_node.add_edge(edge.v_bidx, edge.u_bidx, u_node)
+            u_node = pidx_to_partition_node[edge.u.pidx]
+            v_node = pidx_to_partition_node[edge.v.pidx]
+            u_node.add_edge(edge.u.bidx, edge.v.bidx, v_node)
+            v_node.add_edge(edge.v.bidx, edge.u.bidx, u_node)
 
         # Create PartitionConfigs and FireSimServerNode
         servers: Dict[int, FireSimServerNode] = dict()
@@ -460,7 +460,7 @@ class UserTopologies:
         # DOC include start: fireaxe_fastmode_config edges
         # The `FireAxeEdge` class is used to depict the connections between the partitions.
         edges = [
-            FireAxeEdge(0, 0, 1, 0)
+            FireAxeEdge(FireAxeNodeBridgePair(0, 0), FireAxeNodeBridgePair(1, 0))
         ]
         # DOC include end: fireaxe_fastmode_config edges
         # DOC include start: fireaxe_fastmode_config mode
@@ -481,10 +481,10 @@ class UserTopologies:
         slotid_to_pidx = [0, 1]
         edges = [
             # DOC include start: fireaxe_rocket_exactmode_config edge 0
-            FireAxeEdge(0, 0, 1, 0),
+            FireAxeEdge(FireAxeNodeBridgePair(0, 0), FireAxeNodeBridgePair(1, 0)),
             # DOC include end: fireaxe_rocket_exactmode_config edge 0
             # DOC include start: fireaxe_rocket_exactmode_config edge 1
-            FireAxeEdge(0, 1, 1, 1)
+            FireAxeEdge(FireAxeNodeBridgePair(0, 1), FireAxeNodeBridgePair(1, 1))
             # DOC include end: fireaxe_rocket_exactmode_config edge 1
         ]
         # DOC include start: fireaxe_rocket_exactmode_config mode
@@ -503,9 +503,9 @@ class UserTopologies:
         slotid_to_pidx = [0, 1, 2]
         # DOC include start: fireaxe_ring_noc_config edges
         edges = [
-            FireAxeEdge(0, 0, 2, 1),
-            FireAxeEdge(2, 0, 1, 1),
-            FireAxeEdge(1, 0, 0, 1)
+            FireAxeEdge(FireAxeNodeBridgePair(0, 0), FireAxeNodeBridgePair(2, 1)),
+            FireAxeEdge(FireAxeNodeBridgePair(2, 0), FireAxeNodeBridgePair(1, 1)),
+            FireAxeEdge(FireAxeNodeBridgePair(1, 0), FireAxeNodeBridgePair(0, 1))
         ]
         # DOC include end: fireaxe_ring_noc_config edges
         mode = PartitionMode.NOC_MODE

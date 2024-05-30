@@ -89,7 +89,9 @@ In our example, partition 0 and partition 1 communicates through a single edge w
    :width: 400
 
 The `FireAxeEdge` class is used to depict the connections between the partitions.
-When connecting partition X to partition Y, the edge is described as `FireAxeEdge(partition index of X, bridge index of X, partition index of Y, bridge index of Y)`.
+When connecting partition `X` to partition `Y`, we need to be aware of the bridge index that connects `X` and `Y` (`Xbidx`, `Ybidx`).
+The vertices of the edge can be described as a tuple of the partition index and bridge index : `Xpair = FireAxeNodeBridgedPair(X, Xbidx)` and `Ypair = FireAxeNodeBridgedPair(Y, Ybidx)`.
+Then, the edge can be described as `FireAxeEdge(Xpair, Ypair)`.
 So the edge in the above figure can be described as follows :
 
 .. literalinclude:: ../../../deploy/runtools/user_topology.py

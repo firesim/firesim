@@ -47,22 +47,28 @@ class SynthPrintConfig:
         self.end = args.get("end", "-1")
         self.cycle_prefix = args.get("cycle_prefix", True) == True
 
+class FireAxeNodeBridgePair:
+    """
+    pidx : partition index of the node
+    bidx : bridge index
+    """
+    pidx: int
+    bidx: int
+
+    def __init__(self, pidx: int, bidx: int) -> None:
+        self.pidx = pidx
+        self.bidx = bidx
+
 class FireAxeEdge:
     """
-    Connects to partition nodes u, v
-    pidx : partition index of the nodes creating the edge
-    bidx : bridge index of the edge
+    Connects two `FireAxeNodeBridgePair`s u, v
     """
-    u_pidx: int
-    u_bidx: int
-    v_pidx: int
-    v_bidx: int
+    u: FireAxeNodeBridgePair
+    v: FireAxeNodeBridgePair
 
-    def __init__(self, u_pidx: int, u_bidx: int, v_pidx: int, v_bidx: int) -> None:
-        self.u_bidx = u_bidx
-        self.u_pidx = u_pidx
-        self.v_bidx = v_bidx
-        self.v_pidx = v_pidx
+    def __init__(self, u: FireAxeNodeBridgePair, v: FireAxeNodeBridgePair) -> None:
+        self.u = u
+        self.v = v
 
 class PartitionMode(Enum):
     FAST_MODE     = 0
