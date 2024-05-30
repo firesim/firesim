@@ -23,7 +23,7 @@ We can specify the `config_build_recipes.yaml` at this point.
 One thing to note is that we added the `ExactMode_` in the `PLATFORM_CONFIG` field.
 This indicates to the FireAxe compiler to perform additional steps while partitioning so that the target behavior can be simulated in a cycle-exact manner.
 
-.. literalinclude:: ../../../deploy/sample-backup-configs/fireaxe_config_build_recipes.yaml
+.. literalinclude:: ../../../deploy/sample-backup-configs/config_build_recipes.yaml
    :language: yaml
    :start-after: DOC include start: F1 Exact Rocket Partition Build Recipe
    :end-before: DOC include end: F1 Exact Rocket Partition Build Recipe

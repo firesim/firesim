@@ -441,24 +441,30 @@ class UserTopologies:
         self.roots = list(servers.values())
     # DOC include end: user_topology.py fireaxe_topology_config
 
-    
     # DOC include start: user_topology.py fireaxe_rocket_fastmode_config
     def fireaxe_rocket_fastmode_config(self) -> None:
         # DOC include start: fireaxe_fastmode_config hwdb_entries
+        # hwdb_entries maps the partition index to the hwdb name
         hwdb_entries = {
             0 : "f1_rocket_split_soc_fast",
             1 : "f1_rocket_split_tile_fast"
         }
         # DOC include end: fireaxe_fastmode_config hwdb_entries
         # DOC include start: fireaxe_fastmode_config slot_to_pidx
+        # slotid_to_pidx maps the partition index to the FPGA slotid
+        # For instance, `slotid_to_pidx = [2, 1, 0]` will map partition
+        # index 2 to simulation slot 0, partition index 1 to simulation slot 1,
+        # and partition index 0 to simulation slot 2.
         slotid_to_pidx = [0, 1]
         # DOC include end: fireaxe_fastmode_config slot_to_pidx
         # DOC include start: fireaxe_fastmode_config edges
+        # The `FireAxeEdge` class is used to depict the connections between the partitions.
         edges = [
             FireAxeEdge(0, 0, 1, 0)
         ]
         # DOC include end: fireaxe_fastmode_config edges
         # DOC include start: fireaxe_fastmode_config mode
+        # The PartitionMode enum contains the different partition modes that are available
         mode = PartitionMode.FAST_MODE
         # DOC include end: fireaxe_fastmode_config mode
         # DOC include start: fireaxe_fastmode_config summing it all up

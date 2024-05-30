@@ -33,7 +33,7 @@ The indices in `WithPartitionGlobalInfo` now indicates the router node indices.
 
 We can specify the `config_build_recipes.yaml` at this point.
 
-.. literalinclude:: ../../../deploy/sample-backup-configs/fireaxe_config_build_recipes.yaml
+.. literalinclude:: ../../../deploy/sample-backup-configs/config_build_recipes.yaml
    :language: yaml
    :start-after: DOC include start: Xilinx U250 NoC Partition Build Recipe
    :end-before: DOC include end: Xilinx U250 NoC Partition Build Recipe
@@ -49,7 +49,8 @@ Once again, we need to specify the FireAxe topology to run simulations.
    :end-before: DOC include end: user_topology.py fireaxe_ring_noc_config
 
 Lets look at how the FireAxe topology is set in this example.
-We can see that bridge 0 of partition N is always connected to bridge 1 of partition (N + 1) % NFPGAs and bridge 1 of partition N is always connected to bridge 0 of partition (N + NFPGAs - 1) % NFPGAs.
+We can see that bridge 0 of partition `N` is always connected to bridge 1 of partition `(N + 1) % NFPGAs` and bridge 1 of
+partition `N` is always connected to bridge 0 of partition `(N + NFPGAs - 1) % NFPGAs`.
 
 .. image:: ./fireaxe-nocmode.svg
    :width: 400

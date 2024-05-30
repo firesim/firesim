@@ -65,9 +65,9 @@ class FireAxeEdge:
         self.v_pidx = v_pidx
 
 class PartitionMode(Enum):
-    FAST_MODE     = 1
-    EXACT_MODE    = 2
-    NOC_MODE      = 3
+    FAST_MODE     = 0
+    EXACT_MODE    = 1
+    NOC_MODE      = 2
 
 class PartitionNode:
     """
@@ -143,12 +143,10 @@ class PartitionConfig:
           exit(1)
 
     def metasim_partition_topo_args(self) -> int:
-        if self.mode == PartitionMode.FAST_MODE:
-            return 0
-        elif self.mode == PartitionMode.EXACT_MODE:
-            return 1
-        elif self.mode == PartitionMode.NOC_MODE:
-            return 2
+        if (self.mode == PartitionMode.FAST_MODE) or:
+           (self.mode == PartitionMode.EXACT_MODE) or:
+           (self.mode == PartitionMode.NOC_MODE):
+            return int(self.mode)
         else:
             print("Unrecognized topology")
             exit(1)

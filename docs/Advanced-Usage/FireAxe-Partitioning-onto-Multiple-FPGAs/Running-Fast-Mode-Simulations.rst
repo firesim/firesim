@@ -32,6 +32,8 @@ For instance, in the above example, modules "A", "B" will be grouped and extract
 "C", "D" will be grouped and extracted out to another FPGA, and the base SoC will be placed on the third FPGA.
 
 As in the above example, we can use `WithPartitionBase` and `WithPartitionIndex(idx)` to specify the partitions.
+`WithPartitionIndex(0)` for example, will choose `Seq("A", "B")` as the group of modules to partition out.
+How each partition group is mapped to the FPGA is specified in `user_topoloy.py`.
 
 2. Building Partitioned Sims : `config_build_recipes.yaml`
 --------------------------------------------------------
@@ -40,12 +42,12 @@ Now, we can specify the `config_build_recipes.yaml`.
 We need to set the `TARGET_CONFIG` to the FireChip configuration that we want to build, and the `PLATFORM_CONFIG` to the
 partition configs that we defined in the above step.
 
-.. literalinclude:: ../../../deploy/sample-backup-configs/fireaxe_config_build_recipes.yaml
+.. literalinclude:: ../../../deploy/sample-backup-configs/config_build_recipes.yaml
    :language: yaml
    :start-after: DOC include start: F1 Rocket Partition Build Recipe
    :end-before: DOC include end: F1 Rocket Partition Build Recipe
 
-You can now use the good old `firesim buildbitstream` command to build bitstreams of these partition configurations.
+You can now use the `firesim buildbitstream` command to build bitstreams of these partition configurations.
 
 3. Running Partitioned Simulations : `user_topology.py`
 --------------------------------------------------------
@@ -61,14 +63,14 @@ we need to setup `config_runtime.yaml` and `user_topology.py` to run FireAxe sim
 This is how the FireAxe topology looks like when partitioning a RocketTile out from the SoC.
 Lets look at each line individually.
 
-The `hwdb_entries` is a dictionary mapping the parition index to the `hwdb` name.
+The `hwdb_entries` is a dictionary mapping the partition index to the `hwdb` name.
 
 .. literalinclude:: ../../../deploy/runtools/user_topology.py
    :language: python
    :start-after: DOC include start: fireaxe_fastmode_config hwdb_entries
    :end-before: DOC include end: fireaxe_fastmode_config hwdb_entries
 
-The `slot_to_pidx` is a list mapping the partition index to the FPGA slot id.
+The `slot_to_pidx` is a list mapping the partition index to the FPGA slotid.
 The list entries are the partition indices and the slotid is dictated by the position of the list.
 For instance, `slotid_to_pidx = [2, 1, 0]` will map partition index 2 to simulation slot 0, partition index 1 to simulation slot 1 and partition index 0 to simulation slot 2.
 
@@ -130,4 +132,4 @@ All we need to do is change the `config_runtime[target_config][topology]` to the
   target_config:
       topology: fireaxe_rocket_fastmode_config
 
-At this point, you can run the good old `firesim runworkload` to kick off simulations.
+At this point, you can run the `firesim runworkload` to kick off simulations.

@@ -722,7 +722,7 @@ class FireSimSuperNodeServerNode(FireSimServerNode):
             self.hostdebug_config,
             self.synthprint_config,
             self.partition_config,
-            [], # TODO : cutbridge_idxs, set this later
+            [],
             plusargs,
             "")
 
