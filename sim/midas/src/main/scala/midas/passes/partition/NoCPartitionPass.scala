@@ -1,10 +1,8 @@
 package midas.passes.partition
 
-
 import scala.Console.println
 import scala.collection.mutable
 import Array.range
-
 import firrtl._
 import firrtl.ir._
 import firrtl.Mappers._
@@ -12,9 +10,7 @@ import firrtl.annotations._
 import firrtl.annotations.TargetToken._
 import firrtl.transforms.{Flatten, FlattenAnnotation}
 import firrtl.analyses.{InstanceKeyGraph, InstanceGraph, ConnectionGraph}
-
 import chisel3.internal
-
 import midas._
 import midas.stage._
 import midas.targetutils._

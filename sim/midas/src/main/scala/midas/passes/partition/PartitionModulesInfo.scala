@@ -2,18 +2,16 @@ package midas.passes.partition
 
 import scala.collection.mutable
 import Array.range
-
 import firrtl._
 import firrtl.ir._
 import firrtl.Mappers._
 import firrtl.annotations._
 import firrtl.analyses.{InstanceKeyGraph, InstanceGraph}
-
 import midas._
 import midas.stage._
 import midas.targetutils._
-
 import org.chipsalliance.cde.config.{Parameters, Config}
+
 
 object PartitionModulesInfo {
   val wrapperPfx = "PartitionWrapper"

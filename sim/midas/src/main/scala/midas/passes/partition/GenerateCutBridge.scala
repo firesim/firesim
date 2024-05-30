@@ -2,14 +2,11 @@ package midas.passes.partition
 
 import scala.collection.mutable
 import scala.Console.println
-
 import firrtl._
 import firrtl.ir._
 import firrtl.annotations._
 import firrtl.annotations.ModuleTarget
-
 import midas.widgets._
-
 
 trait CutBridgePass {
   protected val outputPipeChannelLatency: Int = 0

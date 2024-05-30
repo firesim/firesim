@@ -2,7 +2,6 @@ package midas.passes.partition
 
 import scala.collection.mutable
 import scala.Console.println
-
 import firrtl._
 import firrtl.ir._
 import firrtl.Mappers._

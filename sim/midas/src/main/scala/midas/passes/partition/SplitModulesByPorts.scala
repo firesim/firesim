@@ -3,12 +3,10 @@ package midas.passes.partition
 import scala.Console.println
 import scala.collection.mutable
 import scala.collection.immutable.ListMap
-
 import firrtl._
 import firrtl.ir._
 import firrtl.annotations._
 import firrtl.transforms.{Flatten, FlattenAnnotation}
-
 import java.io.File
 import java.io.FileWriter
 

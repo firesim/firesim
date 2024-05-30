@@ -4,12 +4,10 @@ import java.io.File
 import java.io.FileWriter
 import scala.collection.mutable
 import scala.Console.println
-
 import midas.{FireAxePartitionGlobalInfo, FireAxePreserveTarget, FireAxePartitionIndex}
 import midas.widgets._
 import midas.stage._
 import midas.targetutils._
-
 import firrtl._
 import firrtl.ir._
 import firrtl.graph._

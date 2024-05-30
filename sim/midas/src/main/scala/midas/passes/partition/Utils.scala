@@ -1,13 +1,11 @@
 package midas.passes.partition
 
 import scala.annotation.tailrec
-
 import firrtl._
 import firrtl.ir._
 import firrtl.Mappers._
 import firrtl.annotations._
 import firrtl.passes.{ResolveKinds, InferTypes}
-
 import midas.passes.RemoveTrivialPartialConnects
 import midas.passes.fame.{PromoteSubmodule, PromoteSubmoduleAnnotation}
 

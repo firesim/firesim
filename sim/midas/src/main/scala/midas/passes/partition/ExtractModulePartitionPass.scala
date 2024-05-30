@@ -3,14 +3,12 @@ package midas.passes.partition
 import scala.collection.mutable
 import scala.Console.println
 import scala.annotation.tailrec
-
 import firrtl._
 import firrtl.ir._
 import firrtl.Mappers._
 import firrtl.annotations._
 import firrtl.stage.OutputFileAnnotation
 import firrtl.analyses.{InstanceKeyGraph, InstanceGraph}
-
 import midas.widgets._
 import midas.widgets.SerializationUtils._
 import midas.passes.fame.{PromoteSubmodule, PromoteSubmoduleAnnotation}

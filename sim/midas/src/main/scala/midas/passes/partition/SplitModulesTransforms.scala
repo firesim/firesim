@@ -5,10 +5,7 @@ package passes
 
 import midas.stage._
 import midas.passes.partition._
-
-
 import firrtl._
-
 
 class SplitModulesByPortTransforms extends Transform {
   def inputForm = LowForm

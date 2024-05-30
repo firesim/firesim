@@ -1,10 +1,8 @@
 package midas.passes.partition
 
-
 import Array.range
 import scala.Console.println
 import scala.collection.mutable
-
 import firrtl._
 import firrtl.ir._
 import firrtl.Mappers._
@@ -13,7 +11,6 @@ import firrtl.analyses.InstanceKeyGraph
 import firrtl.passes.{ResolveKinds, InferTypes}
 import firrtl.annotations._
 import firrtl.annotations.TargetToken._
-
 import midas.targetutils._
 import midas.passes.RemoveTrivialPartialConnects
 
