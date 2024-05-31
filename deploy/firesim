@@ -320,7 +320,7 @@ def builddriver(runtime_conf: RuntimeConfig) -> None:
 
 @register_task
 def enumeratefpgas(runtime_conf: RuntimeConfig) -> None:
-    """ For all run hosts, create the /opt/firesim-db.json file """
+    """ For all run hosts, create a FPGA DB file (default name given by config_runtime.yaml) """
     runtime_conf.enumerate_fpgas()
 
 @register_task

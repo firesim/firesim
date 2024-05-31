@@ -764,7 +764,6 @@ class VitisInstanceDeployManager(InstanceDeployManager):
 class XilinxAlveoInstanceDeployManager(InstanceDeployManager):
     """ This class manages a Xilinx Alveo-enabled instance """
     PLATFORM_NAME: Optional[str]
-    JSON_DB: str = "/opt/firesim-db.json"
 
     def __init__(self, parent_node: Inst) -> None:
         super().__init__(parent_node)
@@ -798,10 +797,10 @@ class XilinxAlveoInstanceDeployManager(InstanceDeployManager):
             else:
                 self.instance_logger("XDMA Driver Kernel Module already unloaded.")
 
-    def slot_to_bdf(self, slotno: int) -> str:
+    def slot_to_bdf(self, slotno: int, json_db: str) -> str:
         # get fpga information from db
         self.instance_logger(f"""Determine BDF for {slotno}""")
-        collect = run(f'cat {self.JSON_DB}')
+        collect = run(f'cat {json_db}')
         db = json.loads(collect)
         assert slotno < len(db), f"Less FPGAs available than slots ({slotno} >= {len(db)})"
         return db[slotno]['bdf']
@@ -833,20 +832,21 @@ class XilinxAlveoInstanceDeployManager(InstanceDeployManager):
                 rootLogger.debug(rsync_cap)
                 rootLogger.debug(rsync_cap.stderr)
 
-                bdf = self.slot_to_bdf(slotno)
+                json_db = self.parent_node.get_fpga_db()
+                bdf = self.slot_to_bdf(slotno, json_db)
 
                 self.instance_logger(f"""Flashing FPGA Slot: {slotno} ({bdf}) with bitstream: {bit}""")
                 # Use a system wide installed firesim-fpga-util.py
                 cmd = f"{script_path}/firesim-fpga-util.py"
                 check_script(cmd, f"{get_deploy_dir()}/../platforms/{self.PLATFORM_NAME}/scripts")
-                run(f"""{cmd} --bitstream {bit} --bdf {bdf}""")
+                run(f"""{cmd} --bitstream {bit} --bdf {bdf} --fpga-db {json_db}""")
 
     def change_pcie_perms(self) -> None:
         if self.instance_assigned_simulations():
             self.instance_logger("""Change permissions on FPGA slot""")
 
             for slotno, firesimservernode in enumerate(self.parent_node.sim_slots):
-                bdf = self.slot_to_bdf(slotno)
+                bdf = self.slot_to_bdf(slotno, self.parent_node.get_fpga_db())
 
                 self.instance_logger(f"""Changing permissions on FPGA Slot: {slotno} (bdf:{bdf})""")
                 cmd = f"{script_path}/firesim-change-pcie-perms"
@@ -942,12 +942,13 @@ class XilinxAlveoInstanceDeployManager(InstanceDeployManager):
         run(f"tar xvf {remote_sim_dir}/{bitstream_tar} -C {remote_sim_dir}")
 
         driver = f"{remote_sim_dir}/FireSim-{self.PLATFORM_NAME}"
+        json_db = self.parent_node.get_fpga_db()
 
         with cd(remote_sim_dir):
             # Use a system wide installed firesim-generate-fpga-db.py
             cmd = f"{script_path}/firesim-generate-fpga-db.py"
             check_script(cmd, f"{get_deploy_dir()}/../platforms/{self.PLATFORM_NAME}/scripts")
-            run(f"""{cmd} --bitstream {bitstream} --driver {driver} --out-db-json {self.JSON_DB}""")
+            run(f"""{cmd} --bitstream {bitstream} --driver {driver} --out-db-json {json_db}""")
 
     def enumerate_fpgas(self, uridir: str) -> None:
         """ Handle fpga setup for this platform. """
@@ -980,7 +981,7 @@ class XilinxAlveoInstanceDeployManager(InstanceDeployManager):
             server = self.parent_node.sim_slots[slotno]
 
             if not self.parent_node.metasimulation_enabled:
-                bdf = self.slot_to_bdf(slotno).replace('.', ':').split(':')
+                bdf = self.slot_to_bdf(slotno, self.parent_node.get_fpga_db()).replace('.', ':').split(':')
                 extra_args = f"+domain=0x0000 +bus=0x{bdf[0]} +device=0x{bdf[1]} +function=0x{bdf[2]} +bar=0x0 +pci-vendor=0x10ee +pci-device=0x903f"
             else:
                 extra_args = None

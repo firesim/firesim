@@ -11,6 +11,9 @@ args:
     # REQUIRED: default directory where simulations are run out of on the run farm hosts
     default_simulation_dir: /home/centos
 
+    # REQUIRED: default fpga db file that enumerates what fpgas are available on the machine (used by XilinxU* Deploy Managers)
+    default_fpga_db: /opt/firesim-db.json
+
     # REQUIRED: List of unique hostnames/IP addresses, each with their
     # corresponding specification that describes the properties of the host.
     #
@@ -37,8 +40,9 @@ args:
     # "default_*" argument in that run host spec.
     #
     # Optional params include:
-    #       override_simulation_dir: /scratch/specific-build-host-build-dir
     #       override_platform: EC2InstanceDeployManager
+    #       override_simulation_dir: /scratch/specific-build-host-build-dir
+    #       override_fpga_db: /opt/firesim-db-specific.json
     run_farm_host_specs:
         - four_fpgas_spec:
             # REQUIRED: number of FPGAs on the machine
@@ -143,4 +147,3 @@ args:
             num_fpgas: 16
             num_metasims: 0
             use_for_switch_only: false
-
