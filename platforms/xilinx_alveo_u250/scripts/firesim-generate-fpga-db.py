@@ -16,6 +16,7 @@ import util
 from typing import Optional, Dict, Any, List
 
 scriptPath = Path(__file__).resolve().parent
+defaultDbPath = Path("/opt/firesim-db.json")
 
 def get_bdfs() -> List[str]:
     pLspci= subprocess.Popen(['lspci'], stdout=subprocess.PIPE)
@@ -53,7 +54,9 @@ def call_fpga_util(args: List[str]) -> None:
 
 def disconnect_bdf(bdf: str, vivado: str, hw_server: str) -> None:
     print(f":INFO: Disconnecting BDF: {bdf}")
+    global defaultDbPath
     call_fpga_util([
+        "--fpga-db", defaultDbPath,
         "--bdf", bdf,
         "--disconnect-bdf",
         "--vivado-bin", vivado,
@@ -62,7 +65,9 @@ def disconnect_bdf(bdf: str, vivado: str, hw_server: str) -> None:
 
 def reconnect_bdf(bdf: str, vivado: str, hw_server: str) -> None:
     print(f":INFO: Reconnecting BDF: {bdf}")
+    global defaultDbPath
     call_fpga_util([
+        "--fpga-db", defaultDbPath,
         "--bdf", bdf,
         "--reconnect-bdf",
         "--vivado-bin", vivado,
@@ -71,7 +76,9 @@ def reconnect_bdf(bdf: str, vivado: str, hw_server: str) -> None:
 
 def program_fpga(serial: str, bitstream: str, vivado: str, hw_server: str) -> None:
     print(f":INFO: Programming {serial} with {bitstream}")
+    global defaultDbPath
     call_fpga_util([
+        "--fpga-db", defaultDbPath,
         "--serial", serial,
         "--bitstream", bitstream,
         "--vivado-bin", vivado,
@@ -79,6 +86,7 @@ def program_fpga(serial: str, bitstream: str, vivado: str, hw_server: str) -> No
     ])
 
 def get_serial_numbers_and_fpga_types(vivado: Path) -> Dict[str, str]:
+    global scriptPath
     tclScript = scriptPath / 'get_serial_dev_for_fpgas.tcl'
     assert tclScript.exists(), f"Unable to find {tclScript}"
     rc, stdout, stderr = util.call_vivado(vivado, ['-source', str(tclScript)])
