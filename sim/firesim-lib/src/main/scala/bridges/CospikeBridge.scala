@@ -202,6 +202,8 @@ class CospikeBridgeModule(params: CospikeBridgeParams)(implicit p: Parameters)
           UInt64(params.cfg.mem0_size),
           UInt64(params.cfg.mem1_base),
           UInt64(params.cfg.mem1_size),
+          UInt64(params.cfg.mem2_base),
+          UInt64(params.cfg.mem2_size),
           UInt32(params.cfg.nharts),
           CStrLit(params.cfg.bootrom),
           UInt32(params.hartid),
