@@ -48,13 +48,11 @@ cospike_t::cospike_t(simif_t &sim,
                      uint32_t stream_depth)
     : streaming_bridge_driver_t(sim, stream, &KIND), args(args), _isa(isa),
       _vlen(vlen), _priv(priv), _pmp_regions(pmp_regions),
-      _mem0_base(mem0_base), _mem0_size(mem0_size),
-      _mem1_base(mem1_base), _mem1_size(mem1_size),
-      _mem2_base(mem2_base), _mem2_size(mem2_size),
-      _nharts(nharts), _bootrom(bootrom),
-      _hartid(hartid), _num_commit_insts(num_commit_insts),
-      _bits_per_trace(bits_per_trace), stream_idx(stream_idx),
-      stream_depth(stream_depth) {
+      _mem0_base(mem0_base), _mem0_size(mem0_size), _mem1_base(mem1_base),
+      _mem1_size(mem1_size), _mem2_base(mem2_base), _mem2_size(mem2_size),
+      _nharts(nharts), _bootrom(bootrom), _hartid(hartid),
+      _num_commit_insts(num_commit_insts), _bits_per_trace(bits_per_trace),
+      stream_idx(stream_idx), stream_depth(stream_depth) {
 
   this->_trace_cfg.init(8,
                         1,
