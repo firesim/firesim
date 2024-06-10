@@ -10,6 +10,7 @@ import freechips.rocketchip.diplomacy._
 
 import midas.widgets._
 import midas.targetutils.{FireSimQueueHelper}
+import midas.F1ShimHasPCIMPorts
 
 class WriteMetadata(val numBeatsWidth: Int) extends Bundle {
   val numBeats = Output(UInt(numBeatsWidth.W))
