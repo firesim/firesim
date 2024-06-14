@@ -2,6 +2,7 @@ package firesim
 
 import java.io.File
 import scala.io.Source
+import collection.mutable
 
 object TestSuiteUtil {
 
@@ -42,5 +43,22 @@ object TestSuiteUtil {
     for ((a, b) <- bLines.zip(aLines)) {
       assert(a == b)
     }
+  }
+
+  /** Splits a CSV row in substrings, removing whitespace on either end */
+  def splitAtCommas(s: String) = s.split(",").map(_.trim)
+
+  def parseCSV(file: File): Map[String, Seq[String]] = {
+    val header :: valueRows = Source.fromFile(file).getLines.toList
+    val headerFields        = splitAtCommas(header)
+
+    val columns = Seq.fill(headerFields.size)(mutable.ArrayBuffer[String]())
+    for (row <- valueRows) {
+      val values = splitAtCommas(row)
+      assert(columns.size == values.size, s"CSV file ${file} must have a uniform number of values per row")
+      columns.zip(values).foreach { case (buffer, value) => buffer.append(value) }
+    }
+
+    Map(headerFields.zip(columns.map(_.toSeq)): _*)
   }
 }

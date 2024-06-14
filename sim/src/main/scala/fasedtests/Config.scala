@@ -93,6 +93,7 @@ class QuadChannel extends WithNMemoryChannels(4)
 class DefaultConfig extends Config(
   new WithoutTLMonitors ++
   new WithDefaultFuzzer ++
+  new WithAllBaseInstrumentation ++
   new WithDefaultMemPort ++
   new WithDefaultMemModel ++
   new Config((site, here, up) => {
@@ -101,14 +102,17 @@ class DefaultConfig extends Config(
 )
 
 class FCFSConfig extends Config(
+  new WithAllBaseInstrumentation ++
   new FCFS16GBQuadRank ++
   new DefaultConfig)
 
 class FRFCFSConfig extends Config(
+  new WithAllBaseInstrumentation ++
   new FRFCFS16GBQuadRank ++
   new DefaultConfig)
 
 class LLCDRAMConfig extends Config(
+  new WithAllBaseInstrumentation ++
   new FRFCFS16GBQuadRankLLC4MB ++
   new DefaultConfig)
 

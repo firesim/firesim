@@ -22,16 +22,6 @@ abstract class AutoCounterSuite(
     */
   def checkAutoCounterCSV(backend: String, filename: String, stdoutPrefix: String) {
     it should s"produce a csv file (${filename}) that matches in-circuit printf output" in {
-      val scrubWhitespace = raw"\s*(.*)\s*".r
-      def splitAtCommas(s: String) = {
-        s.split(",")
-          .map(scrubWhitespace.findFirstMatchIn(_).get.group(1))
-      }
-
-      def quotedSplitAtCommas(s: String) = {
-        s.split("\",\"")
-          .map(scrubWhitespace.findFirstMatchIn(_).get.group(1))
-      }
 
       val refLogFile = new File(outDir, s"/${targetName}.${backend}.out")
       val acFile     = new File(genDir, s"/${filename}")
