@@ -9,7 +9,7 @@ proc get_bd_lib_file { script_folder filename version } {
 ##################################################################
 
 # block design name (MUST NOT CHANGE)
-set design_name design_1
+set design_name shell
 
 # Creating design if needed
 set errMsg ""
