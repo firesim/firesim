@@ -33,10 +33,12 @@ def instance_liveness() -> None:
     ssh'ed into) first so that we don't run any actual firesim-related commands
     on only some of the run farm machines.
 
-    Also confirm that the default shell in use is one that is known to handle
-    commands we pass to run() in the manager. The default shell must be able to
+    Also confirm that the current shell in use is one that is known to handle
+    commands we pass to run() in the manager. The current shell must be able to
     handle our command strings because it is always the first to interpret the
-    command string, even if the command string starts with /bin/bash.
+    command string, even if the command string starts with /bin/bash. Note that
+    we use the current shell instead of the default shell since this allows
+    users to call a different shell from the default shell .*rc.
 
     To my knowledge, it is not possible to specify a different shell for
     a specific instance of ssh-ing into a machine. The only way to control what
@@ -51,7 +53,7 @@ def instance_liveness() -> None:
     """
     rootLogger.info("""[{}] Checking if host instance is up...""".format(env.host_string))
     run("uname -a")
-    collect = run("echo $SHELL")
+    collect = run("echo $0")
 
     allowed_shells = ["bash"]
     disallowed_shells = ["csh"]
