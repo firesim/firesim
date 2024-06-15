@@ -1,0 +1,7 @@
+#!/bin/bash
+
+set -ex
+
+pushd $1
+sh -c 'find -print0 | cpio --owner root:root --null -ov --format=newc' > $2
+popd
