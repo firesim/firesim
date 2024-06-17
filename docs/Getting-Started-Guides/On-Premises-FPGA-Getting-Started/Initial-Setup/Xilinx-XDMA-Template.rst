@@ -40,7 +40,7 @@ should continue onto the Non-``sudo``-based setup.
 ``sudo`` Setup
 ^^^^^^^^^^^^^^
 
-**1. Install/enable FireSim scripts to new ``firesim`` Linux group**
+**1. Install/enable FireSim scripts to new** ``firesim`` **Linux group**
 
 .. note::
     These scripts are used by the FireSim manager and other FireSim tooling (i.e. FireMarshal)
@@ -110,7 +110,7 @@ Then change the permissions of the file:
 
 This allows only users in the ``firesim`` group to execute the scripts.
 
-**2. Add your user to the `firesim` group**
+**2. Add your user to the** ``firesim`` **group**
 
 **Machines:** Manager Machine, Run Farm Machines, Build Farm Machines.
 
@@ -173,6 +173,10 @@ Next, install the cable drivers like so:
 **4. Install the Xilinx XDMA and XVSEC drivers**
 
 **Machines:** Run Farm Machines.
+
+.. warning::
+    These commands will need to be re-run everytime the kernel is updated (normally whenever the machine
+   is rebooted).
 
 First, run the following to clone the XDMA kernel module source:
 
@@ -293,7 +297,7 @@ On Ubuntu, install ``openssh-server`` like so:
 
    sudo apt install openssh-server
 
-**6. Check Hard File Limit**
+**7. Check Hard File Limit**
 
 **Machine:** Manager Machine
 
@@ -314,7 +318,7 @@ Then, reboot your machine.
 Non-``sudo`` Setup
 ^^^^^^^^^^^^^^^^^^
 
-**1. Fix default ``.bashrc``**
+**1. Fix default** ``.bashrc``
 
 **Machines:** Manager Machine, Run Farm Machines, Build Farm Machines.
 
@@ -372,8 +376,7 @@ you can simply run ``source ~/.ssh/AGENT_VARS``.
 Finally, confirm that you can now ``ssh localhost`` and ssh into your Run Farm
 and Build Farm Machines without being prompted for a passphrase.
 
-10. Verify Run Farm Machine environment
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+**3. Verify Run Farm Machine environment**
 
 **Machines:** Manager Machine and Run Farm Machines
 
