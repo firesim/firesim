@@ -12,3 +12,4 @@ fi
 
 mount -o loop $1 $2
 chown -R ${3}:${4} $2
+chmod 755 $2
