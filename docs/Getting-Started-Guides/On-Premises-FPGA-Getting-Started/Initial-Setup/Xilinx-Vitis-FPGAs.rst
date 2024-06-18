@@ -117,13 +117,107 @@ For example:
    Host localhost
       IdentityFile ~/.ssh/id_rsa_local
 
-Finally, you should also install the ``guestmount`` program and ensure it runs properly.
+You should also install the ``guestmount`` program and ensure it runs properly.
 This is needed by a variety of FireSim steps that mount disk images in order to copy in/out results of simulations out of the images.
 Most likely you will need to follow the instructions `here <https://askubuntu.com/questions/1046828/how-to-run-libguestfs-tools-tools-such-as-virt-make-fs-without-sudo>`_ to ensure ``guestmount`` doesn't error.
 
 .. warning:: If using ``guestmount``, verify that the command is able to work properly.
    Due to prior issues with ``guestmount`` internally, ensure that your FireSim repository (and all temporary directories)
    does not reside on an NFS mount.
+
+Next, install/enable FireSim scripts to new ``firesim`` Linux group.
+
+.. note::
+    These scripts are used by the FireSim manager and other FireSim tooling (i.e. FireMarshal)
+    to avoid needing ``sudo`` access.
+
+First, let's clone a temporary version of FireSim with the scripts within it:
+
+.. code-block:: bash
+   :substitutions:
+
+   cd ~/     # or any scratch directory
+   mkdir firesim-script-installs
+   cd firesim-script-installs
+   git clone https://github.com/firesim/firesim
+   cd firesim
+   # checkout latest official firesim release
+   # note: this may not be the latest release if the documentation version != "stable"
+   git checkout |overall_version|
+
+Next, copy the required scripts to  ``/usr/local/bin``:
+
+.. code-block:: bash
+   :substitutions:
+
+   sudo cp deploy/sudo-scripts/* /usr/local/bin
+   sudo cp platforms/xilinx_alveo_u250/scripts/* /usr/local/bin
+
+Now we can delete the temporary clone:
+
+.. code-block:: bash
+   :substitutions:
+
+   rm -rf ~/firesim-script-installs    # or the temp. dir. created previously
+
+Next, lets change the permissions of the scripts and them to a new ``firesim`` Linux group.
+
+.. code-block:: bash
+   :substitutions:
+
+   sudo addgroup firesim
+   sudo chmod 755 /usr/local/bin/firesim*
+   sudo chgrp firesim /usr/local/bin/firesim*
+
+Next, lets allow the ``firesim`` Linux group to run the pre-installed commands.
+Enter/create the following file with `sudo`:
+
+.. code-block:: bash
+   :substitutions:
+
+   sudo visudo /etc/sudoers.d/firesim
+
+Then add the following lines:
+
+.. code-block:: bash
+   :substitutions:
+
+   %firesim ALL=(ALL) NOPASSWD: /usr/local/bin/firesim-*
+
+Then change the permissions of the file:
+
+.. code-block:: bash
+   :substitutions:
+
+   sudo chmod 400 /etc/sudoers.d/firesim
+
+This allows only users in the ``firesim`` group to execute the scripts.
+
+Next, add your user to the `firesim` group.
+
+Next, add all user who want to use FireSim to the ``firesim`` group that you created.
+Make sure to replace ``YOUR_USER_NAME`` with the user to run simulations with:
+
+.. code-block:: bash
+   :substitutions:
+
+   sudo usermod -a -G firesim YOUR_USER_NAME
+
+Finally, verify that the user can access the FireSim installed scripts by running:
+
+.. code-block:: bash
+   :substitutions:
+
+   sudo -l
+
+The output should look similar to this:
+
+.. code-block:: bash
+   :substitutions:
+
+   User YOUR_USER_NAME may run the following commands on MACHINE_NAME:
+       (ALL) NOPASSWD: /usr/local/bin/firesim-*
+
 
 Setting up the FireSim Repo
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^

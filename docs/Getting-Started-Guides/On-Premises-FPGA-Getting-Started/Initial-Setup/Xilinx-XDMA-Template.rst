@@ -32,25 +32,19 @@ machine types).
     all machine types in an on-premises setup, as this is the OS recommended by
     Xilinx.**
 
+The following steps are separated into steps that require ``sudo`` and steps that do not.
+After initial setup with ``sudo``, FireSim doesn't need ``sudo`` access.
+In many cases with a shared machine, ``sudo``-based setup is already completed and thus users
+should continue onto the Non-``sudo``-based setup.
 
-1. Fix default ``.bashrc``
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+``sudo`` Setup
+^^^^^^^^^^^^^^
 
-**Machines:** Manager Machine, Run Farm Machines, Build Farm Machines.
+**1. Install/enable FireSim scripts to new** ``firesim`` **Linux group**
 
-We need various parts of the ``~/.bashrc`` file to execute even in non-interactive mode.
-To do so, edit your ``~/.bashrc`` file so that the following section is removed:
-
-.. code-block:: bash
-
-   # If not running interactively, don't do anything
-   case $- in
-        *i*) ;;
-          *) return;;
-   esac
-
-2. Install/enable FireSim scripts to new ``firesim`` Linux group
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+.. note::
+    These scripts are used by the FireSim manager and other FireSim tooling (i.e. FireMarshal)
+    to avoid needing ``sudo`` access.
 
 **Machines:** Manager Machine, Run Farm Machines, Build Farm Machines.
 
@@ -116,12 +110,11 @@ Then change the permissions of the file:
 
 This allows only users in the ``firesim`` group to execute the scripts.
 
-3. Add your user to the `firesim` group
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+**2. Add your user to the** ``firesim`` **group**
 
 **Machines:** Manager Machine, Run Farm Machines, Build Farm Machines.
 
-Next, add your user to the ``firesim`` group that you created.
+Next, add all user who want to use FireSim to the ``firesim`` group that you created.
 Make sure to replace ``YOUR_USER_NAME`` with the user to run simulations with:
 
 .. code-block:: bash
@@ -144,8 +137,7 @@ The output should look similar to this:
    User YOUR_USER_NAME may run the following commands on MACHINE_NAME:
        (ALL) NOPASSWD: /usr/local/bin/firesim-*
 
-4. Install Vivado Lab and Cable Drivers
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+**3. Install Vivado Lab and Cable Drivers**
 
 **Machines:** Run Farm Machines.
 
@@ -178,10 +170,13 @@ Next, install the cable drivers like so:
    sudo ./install_drivers
 
 
-5. Install the Xilinx XDMA and XVSEC drivers
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+**4. Install the Xilinx XDMA and XVSEC drivers**
 
 **Machines:** Run Farm Machines.
+
+.. warning::
+    These commands will need to be re-run everytime the kernel is updated (normally whenever the machine
+   is rebooted).
 
 First, run the following to clone the XDMA kernel module source:
 
@@ -243,8 +238,7 @@ Also, make sure you get output for the following (usually, ``/usr/local/sbin/xvs
    which xvsecctl
 
 
-6. Install your FPGA(s)
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+**5. Install your FPGA(s)**
 
 **Machines:** Run Farm Machines.
 
@@ -293,8 +287,7 @@ for each FPGA you've added to the Run Farm Machine.
 .. note:: |jtag_cable_reminder|
 
 
-7. Install sshd
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+**6. Install sshd**
 
 **Machines:** Manager Machine, Run Farm Machines, and Build Farm Machines
 
@@ -304,9 +297,43 @@ On Ubuntu, install ``openssh-server`` like so:
 
    sudo apt install openssh-server
 
+**7. Check Hard File Limit**
 
-8. Set up SSH Keys
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+**Machine:** Manager Machine
+
+Check the output of the following command:
+
+.. code-block:: bash
+
+   ulimit -Hn
+
+If the result is greater than or equal to 16384, you can continue on to "Setting up the FireSim Repo". Otherwise, run:
+
+.. code-block:: bash
+
+   echo "* hard nofile 16384" | sudo tee --append /etc/security/limits.conf
+
+Then, reboot your machine.
+
+Non-``sudo`` Setup
+^^^^^^^^^^^^^^^^^^
+
+**1. Fix default** ``.bashrc``
+
+**Machines:** Manager Machine, Run Farm Machines, Build Farm Machines.
+
+We need various parts of the ``~/.bashrc`` file to execute even in non-interactive mode.
+To do so, edit your ``~/.bashrc`` file so that the following section is removed:
+
+.. code-block:: bash
+
+   # If not running interactively, don't do anything
+   case $- in
+        *i*) ;;
+          *) return;;
+   esac
+
+**2. Set up SSH Keys**
 
 **Machines:** Manager Machine.
 
@@ -349,28 +376,7 @@ you can simply run ``source ~/.ssh/AGENT_VARS``.
 Finally, confirm that you can now ``ssh localhost`` and ssh into your Run Farm
 and Build Farm Machines without being prompted for a passphrase.
 
-9. Check Hard File Limit
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-
-**Machine:** Manager Machine
-
-Check the output of the following command:
-
-.. code-block:: bash
-
-   ulimit -Hn
-
-If the result is greater than or equal to 16384, you can continue on to "Setting up the FireSim Repo". Otherwise, run:
-
-.. code-block:: bash
-
-   echo "* hard nofile 16384" | sudo tee --append /etc/security/limits.conf
-
-Then, reboot your machine.
-
-
-10. Verify Run Farm Machine environment
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+**3. Verify Run Farm Machine environment**
 
 **Machines:** Manager Machine and Run Farm Machines
 
