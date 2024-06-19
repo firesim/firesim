@@ -695,7 +695,7 @@ class XilinxAlveoBitBuilder(BitBuilder):
 
         # store bitfile (and mcs if it exists)
         local(f"cp {bit_path} {tar_staging_path}")
-        if self.build_config.PLATFORM != "xilinx_vcu118":
+        if self.build_config.PLATFORM == "xilinx_vcu118":
             local(f"cp {mcs_path} {tar_staging_path}")
 
         # store metadata string
