@@ -12,7 +12,7 @@ the FireSim workflow.
 ----------------------------------------------------------------
 
 To build bitstreams for partitioned simulations, we need specify which modules we want to partition out. 
-We can do that in `sim/firesim-lib/src/main/scala/configs/FireAxeTargetConfigs.scala`.
+We can do that in :gh-file-ref:`sim/firesim-lib/src/main/scala/configs/FireAxeTargetConfigs.scala`.
 
 .. literalinclude:: ../../../sim/firesim-lib/src/main/scala/configs/FireAxeTargetConfigs.scala
    :language: scala
