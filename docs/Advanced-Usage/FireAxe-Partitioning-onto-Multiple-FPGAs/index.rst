@@ -1,4 +1,4 @@
-FireAxe Partitioning onto Multiple FPGAs
+FireAxe - Partitioning onto Multiple FPGAs
 =============================================
 
 Although FPGA capacity has become large enough to simulate many large SoCs, there
