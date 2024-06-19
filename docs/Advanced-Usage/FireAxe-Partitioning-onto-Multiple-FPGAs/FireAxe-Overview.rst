@@ -8,7 +8,7 @@ designs onto multiple FPGAs*, overcoming the single-FPGA limitation for monolith
 
 Partition Modes
 ==================
-FireAxe provides users with three options (modes) to perform partitioning : exact-mode, fast-mode and the NoC-partition-mode.
+FireAxe provides users with three options (modes) to perform partitioning: exact-mode, fast-mode, and the NoC-partition-mode.
 These options are passed on to the compiler which will generate the correct circuitry
 to deal with the odd things that happen on the partition interface.
 A more detailed explanation about the circuitry and the partition modes are provided in
