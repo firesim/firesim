@@ -33,7 +33,7 @@ For instance, in the above example, modules "A", "B" will be grouped and extract
 
 As in the above example, we can use `WithPartitionBase` and `WithPartitionIndex(idx)` to specify the partitions.
 `WithPartitionIndex(0)` for example, will choose `Seq("A", "B")` as the group of modules to partition out.
-How each partition group is mapped to the FPGA is specified in `user_topoloy.py`.
+How each partition group is mapped to the FPGA is specified in :gh-file-ref:`deploy/runtools/user_topology.py`.
 
 2. Building Partitioned Sims : `config_build_recipes.yaml`
 --------------------------------------------------------
