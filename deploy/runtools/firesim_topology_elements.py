@@ -401,13 +401,15 @@ class FireSimServerNode(FireSimNode):
             return hash(o) % ((sys.maxsize + 1) * 2)
 
         def mount(img: str, mnt: str, tmp_dir: str) -> None:
+            uid = str(run("id -u"))
+            gid = str(run("id -g"))
             if is_on_aws():
                 run(f"sudo mount -o loop {img} {mnt}")
-                run(f"sudo chown -R $(whoami) {mnt}")
+                run(f"sudo chown -R {uid}:{gid} {mnt}")
             else:
-                cmd = f"{script_path}/firesim-mount"
+                cmd = f"{script_path}/firesim-mount-with-uid-gid"
                 check_script(cmd)
-                run(f"sudo {cmd} {img} {mnt}")
+                run(f"sudo {cmd} {img} {mnt} {uid} {gid}")
 
         def umount(mnt: str, tmp_dir: str) -> None:
             if is_on_aws():

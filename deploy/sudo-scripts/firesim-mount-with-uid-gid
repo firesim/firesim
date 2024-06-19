@@ -1,0 +1,15 @@
+#!/bin/bash
+
+set -ex
+
+# older firesim-mount script should be removed in a later release
+
+if [ $# -ne 4 ]; then
+	echo "$0 usage: <IMG> <MOUNTPOINT> <UID> <GID>"
+	echo "  <UID,GID>: can be obtained by 'id -u' or 'id -g', respectively"
+	exit 1
+fi
+
+mount -o loop $1 $2
+chown -R ${3}:${4} $2
+chmod 755 $2
