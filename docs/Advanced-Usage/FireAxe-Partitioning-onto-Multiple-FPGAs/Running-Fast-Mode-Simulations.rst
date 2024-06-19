@@ -53,7 +53,7 @@ You can now use the `firesim buildbitstream` command to build bitstreams of thes
 --------------------------------------------------------
 
 Once the bitstreams are built and you copied the hwdb entries into `config_hwdb.yaml`,
-we need to setup `config_runtime.yaml` and `user_topology.py` to run FireAxe simulations.
+we need to setup `config_runtime.yaml` and :gh-file-ref:`deploy/runtools/user_topology.py` to run FireAxe simulations.
 
 .. literalinclude:: ../../../deploy/runtools/user_topology.py
    :language: python
