@@ -20,7 +20,7 @@ Exact-Mode
 -----------
 In the exact-mode, users can choose the modules to partition out and place on separate FPGAs.
 The partitioned simulation will behave *exactly* the same as when running the target on a software RTL simulator.
-This is usesful when the partition boundary is not latency insensitive (i.e. the interface is not ready-valid interface nor credit based)
+This is useful when the partition boundary is not latency insensitive (i.e. the interface is not ready-valid interface nor credit-based)
 and when the boundary contains combinational logic running through it.
 
 An example of a module that can be partitioned out using the exact-mode is a RoCC accelerator since the ports to access the
