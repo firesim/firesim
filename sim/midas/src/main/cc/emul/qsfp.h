@@ -43,8 +43,10 @@ public:
   bool tx_ready();
   bool channel_up();
 
-  void
-  tick(bool reset, bool tx_valid, std::vector<uint64_t>& tx_bits, bool rx_ready);
+  void tick(bool reset,
+            bool tx_valid,
+            std::vector<uint64_t> &tx_bits,
+            bool rx_ready);
 
   void setup_shmem(char *owned_name, char *other_name);
 
