@@ -27,7 +27,7 @@ void widget_registry_t::add_widget(StreamEngine *widget) {
           widget->cpu_to_fpga_cnt(),
           widget->fpga_to_cpu_cnt());
 
-  if (stream_engine.get() == nullptr) {
+  if (get_stream_engine() == nullptr) {
     if (get_fpga_stream_engine() != nullptr) {
       fprintf(stdout, "PCIM stream engine driver registered before PCIS\n");
       assert(false);
