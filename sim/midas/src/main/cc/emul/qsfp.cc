@@ -170,7 +170,7 @@ bool qsfp_t::channel_up() { return true; }
 // RTL -> Host
 void qsfp_t::tick(bool reset,
                   bool tx_valid,
-                  std::vector<uint64_t>& tx_bits,
+                  std::vector<uint64_t> &tx_bits,
                   bool rx_ready) {
   uint64_t *ownedbuf_cast = (uint64_t *)ownedbuf;
   uint64_t *otherbuf_cast = (uint64_t *)otherbuf;

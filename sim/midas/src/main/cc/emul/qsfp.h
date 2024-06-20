@@ -55,8 +55,8 @@ public:
 
   struct qsfp_data_t {
     std::vector<uint64_t> bits;
-    qsfp_data_t(const std::vector<uint64_t>& bits_) {
-      for (unsigned int bit: bits_) {
+    qsfp_data_t(const std::vector<uint64_t> &bits_) {
+      for (unsigned int bit : bits_) {
         bits.push_back(bit);
       }
     }
