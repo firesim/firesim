@@ -83,7 +83,7 @@ void qsfp_t::setup_shmem(char *owned_name, char *other_name) {
 
   // Mapping the owned shared memory space
   std::cout << "mapping owned shmem region: " << shmemname_owned << std::endl;
-  ownedbuf = (uint8_t *)mmap(NULL,
+  ownedbuf = (uint8_t *)mmap(nullptr,
                              SHMEM_NUMBYTES + SHMEM_EXTRABYTES,
                              PROT_READ | PROT_WRITE,
                              MAP_SHARED,
@@ -96,7 +96,7 @@ void qsfp_t::setup_shmem(char *owned_name, char *other_name) {
 
   // Mapping the other shared memory space
   std::cout << "mapping other shmem region: " << shmemname_other << std::endl;
-  otherbuf = (uint8_t *)mmap(NULL,
+  otherbuf = (uint8_t *)mmap(nullptr,
                              SHMEM_NUMBYTES + SHMEM_EXTRABYTES,
                              PROT_READ | PROT_WRITE,
                              MAP_SHARED,
@@ -170,7 +170,7 @@ bool qsfp_t::channel_up() { return true; }
 // RTL -> Host
 void qsfp_t::tick(bool reset,
                   bool tx_valid,
-                  std::vector<uint64_t> tx_bits,
+                  std::vector<uint64_t>& tx_bits,
                   bool rx_ready) {
   uint64_t *ownedbuf_cast = (uint64_t *)ownedbuf;
   uint64_t *otherbuf_cast = (uint64_t *)otherbuf;
