@@ -231,9 +231,8 @@ def run_local_buildbitstreams():
                 ("buildbot3@a17",   "vitis:2021.1",  True, "/scratch/buildbot3/FIRESIM_BUILD_DIR", 0),
                 ("buildbot4@a17",   "vitis:2021.1",  True, "/scratch/buildbot4/FIRESIM_BUILD_DIR", 0),
                 (     "firesim1",   "vitis:2021.1", False, "", 1),
-                (         "harp",   "vitis:2022.1", False, "", 2),
-                (        "jktgz",  "vivado:2023.1", False, "", 3),
-                (       "jktqos",  "vivado:2023.1", False, "", 3),
+                (        "jktgz",  "vivado:2023.1", False, "", 2),
+                (       "jktqos",  "vivado:2023.1", False, "", 2),
             ]
 
             def do_builds(batch_hwdbs):
