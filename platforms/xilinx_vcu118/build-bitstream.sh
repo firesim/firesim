@@ -82,3 +82,4 @@ vivado -mode batch -source ../tcl/build.tcl -tclargs $FREQUENCY $STRATEGY $BOARD
 mkdir -p ../vivado_proj
 cp example_pblock_partition_partial.bit ../vivado_proj/firesim.bit
 cp ../../shell/prebuilt/empty_primary.mcs ../vivado_proj/firesim.mcs
+cp ../../shell/prebuilt/empty_secondary.mcs ../vivado_proj/firesim_secondary.mcs
