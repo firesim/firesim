@@ -7,6 +7,7 @@
 #include <string>
 
 #include "core/stream_engine.h"
+#include "cpu_managed_stream.h"
 
 class simif_t;
 
@@ -123,6 +124,12 @@ public:
       unsigned index,
       const std::vector<std::string> &args,
       std::vector<FPGAManagedStreams::StreamParameters> &&to_cpu);
+
+private:
+  uint64_t get_p2p_bar_address(const char *dir_name);
 };
+
+class BiDirectionalManagedStreamIO : public FPGAManagedStreamIO,
+                                     public CPUManagedStreamIO {};
 
 #endif // __BRIDGES_FPGA_MANAGED_STREAM_H

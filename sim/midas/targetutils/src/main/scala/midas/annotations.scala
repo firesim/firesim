@@ -7,6 +7,7 @@ import chisel3.experimental.{BaseModule, ChiselAnnotation, annotate, requireIsHa
 
 import firrtl.{RenameMap}
 import firrtl.annotations._
+import firrtl.annotations.Annotation
 import firrtl.transforms.DontTouchAllTargets
 
 /**
@@ -464,5 +465,67 @@ object TriggerSink {
     val sinkEnable = Wire(Bool())
     apply(sinkEnable, noSourceDefault)
     when (sinkEnable) { elaborator }
+  }
+}
+
+
+case class RoCCBusyFirrtlAnnotation(
+  target: ReferenceTarget,
+  ready: ReferenceTarget,
+  valid: ReferenceTarget)
+extends firrtl.annotations.Annotation with FAMEAnnotation {
+  def update(renames: RenameMap): Seq[firrtl.annotations.Annotation] = {
+    val renamer = new ReferenceTargetRenamer(renames)
+    val renamedReady = renamer.exactRename(ready)
+    val renamedValid = renamer.exactRename(valid)
+    val renamedTarget = renamer.exactRename(target)
+    Seq(this.copy(target = renamedTarget, ready = renamedReady, valid = renamedValid))
+  }
+  def enclosingModuleTarget(): ModuleTarget = ModuleTarget(target.circuit, target.module)
+  def enclosingModule(): String = target.module
+}
+
+object MakeRoCCBusyLatencyInsensitive {
+  def apply(
+    target: chisel3.Bool,
+    ready: chisel3.Bool,
+    valid: chisel3.Bool): Unit = {
+      requireIsHardware(target, "Target passed to ..:")
+      requireIsHardware(ready,  "Ready passed to ..:")
+      requireIsHardware(valid,  "Valid passed to ..:")
+      annotate(new ChiselAnnotation {
+        def toFirrtl = RoCCBusyFirrtlAnnotation(
+          target.toNamed.toTarget,
+          ready.toNamed.toTarget,
+          valid.toNamed.toTarget)
+      })
+  }
+}
+
+case class FirrtlPartWrapperParentAnnotation(
+  target: InstanceTarget) extends SingleTargetAnnotation[InstanceTarget] with FAMEAnnotation {
+  def targets = Seq(target)
+  def duplicate(n: InstanceTarget) = this.copy(n)
+}
+
+case class FirrtlPortToNeighborRouterIdxAnno(
+  target: ReferenceTarget,
+  extractNeighborIdx: Int,
+  removeNeighborIdx: Int
+) extends firrtl.annotations.Annotation with FAMEAnnotation {
+  def update(renames: RenameMap): Seq[firrtl.annotations.Annotation] = {
+    val renamer = new ReferenceTargetRenamer(renames)
+    val renameTarget = renamer.exactRename(target)
+    Seq(this.copy(target = renameTarget))
+  }
+}
+
+case class FirrtlCombLogicInsideModuleAnno(
+  target: ReferenceTarget
+) extends firrtl.annotations.Annotation with FAMEAnnotation {
+  def update(renames: RenameMap): Seq[firrtl.annotations.Annotation] = {
+    val renamer = new ReferenceTargetRenamer(renames)
+    val renameTarget = renamer.exactRename(target)
+    Seq(this.copy(target = renameTarget))
   }
 }

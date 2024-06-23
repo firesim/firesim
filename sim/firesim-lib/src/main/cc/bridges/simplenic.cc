@@ -209,6 +209,8 @@ simplenic_t::simplenic_t(simif_t &sim,
       pcis_write_bufs[j] = pcis_read_bufs[j];
     }
   }
+
+  printf("BUFBYTES %d\n", BUFBYTES);
 }
 
 simplenic_t::~simplenic_t() {
@@ -274,7 +276,7 @@ void simplenic_t::init() {
 // #define TOKENVERIFY
 
 void simplenic_t::tick() {
-  // #define DEBUG_NIC_PRINT
+  /* #define DEBUG_NIC_PRINT */
 
   while (true) { // break when we don't have 5k tokens
     uint32_t tokens_this_round = SIMLATENCY_BT;
@@ -293,16 +295,15 @@ void simplenic_t::tick() {
       return;
     }
     // read into read_buffer
-#ifdef DEBUG_NIC_PRINT
-    iter++;
-    niclog_printf("read fpga iter %ld\n", iter);
-#endif
-
-#ifdef DEBUG_NIC_PRINT
-    niclog_printf("send iter %ld\n", iter);
-#endif
-
     pcis_read_bufs[currentround][BUFBYTES] = 1;
+
+#ifdef DEBUG_NIC_PRINT
+    niclog_printf("send pcis_read_bufs[%d][%d]: %d\n",
+                  currentround,
+                  BUFBYTES,
+                  pcis_read_bufs[currentround][BUFBYTES]);
+#endif
+
 
 #ifdef TOKENVERIFY
     // the widget is designed to tag tokens with a 43 bit number,
@@ -345,7 +346,7 @@ void simplenic_t::tick() {
     }
 
 #ifdef DEBUG_NIC_PRINT
-    niclog_printf("recv iter %ld\n", iter);
+    niclog_printf("receiving ... round %d\n", currentround);
 #endif
 
 #ifdef TOKENVERIFY
@@ -359,8 +360,9 @@ void simplenic_t::tick() {
         ;
       }
     }
+
 #ifdef DEBUG_NIC_PRINT
-    niclog_printf("done recv iter %ld\n", iter);
+    niclog_printf("done recv round %d\n", currentround);
 #endif
 
 #ifdef TOKENVERIFY

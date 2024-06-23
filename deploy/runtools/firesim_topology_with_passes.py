@@ -8,18 +8,19 @@ import pprint
 import logging
 import datetime
 import sys
+import yaml
 from fabric.api import env, parallel, execute, run, local, warn_only # type: ignore
 from colorama import Fore, Style # type: ignore
 from functools import reduce
 from tempfile import TemporaryDirectory
 
-from runtools.firesim_topology_elements import FireSimServerNode, FireSimDummyServerNode, FireSimSwitchNode
+from runtools.firesim_topology_elements import FireSimNode, FireSimPipeNode, FireSimServerNode, FireSimDummyServerNode, FireSimSwitchNode
 from runtools.firesim_topology_core import FireSimTopology
 from runtools.utils import MacAddress
-from runtools.simulation_data_classes import TracerVConfig, AutoCounterConfig, HostDebugConfig, SynthPrintConfig
+from runtools.simulation_data_classes import TracerVConfig, AutoCounterConfig, HostDebugConfig, SynthPrintConfig, PartitionConfig
 
 from runtools.run_farm_deploy_managers import InstanceDeployManager
-from typing import Dict, Any, cast, List, TYPE_CHECKING, Callable
+from typing import Dict, Any, cast, List, Set, TYPE_CHECKING, Callable, Optional
 if TYPE_CHECKING:
     from runtools.run_farm import RunFarm
     from runtools.runtime_config import RuntimeHWDB, RuntimeBuildRecipes
@@ -87,6 +88,7 @@ class FireSimTopologyWithPasses:
     defaultautocounterconfig: AutoCounterConfig
     defaulthostdebugconfig: HostDebugConfig
     defaultsynthprintconfig: SynthPrintConfig
+    defaultpartitionconfig: PartitionConfig
     terminateoncompletion: bool
 
     def __init__(self,
@@ -104,6 +106,7 @@ class FireSimTopologyWithPasses:
             defaultautocounterconfig: AutoCounterConfig,
             defaulthostdebugconfig: HostDebugConfig,
             defaultsynthprintconfig: SynthPrintConfig,
+            defaultpartitionconfig: PartitionConfig,
             terminateoncompletion: bool,
             build_recipes: RuntimeBuildRecipes,
             default_metasim_mode: bool,
@@ -126,6 +129,7 @@ class FireSimTopologyWithPasses:
         self.defaultautocounterconfig = defaultautocounterconfig
         self.defaulthostdebugconfig = defaulthostdebugconfig
         self.defaultsynthprintconfig = defaultsynthprintconfig
+        self.defaultpartitionconfig = defaultpartitionconfig
         self.default_metasim_mode = default_metasim_mode
         self.default_plusarg_passthrough = default_plusarg_passthrough
 
@@ -138,7 +142,7 @@ class FireSimTopologyWithPasses:
         nodes_dfs_order = self.firesimtopol.get_dfs_order()
         MacAddress.reset_allocator()
         for node in nodes_dfs_order:
-            if isinstance(node, FireSimServerNode):
+            if isinstance(node, FireSimServerNode) and node.mac_address_assignable():
                 node.assign_mac_address(MacAddress())
 
     def pass_compute_switching_tables(self) -> None:
@@ -165,7 +169,8 @@ class FireSimTopologyWithPasses:
         nodes_dfs_order = self.firesimtopol.get_dfs_order()
         for node in nodes_dfs_order:
             if isinstance(node, FireSimServerNode):
-                node.downlinkmacs = [node.get_mac_address()]
+                if node.mac_address_assignable():
+                    node.downlinkmacs = [node.get_mac_address()]
             else:
                 childdownlinkmacs: List[List[MacAddress]] = []
                 for x in node.downlinks:
@@ -261,6 +266,99 @@ class FireSimTopologyWithPasses:
             else:
                 assert False, "Mixed downlinks currently not supported."""
 
+    def pass_simple_partitioned_host_node_mapping(self) -> None:
+        """ A partitioned simulation topo without any networking simulation on top. """
+        pipes = self.firesimtopol.get_dfs_order_pipes()
+        servers = self.firesimtopol.get_dfs_order_servers()
+        nodes = self.firesimtopol.get_dfs_order()
+        assert len(nodes) == len(servers) + len(pipes), "partitioned sims doesn't support networking stuff"
+
+        instance_handle = self.run_farm.get_smallest_sim_host_handle(num_sims=len(servers))
+        inst = self.run_farm.allocate_sim_host(instance_handle)
+        for pipe in pipes:
+            rootLogger.info(f"add_pipe {pipe} {pipe.pipe_id_internal}")
+            inst.add_pipe(pipe)
+        for server in servers:
+            rootLogger.info(f"add_simulation {server} {server.server_id_internal}")
+            inst.add_simulation(server)
+
+
+    def collect_all_connected_nodes(self, server: FireSimNode, nodes: List[FireSimNode], visited: Set[FireSimNode]) -> None:
+        rootLogger.info(f"collect... server {server}")
+        if server in visited:
+            return
+        else:
+            nodes.append(server)
+            visited.add(server)
+            for uplink in server.uplinks:
+                uplink_node = uplink.get_uplink_side()
+                if uplink_node not in visited:
+                    rootLogger.info(f"collect... uplink_node {uplink_node}")
+                    nodes.append(uplink_node)
+                    visited.add(uplink_node)
+                for downlink in uplink_node.downlinks:
+                    downlink_node = downlink.get_downlink_side()
+                    if downlink_node is not server:
+                        rootLogger.info(f"collect... downlink_node {downlink_node}")
+                        self.collect_all_connected_nodes(downlink_node, nodes, visited)
+
+
+    def pass_simple_networked_partitioned_host_node_mapping(self) -> None:
+        """ A partitioned + networked simulation. """
+        servers = self.firesimtopol.get_dfs_order_servers()
+        switches = self.firesimtopol.get_dfs_order_switches()
+
+        visited: Set[FireSimNode] = set()
+        node_groups: List[List[FireSimNode]] = []
+        for server in servers:
+            if server in visited:
+                continue
+            cur_node_group: List[FireSimNode] = []
+            self.collect_all_connected_nodes(server, cur_node_group, visited)
+            rootLogger.info(f"cur_node_group {cur_node_group}")
+            node_groups.append(cur_node_group)
+
+        rootLogger.info(f"node_groups.size {len(node_groups)}")
+
+        for nodes in node_groups:
+            server_nodes: List[FireSimServerNode] = []
+            pipe_nodes: List[FireSimPipeNode] = []
+            switch_nodes: List[FireSimSwitchNode] = []
+            for node in nodes:
+                if isinstance(node, FireSimServerNode):
+                    server_nodes.append(node)
+                elif isinstance(node, FireSimSwitchNode):
+                    switch_nodes.append(node)
+                elif isinstance(node, FireSimPipeNode):
+                    pipe_nodes.append(node)
+                else:
+                    assert False, "Wrong node type"
+
+            num_servers = len(server_nodes)
+            rootLogger.info(f"pass_simple_networked_part... {num_servers}")
+            inst_handle_for_servers = self.run_farm.get_smallest_sim_host_handle(num_sims=num_servers)
+            inst = self.run_farm.allocate_sim_host(inst_handle_for_servers)
+
+            for switch in switch_nodes:
+                rootLogger.info(f"add_switch {switch} {switch.switch_id_internal}")
+                inst.add_switch(switch)
+            for pipe in pipe_nodes:
+                rootLogger.info(f"add_pipe {pipe} {pipe.pipe_id_internal}")
+                inst.add_pipe(pipe)
+            for server in server_nodes:
+                rootLogger.info(f"add_simulation {server} {server.server_id_internal}")
+                inst.add_simulation(server)
+
+        for switch in switches:
+            alldownlinknodes = list(map(lambda x: x.get_downlink_side(), [downlink for downlink in switch.downlinks if not isinstance(downlink.get_downlink_side(), FireSimDummyServerNode)]))
+            if all([isinstance(x, FireSimSwitchNode) for x in alldownlinknodes]):
+                # all downlinks are switches
+                switch_host_inst_handle = self.run_farm.get_switch_only_host_handle()
+                self.run_farm.allocate_sim_host(switch_host_inst_handle).add_switch(switch)
+            else:
+                # already allocated run farm instance
+                continue
+
     def mapping_use_one_8_slot_node(self) -> None:
         """ Just put everything on one 8 slot node """
         switches = self.firesimtopol.get_dfs_order_switches()
@@ -295,10 +393,15 @@ class FireSimTopologyWithPasses:
                 # all roots are servers, so we're in no_net_config
                 # if the user has specified any 16xlarges, we assign to them first
                 self.pass_no_net_host_mapping()
-            else:
+            elif all([isinstance(x, FireSimServerNode) or isinstance(x, FireSimSwitchNode) for x in self.firesimtopol.roots]):
                 # now, we're handling the cycle-accurate networked simulation case
                 # currently, we only handle the case where
                 self.pass_simple_networked_host_node_mapping()
+            elif all([isinstance(x, FireSimServerNode) or isinstance(x, FireSimPipeNode) for x in self.firesimtopol.roots]):
+                # now we're handling the cycle-accurate multi-fpga-partitioned simulation case
+                self.pass_simple_partitioned_host_node_mapping()
+            else:
+                self.pass_simple_networked_partitioned_host_node_mapping()
         elif callable(self.firesimtopol.custom_mapper):
             """ call the mapper fn defined in the topology itself. """
             self.firesimtopol.custom_mapper(self)
@@ -331,6 +434,7 @@ class FireSimTopologyWithPasses:
                 hw_cfg = runtimehwconfig_lookup_fn(self.defaulthwconfig)
             elif isinstance(hw_cfg, str):
                 hw_cfg = runtimehwconfig_lookup_fn(hw_cfg)
+            rootLogger.debug(f"pass_apply_default_hwconfig, {hw_cfg}")
             server.set_server_hardware_config(hw_cfg)
 
     def pass_apply_default_params(self) -> None:
@@ -364,6 +468,12 @@ class FireSimTopologyWithPasses:
                     node.synthprint_config = self.defaultsynthprintconfig
                 if node.plusarg_passthrough is None:
                     node.plusarg_passthrough = self.default_plusarg_passthrough
+                if node.partition_config is None:
+                    node.partition_config = self.defaultpartitionconfig
+
+            if isinstance(node, FireSimPipeNode):
+                if node.partition_config is None:
+                    node.partition_config = self.defaultpartitionconfig
 
     def pass_allocate_nbd_devices(self) -> None:
         """ allocate NBD devices. this must be done here to preserve the
@@ -418,6 +528,12 @@ class FireSimTopologyWithPasses:
         for switch in switches:
             switch.build_switch_sim_binary()
 
+    # TODO : come up with a better name...
+    def pass_build_required_pipes(self) -> None:
+        pipes = self.firesimtopol.get_dfs_order_pipes()
+        for pipe in pipes:
+            pipe.build_pipe_sim_binary()
+
     def pass_fetch_URI_resolve_runtime_cfg(self, dir: str) -> None:
         """Locally download URIs, and use any URI-contained metadata to resolve runtime config values"""
         servers = self.firesimtopol.get_dfs_order_servers()
@@ -445,6 +561,7 @@ class FireSimTopologyWithPasses:
         with TemporaryDirectory() as uridir:
             self.pass_fetch_URI_resolve_runtime_cfg(uridir)
             self.pass_build_required_drivers()
+            self.pass_build_required_pipes()
             self.pass_build_required_switches()
 
             execute(infrasetup_node_wrapper, self.run_farm, uridir, hosts=all_run_farm_ips)
@@ -492,11 +609,11 @@ class FireSimTopologyWithPasses:
             self.run_farm.post_launch_binding(use_mock_instances_for_testing)
 
         @parallel
-        def boot_switch_wrapper(run_farm: RunFarm) -> None:
+        def boot_switch_and_pipe_wrapper(run_farm: RunFarm) -> None:
             my_node = run_farm.lookup_by_host(env.host_string)
             assert my_node is not None
             assert my_node.instance_deploy_manager is not None
-            my_node.instance_deploy_manager.start_switches_instance()
+            my_node.instance_deploy_manager.start_switches_and_pipes_instance()
 
         # Steps occur within the context of a tempdir.
         # This allows URI's to survive until after deploy, and cleanup upon error
@@ -505,7 +622,7 @@ class FireSimTopologyWithPasses:
 
         all_run_farm_ips = [x.get_host() for x in self.run_farm.get_all_bound_host_nodes()]
         execute(instance_liveness, hosts=all_run_farm_ips)
-        execute(boot_switch_wrapper, self.run_farm, hosts=all_run_farm_ips)
+        execute(boot_switch_and_pipe_wrapper, self.run_farm, hosts=all_run_farm_ips)
 
         @parallel
         def boot_simulation_wrapper(run_farm: RunFarm) -> None:
@@ -531,6 +648,12 @@ class FireSimTopologyWithPasses:
             assert my_node.instance_deploy_manager is not None
             my_node.instance_deploy_manager.kill_simulations_instance(disconnect_all_nbds=disconnect_all_nbds)
 
+        @parallel
+        def kill_pipe_wrapper(run_farm: RunFarm) -> None:
+            my_node = run_farm.lookup_by_host(env.host_string)
+            assert my_node.instance_deploy_manager is not None
+            my_node.instance_deploy_manager.kill_pipes_instance()
+
         # Steps occur within the context of a tempdir.
         # This allows URI's to survive until after deploy, and cleanup upon error
         with TemporaryDirectory() as uridir:
@@ -539,6 +662,7 @@ class FireSimTopologyWithPasses:
         all_run_farm_ips = [x.get_host() for x in self.run_farm.get_all_bound_host_nodes()]
 
         execute(kill_switch_wrapper, self.run_farm, hosts=all_run_farm_ips)
+        execute(kill_pipe_wrapper, self.run_farm, hosts=all_run_farm_ips)
         execute(kill_simulation_wrapper, self.run_farm, hosts=all_run_farm_ips)
 
         def screens() -> None:
@@ -549,21 +673,68 @@ class FireSimTopologyWithPasses:
                 while True:
                     run("screen -wipe || true") # wipe any potentially dead screens
                     screenoutput = run("screen -ls")
+                    rootLogger.info(f"screenoutput {screenoutput}")
                     # If AutoILA is enabled, use the following condition
-                    if "No Sockets found" in screenoutput:
+                    if "2 Sockets in" in screenoutput and "hw_server" in screenoutput and "virtual_jtag" in screenoutput:
                         break
-                    # If AutoILA is enabled, use the following condition ('hw_server'/'virtual_jtag' are still running)
-                    elif "2 Sockets in" in screenoutput and "hw_server" in screenoutput and "virtual_jtag" in screenoutput:
-                        break
-                    # If AutoILA is disabled, continue as long as there is a fsim* or switch* screen.
-                    elif "fsim" in screenoutput or "switch" in screenoutput:
-                        time.sleep(1)
-                        continue
+                    # If AutoILA is disabled, confirm exit when there is no fsim, switch or pipe screen.
+                    # Previously, it only exited successfully when there was no screen at all. However,
+                    # that lead to pathological behaviors when there were other screens running.
+                    elif ("fsim" in screenoutput) or ("switch" in screenoutput) or ("pipe" in screenoutput):
+                      continue
                     else:
-                        rootLogger.warning(f"Unknown screen state. Breaking poll and printing screen state:\n{screenoutput}")
                         break
+                    time.sleep(1)
 
         execute(screens, hosts=all_run_farm_ips)
+
+    def get_bridge_offset(self, hwcfg: RuntimeHWConfig, bridge_idx: int) -> Optional[int]:
+        platform = hwcfg.get_platform()
+        quintuplet = hwcfg.get_deployquintuplet_for_config()
+        rootLogger.info("""neighbor platform: {} quintuplet: {}""".format(
+            platform, quintuplet))
+        driver_path = os.path.join("../sim/generated-src", platform, quintuplet)
+        p2p_config_file = os.path.join(driver_path, "FireSim-generated.peer2peer.const.yaml")
+
+        if not os.path.exists(p2p_config_file):
+            rootLogger.info("Skipping PCIM offset setting")
+            return None
+
+        with open(p2p_config_file, 'r') as f:
+            data = yaml.safe_load(f)
+            rootLogger.info(f"p2p yaml data  {data}")
+            if data is not None:
+              for (bridge_name, bridge_info) in data.items():
+                cur_bridge_idx = int(bridge_name.split('_')[1])
+                if ('PCIMCUTBOUNDARYBRIDGE' in bridge_name) and (cur_bridge_idx == bridge_idx):
+                    return bridge_info['bufferBaseAddress']
+        rootLogger.info("""Could not find bridge offset for {} bridge_idx {}""".format(p2p_config_file, bridge_idx))
+        return None
+
+    def pass_set_partition_configs(self) -> None:
+        servers = self.firesimtopol.get_dfs_order_servers()
+
+        runtimehwconfig_lookup_fn = self.hwdb.get_runtimehwconfig_from_name
+        if self.default_metasim_mode:
+            runtimehwconfig_lookup_fn = self.build_recipes.get_runtimehwconfig_from_name
+
+        for server in servers:
+            if not server.is_partition():
+                continue
+            pidx_to_slotid = server.get_partition_config().pidx_to_slotid
+            edges = server.get_partition_config().get_edges()
+            for (nbidx, nnode) in edges.values():
+                neighbor_hwdb = nnode.hwdb
+                neighbor_slotid = pidx_to_slotid[nnode.pidx]
+                rootLogger.info("""neighbor slot: {} hwdb: {} bridge: {}""".format(
+                    neighbor_slotid, neighbor_hwdb, nbidx))
+
+                resolved_neighbor_hw_cfg = runtimehwconfig_lookup_fn(neighbor_hwdb)
+                bridge_offset_opt = self.get_bridge_offset(resolved_neighbor_hw_cfg, nbidx)
+                if bridge_offset_opt is not None:
+                    server.partition_config.add_pcim_slot_offset(neighbor_slotid, bridge_offset_opt)
+            rootLogger.info("""pcim slotid bridgeoffset pairs for {}: {}""".format(
+              server.partition_config.get_hwdb(), server.partition_config.pcim_slot_offset))
 
     def run_workload_passes(self, use_mock_instances_for_testing: bool) -> None:
         """ extra passes needed to do runworkload. """
@@ -580,6 +751,11 @@ class FireSimTopologyWithPasses:
         localcap = local("""mkdir -p {}""".format(self.workload.job_monitoring_dir), capture=True)
         rootLogger.debug("[localhost] " + str(localcap))
         rootLogger.debug("[localhost] " + str(localcap.stderr))
+
+        # Setup partition configs
+        with TemporaryDirectory() as uridir:
+            self.pass_fetch_URI_resolve_runtime_cfg(uridir)
+            self.pass_set_partition_configs()
 
         # boot up as usual
         self.boot_simulation_passes(False, skip_instance_binding=True)
@@ -623,6 +799,13 @@ class FireSimTopologyWithPasses:
                                          'simname': simname,
                                          'running': not simcompleted})
 
+            pipestates = []
+            for instip, instdata in instancestates.items():
+                for pipename, pipecompleted in instdata['pipes'].items():
+                    pipestates.append({'hostip': instip,
+                                         'pipename': pipename,
+                                         'running': not pipecompleted})
+
 
             truefalsecolor = [Fore.YELLOW + "False" + Style.RESET_ALL,
                                     Fore.GREEN + "True " + Style.RESET_ALL]
@@ -638,6 +821,7 @@ class FireSimTopologyWithPasses:
 
             longestinst = max([len(e) for e in instancestate_map.keys()], default=15)
             longestswitch = max([len(e['hostip']) for e in switchstates], default=15)
+            longestpipe = max([len(e['hostip']) for e in pipestates], default=15)
             longestsim = max([len(e['hostip']) for e in simstates], default=15)
 
             # clear the screen
@@ -659,6 +843,11 @@ class FireSimTopologyWithPasses:
             for switchinfo in switchstates:
                 rootLogger.info("""Hostname/IP: {:>{}} | Switch name: {} | Switch running: {}""".format(switchinfo['hostip'], longestswitch, switchinfo['switchname'], truefalsecolor[switchinfo['running']]))
             rootLogger.info("-"*80)
+            rootLogger.info("Simulated Pipes")
+            rootLogger.info("-"*80)
+            for pipeinfo in pipestates:
+                rootLogger.info("""Hostname/IP: {:>{}} | Pipe name: {} | Pipe running: {}""".format(pipeinfo['hostip'], longestpipe, pipeinfo['pipename'], truefalsecolor[pipeinfo['running']]))
+            rootLogger.info("-"*80)
             rootLogger.info("Simulated Nodes/Jobs")
             rootLogger.info("-"*80)
             for siminfo in simstates:
@@ -670,8 +859,15 @@ class FireSimTopologyWithPasses:
             rootLogger.info("""{}/{} simulations are still running.""".format(runningsims, totalsims))
             rootLogger.info("-"*80)
 
+
+        servers = self.firesimtopol.get_dfs_order_servers()
+        is_partitioned = False
+        for server in servers:
+            if isinstance(server, FireSimServerNode):
+                is_partitioned = is_partitioned or server.is_partition()
+
         # is networked if a switch node is the root
-        is_networked = isinstance(self.firesimtopol.roots[0], FireSimSwitchNode)
+        is_networked = isinstance(self.firesimtopol.roots[0], FireSimSwitchNode) or is_partitioned
 
         # run polling loop
         while True:

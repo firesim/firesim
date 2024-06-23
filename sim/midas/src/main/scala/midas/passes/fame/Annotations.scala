@@ -326,3 +326,19 @@ class EmitFAMEAnnotations(fileName: String) extends firrtl.Transform {
     state
   }
 }
+class EmitAllAnnotations(fileName: String) extends firrtl.Transform {
+  import firrtl.options.TargetDirAnnotation
+  def inputForm = UnknownForm
+  def outputForm = UnknownForm
+
+  override def name = s"[Golden Gate] Debugging FAME Annotation Emission Pass: $fileName"
+
+  def execute(state: CircuitState) = {
+    val targetDir = state.annotations.collectFirst { case TargetDirAnnotation(dir) => dir }
+    val dirName = targetDir.getOrElse(".")
+    val outputFile = new java.io.PrintWriter(s"${dirName}/${fileName}")
+    outputFile.write(JsonProtocol.serialize(state.annotations))
+    outputFile.close()
+    state
+  }
+}

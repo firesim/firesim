@@ -177,7 +177,7 @@ if [ "$IS_LIBRARY" = false ]; then
 
     # Deinitialize Chipyard's FireSim submodule so that fuzzy finders, IDEs,
     # etc., don't get confused by source duplication.
-    git submodule deinit sims/firesim
+    # git submodule deinit sims/firesim
     cd $RDIR
 
     # Configure firemarshal to know where our firesim installation is.

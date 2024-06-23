@@ -91,6 +91,11 @@ public:
    */
   StreamEngine *get_stream_engine() { return stream_engine.get(); }
 
+  /**
+   * Returns a pointer to the fpga stream engine widget, if one exists.
+   */
+  StreamEngine *get_fpga_stream_engine() { return fpga_stream_engine.get(); }
+
   void add_widget(widget_t *widget);
   void add_widget(bridge_driver_t *widget);
   void add_widget(StreamEngine *widget);
@@ -104,6 +109,11 @@ private:
    * Widget implementing CPU-managed streams.
    */
   std::unique_ptr<StreamEngine> stream_engine;
+
+  /**
+   * Widget implementing FPGA-managed streams
+   */
+  std::unique_ptr<StreamEngine> fpga_stream_engine;
 
   /**
    * List of all bridges, maintained in a deterministic order.

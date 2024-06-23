@@ -86,6 +86,7 @@ object MultiThreadFAME5Models extends Transform {
   def inputForm = HighForm
   def outputForm = HighForm
 
+  // (MTModule -> (portName -> (Instances -> Connection)))
   type TopoMap = Map[OfModule, Map[String, mutable.Map[Instance, WRef]]]
 
   private def analyzeAndPruneTopo(fame5InstMap: Map[Instance, OfModule], topo: TopoMap)(stmt: Statement): Statement = {
@@ -116,7 +117,9 @@ object MultiThreadFAME5Models extends Transform {
 
   private def findFAME5(modInsts: collection.Map[OfModule, mutable.LinkedHashSet[Instance]])(stmt: Statement): Unit = {
     stmt match {
-      case WDefInstance(_, iName, mName, _) => modInsts.get(OfModule(mName)).foreach(iSet => iSet += Instance(iName))
+      case WDefInstance(_, iName, mName, _) =>
+        println(s"Found FAME5 instance ${iName} ${mName}")
+        modInsts.get(OfModule(mName)).foreach(iSet => iSet += Instance(iName))
       case s => s.foreach(findFAME5(modInsts))
     }
   }
@@ -169,7 +172,6 @@ object MultiThreadFAME5Models extends Transform {
     assert(fame5InstancesByModule.keySet.size <= 1)
 
     val nThreads = fame5InstancesByModule.headOption.map(_._2.size).getOrElse(1)
-
     val circuitNS = Namespace(state.circuit)
     val threadedModuleNames = state.circuit.modules.collect({
       // Don't replace blackbox instances! TODO: Check for illegal blackboxes.
@@ -182,6 +184,23 @@ object MultiThreadFAME5Models extends Transform {
 
     val threadCounters = fame5InstancesByModule.map { case (m, insts) => m -> Counter(insts.size, hostClock, hostReset) }
 
+    println(s"FAME5 multithreading ${nThreads} nThreads")
+    // - Add (de)muxes in front of the multi-threaded model
+    //    ---------                 -----------
+    //  ->| Mod 0 |                 |         |
+    //    ---------      ->|-----|  |         |
+    //  ->| Mod 1 |  =>  ->| Mux |->| MTModel |
+    //    ---------      ->|-----|  |         |
+    //  ->| Mod 2 |                 |         |
+    //    ---------                 -----------
+    //
+    //    ---------                 -----------
+    //  <-| Mod 0 |                 |         |
+    //    ---------      <-|-----|  |         |
+    //  <-| Mod 1 |  =>  <-|Dmux |<-| MTModel |
+    //    ---------      <-|-----|  |         |
+    //  <-| Mod 2 |                 |         |
+    //    ---------                 -----------
     val multiThreadedConns: Seq[Statement] = fame5Topo.toSeq.flatMap {
       case (mod, connsByPort) =>
         val arbiter = new StaticArbiter(threadCounters(mod))

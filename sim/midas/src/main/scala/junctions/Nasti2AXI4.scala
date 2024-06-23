@@ -23,7 +23,7 @@ class Nasti2AXI4IdentityModule(params: AXI4BundleParameters)(implicit p: Paramet
     val axi4 = new AXI4Bundle(params)
     val nasti = Flipped(new NastiIO()(p alterPartial { case NastiKey => NastiParameters(params) } ))
   })
-  AXI4NastiAssigner.toAXI4(io.axi4, io.nasti)
+  AXI4NastiAssigner.toAXI4Slave(io.axi4, io.nasti)
 }
 
 class Nasti2AXI4Monitor(params: AXI4BundleParameters)(implicit p: Parameters)

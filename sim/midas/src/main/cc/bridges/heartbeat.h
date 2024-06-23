@@ -40,6 +40,7 @@ private:
   uint64_t polling_interval = 10e5;
   uint64_t trip_count = 0;
   uint64_t last_cycle = 0;
+  bool ignore_heartbeat = false;
 };
 
 #endif //__HEARTBEAT_H

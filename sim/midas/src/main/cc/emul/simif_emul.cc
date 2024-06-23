@@ -7,6 +7,10 @@
 #include "core/simulation.h"
 #include "emul/mm.h"
 #include "emul/mmio.h"
+#include <cassert>
+#include <memory>
+#include <string.h>
+#include <unistd.h>
 
 simif_emul_t::simif_emul_t(const TargetConfig &config,
                            const std::vector<std::string> &args)
@@ -15,6 +19,10 @@ simif_emul_t::simif_emul_t(const TargetConfig &config,
   // Parse arguments.
   memsize = 1L << config.mem.addr_bits;
   bool fastloadmem = false;
+  int fpga_cnt = 1;
+  int fpga_idx = 0;
+  bool noc_part = false;
+  bool comb_logic = false;
   for (auto arg : args) {
     if (arg.find("+fastloadmem") == 0) {
       fastloadmem = true;
@@ -29,12 +37,89 @@ simif_emul_t::simif_emul_t(const TargetConfig &config,
       fuzz_seed = strtoll(arg.c_str() + 11, NULL, 10);
       fprintf(stderr, "Using custom fuzzer seed: %ld\n", fuzz_seed);
     }
-    if (arg.find("+fastloadmem") == 0) {
-      fastloadmem = true;
-    }
     if (arg.find("+loadmem=") == 0) {
       load_mem_path = arg.c_str() + 9;
     }
+    if (arg.find("+partition-fpga-cnt=") == 0) {
+      fpga_cnt = atoi(arg.c_str() + 20);
+    }
+    if (arg.find("+partition-fpga-idx=") == 0) {
+      fpga_idx = atoi(arg.c_str() + 20);
+    }
+    if (arg.find("+partition-fpga-topo=") == 0) {
+      int fpga_topo_str = atoi(arg.c_str() + 21);
+      if (fpga_topo_str == 1)
+        comb_logic = true;
+      else if (fpga_topo_str == 2)
+        noc_part = true;
+    }
+  }
+
+  for (int i = 0; i < config.qsfp.num_channels; i++) {
+    qsfp.emplace_back(std::make_unique<qsfp_t>(config.qsfp));
+  }
+
+  printf("qsfp_num_chans: %d\n", config.qsfp.num_channels);
+
+  for (int idx = 0; idx < config.qsfp.num_channels; idx++) {
+    char qsfp_owned_name[257];
+    char qsfp_other_name[257];
+    int next_fpga_idx = (fpga_idx + 1) % fpga_cnt;
+    int prev_fpga_idx = (fpga_idx + fpga_cnt - 1) % fpga_cnt;
+
+    printf("noc_part: %d comb_logic: %d\n", noc_part, comb_logic);
+
+    // TODO : add argument in firesim manager
+    if (!noc_part)
+      assert(fpga_cnt <= 3);
+
+    // If this is FPGA-0, reverse the qsfp channel shmem setup order to
+    // avoid deadlocks
+    int qsfp_chan =
+        (fpga_idx == 0) ? idx : (config.qsfp.num_channels - 1 - idx);
+
+    if (comb_logic) {
+      qsfp_chan = idx;
+    }
+
+    if (fpga_cnt <= 2) {
+      sprintf(qsfp_owned_name,
+              "/qsfp%03d_%03d_to_%03d",
+              qsfp_chan,
+              fpga_idx,
+              next_fpga_idx);
+      sprintf(qsfp_other_name,
+              "/qsfp%03d_%03d_to_%03d",
+              qsfp_chan,
+              next_fpga_idx,
+              fpga_idx);
+    } else if (noc_part) {
+      if (qsfp_chan == 0) {
+        sprintf(qsfp_owned_name, "/qsfp_%02d_to_%02d", fpga_idx, prev_fpga_idx);
+        sprintf(qsfp_other_name, "/qsfp_%02d_to_%02d", prev_fpga_idx, fpga_idx);
+      } else {
+        sprintf(qsfp_owned_name, "/qsfp_%02d_to_%02d", fpga_idx, next_fpga_idx);
+        sprintf(qsfp_other_name, "/qsfp_%02d_to_%02d", next_fpga_idx, fpga_idx);
+      }
+    } else {
+      if (qsfp_chan == 0 && fpga_idx != 0) {
+        sprintf(qsfp_owned_name, "/qsfp_%02d_to_%02d", fpga_idx, next_fpga_idx);
+        sprintf(qsfp_other_name, "/qsfp_%02d_to_%02d", next_fpga_idx, fpga_idx);
+      }
+      if (qsfp_chan == 0 && fpga_idx == 0) {
+        sprintf(qsfp_owned_name, "/qsfp_%02d_to_%02d", fpga_idx, prev_fpga_idx);
+        sprintf(qsfp_other_name, "/qsfp_%02d_to_%02d", prev_fpga_idx, fpga_idx);
+      }
+      if (qsfp_chan == 1 && fpga_idx != 0) {
+        sprintf(qsfp_owned_name, "/qsfp_%02d_to_%02d", fpga_idx, prev_fpga_idx);
+        sprintf(qsfp_other_name, "/qsfp_%02d_to_%02d", prev_fpga_idx, fpga_idx);
+      }
+      if (qsfp_chan == 1 && fpga_idx == 0) {
+        sprintf(qsfp_owned_name, "/qsfp_%02d_to_%02d", fpga_idx, next_fpga_idx);
+        sprintf(qsfp_other_name, "/qsfp_%02d_to_%02d", next_fpga_idx, fpga_idx);
+      }
+    }
+    qsfp[qsfp_chan]->setup_shmem(qsfp_owned_name, qsfp_other_name);
   }
 
   if (!fastloadmem)
@@ -58,6 +143,8 @@ simif_emul_t::simif_emul_t(const TargetConfig &config,
     assert(!config.cpu_managed && "stream should be CPU or FPGA managed");
     fpga_managed_stream_io.reset(new FPGAManagedStreamIOImpl(*this, *conf));
   }
+
+  std::cout << "simif_emul_t: done" << std::endl;
 }
 
 simif_emul_t::~simif_emul_t() {}
@@ -158,8 +245,10 @@ size_t simif_emul_t::CPUManagedStreamIOImpl::cpu_managed_axi4_write(
     strb[i] = beat_bytes > 63 ? -1 : ((1LL << beat_bytes) - 1);
   }
 
-  if (remaining == beat_bytes)
+  if (remaining == beat_bytes && len > 0)
     strb[len] = strb[0];
+  else if (remaining == beat_bytes)
+    strb[len] = -1;
   else
     strb[len] = (1LL << remaining) - 1;
 

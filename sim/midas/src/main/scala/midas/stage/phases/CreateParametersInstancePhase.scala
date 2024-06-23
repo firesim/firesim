@@ -51,7 +51,7 @@ object CreateParametersFromConfigString {
     * 4) midas -> This has debug features, etc
     */
   def apply(configProject: String, configClasses: Seq[String]): Parameters = {
-    val packages = (configProject +: Seq("firesim.configs", "firesim.util", "midas")).distinct
+    val packages = (configProject +: Seq("firesim.configs", "firesim.util", "firesim.firesim", "midas")).distinct
     new Config(getConfigWithFallback(packages, configClasses))
   }
 }

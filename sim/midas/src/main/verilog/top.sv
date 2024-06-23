@@ -12,6 +12,26 @@
 `define FPGA_MANAGED_AXI4_ID_BITS 0
 `endif
 
+`ifndef QSFP_DATA_BITS
+`define QSFP_DATA_BITS 0
+`endif
+
+// SV structs has to be 64b aligned (by adding paddings) for VCS metasims
+`define QSFP_STRUCT(name, defname) \
+  typedef struct packed {                                                \
+    bit [61:0]                         padding;                          \
+    bit                                in_ready;                         \
+    bit                                in_valid;                         \
+    bit [```defname``_DATA_BITS-1:0]   in_bits;                          \
+  } name``_fwd_t;                                                        \
+  typedef struct packed {                                                \
+    bit [61:0]                         padding;                          \
+    bit                                out_ready;                        \
+    bit                                out_valid;                        \
+    bit [```defname``_DATA_BITS-1:0]   out_bits;                         \
+  } name``_rev_t;
+
+// TODO: pad this to be 64b*N sized to match struct{reader,writer}?
 `define AXI4_STRUCT(name, defname) \
   typedef struct packed {                                                 \
     bit                                ar_ready;                          \
@@ -49,6 +69,7 @@
 `AXI4_STRUCT(mem, MEM)
 `AXI4_STRUCT(cpu_managed_axi4, CPU_MANAGED_AXI4)
 `AXI4_STRUCT(fpga_managed_axi4, FPGA_MANAGED_AXI4)
+`QSFP_STRUCT(qsfp, QSFP)
 
 `define BIND_AXI_FWD(name, obj)                    \
     .name``_ar_ready(obj.ar_ready),                \
@@ -85,11 +106,30 @@
     `BIND_AXI_FWD(name, name``_fwd) \
     `BIND_AXI_REV(name, name``_rev)
 
+`define BIND_QSFP_REV(name, obj)                    \
+    .name``_rx_ready(obj.out_ready),                \
+    .name``_tx_valid(obj.out_valid),                \
+    .name``_tx_bits(obj.out_bits),                  \
+
+`define BIND_QSFP_FWD(name, obj)                   \
+    .name``_channel_up(1'b1),                         \
+    .name``_tx_ready(obj.in_ready),                \
+    .name``_rx_valid(obj.in_valid),                \
+    .name``_rx_bits(obj.in_bits),                  \
+
+`define BIND_QSFP_CHANNEL(name)      \
+    `BIND_QSFP_FWD(name, name``_fwd) \
+    `BIND_QSFP_REV(name, name``_rev)
+
+
+
 import "DPI-C" function void simulator_tick
 (
   input  bit                                          reset,
   output bit                                          fin,
 
+  // C side cannot modify arguments that are declared as inputs
+  // -> These are "inputs" to the software side of the simulation
   input  ctrl_fwd_t                                   ctrl_fwd,
   input  cpu_managed_axi4_fwd_t                       cpu_managed_axi4_fwd,
   input  fpga_managed_axi4_rev_t                      fpga_managed_axi4_rev,
@@ -97,14 +137,20 @@ import "DPI-C" function void simulator_tick
   input  mem_rev_t                                    mem_1_rev,
   input  mem_rev_t                                    mem_2_rev,
   input  mem_rev_t                                    mem_3_rev,
+  input  qsfp_rev_t                                   qsfp_0_rev,
+  input  qsfp_rev_t                                   qsfp_1_rev,
 
+  // C side is responsible for providing arguments that are declared as outputs
+  // -> These are "outputs" from the software side of the simulation
   output ctrl_rev_t                                   ctrl_rev,
   output cpu_managed_axi4_rev_t                       cpu_managed_axi4_rev,
   output fpga_managed_axi4_fwd_t                      fpga_managed_axi4_fwd,
   output mem_fwd_t                                    mem_0_fwd,
   output mem_fwd_t                                    mem_1_fwd,
   output mem_fwd_t                                    mem_2_fwd,
-  output mem_fwd_t                                    mem_3_fwd
+  output mem_fwd_t                                    mem_3_fwd,
+  output qsfp_fwd_t                                   qsfp_0_fwd,
+  output qsfp_fwd_t                                   qsfp_1_fwd
 );
 
 import "DPI-C" function void simulator_entry();
@@ -219,6 +265,8 @@ module emul(
   mem_fwd_t mem_1_fwd;
   mem_fwd_t mem_2_fwd;
   mem_fwd_t mem_3_fwd;
+  qsfp_fwd_t qsfp_0_fwd;
+  qsfp_fwd_t qsfp_1_fwd;
 
   ctrl_fwd_t ctrl_fwd;
   cpu_managed_axi4_fwd_t cpu_managed_axi4_fwd;
@@ -227,6 +275,8 @@ module emul(
   mem_rev_t mem_1_rev;
   mem_rev_t mem_2_rev;
   mem_rev_t mem_3_rev;
+  qsfp_rev_t qsfp_0_rev;
+  qsfp_rev_t qsfp_1_rev;
 
   /* verilator lint_off PINMISSING */
   FPGATop FPGATop(
@@ -249,6 +299,12 @@ module emul(
 `ifdef MEM_HAS_CHANNEL3
     `BIND_CHANNEL(mem_3)
 `endif
+`ifdef QSFP_HAS_CHANNEL0
+    `BIND_QSFP_CHANNEL(qsfp_0)
+`endif
+`ifdef QSFP_HAS_CHANNEL1
+    `BIND_QSFP_CHANNEL(qsfp_1)
+`endif
     .clock(clock),
     .reset(reset)
   );
@@ -262,6 +318,8 @@ module emul(
   mem_rev_t mem_1_rev_sync;
   mem_rev_t mem_2_rev_sync;
   mem_rev_t mem_3_rev_sync;
+  qsfp_rev_t qsfp_0_rev_sync;
+  qsfp_rev_t qsfp_1_rev_sync;
 
   ctrl_rev_t ctrl_rev_sync;
   cpu_managed_axi4_rev_t cpu_managed_axi4_rev_sync;
@@ -270,6 +328,8 @@ module emul(
   mem_fwd_t mem_1_fwd_sync;
   mem_fwd_t mem_2_fwd_sync;
   mem_fwd_t mem_3_fwd_sync;
+  qsfp_fwd_t qsfp_0_fwd_sync;
+  qsfp_fwd_t qsfp_1_fwd_sync;
 
   // To deal with the race conditions in Chisel-generated SystemVerilog, the
   // simulator inputs are latched out-of-phase, on the negative edge.
@@ -290,6 +350,8 @@ module emul(
       mem_1_rev_sync,
       mem_2_rev_sync,
       mem_3_rev_sync,
+      qsfp_0_rev_sync,
+      qsfp_1_rev_sync,
 
       ctrl_rev_sync,
       cpu_managed_axi4_rev_sync,
@@ -297,7 +359,9 @@ module emul(
       mem_0_fwd_sync,
       mem_1_fwd_sync,
       mem_2_fwd_sync,
-      mem_3_fwd_sync
+      mem_3_fwd_sync,
+      qsfp_0_fwd_sync,
+      qsfp_1_fwd_sync
     );
 
 
@@ -316,6 +380,8 @@ module emul(
     mem_1_rev_sync <= mem_1_rev;
     mem_2_rev_sync <= mem_2_rev;
     mem_3_rev_sync <= mem_3_rev;
+    qsfp_0_rev_sync <= qsfp_0_rev;
+    qsfp_1_rev_sync <= qsfp_1_rev;
   end
 
   always_ff @(posedge clock) begin
@@ -326,5 +392,7 @@ module emul(
     mem_1_fwd <= mem_1_fwd_sync;
     mem_2_fwd <= mem_2_fwd_sync;
     mem_3_fwd <= mem_3_fwd_sync;
+    qsfp_0_fwd <= qsfp_0_fwd_sync;
+    qsfp_1_fwd <= qsfp_1_fwd_sync;
   end
 endmodule;

@@ -15,6 +15,11 @@ object Utils {
       DoPrim(PrimOps.Cat, Seq(left, right), Nil, UnknownType)
     }
 
+  def orderedCat(es: Seq[Expression]): Expression =
+    if (es.tail.isEmpty) es.head else {
+      DoPrim(PrimOps.Cat, Seq(orderedCat(es.tail), es.head), Nil, UnknownType)
+    }
+
   // Takes a circuit state and writes it out to the target-directory by selecting
   // an appropriate emitter for its form
   def writeState(state: CircuitState, name: String): Unit = {

@@ -41,3 +41,7 @@ private [midas] class StreamAllocator {
 
 private [midas] case object ToCPUStreamAllocatorKey extends Field[StreamAllocator](new StreamAllocator)
 private [midas] case object FromCPUStreamAllocatorKey extends Field[StreamAllocator](new StreamAllocator)
+
+private [midas] case object ToQSFPStreamAllocatorKey extends Field[StreamAllocator](new StreamAllocator)
+private [midas] case object FromQSFPStreamAllocatorKey extends Field[StreamAllocator](new StreamAllocator)
+private [midas] case object ToPeerFPGAStreamAllocatorKey extends Field[StreamAllocator](new StreamAllocator)

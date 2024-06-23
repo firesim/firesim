@@ -195,7 +195,7 @@ object FAMEModuleTransformer {
       val bufferOutputRT = mTarget.ref(buf.name).field("O")
 
       if (currentModuleIsHub) {
-        // Leverage the MFMR hint provided by the clock bridge to relax the setup constraints on 
+        // Leverage the MFMR hint provided by the clock bridge to relax the setup constraints on
         // intra-domain paths. Do this only for the hub, since it it is the only multiclock model.
         //
         // Using this multicycle setup constraint is conservative, since all
@@ -219,7 +219,7 @@ object FAMEModuleTransformer {
         // Note: "host_clock" is defined statically in the shell XDC.
         val xdcAnno = XDCAnnotation(
           XDCFiles.Implementation,
-          s"""|create_generated_clock -name ${clockName} -source [get_pins -of [get_clocks host_clock]] [get_pins {}] -divide_by 1
+          s"""|create_generated_clock -name ${clockName} -source [get_pins -of [get_clocks host_clock]] [get_pins -hierarchical -regexp .*{}.*] -divide_by 1
               |set_multicycle_path $clockMFMR -setup -from [get_clocks $clockName] -to [get_clocks $clockName]
               |set_multicycle_path ${clockMFMR - 1} -hold  -from [get_clocks $clockName] -to [get_clocks $clockName]
               |""".stripMargin,
@@ -317,7 +317,8 @@ object FAMEModuleTransformer {
         outChannelMap(name).replacePortRef(oWR)
       case cWR @ WRef(name, ClockType, PortKind, SourceFlow) if clockChannelPortNames(name) =>
         replaceClocksMap(WrappedExpression.we(cWR))
-      case e => e map onExpr
+      case e => 
+        e
     }
 
     def onStmt(stmt: Statement): Statement = stmt match {

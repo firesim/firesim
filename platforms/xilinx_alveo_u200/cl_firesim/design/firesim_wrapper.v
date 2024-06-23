@@ -298,55 +298,55 @@ module firesim_wrapper(
         .io_master_r_bits_user(),    // UNUSED at top level
 
         // special NIC master interface
-        .io_dma_aw_ready(S_AXI_DMA_awready),
-        .io_dma_aw_valid(S_AXI_DMA_awvalid),
-        .io_dma_aw_bits_addr(S_AXI_DMA_awaddr),
-        .io_dma_aw_bits_len(S_AXI_DMA_awlen),
-        .io_dma_aw_bits_size(S_AXI_DMA_awsize),
-        .io_dma_aw_bits_burst(2'h1), // S_AXI_DMA_awburst
-        .io_dma_aw_bits_lock(1'h0), // S_AXI_DMA_awlock
-        .io_dma_aw_bits_cache(4'h0), // S_AXI_DMA_awcache
-        .io_dma_aw_bits_prot(3'h0), //unused? (could connect?) S_AXI_DMA_awprot
-        .io_dma_aw_bits_qos(4'h0), // S_AXI_DMA_awqos
-        .io_dma_aw_bits_region(4'h0), // S_AXI_DMA_awregion
-        .io_dma_aw_bits_id(S_AXI_DMA_awid),
-        .io_dma_aw_bits_user(1'h0),
+        .io_pcis_aw_ready(S_AXI_DMA_awready),
+        .io_pcis_aw_valid(S_AXI_DMA_awvalid),
+        .io_pcis_aw_bits_addr(S_AXI_DMA_awaddr),
+        .io_pcis_aw_bits_len(S_AXI_DMA_awlen),
+        .io_pcis_aw_bits_size(S_AXI_DMA_awsize),
+        .io_pcis_aw_bits_burst(2'h1), // S_AXI_DMA_awburst
+        .io_pcis_aw_bits_lock(1'h0), // S_AXI_DMA_awlock
+        .io_pcis_aw_bits_cache(4'h0), // S_AXI_DMA_awcache
+        .io_pcis_aw_bits_prot(3'h0), //unused? (could connect?) S_AXI_DMA_awprot
+        .io_pcis_aw_bits_qos(4'h0), // S_AXI_DMA_awqos
+        .io_pcis_aw_bits_region(4'h0), // S_AXI_DMA_awregion
+        .io_pcis_aw_bits_id(S_AXI_DMA_awid),
+        .io_pcis_aw_bits_user(1'h0),
 
-        .io_dma_w_ready(S_AXI_DMA_wready),
-        .io_dma_w_valid(S_AXI_DMA_wvalid),
-        .io_dma_w_bits_data(S_AXI_DMA_wdata),
-        .io_dma_w_bits_last(S_AXI_DMA_wlast),
-        .io_dma_w_bits_id(4'h0),
-        .io_dma_w_bits_strb(S_AXI_DMA_wstrb),
-        .io_dma_w_bits_user(1'h0),
+        .io_pcis_w_ready(S_AXI_DMA_wready),
+        .io_pcis_w_valid(S_AXI_DMA_wvalid),
+        .io_pcis_w_bits_data(S_AXI_DMA_wdata),
+        .io_pcis_w_bits_last(S_AXI_DMA_wlast),
+        .io_pcis_w_bits_id(4'h0),
+        .io_pcis_w_bits_strb(S_AXI_DMA_wstrb),
+        .io_pcis_w_bits_user(1'h0),
 
-        .io_dma_b_ready(S_AXI_DMA_bready),
-        .io_dma_b_valid(S_AXI_DMA_bvalid),
-        .io_dma_b_bits_resp(S_AXI_DMA_bresp),
-        .io_dma_b_bits_id(S_AXI_DMA_bid),
-        .io_dma_b_bits_user(),    // UNUSED at top level
+        .io_pcis_b_ready(S_AXI_DMA_bready),
+        .io_pcis_b_valid(S_AXI_DMA_bvalid),
+        .io_pcis_b_bits_resp(S_AXI_DMA_bresp),
+        .io_pcis_b_bits_id(S_AXI_DMA_bid),
+        .io_pcis_b_bits_user(),    // UNUSED at top level
 
-        .io_dma_ar_ready(S_AXI_DMA_arready),
-        .io_dma_ar_valid(S_AXI_DMA_arvalid),
-        .io_dma_ar_bits_addr(S_AXI_DMA_araddr),
-        .io_dma_ar_bits_len(S_AXI_DMA_arlen),
-        .io_dma_ar_bits_size(S_AXI_DMA_arsize),
-        .io_dma_ar_bits_burst(2'h1), // S_AXI_DMA_arburst
-        .io_dma_ar_bits_lock(1'h0), // S_AXI_DMA_arlock
-        .io_dma_ar_bits_cache(4'h0), // S_AXI_DMA_arcache
-        .io_dma_ar_bits_prot(3'h0), // S_AXI_DMA_arprot
-        .io_dma_ar_bits_qos(4'h0), // S_AXI_DMA_arqos
-        .io_dma_ar_bits_region(4'h0), // S_AXI_DMA_arregion
-        .io_dma_ar_bits_id(S_AXI_DMA_arid),
-        .io_dma_ar_bits_user(1'h0),
+        .io_pcis_ar_ready(S_AXI_DMA_arready),
+        .io_pcis_ar_valid(S_AXI_DMA_arvalid),
+        .io_pcis_ar_bits_addr(S_AXI_DMA_araddr),
+        .io_pcis_ar_bits_len(S_AXI_DMA_arlen),
+        .io_pcis_ar_bits_size(S_AXI_DMA_arsize),
+        .io_pcis_ar_bits_burst(2'h1), // S_AXI_DMA_arburst
+        .io_pcis_ar_bits_lock(1'h0), // S_AXI_DMA_arlock
+        .io_pcis_ar_bits_cache(4'h0), // S_AXI_DMA_arcache
+        .io_pcis_ar_bits_prot(3'h0), // S_AXI_DMA_arprot
+        .io_pcis_ar_bits_qos(4'h0), // S_AXI_DMA_arqos
+        .io_pcis_ar_bits_region(4'h0), // S_AXI_DMA_arregion
+        .io_pcis_ar_bits_id(S_AXI_DMA_arid),
+        .io_pcis_ar_bits_user(1'h0),
 
-        .io_dma_r_ready(S_AXI_DMA_rready),
-        .io_dma_r_valid(S_AXI_DMA_rvalid),
-        .io_dma_r_bits_resp(S_AXI_DMA_rresp),
-        .io_dma_r_bits_data(S_AXI_DMA_rdata),
-        .io_dma_r_bits_last(S_AXI_DMA_rlast),
-        .io_dma_r_bits_id(S_AXI_DMA_rid),
-        .io_dma_r_bits_user(),    // UNUSED at top level
+        .io_pcis_r_ready(S_AXI_DMA_rready),
+        .io_pcis_r_valid(S_AXI_DMA_rvalid),
+        .io_pcis_r_bits_resp(S_AXI_DMA_rresp),
+        .io_pcis_r_bits_data(S_AXI_DMA_rdata),
+        .io_pcis_r_bits_last(S_AXI_DMA_rlast),
+        .io_pcis_r_bits_id(S_AXI_DMA_rid),
+        .io_pcis_r_bits_user(),    // UNUSED at top level
 
         // `include "firesim_ila_insert_ports.v"
 

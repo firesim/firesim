@@ -10,7 +10,16 @@ import junctions.NastiParameters
 import org.chipsalliance.cde.config.{Parameters, Config, Field}
 import freechips.rocketchip.diplomacy.{TransferSizes}
 
+import firrtl.options.Dependency
+
 import java.io.{File}
+
+case object FPGATopQSFPBitWidth extends Field[Int](256)
+case object QSFPStreamBitWidth extends Field[Int](QSFPBridgeStreamConstants.streamWidthBits)
+case object FPGATopQSFPBRAMQueueDepth extends Field[Int](256)
+case object F1ShimHasQSFPPorts extends Field[Boolean](false)
+case object F1ShimHasPCIMPorts extends Field[Boolean](false)
+case object MetasimPrintfEnable extends Field[Boolean](false)
 
 // Provides a function to elaborate the top-level platform shim
 case object Platform extends Field[(Parameters) => PlatformShim]
@@ -117,6 +126,7 @@ class F1Config extends Config(new Config((site, here, up) => {
 }) ++ new SimConfig)
 
 class XilinxAlveoU250Config extends Config(new Config((site, here, up) => {
+  case F1ShimHasQSFPPorts => true
   case HostMemNumChannels => 1
   case PreLinkCircuitPath => Some("firesim_top")
   case PostLinkCircuitPath => Some("firesim_top")
@@ -212,3 +222,71 @@ class VitisConfig extends Config(new Config((site, here, up) => {
 class HostDebugFeatures extends Config((site, here, up) => {
   case GenerateTokenIrrevocabilityAssertions => true
 })
+
+class WithPCIMPorts extends Config((site, here, up) => {
+  case F1ShimHasPCIMPorts => true
+  case FPGAStreamEngineInstantiatorKey =>
+    (e: StreamEngineParameters, p: Parameters) =>
+    new FPGAManagedStreamEngine(p, e)
+  case FPGAManagedAXI4Key   => Some(FPGAManagedAXI4Params(
+    size                = BigInt(1) << 64,  // 128GB (size of Bar 4)
+    dataBits            = 512,                  // 512 bits set by FireSim default
+    idBits              = 6,                    // 6 is a guess; based upon CPUManagedAXI4Params
+    writeTransferSizes  = TransferSizes(512/8), // Default for Firesim
+    readTransferSizes   = TransferSizes(512/8), // Default for Firesim
+    interleavedId       = Some(0)               // Interleaved not currentlky supported therefore 0
+  ))
+})
+
+class EC2F1Config extends Config(
+  new WithPCIMPorts ++
+  new F1Config
+)
+
+case object FireAxeNoCPartitionPass extends Field[Boolean](false)
+case object FireAxeQSFPConnections  extends Field[Boolean](false)
+case object FireAxePCIMConnections  extends Field[Boolean](false)
+case object FireAxePCISConnections  extends Field[Boolean](false)
+case object FireAxePreserveTarget   extends Field[Boolean](false)
+case object FireAxePartitionGlobalInfo extends Field[Option[Seq[Seq[String]]]](None)
+case object FireAxePartitionIndex extends Field[Option[Int]](None)
+
+class WithFireAxePreserveTarget extends Config((site, here, up) => {
+  case midas.FireAxePreserveTarget => true
+})
+
+class WithFireAxeNoCPart extends Config((site, here, up) => {
+  case midas.FireAxeNoCPartitionPass => true
+})
+
+class WithQSFP extends Config((site, here, up) => {
+  case midas.FireAxeQSFPConnections => true
+  case midas.FireAxePCIMConnections => false
+  case midas.FireAxePCISConnections => false
+})
+
+class WithPCIS extends Config((site, here, up) => {
+  case midas.FireAxeQSFPConnections => false
+  case midas.FireAxePCIMConnections => false
+  case midas.FireAxePCISConnections => true
+})
+
+class WithPCIM extends Config((site, here, up) => {
+  case midas.FireAxeQSFPConnections => false
+  case midas.FireAxePCIMConnections => true
+  case midas.FireAxePCISConnections => false
+})
+
+class WithPartitionGlobalInfo(info: Seq[Seq[String]]) extends Config((site, here, up) => {
+  case midas.FireAxePartitionGlobalInfo => Some(info)
+})
+
+class WithPartitionBase extends Config((site, here, up) => {
+  case midas.FireAxePartitionIndex => None
+})
+
+class WithPartitionIndex(index: Int) extends Config((site, here, up) => {
+  case midas.FireAxePartitionIndex => Some(index)
+})
+
+class ExactMode extends WithFireAxePreserveTarget

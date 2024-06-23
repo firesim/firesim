@@ -28,6 +28,7 @@ New to FireSim? Jump to the :doc:`/FireSim-Basics` page for more info.
    Advanced-Usage/Debugging-and-Profiling-on-FPGA/index
    Advanced-Usage/Conda.rst
    Advanced-Usage/Supernode.rst
+   Advanced-Usage/FireAxe-Partitioning-onto-Multiple-FPGAs/index
    Advanced-Usage/Miscellaneous-Tips.rst
    Advanced-Usage/FAQs.rst
 

@@ -5,6 +5,7 @@
 
 #include <cassert>
 #include <cstdint>
+#include <inttypes.h>
 #include <map>
 #include <string>
 #include <vector>

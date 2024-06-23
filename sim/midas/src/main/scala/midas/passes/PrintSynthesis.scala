@@ -9,6 +9,7 @@ import firrtl.ir._
 import firrtl.Mappers._
 import firrtl.Utils.{zero, BoolType}
 
+
 import midas.passes.fame.{FAMEChannelConnectionAnnotation, WireChannel}
 import midas.widgets.{BridgeIOAnnotation, PrintBridgeModule, PrintBridgeParameters, PrintPort}
 import midas.targetutils.{SynthPrintfAnnotation, GlobalResetConditionSink}

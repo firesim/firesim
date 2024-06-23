@@ -7,6 +7,8 @@ module overall_fpga_top(
     `DDR4_PDEF(ddr4_sdram_c0),
 
     `DIFF_CLK_PDEF(default_300mhz_clk0),
+    `DIFF_CLK_PDEF(default_300mhz_clk1),
+    `DIFF_CLK_PDEF(default_300mhz_clk2),
 
     input wire [15:0] pci_express_x16_rxn,
     input wire [15:0] pci_express_x16_rxp,
@@ -57,6 +59,8 @@ module overall_fpga_top(
 	`undef DDR4_PAR
 
 	`DIFF_CLK_CONNECT(default_300mhz_clk0, default_300mhz_clk0)
+	`DIFF_CLK_CONNECT(default_300mhz_clk1, default_300mhz_clk1)
+	`DIFF_CLK_CONNECT(default_300mhz_clk2, default_300mhz_clk2)
 
 	`define AMBA_AXI4
 	`define AMBA_AXI_CACHE
@@ -92,6 +96,21 @@ module overall_fpga_top(
         , .pci_express_x16_txp(pci_express_x16_txp)
         , .pcie_perstn(pcie_perstn)
 	`DIFF_CLK_CONNECT(pcie_refclk, pcie_refclk)
+
+        , .QSFP0_CHANNEL_UP(QSFP0_CHANNEL_UP)
+        , .TO_QSFP0_DATA(TO_QSFP0_DATA)
+        , .TO_QSFP0_VALID(TO_QSFP0_VALID)
+        , .TO_QSFP0_READY(TO_QSFP0_READY)
+        , .FROM_QSFP0_DATA(FROM_QSFP0_DATA)
+        , .FROM_QSFP0_VALID(FROM_QSFP0_VALID)
+        , .FROM_QSFP0_READY(FROM_QSFP0_READY)
+        , .QSFP1_CHANNEL_UP(QSFP1_CHANNEL_UP)
+        , .TO_QSFP1_DATA(TO_QSFP1_DATA)
+        , .TO_QSFP1_VALID(TO_QSFP1_VALID)
+        , .TO_QSFP1_READY(TO_QSFP1_READY)
+        , .FROM_QSFP1_DATA(FROM_QSFP1_DATA)
+        , .FROM_QSFP1_VALID(FROM_QSFP1_VALID)
+        , .FROM_QSFP1_READY(FROM_QSFP1_READY)
 
         , .sys_clk(sys_clk)
         , .sys_reset_n(sys_reset_n)
@@ -152,55 +171,55 @@ module overall_fpga_top(
         .io_master_r_bits_user(),    // UNUSED at top level
 
         // special NIC master interface
-        .io_dma_aw_ready(PCIE_M_AXI_awready),
-        .io_dma_aw_valid(PCIE_M_AXI_awvalid),
-        .io_dma_aw_bits_addr(PCIE_M_AXI_awaddr),
-        .io_dma_aw_bits_len(PCIE_M_AXI_awlen),
-        .io_dma_aw_bits_size(PCIE_M_AXI_awsize),
-        .io_dma_aw_bits_burst(2'h1), // PCIE_M_AXI_awburst
-        .io_dma_aw_bits_lock(1'h0), // PCIE_M_AXI_awlock
-        .io_dma_aw_bits_cache(4'h0), // PCIE_M_AXI_awcache
-        .io_dma_aw_bits_prot(3'h0), //unused? (could connect?) PCIE_M_AXI_awprot
-        .io_dma_aw_bits_qos(4'h0), // PCIE_M_AXI_awqos
-        .io_dma_aw_bits_region(4'h0), // PCIE_M_AXI_awregion
-        .io_dma_aw_bits_id(PCIE_M_AXI_awid),
-        .io_dma_aw_bits_user(1'h0),
+        .io_pcis_aw_ready(PCIE_M_AXI_awready),
+        .io_pcis_aw_valid(PCIE_M_AXI_awvalid),
+        .io_pcis_aw_bits_addr(PCIE_M_AXI_awaddr),
+        .io_pcis_aw_bits_len(PCIE_M_AXI_awlen),
+        .io_pcis_aw_bits_size(PCIE_M_AXI_awsize),
+        .io_pcis_aw_bits_burst(2'h1), // PCIE_M_AXI_awburst
+        .io_pcis_aw_bits_lock(1'h0), // PCIE_M_AXI_awlock
+        .io_pcis_aw_bits_cache(4'h0), // PCIE_M_AXI_awcache
+        .io_pcis_aw_bits_prot(3'h0), //unused? (could connect?) PCIE_M_AXI_awprot
+        .io_pcis_aw_bits_qos(4'h0), // PCIE_M_AXI_awqos
+        .io_pcis_aw_bits_region(4'h0), // PCIE_M_AXI_awregion
+        .io_pcis_aw_bits_id(PCIE_M_AXI_awid),
+        .io_pcis_aw_bits_user(1'h0),
 
-        .io_dma_w_ready(PCIE_M_AXI_wready),
-        .io_dma_w_valid(PCIE_M_AXI_wvalid),
-        .io_dma_w_bits_data(PCIE_M_AXI_wdata),
-        .io_dma_w_bits_last(PCIE_M_AXI_wlast),
-        .io_dma_w_bits_id(4'h0),
-        .io_dma_w_bits_strb(PCIE_M_AXI_wstrb),
-        .io_dma_w_bits_user(1'h0),
+        .io_pcis_w_ready(PCIE_M_AXI_wready),
+        .io_pcis_w_valid(PCIE_M_AXI_wvalid),
+        .io_pcis_w_bits_data(PCIE_M_AXI_wdata),
+        .io_pcis_w_bits_last(PCIE_M_AXI_wlast),
+        .io_pcis_w_bits_id(4'h0),
+        .io_pcis_w_bits_strb(PCIE_M_AXI_wstrb),
+        .io_pcis_w_bits_user(1'h0),
 
-        .io_dma_b_ready(PCIE_M_AXI_bready),
-        .io_dma_b_valid(PCIE_M_AXI_bvalid),
-        .io_dma_b_bits_resp(PCIE_M_AXI_bresp),
-        .io_dma_b_bits_id(PCIE_M_AXI_bid),
-        .io_dma_b_bits_user(),    // UNUSED at top level
+        .io_pcis_b_ready(PCIE_M_AXI_bready),
+        .io_pcis_b_valid(PCIE_M_AXI_bvalid),
+        .io_pcis_b_bits_resp(PCIE_M_AXI_bresp),
+        .io_pcis_b_bits_id(PCIE_M_AXI_bid),
+        .io_pcis_b_bits_user(),    // UNUSED at top level
 
-        .io_dma_ar_ready(PCIE_M_AXI_arready),
-        .io_dma_ar_valid(PCIE_M_AXI_arvalid),
-        .io_dma_ar_bits_addr(PCIE_M_AXI_araddr),
-        .io_dma_ar_bits_len(PCIE_M_AXI_arlen),
-        .io_dma_ar_bits_size(PCIE_M_AXI_arsize),
-        .io_dma_ar_bits_burst(2'h1), // PCIE_M_AXI_arburst
-        .io_dma_ar_bits_lock(1'h0), // PCIE_M_AXI_arlock
-        .io_dma_ar_bits_cache(4'h0), // PCIE_M_AXI_arcache
-        .io_dma_ar_bits_prot(3'h0), // PCIE_M_AXI_arprot
-        .io_dma_ar_bits_qos(4'h0), // PCIE_M_AXI_arqos
-        .io_dma_ar_bits_region(4'h0), // PCIE_M_AXI_arregion
-        .io_dma_ar_bits_id(PCIE_M_AXI_arid),
-        .io_dma_ar_bits_user(1'h0),
+        .io_pcis_ar_ready(PCIE_M_AXI_arready),
+        .io_pcis_ar_valid(PCIE_M_AXI_arvalid),
+        .io_pcis_ar_bits_addr(PCIE_M_AXI_araddr),
+        .io_pcis_ar_bits_len(PCIE_M_AXI_arlen),
+        .io_pcis_ar_bits_size(PCIE_M_AXI_arsize),
+        .io_pcis_ar_bits_burst(2'h1), // PCIE_M_AXI_arburst
+        .io_pcis_ar_bits_lock(1'h0), // PCIE_M_AXI_arlock
+        .io_pcis_ar_bits_cache(4'h0), // PCIE_M_AXI_arcache
+        .io_pcis_ar_bits_prot(3'h0), // PCIE_M_AXI_arprot
+        .io_pcis_ar_bits_qos(4'h0), // PCIE_M_AXI_arqos
+        .io_pcis_ar_bits_region(4'h0), // PCIE_M_AXI_arregion
+        .io_pcis_ar_bits_id(PCIE_M_AXI_arid),
+        .io_pcis_ar_bits_user(1'h0),
 
-        .io_dma_r_ready(PCIE_M_AXI_rready),
-        .io_dma_r_valid(PCIE_M_AXI_rvalid),
-        .io_dma_r_bits_resp(PCIE_M_AXI_rresp),
-        .io_dma_r_bits_data(PCIE_M_AXI_rdata),
-        .io_dma_r_bits_last(PCIE_M_AXI_rlast),
-        .io_dma_r_bits_id(PCIE_M_AXI_rid),
-        .io_dma_r_bits_user(),    // UNUSED at top level
+        .io_pcis_r_ready(PCIE_M_AXI_rready),
+        .io_pcis_r_valid(PCIE_M_AXI_rvalid),
+        .io_pcis_r_bits_resp(PCIE_M_AXI_rresp),
+        .io_pcis_r_bits_data(PCIE_M_AXI_rdata),
+        .io_pcis_r_bits_last(PCIE_M_AXI_rlast),
+        .io_pcis_r_bits_id(PCIE_M_AXI_rid),
+        .io_pcis_r_bits_user(),    // UNUSED at top level
 
         // `include "firesim_ila_insert_ports.v"
 
@@ -244,7 +263,25 @@ module overall_fpga_top(
         .io_slave_0_r_bits_resp(DDR4_0_S_AXI_rresp),
         .io_slave_0_r_bits_data(DDR4_0_S_AXI_rdata),
         .io_slave_0_r_bits_last(DDR4_0_S_AXI_rlast),
-        .io_slave_0_r_bits_id(DDR4_0_S_AXI_rid)
+        .io_slave_0_r_bits_id(DDR4_0_S_AXI_rid),
+
+        .io_qsfp_channel_up_0(QSFP0_CHANNEL_UP),
+        .io_qsfp_tx_0_ready(TO_QSFP0_READY),
+        .io_qsfp_tx_0_valid(TO_QSFP0_VALID),
+        .io_qsfp_tx_0_bits(TO_QSFP0_DATA),
+
+        .io_qsfp_rx_0_ready(FROM_QSFP0_READY),
+        .io_qsfp_rx_0_valid(FROM_QSFP0_VALID),
+        .io_qsfp_rx_0_bits(FROM_QSFP0_DATA),
+
+        .io_qsfp_channel_up_1(QSFP1_CHANNEL_UP),
+        .io_qsfp_tx_1_ready(TO_QSFP1_READY),
+        .io_qsfp_tx_1_valid(TO_QSFP1_VALID),
+        .io_qsfp_tx_1_bits(TO_QSFP1_DATA),
+
+        .io_qsfp_rx_1_ready(FROM_QSFP1_READY),
+        .io_qsfp_rx_1_valid(FROM_QSFP1_VALID),
+        .io_qsfp_rx_1_bits(FROM_QSFP1_DATA)
     );
 
 endmodule

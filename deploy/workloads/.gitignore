@@ -10,8 +10,6 @@ bw-test-two-instances/*.riscv
 linux-poweroff
 unittest/STRESSRUNS
 /gapbs
-sha3-bare-rocc.json
-sha3-bare-rocc/
 sha3-bare-sw.json
 sha3-bare-sw/
 sha3-linux-jtr-crack.json

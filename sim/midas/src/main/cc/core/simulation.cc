@@ -126,6 +126,10 @@ int simulation_t::execute_simulation_flow() {
     }
   }
 
+  if (auto *fpga_stream = registry.get_fpga_stream_engine()) {
+    fpga_stream->init();
+  }
+
   if (auto *stream = registry.get_stream_engine()) {
     stream->init();
   }

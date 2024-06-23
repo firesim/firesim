@@ -6,12 +6,13 @@
 #include <unistd.h>
 
 #include "bridges/cpu_managed_stream.h"
+#include "bridges/fpga_managed_stream.h"
 #include "core/simif.h"
 
 #include <fpga_mgmt.h>
 #include <fpga_pci.h>
 
-class simif_f1_t final : public simif_t, public CPUManagedStreamIO {
+class simif_f1_t final : public simif_t, public BiDirectionalManagedStreamIO {
 public:
   simif_f1_t(const TargetConfig &config, const std::vector<std::string> &args);
   ~simif_f1_t();
@@ -25,15 +26,20 @@ public:
   void fpga_setup(int slot_id, const std::string &agfi);
 
   CPUManagedStreamIO &get_cpu_managed_stream_io() override { return *this; }
+  FPGAManagedStreamIO &get_fpga_managed_stream_io() override { return *this; }
 
 private:
   uint32_t mmio_read(size_t addr) override { return read(addr); }
+  void mmio_write(size_t addr, uint32_t value) override {
+    return write(addr, value);
+  }
   size_t
   cpu_managed_axi4_write(size_t addr, const char *data, size_t size) override;
   size_t cpu_managed_axi4_read(size_t addr, char *data, size_t size) override;
   uint64_t get_beat_bytes() const override {
     return config.cpu_managed->beat_bytes();
   }
+  char *get_memory_base() override { return NULL; }
 
   int edma_write_fd;
   int edma_read_fd;

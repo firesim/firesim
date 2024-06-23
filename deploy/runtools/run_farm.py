@@ -13,6 +13,7 @@ import pprint
 from collections import defaultdict
 
 from awstools.awstools import instances_sorted_by_avail_ip, get_run_instances_by_tag_type, get_private_ips_for_instances, launch_run_instances, wait_on_instance_launches, terminate_instances, get_instance_ids_for_instances, aws_resource_names, MockBoto3Instance
+from runtools.firesim_topology_elements import FireSimPipeNode
 from util.inheritors import inheritors
 from util.io import firesim_input
 from runtools.run_farm_deploy_managers import InstanceDeployManager, EC2InstanceDeployManager
@@ -29,7 +30,7 @@ class Inst(metaclass=abc.ABCMeta):
 
     Attributes:
         run_farm: handle to run farm this instance is a part of
-        MAX_SWITCH_SLOTS_ALLOWED: max switch slots allowed (hardcoded)
+        MAX_SWITCH_AND_PIPE_SLOTS_ALLOWED: max switch slots allowed (hardcoded)
         switch_slots: switch node slots
         _next_switch_port: next switch port to assign
         MAX_SIM_SLOTS_ALLOWED: max simulations allowed. given by `config_runfarm.yaml`
@@ -44,9 +45,12 @@ class Inst(metaclass=abc.ABCMeta):
 
     # switch variables
     # restricted by default security group network model port alloc (10000 to 11000)
-    MAX_SWITCH_SLOTS_ALLOWED: int = 1000
+    MAX_SWITCH_AND_PIPE_SLOTS_ALLOWED: int = 1000
     switch_slots: List[FireSimSwitchNode]
     _next_switch_port: int
+
+    # pipe variables
+    pipe_slots: List[FireSimPipeNode]
 
     # simulation variables (e.g. maximum supported number of {fpga,meta}-sims)
     MAX_SIM_SLOTS_ALLOWED: int
@@ -72,6 +76,8 @@ class Inst(metaclass=abc.ABCMeta):
         self.switch_slots = []
         self._next_switch_port = 10000 # track ports to allocate for server switch model ports
 
+        self.pipe_slots = []
+
         self.MAX_SIM_SLOTS_ALLOWED = max_sim_slots_allowed
         self.sim_slots = []
 
@@ -82,6 +88,9 @@ class Inst(metaclass=abc.ABCMeta):
         self.instance_deploy_manager = instance_deploy_manager(self)
 
         self.host = None
+
+    def switch_and_pipe_slots(self) -> int:
+        return len(self.switch_slots) + len(self.pipe_slots)
 
     def set_sim_dir(self, drctry: str) -> None:
         self.sim_dir = drctry
@@ -106,9 +115,15 @@ class Inst(metaclass=abc.ABCMeta):
 
     def add_switch(self, firesimswitchnode: FireSimSwitchNode) -> None:
         """ Add a switch to the next available switch slot. """
-        assert len(self.switch_slots) < self.MAX_SWITCH_SLOTS_ALLOWED
+        assert self.switch_and_pipe_slots() < self.MAX_SWITCH_AND_PIPE_SLOTS_ALLOWED
         self.switch_slots.append(firesimswitchnode)
         firesimswitchnode.assign_host_instance(self)
+
+    def add_pipe(self, firesimpipenode: FireSimPipeNode) -> None:
+        """ Add a pipe to the next available pipe slot. """
+        assert self.switch_and_pipe_slots() < self.MAX_SWITCH_AND_PIPE_SLOTS_ALLOWED
+        self.pipe_slots.append(firesimpipenode)
+        firesimpipenode.assign_host_instance(self)
 
     def allocate_host_port(self) -> int:
         """ Allocate a port to use for something on the host. Successive calls
@@ -208,6 +223,7 @@ class RunFarm(metaclass=abc.ABCMeta):
 
     def allocate_sim_host(self, sim_host_handle: str) -> Inst:
         """Let user allocate and use an run host (assign sims, etc.) given it's handle."""
+        rootLogger.info(f"run_farm_hosts_dict {self.run_farm_hosts_dict}")
         inst_tup = self.run_farm_hosts_dict[sim_host_handle][self.mapper_consumed[sim_host_handle]]
         inst_ret = inst_tup[0]
         self.mapper_consumed[sim_host_handle] += 1

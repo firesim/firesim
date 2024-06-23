@@ -39,7 +39,7 @@ object ImplementThreadedMems {
   private def wssf(e: Expression, f0: String, f1: String): WSubField = WSubField(wsf(e, f0), f1)
   private def prim(op: PrimOp, args: Seq[Expression]) = DoPrim(op, args, Nil, UnknownType)
 
-  private def implement(tMem: ThreadedMem, moduleName: String): Module = {
+  private def implement(tMem: ThreadedMem, moduleName: String, useTargetClock: Boolean): Module = {
     val info = FAME5Info.info
     val tIdxMax = UIntLiteral(tMem.nThreads-1)
 
@@ -55,10 +55,15 @@ object ImplementThreadedMems {
       case Field(name, Flip, tpe) => Port(info, name, Input, tpe)
     }
 
+// ports.foreach (p => println(s"ImplementThreadedMems threadedmems.port ${moduleName} ${p.name}"))
+    val targetClocks = ports.filter(p => p.name contains "clk")
+    val targetClockPort = targetClocks.headOption.getOrElse(hostClockPort)
+    val clockToUse = if (useTargetClock) targetClockPort else hostClockPort
+
     val ns = Namespace(ports.map(p => p.name))
 
     def hostRegNext(name: String, expr: Expression): (Block, WRef) = {
-      val reg = DefRegister(info, name, expr.tpe, WRef(hostClockPort), UIntLiteral(0), WRef(name))
+      val reg = DefRegister(info, name, expr.tpe, WRef(clockToUse), UIntLiteral(0), WRef(name))
       val conn = Connect(info, WRef(reg), expr)
       (Block(reg, conn), WRef(reg))
     }
@@ -84,7 +89,7 @@ object ImplementThreadedMems {
           val maxBase = UIntLiteral((tMem.nThreads-1)*tMem.proto.depth)
           val baseName = ns.newName("base_addr_counter")
           val baseRef = WRef(baseName)
-          val baseDecl = DefRegister(info, baseName, maxBase.tpe, WRef(hostClockPort), UIntLiteral(0), baseRef)
+          val baseDecl = DefRegister(info, baseName, maxBase.tpe, WRef(clockToUse), UIntLiteral(0), baseRef)
           val baseUpdate = Connect(
             info,
             baseRef,
@@ -151,21 +156,21 @@ object ImplementThreadedMems {
     }
   }
 
-  private def onStmt(ns: Namespace, implementations: mutable.Map[ThreadedMem, Module])(stmt: Statement): Statement = {
+  private def onStmt(ns: Namespace, implementations: mutable.Map[ThreadedMem, Module], useTargetClock: Boolean)(stmt: Statement): Statement = {
     stmt match {
       case tMem: ThreadedMem =>
         val anon = tMem.copy(proto = tMem.proto.copy(name = ""))
-        val impl = implementations.getOrElseUpdate(anon, implement(tMem, ns.newName("ThreadedMem")))
+        val impl = implementations.getOrElseUpdate(anon, implement(tMem, ns.newName("ThreadedMem"), useTargetClock))
         WDefInstance(tMem.proto.name, impl.name)
-      case s => s.map(onStmt(ns, implementations)(_))
+      case s => s.map(onStmt(ns, implementations, useTargetClock)(_))
     }
   }
 
-  def apply(circuit: Circuit): Circuit = {
+  def apply(circuit: Circuit, useTargetClock: Boolean = false): Circuit = {
     val moduleNS = Namespace(circuit)
     val tMemImplementations = new mutable.LinkedHashMap[ThreadedMem, Module]
     val modulesX = circuit.modules.map {
-      case m: Module => m.copy(body = onStmt(moduleNS, tMemImplementations)(m.body))
+      case m: Module => m.copy(body = onStmt(moduleNS, tMemImplementations, useTargetClock)(m.body))
       case m => m
     }
     val tMemMods = tMemImplementations.map { case (k, v) => v }

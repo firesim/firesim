@@ -267,6 +267,9 @@ class CPUManagedStreamEngine(p: Parameters, val params: StreamEngineParameters) 
     val sourceDriverParameters = implementStreams(sourceParams, streamsToHostCPU,   elaborateToHostCPUStream).toSeq
     val sinkDriverParameters   = implementStreams(sinkParams,   streamsFromHostCPU, elaborateFromHostCPUStream).toSeq
 
+    sourceParams.foreach(p => println(s"src  AS bits: ${log2Ceil(bufferWidthBytes * p.fpgaBufferDepth)}"))
+    sinkParams  .foreach(p => println(s"sink AS bits: ${log2Ceil(bufferWidthBytes * p.fpgaBufferDepth)}"))
+
     genCRFile()
 
     override def genHeader(base: BigInt, memoryRegions: Map[String, BigInt], sb: StringBuilder): Unit = {
@@ -292,6 +295,21 @@ class CPUManagedStreamEngine(p: Parameters, val params: StreamEngineParameters) 
           ),
           "GET_MANAGED_STREAM_CONSTRUCTOR"
       )
+    }
+
+    override def genPeerToPeerAddrMap(sb: StringBuilder): Unit = {
+      sourceDriverParameters.foreach({ dp =>
+        sb.append(s"${dp.name}:\n")
+        sb.append(s"  bufferBaseAddress: ${dp.bufferBaseAddress}\n")
+        sb.append(s"  bufferCapacity:    ${dp.bufferCapacity}\n")
+        sb.append(s"  bufferWidthBytes:  ${dp.bufferWidthBytes}\n")
+      })
+      sinkDriverParameters.foreach({ dp =>
+        sb.append(s"${dp.name}:\n")
+        sb.append(s"  bufferBaseAddress: ${dp.bufferBaseAddress}\n")
+        sb.append(s"  bufferCapacity:    ${dp.bufferCapacity}\n")
+        sb.append(s"  bufferWidthBytes:  ${dp.bufferWidthBytes}\n")
+      })
     }
   }
 }

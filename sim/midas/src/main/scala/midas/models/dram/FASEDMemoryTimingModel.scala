@@ -268,7 +268,7 @@ class FASEDMemoryTimingModel(completeConfig: CompleteConfig, hostParams: Paramet
     val ingress = Module(new IngressModule(cfg))
 
     val nastiToHostDRAM = Wire(new NastiIO)
-    AXI4NastiAssigner.toAXI4(toHostDRAM, nastiToHostDRAM)
+    AXI4NastiAssigner.toAXI4Slave(toHostDRAM, nastiToHostDRAM)
     nastiToHostDRAM.aw <> ingress.io.nastiOutputs.aw
     nastiToHostDRAM.ar <> ingress.io.nastiOutputs.ar
     nastiToHostDRAM.w  <> ingress.io.nastiOutputs.w

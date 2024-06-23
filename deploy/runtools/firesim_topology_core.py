@@ -5,7 +5,7 @@ topology.
 from __future__ import annotations
 
 from runtools.user_topology import UserTopologies
-from runtools.firesim_topology_elements import FireSimSwitchNode, FireSimServerNode
+from runtools.firesim_topology_elements import FireSimSwitchNode, FireSimServerNode, FireSimPipeNode
 
 from typing import List, Callable, Optional, Union, TYPE_CHECKING
 if TYPE_CHECKING:
@@ -52,6 +52,10 @@ class FireSimTopology(UserTopologies):
     def get_dfs_order_servers(self) -> List[FireSimServerNode]:
         """ Utility function that returns only servers, in dfs order. """
         return [x for x in self.get_dfs_order() if isinstance(x, FireSimServerNode)]
+
+    def get_dfs_order_pipes(self) -> List[FireSimPipeNode]:
+        """ Utility function that returns only partition hubs, in dfs order. """
+        return [x for x in self.get_dfs_order() if isinstance(x, FireSimPipeNode)]
 
     def get_bfs_order(self) -> None:
         """ return the nodes in the topology in bfs order """

@@ -12,10 +12,15 @@ heartbeat_t::heartbeat_t(simif_t &sim,
                          const std::vector<std::string> &args)
     : bridge_driver_t(sim, &KIND), clock(clock) {
   auto interval_arg = std::string("+heartbeat-polling-interval=");
+  auto partitioned_arg = std::string("+partitioned=");
   for (const auto &arg : args) {
     if (arg.find(interval_arg) == 0) {
       char *str = const_cast<char *>(arg.c_str()) + interval_arg.length();
       polling_interval = atol(str);
+    }
+    if (arg.find(partitioned_arg) == 0) {
+      char *str = const_cast<char *>(arg.c_str()) + partitioned_arg.length();
+      ignore_heartbeat = atoi(str);
     }
   }
 
@@ -32,7 +37,9 @@ void heartbeat_t::tick() {
   if (trip_count == polling_interval) {
     trip_count = 0;
     uint64_t current_cycle = clock.tcycle();
-    has_timed_out |= current_cycle == last_cycle;
+    if (!ignore_heartbeat) {
+      has_timed_out |= current_cycle == last_cycle;
+    }
 
     time_t current_time;
     time(&current_time);
