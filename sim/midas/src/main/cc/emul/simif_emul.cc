@@ -24,9 +24,6 @@ simif_emul_t::simif_emul_t(const TargetConfig &config,
   bool noc_part = false;
   bool comb_logic = false;
   for (auto arg : args) {
-    if (arg.find("+fastloadmem") == 0) {
-      fastloadmem = true;
-    }
     if (arg.find("+memsize=") == 0) {
       memsize = strtoll(arg.c_str() + 9, NULL, 10);
     }
@@ -164,7 +161,7 @@ void simif_emul_t::start_driver(simulation_t &sim) {
 
       // Load memories before initialising the simulation.
       if (!load_mem_path.empty()) {
-        fprintf(stdout, "[fast loadmem] %s\n", load_mem_path.c_str());
+        fprintf(stdout, "[fast loadmem] loadmem path exists, load simulation memories without loadmem_t widget, path = %s\n", load_mem_path.c_str());
         load_mems(load_mem_path.c_str());
       }
 
