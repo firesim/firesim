@@ -1,6 +1,6 @@
 import Tests._
 
-val chiselVersion = "3.6.0"
+val chiselVersion = "3.6.1"
 
 // keep chisel/firrtl specific class files, rename other conflicts
 val chiselFirrtlMergeStrategy = CustomMergeStrategy.rename { dep =>
@@ -56,11 +56,11 @@ lazy val commonSettings = Seq(
 
 lazy val chiselSettings = Seq(
   libraryDependencies ++= Seq(
-    "edu.berkeley.cs" %% "chisel3" % "3.6.0",
+    "edu.berkeley.cs" %% "chisel3" % "3.6.1",
     "org.apache.commons" % "commons-lang3" % "3.12.0",
     "org.apache.commons" % "commons-text" % "1.9"
   ),
-  addCompilerPlugin("edu.berkeley.cs" % "chisel3-plugin" % "3.6.0" cross CrossVersion.full)
+  addCompilerPlugin("edu.berkeley.cs" % "chisel3-plugin" % "3.6.1" cross CrossVersion.full)
 )
 
 lazy val firesimAsLibrary = sys.env.get("FIRESIM_STANDALONE") == None
