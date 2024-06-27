@@ -493,7 +493,7 @@ class RuntimeHWConfig:
                     local(f"tar xvf {destination} -C {temp_dir}")
 
                     # read string from metadata
-                    cap = local(f"cat {temp_dir}/{self.platform}/metadata", capture=True)
+                    cap = local(f"cat {temp_dir}/*/metadata", capture=True)
                     metadata = firesim_description_to_tags(cap)
 
                     self.set_platform(metadata['firesim-deployquintuplet'].split("-")[0])
