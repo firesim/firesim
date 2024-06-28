@@ -195,7 +195,6 @@ class CospikeBridgeModule(params: CospikeBridgeParams)(implicit p: Parameters)
           UInt32(traces.length),
           UInt32(bitsPerTrace),
           CStrLit(params.cfg.isa),
-          UInt32(params.cfg.vlen),
           CStrLit(params.cfg.priv),
           UInt32(params.cfg.pmpregions),
           UInt64(params.cfg.mem0_base),

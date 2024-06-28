@@ -25,7 +25,6 @@ public:
             uint32_t num_commit_insts,
             uint32_t bits_per_trace,
             const char *isa,
-            uint32_t vlen,
             const char *priv,
             uint32_t pmp_regions,
             uint64_t mem0_base,
@@ -60,7 +59,6 @@ private:
   trace_cfg_t _trace_cfg;
 
   const char *_isa;
-  uint32_t _vlen;
   const char *_priv;
   uint32_t _pmp_regions;
   uint64_t _mem0_base;
