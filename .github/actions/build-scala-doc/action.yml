@@ -6,6 +6,11 @@ runs:
   steps:
     - run: |
         cat env.sh
+        conda info
+        conda info --base
+        cat $(conda info --base)/etc/profile.d/conda.sh
+        conda activate --help >& /dev/null
+        set -x
         source env.sh
         which conda
         source env.sh && make -C sim scaladoc

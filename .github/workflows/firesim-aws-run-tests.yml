@@ -14,10 +14,10 @@ defaults:
 env:
   PERSONAL_ACCESS_TOKEN: ${{ secrets.BARTENDER_PERSONAL_ACCESS_TOKEN }}
   GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-  AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID_08012023 }}
-  AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY_08012023 }}
-  AWS_DEFAULT_REGION: ${{ secrets.AWS_DEFAULT_REGION_08012023 }}
-  FIRESIM_PEM: ${{ secrets.FIRESIM_PEM_08012023 }}
+  AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
+  AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+  AWS_DEFAULT_REGION: ${{ secrets.AWS_DEFAULT_REGION }}
+  FIRESIM_PEM: ${{ secrets.FIRESIM_PEM }}
   FIRESIM_PEM_PUBLIC: ${{ secrets.FIRESIM_PEM_PUBLIC }}
   AZURE_CLIENT_ID: ${{ secrets.AZURE_CLIENT_ID }}
   AZURE_CLIENT_SECRET: ${{ secrets.AZURE_CLIENT_SECRET }}
@@ -90,7 +90,7 @@ jobs:
   setup-self-hosted-manager:
     name: setup-self-hosted-manager
     needs: change-filters
-    if: needs.change-filters.outputs.needs-manager == 'true'
+    if: ${{ (needs.change-filters.outputs.needs-manager == 'true') && contains(github.event.pull_request.labels.*.name, 'ci:aws-ci-enabled') }}
     runs-on: ubuntu-20.04
     steps:
       - uses: actions/checkout@v4
