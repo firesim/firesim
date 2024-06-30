@@ -91,18 +91,18 @@ VLOG_EXT = sv v
 
 firesim_source_dirs = \
 	$(addprefix $(firesim_base_dir)/,\
-			. \
+			src \
 			midas \
 			midas/targetutils \
 			firesim-lib \
 	)
 
 firesim_main_srcs = \
-	$(call fs_lookup_srcs_by_multiple_type, $(firesim_source_dirs), 'src/main/scala', $(SCALA_EXT)) \
-	$(call fs_lookup_srcs_by_multiple_type, $(firesim_source_dirs), 'src/main/resources', $(VLOG_EXT))
+	$(call fs_lookup_srcs_by_multiple_type, $(firesim_source_dirs), 'main/scala', $(SCALA_EXT)) \
+	$(call fs_lookup_srcs_by_multiple_type, $(firesim_source_dirs), 'main/resources', $(VLOG_EXT))
 firesim_test_srcs = \
-	$(call fs_lookup_srcs_by_multiple_type, $(firesim_source_dirs), 'src/test/scala', $(SCALA_EXT)) \
-	$(call fs_lookup_srcs_by_multiple_type, $(firesim_source_dirs), 'src/test/resources', $(VLOG_EXT))
+	$(call fs_lookup_srcs_by_multiple_type, $(firesim_source_dirs), 'test/scala', $(SCALA_EXT)) \
+	$(call fs_lookup_srcs_by_multiple_type, $(firesim_source_dirs), 'test/resources', $(VLOG_EXT))
 
 FIRESIM_MAIN_CP := $(BUILD_DIR)/firesim-main.jar
 # if *_CLASSPATH is a true java classpath, it can be colon-delimited list of paths (on *nix)
