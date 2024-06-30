@@ -51,7 +51,8 @@ jobs:
   publish-scala-doc:
     name: publish-scala-doc
     needs: change-filters
-    if: needs.change-filters.outputs.needs-scala-doc == 'true'
+    # UNDO(abegonzalez): for testing
+    #if: needs.change-filters.outputs.needs-scala-doc == 'true'
     runs-on: ubuntu-20.04
     steps:
       - uses: actions/checkout@v4
