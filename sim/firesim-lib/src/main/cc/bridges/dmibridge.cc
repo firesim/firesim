@@ -126,12 +126,13 @@ void dmibridge_t::handle_loadmem_read(firesim_loadmem_t loadmem) {
     loadmem_widget.read_mem(loadmem.addr + mem_host_offset, buf);
     // If the read word is 0; mpz_export seems to return an array with length 0
     size_t beats_requested =
-        (loadmem.size / sizeof(uint32_t) > loadmem_widget.get_mem_data_chunk()) ? loadmem_widget.get_mem_data_chunk()
+        (loadmem.size / sizeof(uint32_t) > loadmem_widget.get_mem_data_chunk())
+            ? loadmem_widget.get_mem_data_chunk()
             : loadmem.size / sizeof(uint32_t);
 
     // The number of beats exported from buf; may be less than beats requested.
     size_t non_zero_beats;
-    uint32_t *data = (uint32_t *) mpz_export(
+    uint32_t *data = (uint32_t *)mpz_export(
         NULL, &non_zero_beats, -1, sizeof(uint32_t), 0, 0, buf);
     for (size_t j = 0; j < beats_requested; j++) {
       if (j < non_zero_beats) {
@@ -200,7 +201,7 @@ void dmibridge_t::tick() {
     // NOTE: these are equivalent to recv() in tsibridge
     out_resp.resp = read(mmio_addrs.out_bits_resp);
     out_resp.data = read(mmio_addrs.out_bits_data);
-    //printf("DEBUG: Resp read: resp(0x%x) data(0x%x)\n", out_resp.resp,
+    // printf("DEBUG: Resp read: resp(0x%x) data(0x%x)\n", out_resp.resp,
     //  out_resp.data);
     write(mmio_addrs.out_ready, 1);
   }
@@ -209,13 +210,13 @@ void dmibridge_t::tick() {
   fesvr->tick(read(mmio_addrs.in_ready), resp_valid, out_resp);
 
   if (fesvr->has_loadmem_reqs()) {
-      dmi_bypass_via_loadmem();
+    dmi_bypass_via_loadmem();
   }
 
   if (!terminate()) {
     if (fesvr->req_valid() && read(mmio_addrs.in_ready)) {
       dtm_t::req in_req = fesvr->req_bits();
-      //printf("DEBUG: Req sent: addr(0x%x) op(0x%x) data(0x%x)\n",
+      // printf("DEBUG: Req sent: addr(0x%x) op(0x%x) data(0x%x)\n",
       //  in_req.addr, in_req.op, in_req.data);
 
       // NOTE: these are equivalent to send() in tsibridge
