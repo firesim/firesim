@@ -62,8 +62,8 @@ struct StreamParameters {
   StreamParameters(const std::string &stream_name,
                    uint64_t dma_addr,
                    uint64_t count_addr,
-                   int fpga_buffer_size,
-                   int fpga_buffer_width_bytes)
+                   uint32_t fpga_buffer_size,
+                   uint32_t fpga_buffer_width_bytes)
       : stream_name(stream_name), dma_addr(dma_addr), count_addr(count_addr),
         fpga_buffer_size(fpga_buffer_size),
         fpga_buffer_width_bytes(fpga_buffer_width_bytes) {}
@@ -106,7 +106,7 @@ public:
   }
 
   // Accessors to avoid directly operating on params
-  int fpga_buffer_size() { return params.fpga_buffer_size; };
+  uint32_t fpga_buffer_size() { return params.fpga_buffer_size; };
   uint64_t dma_addr() { return params.dma_addr; };
   uint64_t count_addr() { return params.count_addr; };
   uint64_t fpga_buffer_width_bytes() const {
