@@ -7,6 +7,7 @@ import logging
 import os
 
 from datetime import datetime, timedelta
+from itertools import chain
 import time
 import sys
 import json
@@ -631,7 +632,18 @@ def terminate_instances(instanceids: List[str], dryrun: bool = True) -> None:
     """ Terminate instances when given a list of instance ids.  for safety,
     this supplies dryrun=True by default. """
     client = boto3.client('ec2')
-    client.terminate_instances(InstanceIds=instanceids, DryRun=dryrun)
+    response = client.describe_instances(
+        InstanceIds=instanceids,
+        # Get only pending (0), running (16), stopping (64) or stopped (80) instances
+        Filters=[{"Name": "instance-state-code", "Values": ["0", "16", "64", "80"]}],
+    )
+    runninginstanceids = [
+        i["InstanceId"] for i in chain(*chain(
+            [reservation["Instances"] for reservation in response["Reservations"]]
+        ))
+    ]
+    if runninginstanceids:
+        client.terminate_instances(InstanceIds=runninginstanceids, DryRun=dryrun)
 
 def auto_create_bucket(userbucketname: str) -> None:
     """ Check if the user-specified s3 bucket is available.
