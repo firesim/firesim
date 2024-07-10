@@ -46,31 +46,31 @@ sim_binary_basename := $(basename $(notdir $(SIM_BINARY)))
 run-verilator: $(verilator)
 	cd $(dir $<) && \
 	$(verilator) +permissive $(verilator_args) $(COMMON_SIM_ARGS) $(MIDAS_LEVEL_SIM_ARGS) $(EXTRA_SIM_ARGS) +permissive-off $(abspath $(SIM_BINARY)) </dev/null \
-	$(disasm) $(sim_binary_basename).out
+	$(disasm) $(firesim_base_dir)/$(sim_binary_basename).out
 
 run-verilator-debug: $(verilator_debug)
 	cd $(dir $<) && \
 	$(verilator_debug) +permissive $(verilator_args) +waveformfile=$(sim_binary_basename).vcd $(COMMON_SIM_ARGS) $(MIDAS_LEVEL_SIM_ARGS) $(EXTRA_SIM_ARGS) +permissive-off $(abspath $(SIM_BINARY)) </dev/null \
-	$(disasm) $(sim_binary_basename).out
+	$(disasm) $(firesim_base_dir)/$(sim_binary_basename).out
 
 run-vcs: $(vcs)
 	cd $(dir $<) && \
 	$(vcs) +permissive $(vcs_args) $(COMMON_SIM_ARGS) $(MIDAS_LEVEL_SIM_ARGS) $(EXTRA_SIM_ARGS) +permissive-off $(abspath $(SIM_BINARY)) </dev/null \
-	$(disasm) $(sim_binary_basename).out
+	$(disasm) $(firesim_base_dir)/$(sim_binary_basename).out
 
 run-vcs-debug: $(vcs_debug)
 	cd $(dir $<) && \
 	$(vcs_debug) +permissive $(vcs_args) +fsdbfile=$(sim_binary_basename).fsdb $(COMMON_SIM_ARGS) $(MIDAS_LEVEL_SIM_ARGS) $(EXTRA_SIM_ARGS) +permissive-off $(abspath $(SIM_BINARY)) </dev/null \
-	$(disasm) $(sim_binary_basename).out
+	$(disasm) $(firesim_base_dir)/$(sim_binary_basename).out
 
 run-xcelium: $(xcelium)
 	cd $(dir $<) && \
 	$(xcelium) +permissive $(vcs_args) $(COMMON_SIM_ARGS) $(MIDAS_LEVEL_SIM_ARGS) $(EXTRA_SIM_ARGS) +permissive-off $(abspath $(SIM_BINARY)) </dev/null \
-	$(disasm) $(sim_binary_basename).out
+	$(disasm) $(firesim_base_dir)/$(sim_binary_basename).out
 
 run-xsim: $(xsim)
 	cd $(dir $<) && ./$(notdir $<)  +permissive $(COMMON_SIM_ARGS) $(FPGA_LEVEL_SIM_ARGS) $(EXTRA_SIM_ARGS) +permissive-off $(abspath $(SIM_BINARY)) </dev/null \
-	$(disasm) $(sim_binary_basename).out
+	$(disasm) $(firesim_base_dir)/$(sim_binary_basename).out
 
 .PHONY: run-verilator run-verilator-debug run-vcs run-vcs-debug run-xcelium run-xsim
 

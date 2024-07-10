@@ -1,19 +1,19 @@
 // See LICENSE for license details
 
-#include "tsibridge.h"
+#include "dmibridge.h"
 #include "bridges/loadmem.h"
 #include "core/simif.h"
-#include "fesvr/firesim_tsi.h"
+#include "fesvr/firesim_dtm.h"
 
 #include <cassert>
 #include <gmp.h>
 
-char tsibridge_t::KIND;
+char dmibridge_t::KIND;
 
-tsibridge_t::tsibridge_t(simif_t &simif,
+dmibridge_t::dmibridge_t(simif_t &simif,
                          loadmem_t &loadmem_widget,
-                         const TSIBRIDGEMODULE_struct &mmio_addrs,
-                         int tsino,
+                         const DMIBRIDGEMODULE_struct &mmio_addrs,
+                         int dmino,
                          const std::vector<std::string> &args,
                          bool has_mem,
                          int64_t mem_host_offset)
@@ -21,10 +21,10 @@ tsibridge_t::tsibridge_t(simif_t &simif,
       loadmem_widget(loadmem_widget), has_mem(has_mem),
       mem_host_offset(mem_host_offset) {
 
-  const std::string num_equals = std::to_string(tsino) + std::string("=");
-  const std::string prog_arg = std::string("+prog") + num_equals;
+  std::string num_equals = std::to_string(dmino) + std::string("=");
+  std::string prog_arg = std::string("+prog") + num_equals;
   std::vector<std::string> args_vec;
-  args_vec.push_back("firesim_tsi");
+  args_vec.push_back("firesim_dtm");
 
   // This particular selection is vestigial. You may change it freely.
   step_size = 2004765L;
@@ -69,68 +69,54 @@ tsibridge_t::tsibridge_t(simif_t &simif,
   }
 
   int argc_count = args_vec.size() - 1;
-  tsi_argv = new char *[args_vec.size()];
+  dmi_argv = new char *[args_vec.size()];
   for (size_t i = 0; i < args_vec.size(); ++i) {
-    tsi_argv[i] = new char[args_vec[i].size() + 1];
-    std::strcpy(tsi_argv[i], args_vec[i].c_str());
+    dmi_argv[i] = new char[args_vec[i].size() + 1];
+    std::strcpy(dmi_argv[i], args_vec[i].c_str());
   }
 
   // debug for command line arguments
-  printf("command line for program %d. argc=%d:\n", tsino, argc_count);
+  printf("command line for program %d. argc=%d:\n", dmino, argc_count);
   for (int i = 0; i < argc_count; i++) {
-    printf("%s ", tsi_argv[i + 1]);
+    printf("%s ", dmi_argv[i + 1]);
   }
   printf("\n");
 
-  tsi_argc = argc_count + 1;
+  dmi_argc = argc_count + 1;
 }
 
-tsibridge_t::~tsibridge_t() {
+dmibridge_t::~dmibridge_t() {
   if (fesvr)
     delete fesvr;
-  if (tsi_argv) {
-    for (int i = 0; i < tsi_argc; ++i) {
-      if (tsi_argv[i])
-        delete[] tsi_argv[i];
+  if (dmi_argv) {
+    for (int i = 0; i < dmi_argc; ++i) {
+      if (dmi_argv[i])
+        delete[] dmi_argv[i];
     }
-    delete[] tsi_argv;
+    delete[] dmi_argv;
   }
 }
 
-void tsibridge_t::init() {
-  // `ucontext` used by tsi cannot be created in one thread and resumed in
-  // another. To ensure that the tsi process is on the correct thread, it is
+void dmibridge_t::init() {
+  // `ucontext` used by dmi cannot be created in one thread and resumed in
+  // another. To ensure that the dmi process is on the correct thread, it is
   // built here, as the bridge constructor may be invoked from a thread other
   // than the one it will run on later in meta-simulations.
-  fesvr = new firesim_tsi_t(tsi_argc, tsi_argv, has_mem);
+  fesvr = new firesim_dtm_t(dmi_argc, dmi_argv, has_mem);
   if (fast_fesvr) {
-    printf("tsibridge_t::init set FESVR step-size to %" PRIu32 " initially\n",
+    printf("dmibridge_t::init set FESVR step-size to %" PRIu32 " initially\n",
            loading_step_size);
     write(mmio_addrs.step_size, loading_step_size);
   } else {
     write(mmio_addrs.step_size, step_size);
-    fesvr->set_loaded_in_target(true); // pre-set to unblock fs_tsi_t::reset
+    fesvr->set_loaded_in_target(true); // pre-set to unblock fs_dtm_t::reset
   }
   go();
 }
 
-void tsibridge_t::go() { write(mmio_addrs.start, 1); }
+void dmibridge_t::go() { write(mmio_addrs.start, 1); }
 
-void tsibridge_t::send() {
-  while (fesvr->data_available() && read(mmio_addrs.in_ready)) {
-    write(mmio_addrs.in_bits, fesvr->recv_word());
-    write(mmio_addrs.in_valid, 1);
-  }
-}
-
-void tsibridge_t::recv() {
-  while (read(mmio_addrs.out_valid)) {
-    fesvr->send_word(read(mmio_addrs.out_bits));
-    write(mmio_addrs.out_ready, 1);
-  }
-}
-
-void tsibridge_t::handle_loadmem_read(firesim_loadmem_t loadmem) {
+void dmibridge_t::handle_loadmem_read(firesim_loadmem_t loadmem) {
   assert(loadmem.size % sizeof(uint32_t) == 0);
   assert(has_mem);
   // Loadmem reads are in granularities of the width of the FPGA-DRAM bus
@@ -138,12 +124,12 @@ void tsibridge_t::handle_loadmem_read(firesim_loadmem_t loadmem) {
   mpz_init(buf);
   while (loadmem.size > 0) {
     loadmem_widget.read_mem(loadmem.addr + mem_host_offset, buf);
-
     // If the read word is 0; mpz_export seems to return an array with length 0
     size_t beats_requested =
         (loadmem.size / sizeof(uint32_t) > loadmem_widget.get_mem_data_chunk())
             ? loadmem_widget.get_mem_data_chunk()
             : loadmem.size / sizeof(uint32_t);
+
     // The number of beats exported from buf; may be less than beats requested.
     size_t non_zero_beats;
     uint32_t *data = (uint32_t *)mpz_export(
@@ -158,11 +144,12 @@ void tsibridge_t::handle_loadmem_read(firesim_loadmem_t loadmem) {
     loadmem.size -= beats_requested * sizeof(uint32_t);
   }
   mpz_clear(buf);
+
   // Switch back to fesvr for it to process read data
-  fesvr->tick();
+  fesvr->switch_to_host();
 }
 
-void tsibridge_t::handle_loadmem_write(firesim_loadmem_t loadmem) {
+void dmibridge_t::handle_loadmem_write(firesim_loadmem_t loadmem) {
   assert(loadmem.size <= 4096);
   assert(has_mem);
   static char buf[4096]; // size chosen empirically based on chunk sizes
@@ -181,8 +168,9 @@ void tsibridge_t::handle_loadmem_write(firesim_loadmem_t loadmem) {
   mpz_clear(data);
 }
 
-void tsibridge_t::tsi_bypass_via_loadmem() {
+void dmibridge_t::dmi_bypass_via_loadmem() {
   firesim_loadmem_t loadmem;
+
   while (fesvr->has_loadmem_reqs()) {
     // Check for reads first as they preceed a narrow write;
     if (fesvr->recv_loadmem_read_req(loadmem))
@@ -192,42 +180,68 @@ void tsibridge_t::tsi_bypass_via_loadmem() {
   }
 }
 
-void tsibridge_t::tick() {
+void dmibridge_t::tick() {
   // First, check to see step_size tokens have been enqueued
   if (!read(mmio_addrs.done))
     return;
+
   if (wait_ticks != 0) {
     wait_ticks -= 1;
-    printf("tsibridge_t::tick skipping tick\n");
+    printf("dmibridge_t::tick skipping tick\n");
     go();
     return;
   }
-  // Collect all the responses from the target
-  this->recv();
-  // Punt to FESVR
-  if (!fesvr->data_available()) {
-    fesvr->tick();
+
+  // req from the host, resp from the target
+  // in(to) the target, out from the target
+
+  const auto resp_valid = read(mmio_addrs.out_valid);
+  dtm_t::resp out_resp;
+  if (resp_valid) {
+    // NOTE: these are equivalent to recv() in tsibridge
+    out_resp.resp = read(mmio_addrs.out_bits_resp);
+    out_resp.data = read(mmio_addrs.out_bits_data);
+    // printf("DEBUG: Resp read: resp(0x%x) data(0x%x)\n", out_resp.resp,
+    //  out_resp.data);
+    write(mmio_addrs.out_ready, 1);
   }
+
+  // non-overloaded dtm_t tick that sync's data + switches to host
+  fesvr->tick(read(mmio_addrs.in_ready), resp_valid, out_resp);
+
   if (fesvr->has_loadmem_reqs()) {
-    tsi_bypass_via_loadmem();
+    dmi_bypass_via_loadmem();
   }
+
   if (!terminate()) {
-    // Write all the requests to the target
-    this->send();
+    if (fesvr->req_valid() && read(mmio_addrs.in_ready)) {
+      dtm_t::req in_req = fesvr->req_bits();
+      // printf("DEBUG: Req sent: addr(0x%x) op(0x%x) data(0x%x)\n",
+      //  in_req.addr, in_req.op, in_req.data);
+
+      // NOTE: these are equivalent to send() in tsibridge
+      write(mmio_addrs.in_bits_addr, in_req.addr);
+      write(mmio_addrs.in_bits_op, in_req.op);
+      write(mmio_addrs.in_bits_data, in_req.data);
+      write(mmio_addrs.in_valid, 1);
+    }
+
     if (fast_fesvr) {
       if (fesvr->loaded_in_host()) {
-        if (!fesvr->data_available()) {
+        if (!fesvr->req_valid()) {
           fesvr->set_loaded_in_target(true); // done w/ firesim loading
-          printf("tsibridge_t::tick reverting FESVR step-size to %" PRIu32 "\n",
+          printf("dmibridge_t::tick reverting FESVR step-size to %" PRIu32 "\n",
                  step_size);
           write(mmio_addrs.step_size, step_size);
           fast_fesvr = false; // only write this user-defined step size once
         }
       }
     }
+
+    // Move forward step_size iterations
     go();
   }
 }
 
-bool tsibridge_t::terminate() { return fesvr->done(); }
-int tsibridge_t::exit_code() { return fesvr->exit_code(); }
+bool dmibridge_t::terminate() { return fesvr->done(); }
+int dmibridge_t::exit_code() { return fesvr->exit_code(); }

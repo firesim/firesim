@@ -164,7 +164,10 @@ void simif_emul_t::start_driver(simulation_t &sim) {
 
       // Load memories before initialising the simulation.
       if (!load_mem_path.empty()) {
-        fprintf(stdout, "[fast loadmem] %s\n", load_mem_path.c_str());
+        fprintf(stdout,
+                "[fast loadmem] loadmem path exists, load simulation memories "
+                "without loadmem_t widget, path = %s\n",
+                load_mem_path.c_str());
         load_mems(load_mem_path.c_str());
       }
 

@@ -13,6 +13,7 @@ clang_tidy_files := $(shell \
 		| grep -v simif_ \
 		| grep -v tracerv \
 		| grep -v tsibridge \
+		| grep -v dmibridge \
 		| grep -v fesvr \
 		| grep -v generated-src \
 		| grep -v output \
