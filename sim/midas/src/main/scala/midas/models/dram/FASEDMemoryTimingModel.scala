@@ -573,7 +573,7 @@ class FASEDMemoryTimingModel(completeConfig: CompleteConfig, hostParams: Paramet
     private def printGenerationConfig(): Unit = {
       println("Generating a Midas Memory Model")
       println("  Max Read Requests: " + cfg.maxReads)
-      println("  Max Write Requests: " + cfg.maxReads)
+      println("  Max Write Requests: " + cfg.maxWrites)
       println("  Max Read Length: " + cfg.maxReadLength)
       println("  Max Write Length: " + cfg.maxWriteLength)
       println("  Max Read ID Reuse: " + cfg.maxReadsPerID)
