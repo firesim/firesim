@@ -275,7 +275,7 @@ case class DramOrganizationParams(maxBanks: Int, maxRanks: Int, dramSize: BigInt
   require(isPow2(dramSize))
   require(isPow2(lineBits))
   def bankBits = log2Up(maxBanks)
-  def rankBits = log2Up(maxRanks)
+  def rankBits = if (maxRanks == 1) 0 else log2Up(maxRanks)
   def rowBits  = log2Ceil(dramSize) - lineBits
   def maxRows  = 1 << rowBits
 }
