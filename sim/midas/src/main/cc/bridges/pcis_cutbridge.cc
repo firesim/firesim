@@ -32,8 +32,7 @@ pcis_cutbridge_t::pcis_cutbridge_t(
     int to_host_dma_transactions,
     int stream_from_cpu_idx,
     int from_host_dma_transactions)
-    : streaming_bridge_driver_t(sim, stream, &KIND),
-      mmio_addrs(mmio_addrs),
+    : streaming_bridge_driver_t(sim, stream, &KIND), mmio_addrs(mmio_addrs),
       stream_to_cpu_idx(stream_to_cpu_idx),
       stream_from_cpu_idx(stream_from_cpu_idx) {
   std::string cutbridge_idx_arg =

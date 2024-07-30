@@ -30,8 +30,8 @@ private:
 firesim_top_t::firesim_top_t(simif_t &simif,
                              widget_registry_t &registry,
                              const std::vector<std::string> &args)
-    : systematic_scheduler_t(args), simulation_t(registry, args),
-      simif(simif), peek_poke(registry.get_widget<peek_poke_t>()) {
+    : systematic_scheduler_t(args), simulation_t(registry, args), simif(simif),
+      peek_poke(registry.get_widget<peek_poke_t>()) {
 
   // Cycles to advance before profiling instrumentation registers in models.
   std::optional<uint64_t> profile_interval;
