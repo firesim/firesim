@@ -19,7 +19,7 @@ endif
 
 firesim_base_dir := $(abspath .)
 
-# Set up environment variables pointing to Chipyard and SBT.
+# Set up environment variables pointing to Chipyard
 include make/chipyard.mk
 
 ##################
@@ -33,6 +33,8 @@ include make/chipyard.mk
 # Currently these projects are:
 # 	firesim: the default, Chipyard-based target-designs
 # 	midasexamples: simple chisel designs demonstrating FireSim's features
+# 	bridges: test bridges
+# 	fasedtests: test memory models and backing host memory system
 TARGET_PROJECT ?= firesim
 
 # Users can override this to point at a collections of Makefrags.
@@ -43,7 +45,7 @@ TARGET_PROJECT ?= firesim
 #   metasim.mk: define rules to run metasimulator binaries.
 TARGET_PROJECT_MAKEFRAG ?= $(firesim_base_dir)/src/main/makefrag/$(TARGET_PROJECT)
 
-# The host-platform type (currently only f1, vitis supported)
+# The host-platform type
 PLATFORM ?= f1
 
 ####################

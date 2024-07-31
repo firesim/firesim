@@ -15,11 +15,10 @@ TARGET_CONFIG ?= FireSimRocketConfig
 PLATFORM_CONFIG_PACKAGE ?= firesim.firesim
 PLATFORM_CONFIG ?= BaseF1Config
 
-# Directory where target-specific sources are located.
-TARGET_SRC_DIRS ?= $(chipyard_dir)/generators/
-
-# Project for the target.
+# Override project for the target.
 TARGET_SBT_PROJECT := firechip
 
-# Directory where sources are located.
-TARGET_SOURCE_DIRS = $(chipyard_dir)/generators
+# The following two are unused by this project's set of makefrags since
+# Chipyard's makefile is directly invoked.
+TARGET_SBT_DIR :=
+TARGET_SOURCE_DIRS :=
