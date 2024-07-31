@@ -155,7 +155,7 @@ FPGAManagedStreamWidget::FPGAManagedStreamWidget(
 
 uint64_t FPGAManagedStreamWidget::get_p2p_bar_address(const char *dir_name) {
   int ret;
-  uint64_t physical_addr;
+  uint64_t physical_addr = 0;
   if (!dir_name) {
     printf("dir_name is null\n");
     assert(false);
@@ -196,7 +196,10 @@ uint64_t FPGAManagedStreamWidget::get_p2p_bar_address(const char *dir_name) {
       physical_addr = addr_begin;
     }
   }
-  printf("get_p2p_bar_address physical_addr: 0x%" PRIx64 "\n", physical_addr);
   fclose(fp);
+
+  printf("get_p2p_bar_address physical_addr: 0x%" PRIx64 "\n", physical_addr);
+  assert(physical_addr != 0 && "Unable to get valid physical_addr");
+
   return physical_addr;
 }

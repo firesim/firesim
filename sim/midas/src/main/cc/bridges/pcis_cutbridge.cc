@@ -1,4 +1,3 @@
-
 #include "pcis_cutbridge.h"
 
 #include <cassert>
@@ -33,9 +32,9 @@ pcis_cutbridge_t::pcis_cutbridge_t(
     int to_host_dma_transactions,
     int stream_from_cpu_idx,
     int from_host_dma_transactions)
-    : streaming_bridge_driver_t(sim, stream, &KIND),
+    : streaming_bridge_driver_t(sim, stream, &KIND), mmio_addrs(mmio_addrs),
       stream_to_cpu_idx(stream_to_cpu_idx),
-      stream_from_cpu_idx(stream_from_cpu_idx), mmio_addrs(mmio_addrs) {
+      stream_from_cpu_idx(stream_from_cpu_idx) {
   std::string cutbridge_idx_arg =
       std::string("+cutbridgeidx") + std::to_string(dma_no) + std::string("=");
   std::string batchsize_arg = std::string("+batch-size=");
