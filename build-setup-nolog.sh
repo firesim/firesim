@@ -6,7 +6,6 @@
 set -e
 set -o pipefail
 
-unamestr=$(uname)
 FDIR=$( cd -- "$( dirname -- "${BASH_SOURCE[0]}" )" &> /dev/null && pwd )
 cd "$FDIR"
 
@@ -28,12 +27,6 @@ do
    case "$1" in
         --library)
             IS_LIBRARY=true;
-            SKIP_TOOLCHAIN=true;
-            ;;
-        --skip-toolchain-extra)
-            SKIP_TOOLCHAIN=true;
-            ;;
-        --skip-validate)
             ;;
         --unpinned-deps)
             USE_PINNED_DEPS=false;
@@ -57,15 +50,6 @@ do
     esac
     shift
 done
-
-if [ "$IS_LIBRARY" = true ]; then
-    if [ -z "$RISCV" ]; then
-        echo "ERROR: You must set the RISCV environment variable before running."
-        exit 4
-    else
-        echo "Using existing RISCV toolchain at $RISCV"
-    fi
-fi
 
 # Remove and backup the existing env.sh if it exists
 # The existing of env.sh implies this script completely correctly
@@ -91,9 +75,18 @@ END_INITIAL_ENV_SH
 
 env_append "export FIRESIM_ENV_SOURCED=1"
 
-# Conda setup
+#### Conda setup ####
+
 if [ "$IS_LIBRARY" = true ]; then
-    # the chipyard conda environment should be installed already and be sufficient
+    # old code from before (probably redundant w/ other check below)
+    if [ -z "$RISCV" ]; then
+        echo "ERROR: You must set the RISCV environment variable before running."
+        exit 4
+    else
+        echo "Using existing RISCV toolchain at $RISCV"
+    fi
+
+    # the chipyard conda environment should be installed already and have all requirements
     if [ -z "${CONDA_DEFAULT_ENV+x}" ]; then
         echo "ERROR: No conda environment detected. If using Chipyard, did you source 'env.sh'."
         exit 5
@@ -107,10 +100,12 @@ else
     source $(conda info --base)/etc/profile.d/conda.sh
     conda activate $CONDA_LOCK_ENV_PATH
 
+    # create the firesim environment with all requirements (chipyard's, firemarshal's, etc)
+
     # note: lock file must end in .conda-lock.yml - see https://github.com/conda-incubator/conda-lock/issues/154
     if [ "$USE_PINNED_DEPS" = false ]; then
         # auto-gen the lockfile
-	./scripts/generate-conda-lockfile.sh
+        ./scripts/generate-conda-lockfile.sh
     fi
     LOCKFILE="$(find $FDIR/conda-reqs/*.conda-lock.yml)"
 
@@ -121,7 +116,10 @@ else
     source $FDIR/.conda-env/etc/profile.d/conda.sh
     conda activate $FDIR/.conda-env
 
-    # Provide a sourceable snippet that can be used in subshells that may not have
+    # add other toolchain utilities to environment (spike, fesvr, pk)
+    ./scripts/build-toolchain-extra.sh -p $RISCV
+
+    # provide a sourceable snippet that can be used in subshells that may not have
     # inhereted conda functions that would be brought in under a login shell that
     # has run conda init (e.g., VSCode, CI)
     read -r -d '\0' CONDA_ACTIVATE_PREAMBLE <<'END_CONDA_ACTIVATE'
@@ -137,22 +135,25 @@ END_CONDA_ACTIVATE
     env_append "conda activate $FDIR/.conda-env"
 fi
 
+
 # init all submodules except for chipyard
 git config submodule.target-design/chipyard.update none
 git submodule update --init --recursive
 
-# Chipyard setup
-if [ "$IS_LIBRARY" = true ]; then
-    # setup marshal symlink (for convenience)
-    ln -sf ../../../software/firemarshal $FDIR/sw/firesim-software
+#### Chipyard setup ####
 
-    # source cy env.sh in library-mode
-    env_append "source $FDIR/../../env.sh"
+if [ "$IS_LIBRARY" = true ]; then
+    CHIPYARD_DIR="$FDIR/../../.."
+
+    # chipyard env.sh should be sourced in library mode.
+    env_append "source $CHIPYARD_DIR/env.sh"
 else
+    CHIPYARD_DIR="$FDIR/target-design/chipyard"
+
     # this checks if firemarshal has already been configured by someone. If
     # not, we will provide our own config. This must be checked before calling
     # chipyard setup because that will configure firemarshal.
-    marshal_cfg="$FDIR/target-design/chipyard/software/firemarshal/marshal-config.yaml"
+    marshal_cfg="$CHIPYARD_DIR/software/firemarshal/marshal-config.yaml"
     if [ ! -f "$marshal_cfg" ]; then
       first_init=true
     else
@@ -162,12 +163,12 @@ else
     git config --unset submodule.target-design/chipyard.update
     git submodule update --init target-design/chipyard
 
-    pushd $FDIR/target-design/chipyard
+    # setup chipyard (it has it's own conda environment)
+    pushd "$CHIPYARD_DIR"
     ./build-setup.sh \
         $VERBOSE_FLAG \
         --skip-conda `# skip conda setup since we share it with chipyard` \
         --skip-ctags `# skip ctags for speed` \
-        --skip-precompile `# skip pre-compilation of cy sources for speed` \
         --skip-firesim `# skip firesim setup since we are running in top-mode` \
         --skip-marshal `# skip firemarshal for speed`
     popd
@@ -191,47 +192,52 @@ else
     env_append "source $FDIR/scripts/fix-open-files.sh"
 fi
 
+
+# setup marshal symlink (for convenience)
+ln -sf ${CHIPYARD_DIR}/software/firemarshal $FDIR/sw/firesim-software
+
 cd "$FDIR"
 
-# commands to run only on EC2
+#### EC2-only setup ####
+
 # see if the instance info page exists. if not, we are not on ec2.
 # this is one of the few methods that works without sudo
 if wget -T 1 -t 3 -O /dev/null http://169.254.169.254/latest/; then
 
     (
-	# ensure that we're using the system toolchain to build the kernel modules
-	# newer gcc has --enable-default-pie and older kernels think the compiler
-	# is broken unless you pass -fno-pie but then I was encountering a weird
-	# error about string.h not being found
-	export PATH=/usr/bin:$PATH
+        # ensure that we're using the system toolchain to build the kernel modules
+        # newer gcc has --enable-default-pie and older kernels think the compiler
+        # is broken unless you pass -fno-pie but then I was encountering a weird
+        # error about string.h not being found
+        export PATH=/usr/bin:$PATH
 
-	cd "$FDIR/platforms/f1/aws-fpga/sdk/linux_kernel_drivers/xdma"
-	make
+        cd "$FDIR/platforms/f1/aws-fpga/sdk/linux_kernel_drivers/xdma"
+        make
 
-	# the only ones missing are libguestfs-tools
-	sudo yum install -y libguestfs-tools bc
+        # the only ones missing are libguestfs-tools
+        sudo yum install -y libguestfs-tools bc
 
-	# Setup for using qcow2 images
-	cd "$FDIR"
-	./scripts/install-nbd-kmod.sh
+        # Setup for using qcow2 images
+        cd "$FDIR"
+        ./scripts/install-nbd-kmod.sh
     )
 
     (
-	if [[ "${CPPFLAGS:-zzz}" != "zzz" ]]; then
-	    # don't set it if it isn't already set but strip out -DNDEBUG because
-	    # the sdk software has assertion-only variable usage that will end up erroring
-	    # under NDEBUG with -Wall and -Werror
-	    export CPPFLAGS="${CPPFLAGS/-DNDEBUG/}"
-	fi
+        if [[ "${CPPFLAGS:-zzz}" != "zzz" ]]; then
+            # don't set it if it isn't already set but strip out -DNDEBUG because
+            # the sdk software has assertion-only variable usage that will end up erroring
+            # under NDEBUG with -Wall and -Werror
+            export CPPFLAGS="${CPPFLAGS/-DNDEBUG/}"
+        fi
 
 
-	# Source {sdk,hdk}_setup.sh once on this machine to build aws libraries and
-	# pull down some IP, so we don't have to waste time doing it each time on
-	# worker instances
-	AWSFPGA="$FDIR/platforms/f1/aws-fpga"
-	cd "$AWSFPGA"
-	bash -c "source ./sdk_setup.sh"
-	bash -c "source ./hdk_setup.sh"
+        # Source {sdk,hdk}_setup.sh once on this machine to build aws libraries and
+        # pull down some IP, so we don't have to waste time doing it each time on
+        # worker instances
+        AWSFPGA="$FDIR/platforms/f1/aws-fpga"
+        cd "$AWSFPGA"
+        bash -c "source ./sdk_setup.sh"
+        bash -c "source ./hdk_setup.sh"
     )
 
 fi

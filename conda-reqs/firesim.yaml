@@ -28,7 +28,7 @@ dependencies:
     - conda-gcc-specs
     - binutils
 
-    - riscv-tools==1.0.3 # from ucb-bar channel - https://github.com/ucb-bar/riscv-tools-feedstock
+    - riscv-tools==1.0.6 # from ucb-bar channel - https://github.com/ucb-bar/riscv-tools-feedstock
 
     # firemarshal deps
     - qemu # from ucb-bar channel - https://github.com/ucb-bar/qemu-feedstock
@@ -41,7 +41,7 @@ dependencies:
     - bison
     - flex
     - expat
-    - python>=3.8
+    - python>=3.9,<3.11
     - bc
     - sphinx
     - sphinx_rtd_theme
@@ -81,7 +81,7 @@ dependencies:
     - graphviz
     - expect
     - dtc
-    - verilator==5.008
+    - verilator==5.022
     - screen
     - elfutils
     - libdwarf-dev==0.0.0.20190110_28_ga81397fc4 # from ucb-bar channel - using mainline libdwarf-feedstock

@@ -18,8 +18,7 @@ PLATFORM_CONFIG ?= BaseF1Config
 # Override project for the target.
 TARGET_SBT_PROJECT := firechip
 
-# Override SBT invokation directory for the target.
-TARGET_SBT_DIR := $(chipyard_dir)
-
-# Override SBT/scala sources directory for the target.
-TARGET_SOURCE_DIRS := $(chipyard_dir)/generators
+# The following two are unused by this project's set of makefrags since
+# Chipyard's makefile is directly invoked.
+TARGET_SBT_DIR :=
+TARGET_SOURCE_DIRS :=
