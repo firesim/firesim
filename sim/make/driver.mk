@@ -29,8 +29,7 @@ $(f1): $(header) $(DRIVER_CC) $(DRIVER_H) $(midas_cc) $(midas_h)
 		GEN_FILE_BASENAME=$(BASE_FILE_NAME) \
 		GEN_DIR=$(OUTPUT_DIR)/build \
 		OUT_DIR=$(OUTPUT_DIR) \
-		DRIVER="$(DRIVER_CC)" \
-		TOP_DIR=$(chipyard_dir)
+		DRIVER="$(DRIVER_CC)"
 
 # macro to create a driver that was built only with a conda environment (no leakage of host's environment)
 # $1 - platform name (i.e. xilinx_alveo_u250)
@@ -47,8 +46,7 @@ $$($1): $$(header) $$(DRIVER_CC) $$(DRIVER_H) $$(midas_cc) $$(midas_h)
 		GEN_FILE_BASENAME=$$(BASE_FILE_NAME) \
 		GEN_DIR=$$(OUTPUT_DIR)/build \
 		OUT_DIR=$$(OUTPUT_DIR) \
-		DRIVER="$$(DRIVER_CC)" \
-		TOP_DIR=$$(chipyard_dir)
+		DRIVER="$$(DRIVER_CC)"
 endef
 
 $(eval $(call built_within_conda_only_driver_compilation_rules,xilinx_alveo_u250))
@@ -73,8 +71,7 @@ $(vitis): $(header) $(DRIVER_CC) $(DRIVER_H) $(midas_cc) $(midas_h)
 		GEN_FILE_BASENAME=$(BASE_FILE_NAME) \
 		GEN_DIR=$(OUTPUT_DIR)/build \
 		OUT_DIR=$(OUTPUT_DIR) \
-		DRIVER="$(DRIVER_CC)" \
-		TOP_DIR=$(chipyard_dir)
+		DRIVER="$(DRIVER_CC)"
 
 tags: $(header) $(DRIVER_CC) $(DRIVER_H) $(midas_cc) $(midas_h)
 	ctags -R --exclude=@.ctagsignore .

@@ -20,8 +20,7 @@ $(xsim): $(header) $(DRIVER_CC) $(DRIVER_H) $(midas_cc) $(midas_h)
 		GEN_FILE_BASENAME=$(BASE_FILE_NAME) \
 		GEN_DIR=$(GENERATED_DIR) \
 		OUT_DIR=$(GENERATED_DIR) \
-		DRIVER="$(DRIVER_CC)" \
-		TOP_DIR=$(chipyard_dir)
+		DRIVER="$(DRIVER_CC)"
 
 .PHONY: xsim
 xsim: $(xsim)
