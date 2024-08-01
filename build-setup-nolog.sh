@@ -120,7 +120,11 @@ else
     # not, we will provide our own config. This must be checked before calling
     # chipyard setup because that will configure firemarshal.
     marshal_cfg="$CHIPYARD_DIR/software/firemarshal/marshal-config.yaml"
-    first_init=$(( ! -f "$marshal_cfg" && echo true || echo false ))
+    if [ ! -f "$marshal_cfg" ]; then
+      first_init=true
+    else
+      first_init=false
+    fi
 
     git config --unset submodule.target-design/chipyard.update
     git submodule update --init target-design/chipyard
