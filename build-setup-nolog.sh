@@ -134,7 +134,7 @@ else
     ./build-setup.sh \
         --skip-ctags `# skip ctags for speed` \
         --skip-firesim `# skip firesim setup since we are running in top-mode` \
-        --skip-marshal `# skip firemarshal for speed` \
+        --skip-marshal `# skip firemarshal for speed`
     popd
 
     # configure firemarshal to know where our firesim installation is.
