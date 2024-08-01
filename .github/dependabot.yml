@@ -1,0 +1,8 @@
+version: 2
+
+updates:
+  # submit a PR for bumping submodules daily (for all submodules)
+  - package-ecosystem: gitsubmodule
+    schedule:
+      interval: "daily"
+    directory: /
