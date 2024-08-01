@@ -27,7 +27,7 @@ Provide a brief description of the PR immediately below this comment, if the tit
 
 <!-- Does this change the generated Verilog or the simulator memory map of the default targets?  -->
 
-### Contributor Checklist
+#### Contributor Checklist
 - [ ] Is this PR's title suitable for inclusion in the changelog and have you added a `changelog:<topic>` label?
 - [ ] Did you add Scaladoc/docstring/doxygen to every public function/method?
 - [ ] Did you add at least one test demonstrating the PR?
@@ -44,12 +44,20 @@ Provide a brief description of the PR immediately below this comment, if the tit
   NB: This *label* should be applied before the PR is created, or the branch
   will need to be resychronized to trigger a new CI workflow with the FPGA-deployment jobs.
 -->
-- [ ] If applicable, did you apply the `ci:fpga-deploy` label?
 <!-- Do this if this PR is a bugfix that should be applied to the latest release -->
 - [ ] If applicable, did you apply the `Please Backport` label?
 
-### Reviewer Checklist (only modified by reviewer)
+#### Reviewer Checklist (only modified by reviewer)
 Note: to run CI on PRs from forks, comment `@Mergifyio copy main` and manage the change from the new PR.
 - [ ] Is the title suitable for inclusion in the changelog and does the PR have a `changelog:<topic>` label?
 - [ ] Did you mark the proper release milestone?
 - [ ] Did you check whether all relevant Contributor checkboxes have been checked?
+
+#### CI Help
+Add the following labels to modify the CI for a set of features.
+Generally, a label added only affect subsequent changes to the PR (i.e. new commits, force pushing, closing/reopening).
+See `ci:*` for full list of labels:
+- `ci:fpga-deploy` - Run FPGA-based E2E testing
+- `ci:local-fpga-buildbitstream-deploy` - Build local FPGA bitstreams for platforms that are released
+- `ci:persist-prior-workflows` - Prevent prior CI workflows from automatically cancelling with subsequent changes
+- `ci:disable` - Disable CI

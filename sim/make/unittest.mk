@@ -17,8 +17,7 @@ unittest_args = \
 		GEN_DIR=$(unittest_generated_dir) \
 		SBT="$(SBT)" \
 		SBT_PROJECT=$(firesim_root_sbt_project) \
-		CONFIG=$(UNITTEST_CONFIG) \
-		TOP_DIR=$(chipyard_dir)
+		CONFIG=$(UNITTEST_CONFIG)
 
 .PHONY:compile-midas-unittests
 compile-midas-unittests: $(chisel_srcs)

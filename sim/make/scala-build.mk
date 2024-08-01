@@ -66,29 +66,11 @@ define run_sbt_assembly
 endef
 
 ################################################################################
-# Target Configuration
+# Misc. Default Configuration
 ################################################################################
 
-# Target project containing the generator of the design.
-TARGET_SBT_PROJECT ?= $(FIRESIM_SBT_PROJECT)
-
-# If the target project is not the implicit FireSim one, this definition must
-# enumerate all directories containing the sources of the generator.
-TARGET_SOURCE_DIRS ?=
-
-################################################################################
-# Build jars using SBT assembly and cache them.
-################################################################################
-
-# Returns a list of files in directories $1 with single file extension $2 that have $3 in the name.
-fs_lookup_srcs = $(shell find -L $(1) -name target -prune -o \( -iname "*.$(2)" ! -iname ".*" \) -print 2> /dev/null | grep -E $(3))
-
-# Returns a list of files in directories $1 with *any* of the file extensions in $3 that have $2 in the name
-fs_lookup_srcs_by_multiple_type = $(foreach type,$(3),$(call fs_lookup_srcs,$(1),$(type),$(2)))
-
-SCALA_EXT = scala
-VLOG_EXT = sv v
-
+# sbt project in sim/ directory
+FIRESIM_SBT_PROJECT ?= firesim
 firesim_source_dirs = \
 	$(addprefix $(firesim_base_dir)/,\
 			src \
@@ -96,6 +78,35 @@ firesim_source_dirs = \
 			midas/targetutils \
 			firesim-lib \
 	)
+
+################################################################################
+# Target Configuration
+################################################################################
+
+# Target SBT project containing the generator of the design.
+TARGET_SBT_PROJECT ?= $(FIRESIM_SBT_PROJECT)
+
+# Directory to invoke SBT in (directory contains target SBT project).
+TARGET_SBT_DIR ?= $(firesim_base_dir)
+
+# All directories containing the sources of the generator.
+TARGET_SOURCE_DIRS ?= $(firesim_source_dirs)
+
+################################################################################
+# Build jars using SBT assembly and cache them.
+################################################################################
+
+# Returns a list of files in directories $1 with single file extension $2 that have $3 in the name.
+# Only works if $(1) is a valid string to prevent a large/long-running find command.
+fs_lookup_srcs = $(if $(strip $(1)), $(shell find -L $(1) -name target -prune -o \( -iname "*.$(strip $(2))" ! -iname ".*" \) -print 2> /dev/null | grep -E $(3)))
+
+# Returns a list of files in directories $1 with *any* of the file extensions in $3 that have $2 in the name
+fs_lookup_srcs_by_multiple_type = $(foreach type,$(3),$(call fs_lookup_srcs,$(1),$(type),$(2)))
+
+SCALA_EXT = scala
+VLOG_EXT = sv v
+
+#### main classpath always built ####
 
 firesim_main_srcs = \
 	$(call fs_lookup_srcs_by_multiple_type, $(firesim_source_dirs), 'main/scala', $(SCALA_EXT)) \
@@ -111,20 +122,29 @@ $(FIRESIM_MAIN_CP): $(SCALA_BUILDTOOL_DEPS) $(firesim_main_srcs) $(firesim_test_
 	@mkdir -p $(@D)
 	$(call run_sbt_assembly,$(firesim_base_dir),$(FIRESIM_SBT_PROJECT),$(FIRESIM_MAIN_CP))
 
+.PHONY: firesim-main-classpath
+firesim-main-classpath: $(FIRESIM_MAIN_CP)
+
+#### target classpath only built if project makefrag asks for it ####
+
+# if any of the defaults changed, then generate a unique target classpath.
+# otherwise use the firesim main classpath.
+# note: this is ugly but quickly does 'if A && B && C'
+ifneq ($(TARGET_SBT_PROJECT).$(TARGET_SBT_DIR).$(TARGET_SOURCE_DIRS),$(FIRESIM_SBT_PROJECT).$(firesim_base_dir).$(firesim_source_dirs))
+TARGET_CP := $(BUILD_DIR)/target.jar
 target_srcs = \
 	$(call fs_lookup_srcs_by_multiple_type, $(TARGET_SOURCE_DIRS), 'src/main/scala', $(SCALA_EXT)) \
 	$(call fs_lookup_srcs_by_multiple_type, $(TARGET_SOURCE_DIRS), 'src/main/resources', $(VLOG_EXT))
-
-TARGET_CP := $(BUILD_DIR)/target.jar
 # if *_CLASSPATH is a true java classpath, it can be colon-delimited list of paths (on *nix)
 TARGET_CP_TARGETS ?= $(subst :, ,$(TARGET_CP))
 $(TARGET_CP): $(target_srcs) | $(FIRESIM_MAIN_CP)
 	@mkdir -p $(@D)
-	$(call run_sbt_assembly,$(chipyard_dir),$(TARGET_SBT_PROJECT),$(TARGET_CP))
+	$(call run_sbt_assembly,$(TARGET_SBT_DIR),$(TARGET_SBT_PROJECT),$(TARGET_CP))
+else
+TARGET_CP := $(FIRESIM_MAIN_CP)
+endif
 
-
-.PHONY: firesim-main-classpath target-classpath
-firesim-main-classpath: $(FIRESIM_MAIN_CP)
+.PHONY: target-classpath
 target-classpath: $(TARGET_CP)
 
 ################################################################################
@@ -132,11 +152,11 @@ target-classpath: $(TARGET_CP)
 ################################################################################
 
 .PHONY: test
-test: $(FIRESIM_MAIN_CP) $(TARGET_CP)
+test:
 	cd $(base_dir) && $(SBT) ";project $(FIRESIM_SBT_PROJECT); test"
 
 .PHONY: testOnly
-testOnly: $(FIRESIM_MAIN_CP) $(TARGET_CP)
+testOnly:
 	cd $(base_dir) && $(SBT) ";project $(FIRESIM_SBT_PROJECT); testOnly $(SCALA_TEST)"
 
 ################################################################################
