@@ -4,7 +4,7 @@
 # Driver Sources & Flags #
 ##########################
 
-testchipip_csrc_dir = $(chipyard_dir)/generators/testchipip/src/main/resources/testchipip/csrc
+testchipip_csrc_dir = $(firesim_base_dir)/target-rtl/testchipip/src/main/resources/testchipip/csrc
 
 driver_dir = $(firesim_base_dir)/src/main/cc
 firesim_lib_dir = $(firesim_base_dir)/firesim-lib/src/main/cc/

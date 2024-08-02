@@ -1,9 +1,6 @@
 [submodule "platforms/f1/aws-fpga"]
 	path = platforms/f1/aws-fpga
 	url = https://github.com/firesim/aws-fpga-firesim
-[submodule "target-design/chipyard"]
-	path = target-design/chipyard
-	url = https://github.com/ucb-bar/chipyard
 [submodule "sw/network-benchmarks"]
 	path = sw/network-benchmarks
 	url = https://github.com/firesim/network-benchmarks.git
@@ -31,3 +28,24 @@
 [submodule "sim/toolchain-utilities/riscv-pk"]
 	path = sim/toolchain-utilities/riscv-pk
 	url = https://github.com/riscv-software-src/riscv-pk.git
+[submodule "target-design/testchipip"]
+	path = target-design/testchipip
+	url = https://github.com/ucb-bar/testchipip.git
+[submodule "target-design/rocket-chip"]
+	path = target-design/rocket-chip
+	url = https://github.com/chipsalliance/rocket-chip.git
+[submodule "target-design/cde"]
+	path = target-design/cde
+	url = https://github.com/chipsalliance/cde.git
+[submodule "target-design/hardfloat"]
+	path = target-design/hardfloat
+	url = https://github.com/ucb-bar/berkeley-hardfloat.git
+[submodule "target-design/diplomacy"]
+	path = target-design/diplomacy
+	url = https://github.com/chipsalliance/diplomacy.git
+[submodule "target-design/icenet"]
+	path = target-design/icenet
+	url = https://github.com/firesim/icenet.git
+[submodule "target-design/rocket-chip-blocks"]
+	path = target-design/rocket-chip-blocks
+	url = https://github.com/chipsalliance/rocket-chip-blocks.git

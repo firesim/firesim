@@ -11,7 +11,7 @@ char blockdev_t::KIND;
 /* Block Device Endpoint Driver
  *
  * This works in conjunction with
- * chipyard/testchipip/src/main/scala/BlockDevice.scala (Block Device RTL)
+ * testchipip/src/main/scala/BlockDevice.scala (Block Device RTL)
  * and
  * src/main/scala/bridges/BlockDevWidget.scala
  */

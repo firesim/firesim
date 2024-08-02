@@ -40,7 +40,7 @@ JAVA_HEAP_SIZE ?= 16G
 # the runtime config generator.
 export JAVA_TOOL_OPTIONS ?= -Xmx$(JAVA_HEAP_SIZE) -Xss8M -Djava.io.tmpdir=$(firesim_base_dir)/.java_tmp
 export SBT_OPTS ?= -Dsbt.ivy.home=$(firesim_base_dir)/.ivy2 -Dsbt.global.base=$(firesim_base_dir)/.sbt -Dsbt.boot.directory=$(firesim_base_dir)/.sbt/boot/ -Dsbt.color=always -Dsbt.supershell=false -Dsbt.server.forcestart=true
-SBT ?= java -jar $(chipyard_dir)/scripts/sbt-launch.jar $(SBT_OPTS)
+SBT ?= java -jar $(firesim_base_dir)/target-rtl/sbt-launch.jar $(SBT_OPTS)
 
 # (1) - directory of the build.sbt used to compile the fat jar
 # (2) - classpath of the fat jar

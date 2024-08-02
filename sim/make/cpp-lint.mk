@@ -5,7 +5,7 @@
 # clang-tidy
 ################################################################################
 
-testchipip_csrc_dir = $(chipyard_dir)/generators/testchipip/src/main/resources/testchipip/csrc
+testchipip_csrc_dir = $(firesim_base_dir)/target-rtl/testchipip/src/main/resources/testchipip/csrc
 
 clang_tidy_files := $(shell \
 	find $(firesim_base_dir) -name '*.cc' -or -name '*.h' \

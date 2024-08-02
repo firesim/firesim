@@ -63,15 +63,6 @@ lazy val chiselSettings = Seq(
   addCompilerPlugin("edu.berkeley.cs" % "chisel3-plugin" % "3.6.1" cross CrossVersion.full)
 )
 
-lazy val firesimAsLibrary = sys.env.get("FIRESIM_STANDALONE") == None
-
-lazy val chipyardDir = if(firesimAsLibrary) {
-  file("./chipyard-symlink")
-} else {
-  file("./target-rtl/chipyard")
-}
-
-
 // Fork each scala test for now, to work around persistent mutable state
 // in Rocket-Chip based generators
 def isolateAllTests(tests: Seq[TestDefinition]) = tests map { test =>
@@ -79,28 +70,29 @@ def isolateAllTests(tests: Seq[TestDefinition]) = tests map { test =>
       new Group(test.name, Seq(test), SubProcess(options))
   } toSeq
 
+lazy val targetRtlDir = file("./target-rtl")
 
-lazy val cde = (project in chipyardDir / "tools" / "cde")
+lazy val cde = (project in targetRtlDir / "cde")
   .settings(commonSettings)
   .settings(chiselSettings)
   .settings(Compile / scalaSource := baseDirectory.value / "cde/src/chipsalliance/rocketchip")
 
-lazy val hardfloat = (project in chipyardDir / "generators" / "hardfloat" / "hardfloat")
+lazy val hardfloat = (project in targetRtlDir / "hardfloat" / "hardfloat")
   .settings(commonSettings)
   .settings(chiselSettings)
 
-lazy val rocketMacros  = (project in chipyardDir / "generators" / "rocket-chip" / "macros")
+lazy val rocketMacros  = (project in targetRtlDir / "rocket-chip" / "macros")
   .settings(commonSettings)
   .settings(chiselSettings)
 
-lazy val diplomacy = (project in chipyardDir / "generators" / "diplomacy" / "diplomacy")
+lazy val diplomacy = (project in targetRtlDir / "diplomacy" / "diplomacy")
   .dependsOn(cde)
   .settings(commonSettings)
   .settings(chiselSettings)
   .settings(Compile / scalaSource := baseDirectory.value / "src" / "diplomacy")
 
 
-lazy val rocketchip = (project in chipyardDir / "generators" / "rocket-chip")
+lazy val rocketchip = (project in targetRtlDir / "rocket-chip")
   .dependsOn(hardfloat, rocketMacros, diplomacy, cde)
   .settings(commonSettings)
   .settings(chiselSettings)
@@ -115,12 +107,12 @@ lazy val rocketchip = (project in chipyardDir / "generators" / "rocket-chip")
     )
   )
 
-lazy val icenet = (project in chipyardDir / "generators" / "icenet")
+lazy val icenet = (project in targetRtlDir / "icenet")
   .dependsOn(rocketchip)
   .settings(commonSettings)
   .settings(chiselSettings)
 
-lazy val testchipip = (project in chipyardDir / "generators" / "testchipip" / "src")
+lazy val testchipip = (project in targetRtlDir / "testchipip" / "src")
   .dependsOn(rocketchip, rocketchip_blocks)
   .settings(commonSettings)
   .settings(chiselSettings)
@@ -128,7 +120,7 @@ lazy val testchipip = (project in chipyardDir / "generators" / "testchipip" / "s
   .settings(Compile / resourceDirectory := baseDirectory.value / "main" / "resources")
 
 
-lazy val rocketchip_blocks = (project in chipyardDir / "generators" / "rocket-chip-blocks")
+lazy val rocketchip_blocks = (project in targetRtlDir / "rocket-chip-blocks")
   .dependsOn(rocketchip)
   .settings(commonSettings)
   .settings(chiselSettings)

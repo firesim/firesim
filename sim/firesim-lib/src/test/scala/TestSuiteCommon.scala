@@ -34,15 +34,9 @@ abstract class TestSuiteBase extends org.scalatest.flatspec.AnyFlatSpec {
   def targetConfigs: String         = "NoConfig"
   def platformMakeArgs: Seq[String] = Seq()
 
-  // Check if we are running out of Chipyard by checking for the existence of a firesim/sim directory
   val firesimDir = {
     val cwd             = System.getProperty("user.dir")
-    val firesimAsLibDir = new File(cwd, "sims/firesim/sim")
-    if (firesimAsLibDir.exists()) {
-      firesimAsLibDir
-    } else {
-      new File(cwd)
-    }
+    new File(cwd)
   }
 
   var ciSkipElaboration: Boolean = false

@@ -9,7 +9,6 @@ set -o pipefail
 FDIR=$( cd -- "$( dirname -- "${BASH_SOURCE[0]}" )" &> /dev/null && pwd )
 cd "$FDIR"
 
-IS_LIBRARY=false
 USE_PINNED_DEPS=true
 
 function usage
@@ -24,9 +23,6 @@ function usage
 while test $# -gt 0
 do
    case "$1" in
-        --library)
-            IS_LIBRARY=true;
-            ;;
         --unpinned-deps)
             USE_PINNED_DEPS=false;
             ;;
@@ -104,57 +100,7 @@ env_append "conda activate $FDIR/.conda-env"
 # add other toolchain utilities to environment (spike, fesvr, pk)
 ./scripts/build-toolchain-extra.sh -p $RISCV
 
-# init all submodules except for chipyard
-git config submodule.target-design/chipyard.update none
 git submodule update --init --recursive
-
-#### Chipyard setup ####
-
-CHIPYARD_DIR=""
-if [ "$IS_LIBRARY" = true ]; then
-    CHIPYARD_DIR="$FDIR/../../.."
-else
-    CHIPYARD_DIR="$FDIR/target-design/chipyard"
-
-    # this checks if firemarshal has already been configured by someone. If
-    # not, we will provide our own config. This must be checked before calling
-    # chipyard setup because that will configure firemarshal.
-    marshal_cfg="$CHIPYARD_DIR/software/firemarshal/marshal-config.yaml"
-    if [ ! -f "$marshal_cfg" ]; then
-      first_init=true
-    else
-      first_init=false
-    fi
-
-    git config --unset submodule.target-design/chipyard.update
-    git submodule update --init target-design/chipyard
-
-    # setup chipyard (it has it's own conda environment)
-    pushd "$CHIPYARD_DIR"
-    ./build-setup.sh \
-        --skip-ctags `# skip ctags for speed` \
-        --skip-firesim `# skip firesim setup since we are running in top-mode` \
-        --skip-marshal `# skip firemarshal for speed`
-    popd
-
-    # configure firemarshal to know where our firesim installation is.
-    # If this is a fresh init of chipyard, we can safely overwrite the marshal
-    # config, otherwise we have to assume the user might have changed it
-    if [ $first_init = true ]; then
-      echo "firesim-dir: '../../../../'" > $marshal_cfg
-    fi
-
-    # setup marshal symlink (for convenience)
-    ln -sf ../target-design/chipyard/software/firemarshal $FDIR/sw/firesim-software
-
-    env_append "export FIRESIM_STANDALONE=1"
-    env_append "export PATH=$FDIR/sw/firesim-software:\$PATH"
-    env_append "source $FDIR/scripts/fix-open-files.sh"
-fi
-
-
-# setup marshal symlink (for convenience)
-ln -sf ${CHIPYARD_DIR}/software/firemarshal $FDIR/sw/firesim-software
 
 cd "$FDIR"
 
