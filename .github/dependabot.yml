@@ -1,5 +1,6 @@
 version: 2
 
+# note: dependabot PRs have their own sets of secrets (they can't use the GH-A secrets)
 updates:
   # submit a PR for bumping submodules daily (for all submodules).
   # updates a submodule to the latest commit on the branch given in .gitmodules.
@@ -8,3 +9,14 @@ updates:
     schedule:
       interval: "daily"
     directory: /
+    labels:
+      - "dependencies"
+      - "changelog:omit"
+  # submit a PR for bumping GH-A dependencies
+  - package-ecosystem: github-actions
+    schedule:
+      interval: "daily"
+    directory: /
+    labels:
+      - "dependencies"
+      - "changelog:omit"
