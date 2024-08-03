@@ -1,6 +1,6 @@
 # See LICENSE for license details.
 
-$(FIRRTL_FILE) $(ANNO_FILE): $(TARGET_CP)
+$(FIRRTL_FILE) $(ANNO_FILE) &: $(TARGET_CP)
 	@mkdir -p $(@D)
 	$(call run_jar_scala_main,$(chipyard_dir),$(TARGET_CP),chipyard.Generator,\
 		--target-dir $(GENERATED_DIR) \

@@ -15,11 +15,11 @@ TARGET_CONFIG ?= FireSimRocketConfig
 PLATFORM_CONFIG_PACKAGE ?= firesim.firesim
 PLATFORM_CONFIG ?= BaseF1Config
 
-# Directory where target-specific sources are located.
-TARGET_SRC_DIRS ?= $(chipyard_dir)/generators/
-
-# Project for the target.
+# Override project for the target.
 TARGET_SBT_PROJECT := firechip
 
-# Directory where sources are located.
-TARGET_SOURCE_DIRS = $(chipyard_dir)/generators
+# Override SBT invokation directory for the target.
+TARGET_SBT_DIR := $(chipyard_dir)
+
+# Override SBT/scala sources directory for the target.
+TARGET_SOURCE_DIRS := $(chipyard_dir)/generators
