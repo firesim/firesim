@@ -12,14 +12,15 @@ cd "$FDIR"
 
 IS_LIBRARY=false
 USE_PINNED_DEPS=true
+VERBOSE_FLAG=""
 
 function usage
 {
     echo "usage: build-setup.sh [OPTIONS]"
     echo "options:"
-    echo "   --library: if set, initializes submodules assuming FireSim is being used"
-    echo "            as a library submodule."
-    echo "   --unpinned-deps: if set, use unpinned conda package dependencies"
+    echo "   --library: initializes FireSim as a library submodule"
+    echo "   --unpinned-deps: use unpinned conda package dependencies"
+    echo "   --verbose: verbose printout"
 }
 
 while test $# -gt 0
@@ -36,6 +37,10 @@ do
             ;;
         --unpinned-deps)
             USE_PINNED_DEPS=false;
+            ;;
+        --verbose)
+            VERBOSE_FLAG=$1
+            set -x
             ;;
         -h | -H | --help)
             usage
@@ -161,6 +166,7 @@ else
 
     pushd $FDIR/target-design/chipyard
     ./build-setup.sh \
+        $VERBOSE_FLAG \
         --skip-conda `# skip conda setup since we share it with chipyard` \
         --skip-ctags `# skip ctags for speed` \
         --skip-precompile `# skip pre-compilation of cy sources for speed` \
