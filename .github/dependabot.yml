@@ -2,20 +2,33 @@ version: 2
 
 # note: dependabot PRs have their own sets of secrets (they can't use the GH-A secrets)
 updates:
-  # submit a PR for bumping submodules daily (for all submodules).
+  # bump submodules.
   # updates a submodule to the latest commit on the branch given in .gitmodules.
   # if branch not given, then it defaults to the main/master branch.
   - package-ecosystem: gitsubmodule
     schedule:
-      interval: "daily"
+      interval: "weekly"
     directory: /
     labels:
       - "dependencies"
       - "changelog:omit"
+    ignore:
+      - dependency-name: "target-design/chipyard"
+  - package-ecosystem: gitsubmodule
+    schedule:
+      interval: "weekly"
+    directory: /
+    labels:
+      - "dependencies"
+      - "changelog:omit"
+      - "ci:local-fpga-buildbitstream-deploy"
+    allow:
+      - dependency-name: "target-design/chipyard"
+
   # submit a PR for bumping GH-A dependencies
   - package-ecosystem: github-actions
     schedule:
-      interval: "daily"
+      interval: "weekly"
     directory: /
     labels:
       - "dependencies"
