@@ -1,30 +1,25 @@
 package midas.passes.partition
 
-import scala.collection.mutable
 import Array.range
 import firrtl._
-import firrtl.ir._
-import firrtl.Mappers._
-import firrtl.annotations._
-import firrtl.analyses.{InstanceKeyGraph, InstanceGraph}
+import firrtl.analyses.InstanceGraph
 import midas._
-import midas.stage._
-import midas.targetutils._
-import org.chipsalliance.cde.config.{Parameters, Config}
-
+import org.chipsalliance.cde.config.Parameters
 
 object PartitionModulesInfo {
-  val wrapperPfx = "PartitionWrapper"
-  val groupPfx = "Grouped"
+  val wrapperPfx      = "PartitionWrapper"
+  val groupPfx        = "Grouped"
   val groupWrapperPfx = "GroupWrapper"
 
-  val fireSimWrapper = "FireSimPartition"
+  val fireSimWrapper            = "FireSimPartition"
   val extractModuleInstanceName = "extractModuleInstance"
 
   def getConfigParams(annos: AnnotationSeq): Parameters = {
-    annos.collectFirst({
-      case midas.stage.phases.ConfigParametersAnnotation(p)  => p
-    }).get
+    annos
+      .collectFirst({ case midas.stage.phases.ConfigParametersAnnotation(p) =>
+        p
+      })
+      .get
   }
 
   var numGroups: Int = 0
@@ -43,7 +38,7 @@ object PartitionModulesInfo {
     if (numGroups == 0) {
       numGroups = getNumGroups(state)
     }
-    val groups = range(0, numGroups).map { getGroupName(_) }
+    val groups        = range(0, numGroups).map { getGroupName(_) }
     val groupWrappers = groups.map { g => groupWrapperPfx + "_" + g }
     (groups, groupWrappers)
   }
@@ -57,8 +52,8 @@ object PartitionModulesInfo {
     if (isQSFP && isPCIS) assert(false)
     if (isPCIS && isPCIM) assert(false)
 
-    if (isQSFP)      "QSFP"
+    if (isQSFP) "QSFP"
     else if (isPCIM) "PCIM"
-    else             "PCIS"
+    else "PCIS"
   }
 }

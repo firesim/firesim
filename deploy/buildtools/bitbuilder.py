@@ -13,6 +13,7 @@ from fabric.contrib.console import confirm # type: ignore
 from fabric.contrib.project import rsync_project # type: ignore
 
 from util.streamlogger import InfoStreamLogger
+from util.export import create_export_string
 from awstools.afitools import firesim_tags_to_description, copy_afi_to_all_regions
 from awstools.awstools import send_firesim_notification, get_aws_userid, get_aws_region, auto_create_bucket, valid_aws_configure_creds, aws_resource_names, get_snsname_arn
 
@@ -62,9 +63,7 @@ class BitBuilder(metaclass=abc.ABCMeta):
 
         with InfoStreamLogger('stdout'), \
             prefix(f'cd {get_deploy_dir()}/../'), \
-            prefix(f'export RISCV={os.getenv("RISCV", "")}'), \
-            prefix(f'export PATH={os.getenv("PATH", "")}'), \
-            prefix(f'export LD_LIBRARY_PATH={os.getenv("LD_LIBRARY_PATH", "")}'), \
+            prefix(create_export_string({'RISCV', 'PATH', 'LD_LIBRARY_PATH'})), \
             prefix('source sourceme-manager.sh --skip-ssh-setup'), \
             InfoStreamLogger('stdout'), \
             prefix('cd sim/'):
@@ -76,9 +75,7 @@ class BitBuilder(metaclass=abc.ABCMeta):
 
         with InfoStreamLogger('stdout'), \
             prefix(f'cd {get_deploy_dir()}/../'), \
-            prefix(f'export RISCV={os.getenv("RISCV", "")}'), \
-            prefix(f'export PATH={os.getenv("PATH", "")}'), \
-            prefix(f'export LD_LIBRARY_PATH={os.getenv("LD_LIBRARY_PATH", "")}'), \
+            prefix(create_export_string({'RISCV', 'PATH', 'LD_LIBRARY_PATH'})), \
             prefix('source sourceme-manager.sh --skip-ssh-setup'), \
             prefix('cd sim/'):
             run(self.build_config.make_recipe("driver"))

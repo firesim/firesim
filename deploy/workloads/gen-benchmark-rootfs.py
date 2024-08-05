@@ -6,6 +6,8 @@ import os
 import subprocess
 import shutil
 import time
+from contextlib import contextmanager
+import errno
 
 BUILD_DIR = 'build'
 MOUNT_POINT = BUILD_DIR + "/mount_point"
@@ -52,12 +54,103 @@ def copy_base_rootfs(base_rootfs, dest):
     print("Copying base rootfs {} to {}".format(base_rootfs, dest))
     shutil.copy2(base_rootfs, dest)
 
+sudoCmd = ["/usr/bin/sudo"]
+pwdlessSudoCmd = []  # set if pwdless sudo is enabled
+
+def runnableWithSudo(cmd):
+    global sudoCmd
+    return subprocess.run(sudoCmd + ['-ln', cmd], stderr=subprocess.DEVNULL, stdout=subprocess.DEVNULL).returncode == 0
+
+if runnableWithSudo('true'):
+    # User has passwordless sudo available
+    pwdlessSudoCmd = sudoCmd
+
+def existsAndRunnableWithSudo(cmd):
+    global sudoCmd
+    return os.path.exists(cmd) and runnableWithSudo(cmd)
+
+def run(*args, check=True, **kwargs):
+    """Run subcommands and handle logging etc. The arguments are identical to those for subprocess.call().
+        check - Throw an error on non-zero return status"""
+
+    if isinstance(args[0], str):
+        prettyCmd = args[0]
+    else:
+        prettyCmd = ' '.join([str(a) for a in args[0]])
+
+    p = subprocess.Popen(*args, universal_newlines=True, stderr=subprocess.STDOUT, stdout=subprocess.PIPE, **kwargs)
+    for line in iter(p.stdout.readline, ''):
+        print(line.strip())
+    p.wait()
+
+    if check and p.returncode != 0:
+        raise subprocess.CalledProcessError(p.returncode, prettyCmd)
+
+    return p
+
+def waitpid(pid):
+    """This is like os.waitpid, but it works for non-child processes"""
+    done = False
+    while not done:
+        try:
+            os.kill(pid, 0)
+        except OSError as err:
+            if err.errno == errno.ESRCH:
+                done = True
+                break
+        time.sleep(0.25)
+
+# similar to https://github.com/firesim/FireMarshal/blob/master/wlutil/wlutil.py
+@contextmanager
 def mount_rootfs(rootfs):
+    global sudoCmd
+    global pwdlessSudoCmd
+
     try:
         os.makedirs(MOUNT_POINT)
     except OSError:
         pass
-    rc = subprocess.check_output(["sudo", "mount", "-t", EXT_TYPE, rootfs, MOUNT_POINT])
+
+    ret = run(["mountpoint", MOUNT_POINT], check=False).returncode
+    assert ret == 1, f"{MOUNT_POINT} already mounted. Somethings wrong"
+
+    uid = subprocess.run(['id', '-u'], capture_output=True, text=True).stdout.strip()
+    gid = subprocess.run(['id', '-g'], capture_output=True, text=True).stdout.strip()
+
+    if pwdlessSudoCmd:
+        # use faster mount without firesim script since we have pwdless sudo
+        run(pwdlessSudoCmd + ["mount", "-t", EXT_TYPE, rootfs, MOUNT_POINT])
+        run(pwdlessSudoCmd + ["chown", "-R", f"{uid}:{gid}", MOUNT_POINT])
+        try:
+            yield MOUNT_POINT
+        finally:
+            run(pwdlessSudoCmd + ['umount', MOUNT_POINT])
+    else:
+        # use either firesim-*mount* cmds if available/useable or default to guestmount (slower but reliable)
+        fsimMountCmd = '/usr/local/bin/firesim-mount-with-uid-gid'
+        fsimUnmountCmd = '/usr/local/bin/firesim-unmount'
+
+        if existsAndRunnableWithSudo(fsimMountCmd) and existsAndRunnableWithSudo(fsimUnmountCmd):
+            run(sudoCmd + [fsimMountCmd, rootfs, MOUNT_POINT, uid, gid])
+            try:
+                yield MOUNT_POINT
+            finally:
+                run(sudoCmd + [fsimUnmountCmd, MOUNT_POINT])
+        else:
+            pidPath = './guestmount.pid'
+            run(['guestmount', '--pid-file', pidPath, '-o', f'uid={uid}', '-o', f'gid={gid}', '-a', rootfs, '-m', '/dev/sda', MOUNT_POINT])
+            try:
+                with open(pidPath, 'r') as pidFile:
+                    mntPid = int(pidFile.readline())
+                yield MOUNT_POINT
+            finally:
+                run(['guestunmount', MOUNT_POINT])
+                os.remove(pidPath)
+
+            # There is a race-condition in guestmount where a background task keeps
+            # modifying the image for a period after unmount. This is the documented
+            # best-practice (see man guestmount).
+            waitpid(mntPid)
 
 def cp_target(src, target_dest):
     print("Copying src: {} to {} in target filesystem.".format(src, target_dest))
@@ -66,12 +159,11 @@ def cp_target(src, target_dest):
     else:
         dirname = target_dest
 
-    subprocess.check_output(["sudo", "mkdir", "-p", MOUNT_POINT + "/" + dirname])
-    rc = subprocess.check_output(["sudo", "cp", "-dpR", src, "-T", MOUNT_POINT + "/" + target_dest])
+    subprocess.check_output(["mkdir", "-p", MOUNT_POINT + "/" + dirname])
+    rc = subprocess.check_output(["cp", "-dpR", src, "-T", MOUNT_POINT + "/" + target_dest])
 
 def chmod_target(permissions, target_dest):
-    subprocess.check_output(["sudo", "chmod", permissions, MOUNT_POINT + "/" + target_dest])
-    subprocess.check_output(["sudo", "chown", "root:root", MOUNT_POINT + "/" + target_dest])
+    subprocess.check_output(["chmod", permissions, MOUNT_POINT + "/" + target_dest])
 
 def copy_files_to_mounted_fs(overlay, deliver_dir, files):
     for f in files:
@@ -90,12 +182,7 @@ def generate_init_script(command):
     cp_target(temp_script, INIT_SCRIPT_NAME)
     chmod_target('755', INIT_SCRIPT_NAME)
 
-def unmount_rootfs():
-    time.sleep(0.2)
-    rc = subprocess.check_output(["sudo", "umount", MOUNT_POINT])
-
 class Workload:
-
     def __init__(self, name, deliver_dir, files, command, args, outputs):
         self.name = name
         self.deliver_dir = deliver_dir
@@ -110,11 +197,10 @@ class Workload:
         dest_rootfs = output_dir + "/" + self.name + "." + EXT_TYPE
 
         copy_base_rootfs(base_rootfs, dest_rootfs)
-        mount_rootfs(dest_rootfs)
-        copy_files_to_mounted_fs(overlay, self.deliver_dir, self.files)
-        if gen_init:
-            generate_init_script(self.command)
-        unmount_rootfs()
+        with mount_rootfs(dest_rootfs):
+            copy_files_to_mounted_fs(overlay, self.deliver_dir, self.files)
+            if gen_init:
+                generate_init_script(self.command)
 
     def __str__(self):
         return("""

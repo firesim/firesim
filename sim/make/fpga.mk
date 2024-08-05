@@ -76,7 +76,7 @@ $(firesim_base_dir)/scripts/checkpoints/$(target_sim_tuple): $(fpga_work_dir)/st
 # Runs a local fpga-bitstream build. Strongly consider using the manager instead.
 .PHONY: fpga
 fpga: export CL_DIR := $(fpga_work_dir)
-fpga: $(fpga_delivery_files) $(base_dir)/scripts/checkpoints/$(target_sim_tuple)
+fpga: $(fpga_delivery_files) $(firesim_base_dir)/scripts/checkpoints/$(target_sim_tuple)
 	cd $(fpga_build_dir)/scripts && ./aws_build_dcp_from_cl.sh -notify
 
 #########################

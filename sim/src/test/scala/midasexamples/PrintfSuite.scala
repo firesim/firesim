@@ -75,8 +75,7 @@ abstract class PrintModuleTest(val platform: BasePlatformConfig)
   }
 }
 
-class PrintfModuleF1Test    extends PrintModuleTest(BaseConfigs.F1)
-class PrintfModuleVitisTest extends PrintModuleTest(BaseConfigs.Vitis)
+class PrintfModuleF1Test extends PrintModuleTest(BaseConfigs.F1)
 
 abstract class NarrowPrintfModuleTest(val platform: BasePlatformConfig)
     extends PrintfSuite(
@@ -89,8 +88,7 @@ abstract class NarrowPrintfModuleTest(val platform: BasePlatformConfig)
   }
 }
 
-class NarrowPrintfModuleF1Test    extends NarrowPrintfModuleTest(BaseConfigs.F1)
-class NarrowPrintfModuleVitisTest extends NarrowPrintfModuleTest(BaseConfigs.Vitis)
+class NarrowPrintfModuleF1Test extends NarrowPrintfModuleTest(BaseConfigs.F1)
 
 abstract class MulticlockPrintfModuleTest(val platform: BasePlatformConfig)
     extends PrintfSuite(
@@ -111,8 +109,7 @@ abstract class MulticlockPrintfModuleTest(val platform: BasePlatformConfig)
   }
 }
 
-class MulticlockPrintF1Test    extends MulticlockPrintfModuleTest(BaseConfigs.F1)
-class MulticlockPrintVitisTest extends MulticlockPrintfModuleTest(BaseConfigs.Vitis)
+class MulticlockPrintF1Test extends MulticlockPrintfModuleTest(BaseConfigs.F1)
 
 class AutoCounterPrintfF1Test
     extends PrintfSuite(
@@ -176,7 +173,6 @@ class PrintfGlobalResetConditionTest
 class PrintfSynthesisCITests
     extends Suites(
       new PrintfModuleF1Test,
-      new PrintfModuleVitisTest,
       new NarrowPrintfModuleF1Test,
       new MulticlockPrintF1Test,
       new PrintfCycleBoundsF1Test,

@@ -18,11 +18,11 @@ class F1Shim(implicit p: Parameters) extends PlatformShim {
   lazy val module = new LazyModuleImp(this) {
 
     if (p(F1ShimHasQSFPPorts)) {
-      val qsfpCnt = top.qsfpCnt
-      val qsfpBitWidth = p(FPGATopQSFPBitWidth)
+      val qsfpCnt            = top.qsfpCnt
+      val qsfpBitWidth       = p(FPGATopQSFPBitWidth)
       val io_qsfp_channel_up = IO(Vec(2, Input(Bool())))
-      val io_qsfp_tx = IO(Vec(2, Decoupled(UInt(qsfpBitWidth.W))))
-      val io_qsfp_rx = IO(Vec(2, Flipped(Decoupled(UInt(qsfpBitWidth.W)))))
+      val io_qsfp_tx         = IO(Vec(2, Decoupled(UInt(qsfpBitWidth.W))))
+      val io_qsfp_rx         = IO(Vec(2, Flipped(Decoupled(UInt(qsfpBitWidth.W)))))
 
       // tie down default values
       for (i <- 0 until 2) {
@@ -32,14 +32,14 @@ class F1Shim(implicit p: Parameters) extends PlatformShim {
       }
 
       for (i <- 0 until qsfpCnt) {
-        io_qsfp_tx(i) <> top.module.qsfp(i).tx
-        top.module.qsfp(i).rx <> io_qsfp_rx(i)
+        io_qsfp_tx(i)                 <> top.module.qsfp(i).tx
+        top.module.qsfp(i).rx         <> io_qsfp_rx(i)
         top.module.qsfp(i).channel_up := io_qsfp_channel_up(i)
       }
     }
 
     val io_master = IO(Flipped(new NastiIO()(p.alterPartial { case NastiKey => p(CtrlNastiKey) })))
-    val io_pcis    = IO(Flipped(new NastiIO()(p.alterPartial { case NastiKey =>
+    val io_pcis   = IO(Flipped(new NastiIO()(p.alterPartial { case NastiKey =>
       NastiParameters(p(CPUManagedAXI4Key).get.axi4BundleParams)
     })))
     val io_slave  = IO(Vec(p(HostMemNumChannels), AXI4Bundle(p(HostMemChannelKey).axi4BundleParams)))
@@ -67,7 +67,7 @@ class F1Shim(implicit p: Parameters) extends PlatformShim {
     }
 
     if (p(F1ShimHasPCIMPorts)) {
-      val io_pcim    = IO(new NastiIO()(p.alterPartial { case NastiKey =>
+      val io_pcim = IO(new NastiIO()(p.alterPartial { case NastiKey =>
         NastiParameters(p(FPGAManagedAXI4Key).get.axi4BundleParams)
       }))
 

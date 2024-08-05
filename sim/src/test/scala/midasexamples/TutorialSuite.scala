@@ -12,8 +12,7 @@ import org.chipsalliance.cde.config.Config
 import firesim.{BasePlatformConfig, TestSuiteCommon}
 
 object BaseConfigs {
-  case object F1    extends BasePlatformConfig("f1", Seq(classOf[DefaultF1Config]))
-  case object Vitis extends BasePlatformConfig("vitis", Seq(classOf[DefaultVitisConfig]))
+  case object F1 extends BasePlatformConfig("f1", Seq(classOf[DefaultF1Config]))
 }
 
 abstract class TutorialSuite(
@@ -39,14 +38,6 @@ abstract class TutorialSuite(
   }
 }
 
-class VitisCITests
-    extends Suites(
-      new GCDVitisTest,
-      new ParityVitisTest,
-      new PrintfModuleVitisTest,
-      new MulticlockPrintVitisTest,
-    )
-
 // These groups are vestigial from CircleCI container limits
 class CIGroupA
     extends Suites(
@@ -67,5 +58,4 @@ class CIGroupB
       new firesim.AllMidasUnitTests,
       new firesim.FailingUnitTests,
       new FMRCITests,
-      new VitisCITests,
     )

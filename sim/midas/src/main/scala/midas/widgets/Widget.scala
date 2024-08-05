@@ -262,11 +262,9 @@ abstract class WidgetImp(wrapper: Widget) extends LazyModuleImp(wrapper) {
     sb.append(s"#endif // ${guard}\n")
   }
 
-  def genPartitioningConstants(sb: StringBuilder): Unit = {
-  }
+  def genPartitioningConstants(sb: StringBuilder): Unit = {}
 
-  def genPeerToPeerAddrMap(sb: StringBuilder): Unit = {
-  }
+  def genPeerToPeerAddrMap(sb: StringBuilder): Unit = {}
 }
 
 object Widget {

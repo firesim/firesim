@@ -2,24 +2,18 @@
 
 from fabric.api import prefix, settings, run, execute # type: ignore
 
-from common import manager_fsim_dir, set_fabric_firesim_pem
+import fabric_cfg
+from ci_variables import ci_env
 
 def build_default_workloads():
-    """ Builds workloads that will be run on F1 instances as part of CI """
+    """Builds default workloads packaged with FireSim"""
 
-    with prefix(f'cd {manager_fsim_dir} && source sourceme-manager.sh'), \
-         prefix(f'cd {manager_fsim_dir}/deploy/workloads'):
-
-        # avoid logging excessive amounts to prevent GH-A masking secrets (which slows down log output)
-        with settings(warn_only=True):
-            rc = run("marshal -v build br-base.json &> br-base.full.log").return_code
-            if rc != 0:
-                run("cat br-base.full.log")
-                raise Exception("Building br-base.json failed to run")
-
-        run("make linux-poweroff")
-        run("make allpaper")
+    with prefix(f"cd {ci_env['REMOTE_WORK_DIR']}"):
+        with prefix('source sourceme-manager.sh --skip-ssh-setup'):
+            run("marshal -v build br-base.json")
+            with prefix("cd deploy/workloads"):
+                run("make linux-poweroff")
+                run("make allpaper")
 
 if __name__ == "__main__":
-    set_fabric_firesim_pem()
     execute(build_default_workloads, hosts=["localhost"])

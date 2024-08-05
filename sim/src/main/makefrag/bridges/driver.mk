@@ -12,6 +12,7 @@ firesim_lib_dir = $(firesim_base_dir)/firesim-lib/src/main/cc/
 DRIVER_H = $(shell find $(driver_dir) -name "*.h")
 
 DRIVER_CC := \
+		$(RISCV)/lib/libfesvr.a \
 		$(driver_dir)/bridges/BridgeHarness.cc \
 		$(driver_dir)/bridges/$(DESIGN).cc \
 		$(testchipip_csrc_dir)/testchip_tsi.cc \
@@ -23,8 +24,6 @@ DRIVER_CC := \
 			bridges/dmibridge.cc \
 			bridges/blockdev.cc \
 			bridges/tracerv.cc \
-			fesvr/firesim_tsi.cc \
-			fesvr/firesim_dtm.cc \
 			$(addsuffix .cc, fesvr/* bridges/tracerv/*) \
 		))
 
@@ -39,5 +38,5 @@ TARGET_CXX_FLAGS := \
 
 TARGET_LD_FLAGS := \
 		-L$(RISCV)/lib \
-		-lfesvr \
+		-Wl,-rpath,$(RISCV)/lib \
 		-l:libdwarf.so -l:libelf.so

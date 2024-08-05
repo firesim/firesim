@@ -33,6 +33,7 @@ from runtools.utils import is_on_aws
 from util.inheritors import inheritors
 from util.deepmerge import deep_merge
 from util.streamlogger import InfoStreamLogger
+from util.export import create_export_string
 from buildtools.bitbuilder import get_deploy_dir
 from util.io import downloadURI
 
@@ -531,9 +532,7 @@ class RuntimeHWConfig:
         rootLogger.info(f"Building {self.driver_type_message} driver for {str(self.get_deployquintuplet_for_config())}")
 
         with InfoStreamLogger('stdout'), prefix(f'cd {get_deploy_dir()}/../'), \
-            prefix(f'export RISCV={os.getenv("RISCV", "")}'), \
-            prefix(f'export PATH={os.getenv("PATH", "")}'), \
-            prefix(f'export LD_LIBRARY_PATH={os.getenv("LD_LIBRARY_PATH", "")}'), \
+            prefix(create_export_string({'RISCV', 'PATH', 'LD_LIBRARY_PATH'})), \
             prefix('source sourceme-manager.sh --skip-ssh-setup'), \
             prefix('cd sim/'):
             driverbuildcommand = f"make PLATFORM={self.get_platform()} TARGET_PROJECT={target_project} DESIGN={design} TARGET_CONFIG={target_config} PLATFORM_CONFIG={platform_config} {self.get_driver_build_target()}"

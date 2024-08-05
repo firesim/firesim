@@ -14,3 +14,4 @@ scala-doc-env.sh
 .metals
 vivado*.log
 vivado*.jou
+__pycache__

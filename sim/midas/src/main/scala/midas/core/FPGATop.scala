@@ -13,7 +13,7 @@ import freechips.rocketchip.amba.axi4._
 import org.chipsalliance.cde.config.{Field, Parameters}
 import freechips.rocketchip.diplomacy._
 import midas.targetutils.xdc._
-import midas.targetutils.{FireSimQueueHelper}
+import midas.targetutils.FireSimQueueHelper
 import scala.collection.immutable.ListMap
 
 /** The following [[Field]] s capture the parameters of the four AXI4 bus types presented to a simulator (in
@@ -121,8 +121,8 @@ case class CPUManagedAXI4Params(
 
 class QSFPBundle(qsfpBitWidth: Int) extends Bundle {
   val channel_up = Input(Bool())
-  val tx = Decoupled(UInt(qsfpBitWidth.W))
-  val rx = Flipped(Decoupled(UInt(qsfpBitWidth.W)))
+  val tx         = Decoupled(UInt(qsfpBitWidth.W))
+  val rx         = Flipped(Decoupled(UInt(qsfpBitWidth.W)))
 }
 
 object QSFPBundle {
@@ -295,12 +295,12 @@ class FPGATop(implicit p: Parameters) extends LazyModule with HasWidgets {
 
   val bridgesWithFromQSFPStreams = bridgeModuleMap.values
     .collect { case b: StreamFromQSFP => b }
-  val hasFromQSFPStreams       = bridgesWithFromQSFPStreams.nonEmpty
+  val hasFromQSFPStreams         = bridgesWithFromQSFPStreams.nonEmpty
 
   // Below separates bridges for P2P (between 2 FPGAs) using partial functions
   val bridgesWithToPeerFPGAStreams = bridgeModuleMap.values
     .collect { case b: StreamToPeerFPGA => b }
-  val hasToFPGAStreams         = bridgesWithToPeerFPGAStreams.nonEmpty
+  val hasToFPGAStreams             = bridgesWithToPeerFPGAStreams.nonEmpty
 
   def printStreamSummary(streams: Iterable[StreamParameters], header: String): Unit = {
     val summaries = streams.toList match {
@@ -311,15 +311,15 @@ class FPGATop(implicit p: Parameters) extends LazyModule with HasWidgets {
     println((header +: summaries).mkString("\n  "))
   }
 
-  val toCPUStreamParams    = bridgesWithToHostCPUStreams.map { _.streamSourceParams }
-  val fromCPUStreamParams  = bridgesWithFromHostCPUStreams.map { _.streamSinkParams }
+  val toCPUStreamParams   = bridgesWithToHostCPUStreams.map { _.streamSourceParams }
+  val fromCPUStreamParams = bridgesWithFromHostCPUStreams.map { _.streamSinkParams }
 
   val toQSFPStreamParams   = bridgesWithToQSFPStreams.map { _.streamSourceParams }
   val fromQSFPStreamParams = bridgesWithFromQSFPStreams.map { _.streamSinkParams }
 
-  val qsfpToStreamCnt = bridgesWithToQSFPStreams.toSeq.length
+  val qsfpToStreamCnt   = bridgesWithToQSFPStreams.toSeq.length
   val qsfpFromStreamCnt = bridgesWithFromQSFPStreams.toSeq.length
-  val qsfpCnt = qsfpToStreamCnt
+  val qsfpCnt           = qsfpToStreamCnt
   require(qsfpToStreamCnt == qsfpFromStreamCnt, "qsfpToStream & qsfpFromStream does not match")
 
   def printQSFPSummary(): Unit = {
@@ -327,7 +327,7 @@ class FPGATop(implicit p: Parameters) extends LazyModule with HasWidgets {
     println(s"QSFP bits at FPGATop ${p(FPGATopQSFPBitWidth)}")
   }
 
-  val toPeerFPGAStreamParams   = bridgesWithToPeerFPGAStreams.map { _.streamSourceParams } // for p2p
+  val toPeerFPGAStreamParams = bridgesWithToPeerFPGAStreams.map { _.streamSourceParams } // for p2p
 
   val (streamingEngine, cpuManagedAXI4NodeTuple) =
     if (toCPUStreamParams.isEmpty && fromCPUStreamParams.isEmpty) { (None, None) }
@@ -365,16 +365,16 @@ class FPGATop(implicit p: Parameters) extends LazyModule with HasWidgets {
       (Some(streamingEngine), cpuManagedAXI4NodeTuple)
     }
 
-    val (fpgaStreamingEngine, fpgaManagedAXI4NodeTuple) =
-      if (toPeerFPGAStreamParams.isEmpty) { (None, None) }
-      else {
-        // FPGA Streaming Enginer (AWS PCIM)
-        val fpgaStreamEngineParams = StreamEngineParameters(toPeerFPGAStreamParams.toSeq, Seq())
-        val fpgaStreamingEngine    = addWidget(p(FPGAStreamEngineInstantiatorKey)(fpgaStreamEngineParams, p))
-        require(
-          fpgaStreamingEngine.fpgaManagedAXI4NodeOpt.isEmpty || p(FPGAManagedAXI4Key).nonEmpty,
-          "Selected StreamEngine uses the FPGA-managed AXI4 interface but it is not available on this platform.",
-          )
+  val (fpgaStreamingEngine, fpgaManagedAXI4NodeTuple) =
+    if (toPeerFPGAStreamParams.isEmpty) { (None, None) }
+    else {
+      // FPGA Streaming Enginer (AWS PCIM)
+      val fpgaStreamEngineParams = StreamEngineParameters(toPeerFPGAStreamParams.toSeq, Seq())
+      val fpgaStreamingEngine    = addWidget(p(FPGAStreamEngineInstantiatorKey)(fpgaStreamEngineParams, p))
+      require(
+        fpgaStreamingEngine.fpgaManagedAXI4NodeOpt.isEmpty || p(FPGAManagedAXI4Key).nonEmpty,
+        "Selected StreamEngine uses the FPGA-managed AXI4 interface but it is not available on this platform.",
+      )
 
       val fpgaManagedAXI4NodeTuple = p(FPGAManagedAXI4Key).map { params =>
         val node = AXI4SlaveNode(
@@ -431,7 +431,7 @@ class FPGATopImp(outer: FPGATop)(implicit p: Parameters) extends LazyModuleImp(o
   val mem  = IO(Vec(outer.memAXI4Nodes.length, AXI4Bundle(p(HostMemChannelKey).axi4BundleParams)))
 
   val qsfpBitWidth = p(FPGATopQSFPBitWidth)
-  val qsfp = IO(Vec(outer.qsfpCnt, QSFPBundle(qsfpBitWidth)))
+  val qsfp         = IO(Vec(outer.qsfpCnt, QSFPBundle(qsfpBitWidth)))
 
   val cpu_managed_axi4 = outer.cpuManagedAXI4NodeTuple.map { case (node, params) =>
     println("Creating AXI4 Slave for cpu managed node")
@@ -481,43 +481,43 @@ class FPGATopImp(outer: FPGATop)(implicit p: Parameters) extends LazyModuleImp(o
   QSFPPortLocHint()
 
   outer.bridgesWithToQSFPStreams.zip(outer.bridgesWithFromQSFPStreams).zipWithIndex.foreach { x =>
-    val toQSFPsrc = x._1._1
+    val toQSFPsrc    = x._1._1
     val fromQSFPsink = x._1._2
-    val idx = x._2
+    val idx          = x._2
 
-    val bramQueueDepth = p(FPGATopQSFPBRAMQueueDepth)
-    val qsfpStreamBitWidth = p(QSFPStreamBitWidth)
-    val toQSFPBigTokenQueueIO = FireSimQueueHelper.makeIO(UInt(qsfpStreamBitWidth.W), bramQueueDepth)
+    val bramQueueDepth          = p(FPGATopQSFPBRAMQueueDepth)
+    val qsfpStreamBitWidth      = p(QSFPStreamBitWidth)
+    val toQSFPBigTokenQueueIO   = FireSimQueueHelper.makeIO(UInt(qsfpStreamBitWidth.W), bramQueueDepth)
     val fromQSFPBigTokenQueueIO = FireSimQueueHelper.makeIO(UInt(qsfpStreamBitWidth.W), bramQueueDepth)
-    val chan_up = qsfp(idx).channel_up
+    val chan_up                 = qsfp(idx).channel_up
 
     toQSFPBigTokenQueueIO.enq <> toQSFPsrc.streamEnq
 
-    qsfp(idx).tx.bits  := toQSFPBigTokenQueueIO.deq.bits
-    qsfp(idx).tx.valid := toQSFPBigTokenQueueIO.deq.valid && chan_up && !reset.asBool
+    qsfp(idx).tx.bits               := toQSFPBigTokenQueueIO.deq.bits
+    qsfp(idx).tx.valid              := toQSFPBigTokenQueueIO.deq.valid && chan_up && !reset.asBool
     toQSFPBigTokenQueueIO.deq.ready := qsfp(idx).tx.ready && chan_up && !reset.asBool
 
     fromQSFPsink.streamDeq <> fromQSFPBigTokenQueueIO.deq
 
     fromQSFPBigTokenQueueIO.enq.bits  := qsfp(idx).rx.bits
     fromQSFPBigTokenQueueIO.enq.valid := qsfp(idx).rx.valid && chan_up
-    qsfp(idx).rx.ready := fromQSFPBigTokenQueueIO.enq.ready && chan_up && !reset.asBool
+    qsfp(idx).rx.ready                := fromQSFPBigTokenQueueIO.enq.ready && chan_up && !reset.asBool
 
     if (p(MetasimPrintfEnable)) {
-      when (qsfp(idx).rx.fire()) {
+      when(qsfp(idx).rx.fire()) {
         PrintfLogger.logInfo("FPGATop qsfp(%d).rx.fire\n", idx.U)
         for (i <- 0 until qsfpBitWidth / 64) {
           val start = i * 64
-          val end = (i + 1) * 64
-          PrintfLogger.logInfo("FPGATop bits(%d, %d): 0x%x\n", (end-1).U, start.U, qsfp(idx).rx.bits(end-1, start))
+          val end   = (i + 1) * 64
+          PrintfLogger.logInfo("FPGATop bits(%d, %d): 0x%x\n", (end - 1).U, start.U, qsfp(idx).rx.bits(end - 1, start))
         }
       }
-      when (qsfp(idx).tx.fire()) {
+      when(qsfp(idx).tx.fire()) {
         PrintfLogger.logInfo("FPGATop qsfp(%d).tx.fire\n", idx.U)
         for (i <- 0 until qsfpBitWidth / 64) {
           val start = i * 64
-          val end = (i + 1) * 64
-          PrintfLogger.logInfo("FPGATop bits(%d, %d): 0x%x\n", (end-1).U, start.U, qsfp(idx).tx.bits(end-1, start))
+          val end   = (i + 1) * 64
+          PrintfLogger.logInfo("FPGATop bits(%d, %d): 0x%x\n", (end - 1).U, start.U, qsfp(idx).tx.bits(end - 1, start))
         }
       }
     }
@@ -546,7 +546,7 @@ class FPGATopImp(outer: FPGATop)(implicit p: Parameters) extends LazyModuleImp(o
     }
   }
 
-   // Connect PCIM bridges to FPGA streaming engine
+  // Connect PCIM bridges to FPGA streaming engine
   outer.fpgaStreamingEngine.map { streamingEngine =>
     val toPeer = streamingEngine.streamsToHostCPU
     for (((sink, src), idx) <- toPeer.zip(outer.bridgesWithToPeerFPGAStreams).zipWithIndex) {
@@ -557,8 +557,8 @@ class FPGATopImp(outer: FPGATop)(implicit p: Parameters) extends LazyModuleImp(o
       )
       sink <> src.streamEnq
     }
-    // Receving peer-to-peer transactions happens on PCI-S
-    // Hence the receiving side of the stream should is included in outer.streamingEngine
+  // Receving peer-to-peer transactions happens on PCI-S
+  // Hence the receiving side of the stream should is included in outer.streamingEngine
   }
 
   outer.genCtrlIO(ctrl)
@@ -584,7 +584,7 @@ class FPGATopImp(outer: FPGATop)(implicit p: Parameters) extends LazyModuleImp(o
       sb.append("}")
     }
 
-    def printQSFPConfig(conf: (Int)) : Unit = {
+    def printQSFPConfig(conf: (Int)): Unit = {
       val (dataBits) = conf
       sb.append("FPGATopQSFPConfig{")
       sb.append(s"${dataBits}, ${outer.qsfpCnt}")

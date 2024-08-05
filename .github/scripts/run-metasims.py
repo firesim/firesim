@@ -1,10 +1,9 @@
 #!/usr/bin/env python3
 
-import sys
 from pathlib import Path
-
 from fabric.api import prefix, run, settings, execute # type: ignore
 
+import fabric_cfg
 from ci_variables import ci_env
 
 def run_parallel_metasim():
@@ -52,13 +51,14 @@ def run_parallel_metasim():
 
                     if rc != 0:
                         # need to confirm that instance is off
-                        print(f"Workload {workload} failed. Terminating runfarm.")
+                        print("Terminating runfarm.")
                         run(f"firesim terminaterunfarm -q -c {workload}")
-                        sys.exit(rc)
+                        raise Exception(f"Workload {workload} failed with code: {rc}")
                     else:
                         print(f"Workload {workload} successful.")
 
             run_w_timeout(f"{ci_env['REMOTE_WORK_DIR']}/deploy/workloads/ci/hello-world-localhost-vcs-metasim.yaml", "45m")
+            run_w_timeout(f"{ci_env['REMOTE_WORK_DIR']}/deploy/workloads/ci/hello-world-localhost-verilator-metasim.yaml", "45m")
 
 if __name__ == "__main__":
     execute(run_parallel_metasim, hosts=["localhost"])

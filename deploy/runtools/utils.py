@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import sys
 import lddwrap
 import logging
 from os import fspath
@@ -14,7 +15,7 @@ from tempfile import TemporaryDirectory
 from awstools.awstools import get_localhost_instance_id
 from buildtools.bitbuilder import get_deploy_dir
 
-from typing import List, Tuple, Type
+from typing import List, Tuple, Type, Optional
 
 rootLogger = logging.getLogger()
 
@@ -70,7 +71,7 @@ def get_local_shared_libraries(elf: str) -> List[Tuple[str, str]]:
             rpm_output = local("rpm -q -f /lib64/libc.so* --filesbypkg | grep -P '\.so(\.|\s*$)'")
             if rpm_output.return_code == 1:
                 print(f"Warning got:\n{rpm_output.stderr}")
-            glibc_shared_libs.extend(rm_output.split('\n'))
+            glibc_shared_libs.extend(rpm_output.split('\n'))
 
     libs = []
     rootLogger.debug(f"Identifying ldd dependencies for: {elf}")
@@ -156,7 +157,7 @@ class MacAddress():
         return cls.next_mac_alloc
 
 def is_on_aws() -> bool:
-    return get_localhost_instance_id()
+    return get_localhost_instance_id() is not None
 
 def run_only_aws(*args, **kwargs) -> None:
     """ Enforce that the Fabric run command is only run on AWS. """
@@ -173,7 +174,7 @@ def get_md5(file):
 # must be updated at the same time as the documentation/installation instructions
 script_path = Path("/usr/local/bin")
 
-def check_script(remote_script_str: str, search_dir: Option[Path] = None) -> None:
+def check_script(remote_script_str: str, search_dir: Optional[Path] = None) -> None:
     """ Given a remote_script (absolute or relative path), search for the
     script in a known location (based on it's name) in the local FireSim
     repo and compare it's contents to ensure they are the same.

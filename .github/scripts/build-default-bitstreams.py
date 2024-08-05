@@ -1,13 +1,11 @@
 #!/usr/bin/env python3
 
-import sys
 from pathlib import Path
 from fabric.api import prefix, run, settings, execute # type: ignore
-import os
 from github import Github
-import base64
 import time
 
+import fabric_cfg
 from ci_variables import ci_env
 
 from typing import List, Tuple
@@ -72,7 +70,7 @@ def upload_binary_file(local_file_path, gh_file_path):
     return r['commit'].sha
 
 def run_local_buildbitstreams():
-    """ Runs local buildbitstreams"""
+    """Runs local buildbitstreams"""
 
     # assumptions:
     #   - machine-launch-script requirements are already installed
@@ -151,7 +149,7 @@ def run_local_buildbitstreams():
                     log_lines = 200
                     print(f"Buildbitstream failed. Printing {log_lines} of last log file:")
                     run(f"""LAST_LOG=$(ls | tail -n1) && if [ -f "$LAST_LOG" ]; then tail -n{log_lines} $LAST_LOG; fi""")
-                    sys.exit(rc)
+                    raise Exception(f"Buildbitstream failed with code: {rc}")
 
                 hwdb_entry_dir = f"{manager_fsim_dir}/deploy/built-hwdb-entries"
                 links = []
@@ -202,13 +200,13 @@ def run_local_buildbitstreams():
                                 # print out the bit line
                                 sample_hwdb_file.write(new_bit_line + '\n')
                             else:
-                                sys.exit("::ERROR:: Something went wrong")
+                                raise Exception("::ERROR:: Something went wrong")
                         else:
                             # if no match print other lines
                             sample_hwdb_file.write(line + '\n')
 
                     if match_bit == True:
-                        sys.exit(f"::ERROR:: Unable to replace URL for {hwdb_entry_name} in {sample_hwdb_filename}")
+                        raise Exception(f"::ERROR:: Unable to replace URL for {hwdb_entry_name} in {sample_hwdb_filename}")
 
                 # strip newlines from end of file
                 with open(sample_hwdb_filename, "r+") as sample_hwdb_file:

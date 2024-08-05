@@ -2,13 +2,10 @@ package midas
 package passes
 
 import firrtl._
-import firrtl.ir._
-import firrtl.annotations._
-import firrtl.annotations.ModuleTarget
 import midas.passes.partition._
 
 class CheckCombLogicTransforms extends Transform {
-  def inputForm = LowForm
+  def inputForm  = LowForm
   def outputForm = LowForm
 
   def execute(state: CircuitState) = {
@@ -30,9 +27,8 @@ class CheckCombLogicTransforms extends Transform {
       new EmitFirrtl("pre-processed.fir"),
       new CheckCombLogic,
       new fame.EmitFAMEAnnotations("post-check-comb.anno.json"),
-      new ResolveAndCheck
-      )
-    (xforms foldLeft state)((in, xform) =>
-    xform runTransform in).copy(form=outputForm)
+      new ResolveAndCheck,
+    )
+    (xforms.foldLeft(state))((in, xform) => xform.runTransform(in)).copy(form = outputForm)
   }
 }

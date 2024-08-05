@@ -103,10 +103,9 @@ else
     # done with cloning base then installing conda lock to speed up dependency solving.
     CONDA_LOCK_ENV_PATH=$FDIR/.conda-lock-env
     rm -rf $CONDA_LOCK_ENV_PATH
-    conda create -y -p $CONDA_LOCK_ENV_PATH --clone base
+    conda create -y -p $CONDA_LOCK_ENV_PATH -c conda-forge $(grep "conda-lock" $FDIR/conda-reqs/firesim.yaml | sed 's/^ \+-//')
     source $(conda info --base)/etc/profile.d/conda.sh
     conda activate $CONDA_LOCK_ENV_PATH
-    conda install -y -c conda-forge -p $CONDA_LOCK_ENV_PATH $(grep "conda-lock" $FDIR/conda-reqs/firesim.yaml | sed 's/^ \+-//')
 
     # note: lock file must end in .conda-lock.yml - see https://github.com/conda-incubator/conda-lock/issues/154
     if [ "$USE_PINNED_DEPS" = false ]; then
@@ -131,8 +130,7 @@ if ! type conda >& /dev/null; then
     return 1  # don't want to exit here because this file is sourced
 fi
 
-# if we're sourcing this in a sub process that has conda in the PATH but not as a function, init it again
-conda activate --help >& /dev/null || source $(conda info --base)/etc/profile.d/conda.sh
+source $(conda info --base)/etc/profile.d/conda.sh
 \0
 END_CONDA_ACTIVATE
     env_append "$CONDA_ACTIVATE_PREAMBLE"
@@ -183,6 +181,10 @@ else
 
     # setup marshal symlink (for convenience)
     ln -sf ../target-design/chipyard/software/firemarshal $FDIR/sw/firesim-software
+
+    pushd $FDIR/sw/firesim-software
+    ./init-submodules.sh
+    popd
 
     env_append "export FIRESIM_STANDALONE=1"
     env_append "export PATH=$FDIR/sw/firesim-software:\$PATH"

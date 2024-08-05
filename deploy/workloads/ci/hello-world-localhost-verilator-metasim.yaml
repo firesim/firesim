@@ -2,8 +2,8 @@ run_farm:
   base_recipe: run-farm-recipes/externally_provisioned.yaml
   recipe_arg_overrides:
     run_farm_tag: helloworldlocalhost
-    default_platform: EC2InstanceDeployManager
-    default_simulation_dir: /home/centos/RUN_DIR
+    default_platform: XilinxAlveoU250InstanceDeployManager
+    default_simulation_dir: /scratch/buildbot/RUN_DIR
     run_farm_hosts_to_use:
       - localhost: four_metasims_spec
 
@@ -31,7 +31,7 @@ tracing:
   end: -1
 
 autocounter:
-    read_rate: 0
+  read_rate: 0
 
 workload:
   workload_name: bare.json

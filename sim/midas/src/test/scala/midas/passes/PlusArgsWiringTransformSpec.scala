@@ -5,15 +5,15 @@ package midas.tests
 import firrtl.annotations._
 import firrtl.testutils._
 
-import midas.passes.{PlusArgsWiringTransform}
-import midas.targetutils.{PlusArgFirrtlAnnotation}
+import midas.passes.PlusArgsWiringTransform
+import midas.targetutils.PlusArgFirrtlAnnotation
 
 class PlusArgsWiringTransformSpec extends LowTransformSpec with FirrtlRunners {
 
   def transform = PlusArgsWiringTransform
 
-  def midMT = ModuleTarget("Top", "Mid")
-  def inAnno = PlusArgFirrtlAnnotation(midMT.instOf("plusarg_reader_i", "plusarg_reader"))
+  def midMT   = ModuleTarget("Top", "Mid")
+  def inAnno  = PlusArgFirrtlAnnotation(midMT.instOf("plusarg_reader_i", "plusarg_reader"))
   val inAnnos = Seq(inAnno)
 
   behavior.of("PlusArgsWiringTransform")

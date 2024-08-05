@@ -179,6 +179,8 @@ abstract class TestSuiteCommon(targetProject: String) extends TestSuiteBase {
       }
     }
 
+    println(s"Simulators: ${buffer.toSeq}")
+
     buffer.toSeq
   }
 

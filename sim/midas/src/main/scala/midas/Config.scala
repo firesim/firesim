@@ -10,7 +10,6 @@ import junctions.NastiParameters
 import org.chipsalliance.cde.config.{Parameters, Config, Field}
 import freechips.rocketchip.diplomacy.{TransferSizes}
 
-import firrtl.options.Dependency
 
 import java.io.{File}
 

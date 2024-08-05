@@ -61,3 +61,4 @@ See `ci:*` for full list of labels:
 - `ci:local-fpga-buildbitstream-deploy` - Build local FPGA bitstreams for platforms that are released
 - `ci:persist-prior-workflows` - Prevent prior CI workflows from automatically cancelling with subsequent changes
 - `ci:disable` - Disable CI
+- `ci:disable-scala-tests` - Disable Scala tests in CI

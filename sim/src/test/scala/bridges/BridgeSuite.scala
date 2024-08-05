@@ -14,8 +14,7 @@ import org.chipsalliance.cde.config._
 import firesim.{BasePlatformConfig, TestSuiteCommon}
 
 object BaseConfigs {
-  case object F1    extends BasePlatformConfig("f1", Seq(classOf[DefaultF1Config]))
-  case object Vitis extends BasePlatformConfig("vitis", Seq(classOf[DefaultVitisConfig]))
+  case object F1 extends BasePlatformConfig("f1", Seq(classOf[DefaultF1Config]))
 }
 
 abstract class BridgeSuite(
@@ -59,8 +58,7 @@ class UARTTest(targetConfig: BasePlatformConfig) extends BridgeSuite("UARTModule
   }
 }
 
-class UARTF1Test    extends UARTTest(BaseConfigs.F1)
-class UARTVitisTest extends UARTTest(BaseConfigs.Vitis)
+class UARTF1Test extends UARTTest(BaseConfigs.F1)
 
 class BlockDevTest(targetConfig: BasePlatformConfig)
     extends BridgeSuite("BlockDevModule", "BlockDevConfig", targetConfig) {
@@ -95,17 +93,13 @@ class BlockDevTest(targetConfig: BasePlatformConfig)
   }
 }
 
-class BlockDevF1Test    extends BlockDevTest(BaseConfigs.F1)
-class BlockDevVitisTest extends BlockDevTest(BaseConfigs.Vitis)
+class BlockDevF1Test extends BlockDevTest(BaseConfigs.F1)
 
 class BridgeTests
     extends Suites(
       new UARTF1Test,
-      new UARTVitisTest,
       new BlockDevF1Test,
-      new BlockDevVitisTest,
       new TracerVF1TestCount1,
       new TracerVF1TestCount6,
       new TracerVF1TestCount7,
-      new TracerVVitisTest,
     )
