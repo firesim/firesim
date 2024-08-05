@@ -94,6 +94,15 @@ if [ "$IS_LIBRARY" = true ]; then
         exit 5
     fi
 else
+    # create conda-lock only environment to be used in this section.
+    # done with cloning base then installing conda lock to speed up dependency solving.
+    CONDA_LOCK_ENV_PATH=$FDIR/.conda-lock-env
+    rm -rf $CONDA_LOCK_ENV_PATH
+    conda create -y -p $CONDA_LOCK_ENV_PATH --clone base
+    source $(conda info --base)/etc/profile.d/conda.sh
+    conda activate $CONDA_LOCK_ENV_PATH
+    conda install -y -c conda-forge -p $CONDA_LOCK_ENV_PATH $(grep "conda-lock" $FDIR/conda-reqs/firesim.yaml | sed 's/^ \+-//')
+
     # note: lock file must end in .conda-lock.yml - see https://github.com/conda-incubator/conda-lock/issues/154
     if [ "$USE_PINNED_DEPS" = false ]; then
         # auto-gen the lockfile
