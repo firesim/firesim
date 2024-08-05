@@ -3,7 +3,7 @@ channels:
     - ucb-bar
     - nodefaults
 
-# remove non-standard conda-lock 'platforms' key to use this file with conda-incubator/setup-miniconda GH action
+# remove non-standard 'platforms' key to use this file with conda-incubator/setup-miniconda GH action
 
 dependencies:
     # https://conda-forge.org/feedstock-outputs/

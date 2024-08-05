@@ -203,7 +203,7 @@ jobs:
       - name: Setup repo
         run: |
           cd ${{ env.REMOTE_WORK_DIR }}
-          ./build-setup.sh --skip-validate
+          ./build-setup.sh --skip-validate --verbose
           source sourceme-manager.sh --skip-ssh-setup
           firesim managerinit --platform xilinx_alveo_u250
           cd sw/firesim-software && ./init-submodules.sh

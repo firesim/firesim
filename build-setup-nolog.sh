@@ -12,14 +12,15 @@ cd "$FDIR"
 
 IS_LIBRARY=false
 USE_PINNED_DEPS=true
+VERBOSE_FLAG=""
 
 function usage
 {
     echo "usage: build-setup.sh [OPTIONS]"
     echo "options:"
-    echo "   --library: if set, initializes submodules assuming FireSim is being used"
-    echo "            as a library submodule."
-    echo "   --unpinned-deps: if set, use unpinned conda package dependencies"
+    echo "   --library: initializes FireSim as a library submodule"
+    echo "   --unpinned-deps: use unpinned conda package dependencies"
+    echo "   --verbose: verbose printout"
 }
 
 while test $# -gt 0
@@ -36,6 +37,10 @@ do
             ;;
         --unpinned-deps)
             USE_PINNED_DEPS=false;
+            ;;
+        --verbose)
+            VERBOSE_FLAG=$1
+            set -x
             ;;
         -h | -H | --help)
             usage
@@ -94,6 +99,15 @@ if [ "$IS_LIBRARY" = true ]; then
         exit 5
     fi
 else
+    # create conda-lock only environment to be used in this section.
+    # done with cloning base then installing conda lock to speed up dependency solving.
+    CONDA_LOCK_ENV_PATH=$FDIR/.conda-lock-env
+    rm -rf $CONDA_LOCK_ENV_PATH
+    conda create -y -p $CONDA_LOCK_ENV_PATH --clone base
+    source $(conda info --base)/etc/profile.d/conda.sh
+    conda activate $CONDA_LOCK_ENV_PATH
+    conda install -y -c conda-forge -p $CONDA_LOCK_ENV_PATH $(grep "conda-lock" $FDIR/conda-reqs/firesim.yaml | sed 's/^ \+-//')
+
     # note: lock file must end in .conda-lock.yml - see https://github.com/conda-incubator/conda-lock/issues/154
     if [ "$USE_PINNED_DEPS" = false ]; then
         # auto-gen the lockfile
@@ -152,6 +166,7 @@ else
 
     pushd $FDIR/target-design/chipyard
     ./build-setup.sh \
+        $VERBOSE_FLAG \
         --skip-conda `# skip conda setup since we share it with chipyard` \
         --skip-ctags `# skip ctags for speed` \
         --skip-precompile `# skip pre-compilation of cy sources for speed` \

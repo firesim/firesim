@@ -3,7 +3,6 @@ channels:
     - ucb-bar
     - nodefaults
 
-# non-standard key used in conda-lock: https://github.com/conda-incubator/conda-lock#platform-specification
 platforms:
     - linux-64
 
@@ -86,9 +85,11 @@ dependencies:
     - screen
     - elfutils
     - libdwarf-dev==0.0.0.20190110_28_ga81397fc4 # from ucb-bar channel - using mainline libdwarf-feedstock
-    - conda-lock=1.4
     - autoconf
     - jq
+
+    # used in build-setup.sh as well
+    - conda-lock=2.5.7
 
     # clang-format for driver coding style enforcement.
     - clang-format
