@@ -27,7 +27,7 @@ public:
             const char *isa,
             const char *priv,
             uint32_t pmp_regions,
-	    uint32_t maxpglevels,
+            uint32_t maxpglevels,
             uint64_t mem0_base,
             uint64_t mem0_size,
             uint64_t mem1_base,
