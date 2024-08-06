@@ -197,6 +197,7 @@ class CospikeBridgeModule(params: CospikeBridgeParams)(implicit p: Parameters)
           CStrLit(params.cfg.isa),
           CStrLit(params.cfg.priv),
           UInt32(params.cfg.pmpregions),
+          UInt32(params.cfg.maxpglevels),
           UInt64(params.cfg.mem0_base),
           UInt64(params.cfg.mem0_size),
           UInt64(params.cfg.mem1_base),
