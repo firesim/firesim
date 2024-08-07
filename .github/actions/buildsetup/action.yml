@@ -7,7 +7,7 @@ runs:
     - run: |
         source /opt/conda/etc/profile.d/conda.sh
         conda activate firesim
-        ./build-setup.sh --skip-validate
+        ./build-setup.sh
         # All actions that run in a GH-hosted container source env.sh before
         # running their jobs. This ensures conda is in the runner's path, which
         # is not the case by default.

@@ -33,7 +33,7 @@ run "timeout 10m grep -q \".*machine launch script complete.*\" <(tail -f /tmp/m
 
 run "git clone https://github.com/firesim/firesim.git"
 run "cd firesim/ && git checkout $FULL_HASH"
-run "cd firesim/ && ./build-setup.sh --fast --skip-validate"
+run "cd firesim/ && ./build-setup.sh"
 run "cd firesim/sw/firesim-software && ./init-submodules.sh"
 # use local aws permissions (for now bypass the manager)
 copy ~/.aws/ $IP_ADDR:~/.aws

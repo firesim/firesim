@@ -6,6 +6,7 @@ if [ ! -d "$REQS_DIR" ]; then
   echo "$REQS_DIR does not exist, make sure you're calling this script from firesim/"
   exit 1
 fi
+rm -rf "$REQS_DIR/conda-reqs.conda-lock.yml"
 conda-lock \
   --no-mamba \
   --no-micromamba \

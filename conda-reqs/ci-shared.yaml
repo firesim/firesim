@@ -3,8 +3,6 @@ channels:
     - ucb-bar
     - nodefaults
 
-# remove non-standard 'platforms' key to use this file with conda-incubator/setup-miniconda GH action
-
 dependencies:
     # https://conda-forge.org/feedstock-outputs/
     #   filterable list of all conda-forge packages
