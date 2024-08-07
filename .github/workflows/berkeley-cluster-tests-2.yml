@@ -130,13 +130,16 @@ jobs:
 
   start-scalatests:
     name: start-scalatests
+    needs: [setup-persistent-repo, start-scalatests]
     # unable to access env context in job.if thus have to put gh-a context expression directly here.
     # note that the check is using a boolean true instead of string 'true' since it's directly using
     # the expression not a variable like if checking against the env context string.
     if: ${{ contains(github.event.pull_request.labels.*.name, 'ci:disable-scala-tests') != true }}
     runs-on: ubuntu-22.04
     steps:
-      - run: true
+      - uses: actions/checkout@v4
+      - name: Precompile scala sources needed for tests
+        run: ./.github/scripts/invoke-make.py "FIRESIM_SBT_PROJECT=firesim SBT_COMMAND=test:compile"
 
   run-targetutils-scala-tests:
     name: run-targetutils-scala-tests
@@ -195,7 +198,7 @@ jobs:
   run-firesim-scala-tests:
     name: run-firesim-scala-tests
     needs: [setup-persistent-repo, start-scalatests]
-    runs-on: local-fpga-2
+    runs-on: local-fpga-shared # since this is a longer lived job, can run on either runner
     steps:
       - uses: actions/checkout@v4
       - name: Run other (CITests) Scala tests

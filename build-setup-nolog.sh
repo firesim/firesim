@@ -143,7 +143,7 @@ git submodule update --init --recursive
 #### Chipyard setup ####
 
 if [ "$IS_LIBRARY" = true ]; then
-    CHIPYARD_DIR="$FDIR/../../.."
+    CHIPYARD_DIR="$FDIR/../.."
 
     # chipyard env.sh should be sourced in library mode.
     env_append "source $CHIPYARD_DIR/env.sh"
