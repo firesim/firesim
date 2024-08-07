@@ -2,6 +2,36 @@
 
 This changelog follows the format defined here: https://keepachangelog.com/en/1.0.0/
 
+## [1.20.0] - 2024-08-07
+
+Various fixes from 1.19.0 release.
+
+## Added
+
+- Add dependabot (by @abejgonzalez in https://github.com/firesim/firesim/pull/1761)
+
+## Changed
+
+- Weekly dependabot w/ CY FPGA builds (by @abejgonzalez in https://github.com/firesim/firesim/pull/1780)
+- Remove need for users to install conda-lock themselves (by @abejgonzalez in https://github.com/firesim/firesim/pull/1778)
+- Bump chipyard for updated cosim interface (by @jerryz123 in https://github.com/firesim/firesim/pull/1783)
+
+## Fixed
+
+- Fix dependabot ccbench branch (by @abejgonzalez in https://github.com/firesim/firesim/pull/1768)
+- Add labels + update GH-A w/ dependabot (by @abejgonzalez in https://github.com/firesim/firesim/pull/1773)
+- Misc fixes and QoL updates (by @abejgonzalez in https://github.com/firesim/firesim/pull/1760)
+- CI Revamp/Cleanup + Fixes from CI (by @abejgonzalez in https://github.com/firesim/firesim/pull/1777)
+
+## Uncategorized
+
+- Bump sw/network-benchmarks from `c4945a7` to `356d978` (by @dependabot[bot] in https://github.com/firesim/firesim/pull/1765)
+- Bump utils/fireperf/FlameGraph from `1b1c6de` to `cd9ee4c` (by @dependabot[bot] in https://github.com/firesim/firesim/pull/1764)
+- Bump platforms/f1/aws-fpga from `73ab4c2` to `53223d7` (by @dependabot[bot] in https://github.com/firesim/firesim/pull/1766)
+- Bump platforms/xilinx_vcu118/garnet-firesim from `b681585` to `9265cf4` (by @dependabot[bot] in https://github.com/firesim/firesim/pull/1771)
+- Bump deploy/workloads/memcached-thread-imbalance/mutilate-loadgen-riscv-release from `873e0e5` to `83559af` (by @dependabot[bot] in https://github.com/firesim/firesim/pull/1770)
+- Fix GH PR attribute for conda-lock (by @abejgonzalez in https://github.com/firesim/firesim/pull/1779)
+
 ## [1.19.0] - 2024-08-01
 
 New FireAxe multi-FPGA partitioning upstreamed. Additional QoL fixes.
