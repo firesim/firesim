@@ -139,7 +139,7 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - name: Precompile scala sources needed for tests
-        run: ./.github/scripts/invoke-make.py "FIRESIM_SBT_PROJECT=firesim SBT_COMMAND=test:compile"
+        run: ./.github/scripts/invoke-make.py "FIRESIM_SBT_PROJECT=firesim SBT_COMMAND=test:compile sbt"
 
   run-targetutils-scala-tests:
     name: run-targetutils-scala-tests
