@@ -23,7 +23,7 @@ from runtools.run_farm_deploy_managers import InstanceDeployManager
 from typing import Dict, Any, cast, List, Set, TYPE_CHECKING, Callable, Optional
 if TYPE_CHECKING:
     from runtools.run_farm import RunFarm
-    from runtools.runtime_config import RuntimeHWDB, RuntimeBuildRecipes
+    from runtools.runtime_config import RuntimeHWDB, RuntimeBuildRecipes, RuntimeHWConfig
     from runtools.workload import WorkloadConfig
 
 rootLogger = logging.getLogger()
@@ -722,7 +722,8 @@ class FireSimTopologyWithPasses:
             if not server.is_partition():
                 continue
             pidx_to_slotid = server.get_partition_config().pidx_to_slotid
-            edges = server.get_partition_config().get_edges()
+            partition_config = server.get_partition_config()
+            edges = partition_config.get_edges()
             for (nbidx, nnode) in edges.values():
                 neighbor_hwdb = nnode.hwdb
                 neighbor_slotid = pidx_to_slotid[nnode.pidx]
@@ -732,9 +733,9 @@ class FireSimTopologyWithPasses:
                 resolved_neighbor_hw_cfg = runtimehwconfig_lookup_fn(neighbor_hwdb)
                 bridge_offset_opt = self.get_bridge_offset(resolved_neighbor_hw_cfg, nbidx)
                 if bridge_offset_opt is not None:
-                    server.partition_config.add_pcim_slot_offset(neighbor_slotid, bridge_offset_opt)
+                    partition_config.add_pcim_slot_offset(neighbor_slotid, bridge_offset_opt)
             rootLogger.info("""pcim slotid bridgeoffset pairs for {}: {}""".format(
-              server.partition_config.get_hwdb(), server.partition_config.pcim_slot_offset))
+              partition_config.get_hwdb(), partition_config.pcim_slot_offset))
 
     def run_workload_passes(self, use_mock_instances_for_testing: bool) -> None:
         """ extra passes needed to do runworkload. """

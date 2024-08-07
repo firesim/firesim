@@ -11,28 +11,28 @@ import java.io.File
 import java.io.FileWriter
 
 object Logger {
-  val file = if (sys.env.get("FIRESIM_STANDALONE") == None) {
+  val file        = if (sys.env.get("FIRESIM_STANDALONE") == None) {
     new File("sims/firesim/sim/midas/test-outputs/stmt-graph.log")
   } else {
     new File("midas/test-outputs/stmt-graph.log")
   }
   val graphWriter = new java.io.FileWriter(file)
 
-  val debugFile = if (sys.env.get("FIRESIM_STANDALONE") == None) {
+  val debugFile   = if (sys.env.get("FIRESIM_STANDALONE") == None) {
     new File("sims/firesim/sim/midas/test-outputs/debug.log")
   } else {
     new File("midas/test-outputs/debug.log")
   }
   val debugWriter = new java.io.FileWriter(debugFile)
 
-  val stmtFile = if (sys.env.get("FIRESIM_STANDALONE") == None) {
+  val stmtFile   = if (sys.env.get("FIRESIM_STANDALONE") == None) {
     new File("sims/firesim/sim/midas/test-outputs/grouped-stmts.log")
   } else {
     new File("midas/test-outputs/grouped-stmts.log")
   }
   val stmtWriter = new java.io.FileWriter(stmtFile)
 
-  val replaceFile = if (sys.env.get("FIRESIM_STANDALONE") == None) {
+  val replaceFile   = if (sys.env.get("FIRESIM_STANDALONE") == None) {
     new File("sims/firesim/sim/midas/test-outputs/replace-debug.log")
   } else {
     new File("midas/test-outputs/replace-debug.log")
@@ -40,18 +40,19 @@ object Logger {
   val replaceWriter = new java.io.FileWriter(replaceFile)
 
   def logPortToGroupIdx(p2i: Map[Port, Int]): Unit = {
-    p2i.foreach { case(p, i) => Logger.logStmt(s"${p.name} -> ${i}") }
+    p2i.foreach { case (p, i) => Logger.logStmt(s"${p.name} -> ${i}") }
   }
 
   def logGroupedRefsAndStmts(
-      name: String,
-      rs: Map[String, (Set[String], Set[Statement])]): Unit = {
+    name: String,
+    rs:   Map[String, (Set[String], Set[Statement])],
+  ): Unit = {
     Logger.logStmt(s"${name} Refs")
-    rs.foreach { case(op, (_, stmts)) =>
+    rs.foreach { case (op, (_, stmts)) =>
       Logger.logStmt(s"--- ${op}")
       stmts.foreach(stmt => Logger.logStmt(s" |- ${stmt}"))
     }
-    rs.foreach { case(op, (refs, _)) =>
+    rs.foreach { case (op, (refs, _)) =>
       Logger.logStmt(s"--- ${op}")
       refs.foreach(ref => Logger.logStmt(s" |- ${ref}"))
     }
@@ -96,24 +97,23 @@ object Logger {
   }
 }
 
-
-
 object SplitModulesByPortsHelperFuncs {
 // def CoherenceManagerWrapper: String = "SimpleModule"
   def CoherenceManagerWrapper: String = "CoherenceManagerWrapper"
 // def CoherenceManagerWrapper: String = "TLCacheCork"
 }
 
-
 case class SplitModulesInfo(
-  mods: Seq[Module],
+  mods:      Seq[Module],
   portToMod: Map[String, Module],
   clockPort: Option[Port],
-  resetPort: Option[Port])
+  resetPort: Option[Port],
+)
 
 case class SplitSubModulesInfo(
-  newMod: Module,
-  submods: Seq[Module])
+  newMod:  Module,
+  submods: Seq[Module],
+)
 
 class FlattenModules extends Transform with DependencyAPIMigration {
   import SplitModulesByPortsHelperFuncs._
@@ -125,13 +125,12 @@ class FlattenModules extends Transform with DependencyAPIMigration {
 // val flattenAnno = modNames.map { n =>
 // FlattenAnnotation(ModuleName(n, CircuitName(state.circuit.main)))
 // }
-    val flattenAnno = FlattenAnnotation(ModuleName(CoherenceManagerWrapper,
-                                                   CircuitName(state.circuit.main)))
-    val flattener = new Flatten
-    val resolver = new ResolveAndCheck
-    val annos = state.annotations :+ flattenAnno
+    val flattenAnno     = FlattenAnnotation(ModuleName(CoherenceManagerWrapper, CircuitName(state.circuit.main)))
+    val flattener       = new Flatten
+    val resolver        = new ResolveAndCheck
+    val annos           = state.annotations :+ flattenAnno
     val preFlattenState = state.copy(annotations = annos)
-    val flattenedState = flattener.runTransform(preFlattenState)
+    val flattenedState  = flattener.runTransform(preFlattenState)
     resolver.runTransform(flattenedState)
   }
 
@@ -160,19 +159,19 @@ class SplitModulesByPortsStandalone extends Transform with DependencyAPIMigratio
 
   private def allBaseRefs(expr: Expression): Seq[String] = {
     val brefs = expr match {
-      case SubField(e, _, _, _) =>
+      case SubField(e, _, _, _)     =>
         allBaseRefsList(Seq(e))
-      case SubIndex(e, _, _, _) =>
+      case SubIndex(e, _, _, _)     =>
         allBaseRefsList(Seq(e))
-      case SubAccess(e, i, _, _) =>
+      case SubAccess(e, i, _, _)    =>
         allBaseRefsList(Seq(e, i))
       case Mux(cond, tval, fval, _) =>
         allBaseRefsList(Seq(cond, tval, fval))
-      case ValidIf(cond, value, _) =>
+      case ValidIf(cond, value, _)  =>
         allBaseRefsList(Seq(cond, value))
-      case DoPrim(_, args, _, _) =>
+      case DoPrim(_, args, _, _)    =>
         allBaseRefsList(args)
-      case e =>
+      case e                        =>
         val br = baseRef(e)
         if (br._2.isDefined) Seq(br._2.get) else Seq()
     }
@@ -181,27 +180,27 @@ class SplitModulesByPortsStandalone extends Transform with DependencyAPIMigratio
 
   private def baseRef(expr: Expression): (Expression, Option[String]) = {
     expr match {
-      case Reference(name, _, _, _) => (expr, Some(name))
+      case Reference(name, _, _, _)   => (expr, Some(name))
       case SubField(subexpr, _, _, _) => baseRef(subexpr)
-      case _ =>
+      case _                          =>
         (expr, None)
     }
   }
 
   private def baseStmtRef(stmt: Statement): Option[String] = {
     val ret = stmt match {
-      case s@DefWire(_, name, _) =>
+      case s @ DefWire(_, name, _)                        =>
         Some(name)
-      case s@DefRegister(_, name, _, _, _, _) =>
+      case s @ DefRegister(_, name, _, _, _, _)           =>
         Some(name)
-      case s@DefMemory(_, name, _, _, _, _, _, _, _, _) =>
+      case s @ DefMemory(_, name, _, _, _, _, _, _, _, _) =>
         Some(name)
-      case s@DefNode(_, name, _) =>
+      case s @ DefNode(_, name, _)                        =>
         Some(name)
-      case s@Stop(_, _, clk, en) =>
+      case s @ Stop(_, _, clk, en)                        =>
         None
-      case s@Print(_) => None
-      case _ => None
+      case s @ Print(_)                                   => None
+      case _                                              => None
     }
     ret
   }
@@ -210,41 +209,41 @@ class SplitModulesByPortsStandalone extends Transform with DependencyAPIMigratio
   private def getRefsInStmt(stmt: Statement): Seq[String] = {
     val refs = mutable.ArrayBuffer[String]()
     stmt match {
-      case DefWire(_, name, _) =>
+      case DefWire(_, name, _)                        =>
         refs.append(name)
-      case DefRegister(_, name, _, _, _, _) =>
+      case DefRegister(_, name, _, _, _, _)           =>
         refs.append(name)
       case DefMemory(_, name, _, _, _, _, _, _, _, _) =>
         refs.append(name)
-      case DefNode(_, name, value) =>
+      case DefNode(_, name, value)                    =>
         refs.append(name)
         refs ++= allBaseRefs(value)
-      case Conditionally(_, pred, conseq, alt) =>
+      case Conditionally(_, pred, conseq, alt)        =>
         refs ++= allBaseRefs(pred)
         refs ++= getRefsInStmt(conseq)
         refs ++= getRefsInStmt(alt)
-      case PartialConnect(_, loc, expr) =>
+      case PartialConnect(_, loc, expr)               =>
         refs ++= allBaseRefsList(Seq(loc, expr))
-      case Connect(_, loc, expr) =>
+      case Connect(_, loc, expr)                      =>
         refs ++= allBaseRefsList(Seq(loc, expr))
-      case IsInvalid(_, expr) =>
+      case IsInvalid(_, expr)                         =>
         refs ++= allBaseRefsList(Seq(expr))
-      case Attach(_, exprs) =>
+      case Attach(_, exprs)                           =>
         refs ++= allBaseRefsList(exprs)
-      case Stop(_, _, _, _) =>
+      case Stop(_, _, _, _)                           =>
         ()
-      case _ =>
+      case _                                          =>
         ()
     }
     refs.toSeq
   }
 
   private def stmtGraph(
-    body: Statement,
-    ports: Seq[Port]
+    body:  Statement,
+    ports: Seq[Port],
   ): (
     mutable.Map[String, mutable.Set[Statement]],
-    mutable.Map[String, mutable.Set[String]]
+    mutable.Map[String, mutable.Set[String]],
   ) = {
     // Statements that defines this reference, or has this reference on the lhs
     val childStmts = mutable.Map[String, mutable.Set[Statement]]()
@@ -258,26 +257,26 @@ class SplitModulesByPortsStandalone extends Transform with DependencyAPIMigratio
     def initChildMap(name: String, stmt: Statement): Unit = {
       childStmts(name) = mutable.Set[Statement]()
       childStmts(name).add(stmt)
-      childRefs(name) = mutable.Set[String]()
+      childRefs(name)  = mutable.Set[String]()
     }
 
     def onStmt(stmt: Statement): Unit = {
       stmt match {
-        case s@DefInstance(_, name, _, _) =>
+        case s @ DefInstance(_, name, _, _)                 =>
           initChildMap(name, s)
-        case s@DefWire(_, name, _) =>
+        case s @ DefWire(_, name, _)                        =>
           initChildMap(name, s)
-        case s@DefRegister(_, name, _, clk, rst, _) =>
+        case s @ DefRegister(_, name, _, clk, rst, _)       =>
           initChildMap(name, s)
           childRefs(name) ++= allBaseRefs(clk)
           childRefs(name) ++= allBaseRefs(rst)
-        case s@DefMemory(_, name, _, _, _, _, _, _, _, _) =>
+        case s @ DefMemory(_, name, _, _, _, _, _, _, _, _) =>
           initChildMap(name, s)
-        case s@DefNode(_, name, expr) =>
+        case s @ DefNode(_, name, expr)                     =>
           initChildMap(name, s)
           val brefs = allBaseRefs(expr)
           childRefs(name) ++= brefs
-        case s@Connect(_, lexpr, rexpr) =>
+        case s @ Connect(_, lexpr, rexpr)                   =>
           val lBaseRef = baseRef(lexpr)._2
           assert(lBaseRef.isDefined, "left hand side of a connection should always have a base ref")
           assert(childStmts.contains(lBaseRef.get) && childRefs.contains(lBaseRef.get))
@@ -285,43 +284,43 @@ class SplitModulesByPortsStandalone extends Transform with DependencyAPIMigratio
 
           val rBaseRefs = allBaseRefs(rexpr)
           childRefs(lBaseRef.get) ++= rBaseRefs
-        case s@IsInvalid(_, expr) =>
+        case s @ IsInvalid(_, expr)                         =>
           val ref = baseRef(expr)._2
           assert(ref.isDefined, s"BaseRef of IsInvalid is not defined yet ${s}")
           childStmts(ref.get).add(s)
-        case s@Verification(_, _, _, _, _, _) =>
+        case s @ Verification(_, _, _, _, _, _)             =>
           ()
-        case s@Stop(_, _, _, _) =>
+        case s @ Stop(_, _, _, _)                           =>
           ()
-        case s@Print(_) =>
+        case s @ Print(_)                                   =>
           ()
-        case Block(s) =>
+        case Block(s)                                       =>
           s.foreach(onStmt(_))
       }
     }
     body.foreachStmt(onStmt(_))
 
     Logger.logGraph("Child stmts")
-    childStmts.foreach{ case(ref, stmts) =>
-        Logger.logGraph(s"=== ${ref}")
-        stmts.toSeq.foreach { stmt => Logger.logGraph(s"|- ${stmt}") }
+    childStmts.foreach { case (ref, stmts) =>
+      Logger.logGraph(s"=== ${ref}")
+      stmts.toSeq.foreach { stmt => Logger.logGraph(s"|- ${stmt}") }
     }
     Logger.logGraph("Child Refs")
-    childRefs.foreach{ case(ref, refs) =>
-        Logger.logGraph(s"=== ${ref}")
-        refs.toSeq.foreach { ref => Logger.logGraph(s"|- ${ref}") }
+    childRefs.foreach { case (ref, refs) =>
+      Logger.logGraph(s"=== ${ref}")
+      refs.toSeq.foreach { ref => Logger.logGraph(s"|- ${ref}") }
     }
 
     (childStmts, childRefs)
   }
 
   private def groupRefsAndStmtsForBaseRef(
-     childStmts: mutable.Map[String, mutable.Set[Statement]],
-     childRefs: mutable.Map[String, mutable.Set[String]],
-     root: String
-   ) : (Set[String], Set[Statement]) = {
+    childStmts: mutable.Map[String, mutable.Set[Statement]],
+    childRefs:  mutable.Map[String, mutable.Set[String]],
+    root:       String,
+  ): (Set[String], Set[Statement]) = {
     val stmts = mutable.Set[Statement]()
-    val refs = mutable.Set[String]()
+    val refs  = mutable.Set[String]()
 
     val que = mutable.ArrayBuffer[String]()
     val vis = mutable.Set[String]()
@@ -352,9 +351,9 @@ class SplitModulesByPortsStandalone extends Transform with DependencyAPIMigratio
 
   private def groupRefsAndStmts(
     childStmts: mutable.Map[String, mutable.Set[Statement]],
-    childRefs: mutable.Map[String, mutable.Set[String]],
-    baseRefs: Seq[String]
-  ) : Map[String, (Set[String], Set[Statement])] = {
+    childRefs:  mutable.Map[String, mutable.Set[String]],
+    baseRefs:   Seq[String],
+  ): Map[String, (Set[String], Set[Statement])] = {
     val groupedRefsAndStmts = baseRefs.map { br =>
       br -> groupRefsAndStmtsForBaseRef(childStmts, childRefs, br)
     }.toMap
@@ -372,30 +371,30 @@ class SplitModulesByPortsStandalone extends Transform with DependencyAPIMigratio
 
   private def getStmtUnion(
     refToStmtGroup: Map[String, Set[Statement]],
-    iports: Set[String]
+    iports:         Set[String],
   ): (
     mutable.Map[String, Int],
-    mutable.Map[Int, mutable.Set[Statement]]
+    mutable.Map[Int, mutable.Set[Statement]],
   ) = {
 
     def iportsInStmtGroup(
       stmtGroup: Set[Statement],
-      iports: Set[String]
+      iports:    Set[String],
     ): Set[String] = {
       iports.filter { ip =>
         checkRefInStmtGroup(ip, stmtGroup)
       }
     }
 
-    val refToIpMap = refToStmtGroup.map { case(r, sg) =>
+    val refToIpMap = refToStmtGroup.map { case (r, sg) =>
       r -> iportsInStmtGroup(sg, iports)
     }.toMap
 
-    val keys = refToStmtGroup.keys.toSeq
+    val keys        = refToStmtGroup.keys.toSeq
     Logger.critical(s"getStmtUnion keys.size: ${keys.size}")
-    val keyUnionMap = mutable.Map[Int, Int]() // keyidx -> unionidx
-    val stmtUnions = mutable.Map[Int, mutable.Set[Statement]]() // unionidx -> refs
-    val ipUnions = mutable.Map[Int, mutable.Set[String]]()
+    val keyUnionMap = mutable.Map[Int, Int]()                    // keyidx -> unionidx
+    val stmtUnions  = mutable.Map[Int, mutable.Set[Statement]]() // unionidx -> refs
+    val ipUnions    = mutable.Map[Int, mutable.Set[String]]()
     for (i <- 0 until keys.size) {
       val ik = keys(i)
       val ig = refToStmtGroup(ik)
@@ -413,14 +412,14 @@ class SplitModulesByPortsStandalone extends Transform with DependencyAPIMigratio
         ipUnions(uidx) ++= refToIpMap(ik).toSeq
       }
 
-      for (j <- (i+1) until keys.size) {
-        val jk = keys(j)
-        val jg = refToStmtGroup(jk)
+      for (j <- (i + 1) until keys.size) {
+        val jk  = keys(j)
+        val jg  = refToStmtGroup(jk)
         val jpi = refToIpMap(jk)
         for (k <- 0 until stmtUnions.size) {
-          val curRefs = stmtUnions(k)
+          val curRefs    = stmtUnions(k)
           val curPortsIn = ipUnions(k)
-          val stmtInter = jg.intersect(curRefs)
+          val stmtInter  = jg.intersect(curRefs)
           val iportInter = jpi.intersect(curPortsIn)
           if (stmtInter.size > 0 || iportInter.size > 0) {
             keyUnionMap(j) = k
@@ -431,21 +430,21 @@ class SplitModulesByPortsStandalone extends Transform with DependencyAPIMigratio
         // hasn't found any union, new group
         if (!keyUnionMap.contains(j)) {
           val j_uidx = stmtUnions.size
-          keyUnionMap(j) = j_uidx
+          keyUnionMap(j)     = j_uidx
           stmtUnions(j_uidx) = mutable.Set[Statement]()
           stmtUnions(j_uidx) ++= jg.toSeq
-          ipUnions(j_uidx) = mutable.Set[String]()
+          ipUnions(j_uidx)   = mutable.Set[String]()
           ipUnions(j_uidx) ++= jpi
         }
       }
     }
 
-    keyUnionMap.foreach{ case(k, v) => Logger.logStmt(s"${k} -> ${v}") }
-    stmtUnions.foreach{ case(k, v) =>
+    keyUnionMap.foreach { case (k, v) => Logger.logStmt(s"${k} -> ${v}") }
+    stmtUnions.foreach { case (k, v) =>
       Logger.logStmt(s"${k}")
       v.foreach { s => Logger.logStmt(s"${s}") }
     }
-    val refToUnionIdx = keyUnionMap.map{ case(k, v) =>
+    val refToUnionIdx = keyUnionMap.map { case (k, v) =>
       keys(k) -> v
     }
 
@@ -456,12 +455,12 @@ class SplitModulesByPortsStandalone extends Transform with DependencyAPIMigratio
 
   private def checkForMissingStmts(
     sortedStmts: Seq[Map[Int, Statement]],
-    stmtToIdx: Map[Statement, Int]
-  ) : Unit = {
+    stmtToIdx:   Map[Statement, Int],
+  ): Unit = {
     val processedIdx = mutable.Set[Int]()
     sortedStmts.foreach { stmts =>
       Logger.logStmt("======= Grouped Statements =======")
-      stmts.foreach { case(l, s) =>
+      stmts.foreach { case (l, s) =>
         Logger.logStmt(s"${l} ${s}")
         processedIdx.add(l)
       }
@@ -469,7 +468,7 @@ class SplitModulesByPortsStandalone extends Transform with DependencyAPIMigratio
 
     val missingStmtsCnt = stmtToIdx.size - processedIdx.size
     Logger.logStmt(s"=== Missing statements: ${missingStmtsCnt} ====")
-    stmtToIdx.foreach { case(stmt, idx) =>
+    stmtToIdx.foreach { case (stmt, idx) =>
       if (!processedIdx.contains(idx)) {
         Logger.logStmt(s"[${idx}] ${stmt}")
       }
@@ -477,33 +476,37 @@ class SplitModulesByPortsStandalone extends Transform with DependencyAPIMigratio
   }
 
   private def checkRefInStmtGroup(
-    ref: String,
-    stmts: Set[Statement]
+    ref:   String,
+    stmts: Set[Statement],
   ): Boolean = {
-    val foundRef = stmts.map { s =>
-      val refs = getRefsInStmt(s).toSet
-      refs.contains(ref)
-    }.reduce(_ || _)
+    val foundRef = stmts
+      .map { s =>
+        val refs = getRefsInStmt(s).toSet
+        refs.contains(ref)
+      }
+      .reduce(_ || _)
     foundRef
   }
 
   private def checkRefInStmtGroup(
-    ref: String,
-    stmts: Map[Int, Statement]
+    ref:   String,
+    stmts: Map[Int, Statement],
   ): Boolean = {
-    val foundRef = stmts.map { case(_, stmt) =>
-      val refs = getRefsInStmt(stmt).toSet
-      refs.contains(ref)
-    }.reduce(_ || _)
+    val foundRef = stmts
+      .map { case (_, stmt) =>
+        val refs = getRefsInStmt(stmt).toSet
+        refs.contains(ref)
+      }
+      .reduce(_ || _)
 
     foundRef
   }
 
   private def getStmtGrpIdxForRef(
-    ref: String,
-    sortedStmts: Seq[Map[Int, Statement]]
+    ref:         String,
+    sortedStmts: Seq[Map[Int, Statement]],
   ): Int = {
-    val gidx = sortedStmts.zipWithIndex.flatMap { case(stmts, idx) =>
+    val gidx = sortedStmts.zipWithIndex.flatMap { case (stmts, idx) =>
       if (checkRefInStmtGroup(ref, stmts)) Some(idx) else None
     }
     assert(gidx.size == 1, s"Ref: ${ref} in multiple stmt groups\n ${gidx}")
@@ -518,13 +521,11 @@ class SplitModulesByPortsStandalone extends Transform with DependencyAPIMigratio
 
     val ports = m.ports
 
-    val oports = ports.filter(_.direction == firrtl.ir.Output)
+    val oports    = ports.filter(_.direction == firrtl.ir.Output)
     val oPortRefs = ports.filter(p => p.direction == firrtl.ir.Output).map(_.name)
 
-    val iports = ports.filter(_.direction == firrtl.ir.Input)
-    val noclkrst_iports = iports.filter( p =>
-      !p.name.contains("clock") && !p.name.contains("reset")
-    )
+    val iports          = ports.filter(_.direction == firrtl.ir.Input)
+    val noclkrst_iports = iports.filter(p => !p.name.contains("clock") && !p.name.contains("reset"))
 
     // Obtain the statement graph
     val graph = stmtGraph(m.body, ports)
@@ -540,32 +541,35 @@ class SplitModulesByPortsStandalone extends Transform with DependencyAPIMigratio
     val refToStmtGroup = oPortRefsAndStmts.map { case (k, v) =>
       k -> v._2
     }.toMap
-    val unionInfo = getStmtUnion(refToStmtGroup, noclkrst_iports.map(_.name).toSet)
-    val unionStmts = unionInfo._2
-    val refToUnionIdx = unionInfo._1
+    val unionInfo      = getStmtUnion(refToStmtGroup, noclkrst_iports.map(_.name).toSet)
+    val unionStmts     = unionInfo._2
+    val refToUnionIdx  = unionInfo._1
     Logger.critical("Statement Union Done")
 
     // Sort the statements as their original order
-    val sortedStmts = unionStmts.map { case(_, stmts) =>
+    val sortedStmts = unionStmts.map { case (_, stmts) =>
       val idxToStmt = stmts.map { stmt =>
         stmtToIdx(stmt) -> stmt
       }.toMap
-      val sorted = ListMap(idxToStmt.toSeq.sortBy(_._1):_*)
+      val sorted    = ListMap(idxToStmt.toSeq.sortBy(_._1): _*)
       sorted
     }.toSeq
 
     // Check if there are any missing statements
     checkForMissingStmts(sortedStmts, stmtToIdx)
 
-    val oportNames = oports.map(_.name).toSet
+    val oportNames      = oports.map(_.name).toSet
     val oportNameToPort = oports.map { op =>
       op.name -> op
     }.toMap
-    val opToUIdx = refToUnionIdx.filter { case (k, v) =>
-      oportNames.contains(k)
-    } .map { case(k, v) =>
-      oportNameToPort(k) -> v
-    }.toMap
+    val opToUIdx        = refToUnionIdx
+      .filter { case (k, v) =>
+        oportNames.contains(k)
+      }
+      .map { case (k, v) =>
+        oportNameToPort(k) -> v
+      }
+      .toMap
 
     val ipToUIdx = noclkrst_iports.map { p =>
       val gidx = getStmtGrpIdxForRef(p.name, sortedStmts)
@@ -582,17 +586,17 @@ class SplitModulesByPortsStandalone extends Transform with DependencyAPIMigratio
     val clockPort = headOrNone(iports.filter(p => getClockResetSfx(p.name) == "clock"))
     val resetPort = headOrNone(iports.filter(p => getClockResetSfx(p.name) == "reset"))
 
-    val portToMod = mutable.Map[String, Module]()
-    val modules = sortedStmts.zipWithIndex.map { case(lineStmts, idx) =>
-      val stmts = lineStmts.map(_._2)
-      val ip = ipToUIdx.filter { case(ip, gidx) => gidx == idx }.map(_._1).toSeq
-      val op = opToUIdx.filter { case(op, gidx) => gidx == idx }.map(_._1).toSeq
+    val portToMod     = mutable.Map[String, Module]()
+    val modules       = sortedStmts.zipWithIndex.map { case (lineStmts, idx) =>
+      val stmts  = lineStmts.map(_._2)
+      val ip     = ipToUIdx.filter { case (ip, gidx) => gidx == idx }.map(_._1).toSeq
+      val op     = opToUIdx.filter { case (op, gidx) => gidx == idx }.map(_._1).toSeq
       val crpOpt = Seq(clockPort, resetPort)
-      val crp = crpOpt.flatten
+      val crp    = crpOpt.flatten
 
       val ports = ip ++ op ++ crp
-      val body = Block(stmts.toSeq)
-      val mod = Module(NoInfo, m.name + s"_SPLIT_${idx}", ports, body)
+      val body  = Block(stmts.toSeq)
+      val mod   = Module(NoInfo, m.name + s"_SPLIT_${idx}", ports, body)
 
       ip.foreach(p => portToMod(p.name) = mod)
       op.foreach(p => portToMod(p.name) = mod)
@@ -605,52 +609,60 @@ class SplitModulesByPortsStandalone extends Transform with DependencyAPIMigratio
 
   private def hasSubModule(m: Module): Boolean = {
     val has = mutable.ArrayBuffer[Boolean]()
-    m.body.foreachStmt ( stmt => stmt match {
-      case DefInstance(_, _, _, _) => has.append(true)
-      case _ => has.append(false)
-    })
+    m.body.foreachStmt(stmt =>
+      stmt match {
+        case DefInstance(_, _, _, _) => has.append(true)
+        case _                       => has.append(false)
+      }
+    )
     has.reduce(_ || _)
   }
 
   private def flattenAndRetrySplitModuleByPorts(
-    m: Module,
-    state: CircuitState
+    m:     Module,
+    state: CircuitState,
   ): SplitModulesInfo = {
     val hasSubMod = hasSubModule(m)
-    val si = trySplitModuleByPorts(m)
+    val si        = trySplitModuleByPorts(m)
     if (!hasSubMod || si.mods.size > 1) {
       si
     } else {
       Logger.critical(s"Flatten ${m.name}")
-      val fanno = FlattenAnnotation(ModuleName(m.name, CircuitName(state.circuit.main)))
-      val fpass = new Flatten
-      val annos = state.annotations :+ fanno
-      val fstate = fpass.runTransform(state.copy(annotations = annos))
-      val fmod = fstate.circuit.modules.collectFirst( _ match {
-        case x@Module(_, n, _, _) if (n == m.name) => x
-      }).get
+      val fanno   = FlattenAnnotation(ModuleName(m.name, CircuitName(state.circuit.main)))
+      val fpass   = new Flatten
+      val annos   = state.annotations :+ fanno
+      val fstate  = fpass.runTransform(state.copy(annotations = annos))
+      val fmod    = fstate.circuit.modules
+        .collectFirst(_ match {
+          case x @ Module(_, n, _, _) if (n == m.name) => x
+        })
+        .get
       val newBody = mutable.ArrayBuffer[Statement]()
-      fmod.body foreachStmt ( stmt => stmt match {
-        case Block(stmts) => newBody ++= stmts
-        case s => newBody.append(s)
-      })
+      fmod.body.foreachStmt(stmt =>
+        stmt match {
+          case Block(stmts) => newBody ++= stmts
+          case s            => newBody.append(s)
+        }
+      )
       trySplitModuleByPorts(m.copy(body = Block(newBody.toSeq)))
     }
   }
 
   private def pickSubModulesToSplit(m: Module): Seq[String] = {
     val mods = mutable.ArrayBuffer[String]()
-    m.body.foreachStmt( stmt => stmt match {
-      case DefInstance(_, _, m, _) =>
-        mods.append(m)
-      case _ => ()
-    })
+    m.body.foreachStmt(stmt =>
+      stmt match {
+        case DefInstance(_, _, m, _) =>
+          mods.append(m)
+        case _                       => ()
+      }
+    )
     mods.toSeq
   }
 
   private def checkClkRstFwd(m: Module): Boolean = {
-    val iports = m.ports.filter(_.direction == firrtl.ir.Input)
-    val oports = m.ports.filter(_.direction == firrtl.ir.Output)
+    val iports           = m.ports.filter(_.direction == firrtl.ir.Input)
+    val oports           = m.ports.filter(_.direction == firrtl.ir.Output)
     val nonclkrst_iports = iports.filter { p =>
       val sfx = getClockResetSfx(p.name)
       sfx != "clock" && sfx != "reset"
@@ -662,33 +674,34 @@ class SplitModulesByPortsStandalone extends Transform with DependencyAPIMigratio
     (nonclkrst_iports.size == 0) && (nonclkrst_oports.size == 0)
   }
 
-
   private def coerceSubModuleClkRstToTop(
-    m: Module,
+    m:   Module,
     clk: String,
-    rst: String
+    rst: String,
   ): Module = {
     val newbdy = mutable.ArrayBuffer[Statement]()
-    m.body.foreachStmt ( stmt => stmt match {
-      case s@Connect(_, WSubField(WRef(li), lref, _, _), rxpr) =>
-        val sfx = getClockResetSfx(lref)
-        if (sfx == "clock") {
-          val nc = Connect(NoInfo, WSubField(WRef(li._1), lref), WRef(clk))
-          newbdy.append(nc)
-        } else if (sfx == "reset") {
-          val nc = Connect(NoInfo, WSubField(WRef(li._1), lref), WRef(rst))
-          newbdy.append(nc)
-        } else {
-          newbdy.append(s)
-        }
-      case s => newbdy.append(s)
-    })
+    m.body.foreachStmt(stmt =>
+      stmt match {
+        case s @ Connect(_, WSubField(WRef(li), lref, _, _), rxpr) =>
+          val sfx = getClockResetSfx(lref)
+          if (sfx == "clock") {
+            val nc = Connect(NoInfo, WSubField(WRef(li._1), lref), WRef(clk))
+            newbdy.append(nc)
+          } else if (sfx == "reset") {
+            val nc = Connect(NoInfo, WSubField(WRef(li._1), lref), WRef(rst))
+            newbdy.append(nc)
+          } else {
+            newbdy.append(s)
+          }
+        case s                                                     => newbdy.append(s)
+      }
+    )
     m.copy(body = Block(newbdy.toSeq))
   }
 
   private def replaceBodyWithSplitMods(
-    m: Module,
-    sinfo: Map[String, SplitModulesInfo]
+    m:     Module,
+    sinfo: Map[String, SplitModulesInfo],
   ): Module = {
 
     def logSplitModulesInfo(s: SplitModulesInfo): Unit = {
@@ -698,93 +711,95 @@ class SplitModulesByPortsStandalone extends Transform with DependencyAPIMigratio
     }
 
     def getSplitInst(
-      name: String,
-      ref: String,
-      sinfo: Map[String, SplitModulesInfo],
-      orig_inst2mod: mutable.Map[String, String],
-      split_mod2inst: mutable.Map[String, String]
+      name:           String,
+      ref:            String,
+      sinfo:          Map[String, SplitModulesInfo],
+      orig_inst2mod:  mutable.Map[String, String],
+      split_mod2inst: mutable.Map[String, String],
     ): String = {
       val mname = orig_inst2mod(name)
-      val si = sinfo(mname)
+      val si    = sinfo(mname)
       if (!si.portToMod.contains(ref)) {
         logSplitModulesInfo(si)
       }
-      val mod = si.portToMod(ref)
-      val inst = split_mod2inst(mod.name)
+      val mod   = si.portToMod(ref)
+      val inst  = split_mod2inst(mod.name)
       Logger.critical(s"getSplitInst inst: ${name} split_inst ${inst}")
       inst
     }
 
     Logger.critical(s"replaceBodyWithSplitMods")
 
-    val newbdy = mutable.ArrayBuffer[Statement]()
-    val orig_inst2mod = mutable.Map[String, String]()
+    val newbdy         = mutable.ArrayBuffer[Statement]()
+    val orig_inst2mod  = mutable.Map[String, String]()
     val split_mod2inst = mutable.Map[String, String]()
-    m.body.foreachStmt ( stmt => stmt match {
-      case s@DefInstance(_, n, m, t) =>
-        if (sinfo.contains(m)) {
-          sinfo(m).mods.zipWithIndex.foreach { case(mod, i) =>
-            val iname = n + s"_${i}"
-            val di = DefInstance(NoInfo, iname, mod.name, t)
-            newbdy.append(di)
+    m.body.foreachStmt(stmt =>
+      stmt match {
+        case s @ DefInstance(_, n, m, t)                                                      =>
+          if (sinfo.contains(m)) {
+            sinfo(m).mods.zipWithIndex.foreach { case (mod, i) =>
+              val iname = n + s"_${i}"
+              val di    = DefInstance(NoInfo, iname, mod.name, t)
+              newbdy.append(di)
+              orig_inst2mod(n)         = m
+              split_mod2inst(mod.name) = iname
+            }
+          } else {
+            newbdy.append(s)
             orig_inst2mod(n) = m
-            split_mod2inst(mod.name) = iname
           }
-        } else {
-          newbdy.append(s)
-          orig_inst2mod(n) = m
-        }
-      case s@Connect(_, WSubField(WRef(li), lref, _, _), WSubField(WRef(ri), rref, _, _)) =>
-        val lmod = orig_inst2mod(li._1)
-        val rmod = orig_inst2mod(ri._1)
-        if (sinfo.contains(lmod) && sinfo.contains(rmod)) {
-          val linst = getSplitInst(li._1, lref, sinfo, orig_inst2mod, split_mod2inst)
-          val rinst = getSplitInst(ri._1, rref, sinfo, orig_inst2mod, split_mod2inst)
-          val con = Connect(NoInfo, WSubField(WRef(linst), lref), WSubField(WRef(rinst), rref))
-          newbdy.append(con)
-        } else if (sinfo.contains(lmod)) {
-          val linst = getSplitInst(li._1, lref, sinfo, orig_inst2mod, split_mod2inst)
-          val con = Connect(NoInfo, WSubField(WRef(linst), lref), WSubField(WRef(ri._1), rref))
-          newbdy.append(con)
-        } else if (sinfo.contains(rmod)) {
-          val rinst = getSplitInst(ri._1, rref, sinfo, orig_inst2mod, split_mod2inst)
-          val con = Connect(NoInfo, WSubField(WRef(li._1), lref), WSubField(WRef(rinst), rref))
-          newbdy.append(con)
-        } else {
-          newbdy.append(s)
-        }
-      case s@Connect(_, WSubField(WRef(li), lref, _, _), rxpr) =>
-        val lmod = orig_inst2mod(li._1)
-        if (sinfo.contains(lmod)) {
-          val si = sinfo(lmod)
-          val isClk = si.clockPort.isDefined && (lref == si.clockPort.get.name)
-          val isRst = si.resetPort.isDefined && (lref == si.resetPort.get.name)
-          if (isClk || isRst) {
-            val insts = si.mods.map(m => split_mod2inst(m.name))
-            insts.foreach { inst =>
-              val con = Connect(NoInfo, WSubField(WRef(inst), lref), rxpr)
+        case s @ Connect(_, WSubField(WRef(li), lref, _, _), WSubField(WRef(ri), rref, _, _)) =>
+          val lmod = orig_inst2mod(li._1)
+          val rmod = orig_inst2mod(ri._1)
+          if (sinfo.contains(lmod) && sinfo.contains(rmod)) {
+            val linst = getSplitInst(li._1, lref, sinfo, orig_inst2mod, split_mod2inst)
+            val rinst = getSplitInst(ri._1, rref, sinfo, orig_inst2mod, split_mod2inst)
+            val con   = Connect(NoInfo, WSubField(WRef(linst), lref), WSubField(WRef(rinst), rref))
+            newbdy.append(con)
+          } else if (sinfo.contains(lmod)) {
+            val linst = getSplitInst(li._1, lref, sinfo, orig_inst2mod, split_mod2inst)
+            val con   = Connect(NoInfo, WSubField(WRef(linst), lref), WSubField(WRef(ri._1), rref))
+            newbdy.append(con)
+          } else if (sinfo.contains(rmod)) {
+            val rinst = getSplitInst(ri._1, rref, sinfo, orig_inst2mod, split_mod2inst)
+            val con   = Connect(NoInfo, WSubField(WRef(li._1), lref), WSubField(WRef(rinst), rref))
+            newbdy.append(con)
+          } else {
+            newbdy.append(s)
+          }
+        case s @ Connect(_, WSubField(WRef(li), lref, _, _), rxpr)                            =>
+          val lmod = orig_inst2mod(li._1)
+          if (sinfo.contains(lmod)) {
+            val si    = sinfo(lmod)
+            val isClk = si.clockPort.isDefined && (lref == si.clockPort.get.name)
+            val isRst = si.resetPort.isDefined && (lref == si.resetPort.get.name)
+            if (isClk || isRst) {
+              val insts = si.mods.map(m => split_mod2inst(m.name))
+              insts.foreach { inst =>
+                val con = Connect(NoInfo, WSubField(WRef(inst), lref), rxpr)
+                newbdy.append(con)
+              }
+            } else {
+              val linst = getSplitInst(li._1, lref, sinfo, orig_inst2mod, split_mod2inst)
+              val con   = Connect(NoInfo, WSubField(WRef(linst), lref), rxpr)
               newbdy.append(con)
             }
           } else {
-            val linst = getSplitInst(li._1, lref, sinfo, orig_inst2mod, split_mod2inst)
-            val con = Connect(NoInfo, WSubField(WRef(linst), lref), rxpr)
-            newbdy.append(con)
+            newbdy.append(s)
           }
-        } else {
+        case s @ Connect(_, lxpr, WSubField(WRef(ri), rref, _, _))                            =>
+          val rmod = orig_inst2mod(ri._1)
+          if (sinfo.contains(rmod)) {
+            val rinst = getSplitInst(ri._1, rref, sinfo, orig_inst2mod, split_mod2inst)
+            val con   = Connect(NoInfo, lxpr, WSubField(WRef(rinst), rref))
+            newbdy.append(con)
+          } else {
+            newbdy.append(s)
+          }
+        case s                                                                                =>
           newbdy.append(s)
-        }
-      case s@Connect(_, lxpr, WSubField(WRef(ri), rref, _, _)) =>
-        val rmod = orig_inst2mod(ri._1)
-        if (sinfo.contains(rmod)) {
-          val rinst = getSplitInst(ri._1, rref, sinfo, orig_inst2mod, split_mod2inst)
-          val con = Connect(NoInfo, lxpr, WSubField(WRef(rinst), rref))
-          newbdy.append(con)
-        } else {
-          newbdy.append(s)
-        }
-      case s =>
-        newbdy.append(s)
-    })
+      }
+    )
     m.copy(body = Block(newbdy.toSeq))
   }
 
@@ -792,10 +807,11 @@ class SplitModulesByPortsStandalone extends Transform with DependencyAPIMigratio
   // split those instances, and perform the splitting in the current module.
   // However, we can generalize this so that it can perform recursive splitting.
   private def splitSubModulesByPorts(
-    m: Module, state: CircuitState
+    m:     Module,
+    state: CircuitState,
   ): SplitSubModulesInfo = {
     val modNames = pickSubModulesToSplit(m).toSet
-    val mods = state.circuit.modules.collect({
+    val mods     = state.circuit.modules.collect({
       case m: Module if (modNames.contains(m.name)) => m
     })
 
@@ -807,19 +823,19 @@ class SplitModulesByPortsStandalone extends Transform with DependencyAPIMigratio
     val clkPort = m.ports.filter(checkPortType(_, "clock")).head.name
     val rstPort = m.ports.filter(checkPortType(_, "reset")).head.name
 
-    val clkrst_m = coerceSubModuleClkRstToTop(m, clkPort, rstPort)
-    val modsToSplit = mods.filter(!checkClkRstFwd(_))
+    val clkrst_m      = coerceSubModuleClkRstToTop(m, clkPort, rstPort)
+    val modsToSplit   = mods.filter(!checkClkRstFwd(_))
     val splitModsInfo = modsToSplit.map { m =>
-        m.name -> flattenAndRetrySplitModuleByPorts(m, state)
+      m.name -> flattenAndRetrySplitModuleByPorts(m, state)
     }.toMap
-    val newMod = replaceBodyWithSplitMods(clkrst_m, splitModsInfo)
+    val newMod        = replaceBodyWithSplitMods(clkrst_m, splitModsInfo)
 
     SplitSubModulesInfo(newMod, splitModsInfo.map(_._2.mods).flatten.toSeq)
   }
 
   private def splitModuleByPorts(m: Module, state: CircuitState): Seq[Module] = {
     val splitSubInfo = splitSubModulesByPorts(m, state)
-    val splitInfo = trySplitModuleByPorts(splitSubInfo.newMod)
+    val splitInfo    = trySplitModuleByPorts(splitSubInfo.newMod)
     splitInfo.mods ++ splitSubInfo.submods ++ Seq(m)
   }
 
@@ -827,7 +843,7 @@ class SplitModulesByPortsStandalone extends Transform with DependencyAPIMigratio
     val transformedModules = state.circuit.modules.flatMap {
       case m: Module if (m.name == CoherenceManagerWrapper) =>
         splitModuleByPorts(m, state)
-      case m => Seq(m)
+      case m                                                => Seq(m)
     }
 
     Logger.close()

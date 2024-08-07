@@ -19,8 +19,7 @@ import freechips.rocketchip.system.TestGeneration._
 import freechips.rocketchip.system.DefaultTestSuites._
 
 object BaseConfigs {
-  case object F1    extends BasePlatformConfig("f1", Seq(classOf[BaseF1Config]))
-  case object Vitis extends BasePlatformConfig("vitis", Seq(classOf[BaseVitisConfig]))
+  case object F1 extends BasePlatformConfig("f1", Seq(classOf[BaseF1Config]))
 }
 
 abstract class FireSimTestSuite(
@@ -70,7 +69,9 @@ abstract class FireSimTestSuite(
 
   override def defineTests(backend: String, debug: Boolean) {
     runTest(backend, debug, "rv64ui-p-simple", Seq(s"""EXTRA_SIM_ARGS=+trace-humanreadable0"""))
-    runSuite(backend, debug)(benchmarks)
+    if (System.getenv("TEST_DISABLE_BENCHMARKS") == null) {
+      runSuite(backend, debug)(benchmarks)
+    }
   }
 }
 
@@ -109,29 +110,6 @@ class RocketNICF1Tests
       "FireSim",
       "WithNIC_DDR3FRFCFSLLC4MB_FireSimRocketConfig",
       BaseConfigs.F1,
-    )
-
-class RocketVitisTests
-    extends FireSimTestSuite(
-      "FireSim",
-      "DDR3FRFCFSLLC4MB_FireSimQuadRocketConfig",
-      BaseConfigs.Vitis,
-      Seq(classOf[WithSynthAsserts]),
-    )
-
-class MultiRocketVitisTests
-    extends FireSimTestSuite(
-      "FireSim",
-      "DDR3FRFCFSLLC4MB_FireSimQuadRocketConfig",
-      BaseConfigs.Vitis,
-      Seq(classOf[WithSynthAsserts], classOf[WithModelMultiThreading]),
-    )
-
-class BoomVitisTests
-    extends FireSimTestSuite(
-      "FireSim",
-      "DDR3FRFCFSLLC4MB_FireSimLargeBoomConfig",
-      BaseConfigs.Vitis,
     )
 
 class CVA6F1Tests

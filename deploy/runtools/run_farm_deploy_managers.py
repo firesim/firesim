@@ -10,6 +10,7 @@ from fabric.api import prefix, local, run, env, cd, warn_only, put, settings, hi
 from fabric.contrib.project import rsync_project # type: ignore
 from os.path import join as pjoin
 import os
+from pathlib import Path
 
 from util.streamlogger import StreamLogger
 from awstools.awstools import terminate_instances, get_instance_ids_for_instances
@@ -938,7 +939,7 @@ class XilinxAlveoInstanceDeployManager(InstanceDeployManager):
                 self.instance_logger(f"""Flashing FPGA Slot: {slotno} ({bdf}) with bitstream: {bit}""")
                 # Use a system wide installed firesim-fpga-util.py
                 cmd = f"{script_path}/firesim-fpga-util.py"
-                check_script(cmd, f"{get_deploy_dir()}/../platforms/{self.PLATFORM_NAME}/scripts")
+                check_script(cmd, Path(f"{get_deploy_dir()}/../platforms/{self.PLATFORM_NAME}/scripts"))
                 run(f"""{cmd} --bitstream {bit} --bdf {bdf} --fpga-db {json_db}""")
 
     def change_pcie_perms(self) -> None:
@@ -1051,7 +1052,7 @@ class XilinxAlveoInstanceDeployManager(InstanceDeployManager):
         with cd(remote_sim_dir):
             # Use a system wide installed firesim-generate-fpga-db.py
             cmd = f"{script_path}/firesim-generate-fpga-db.py"
-            check_script(cmd, f"{get_deploy_dir()}/../platforms/{self.PLATFORM_NAME}/scripts")
+            check_script(cmd, Path(f"{get_deploy_dir()}/../platforms/{self.PLATFORM_NAME}/scripts"))
             run(f"""{cmd} --bitstream {bitstream} --driver {driver} --out-db-json {json_db}""")
 
     def enumerate_fpgas(self, uridir: str) -> None:

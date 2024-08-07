@@ -2,12 +2,8 @@
 
 package midas.stage
 
-import firrtl._
 import firrtl.annotations._
-import firrtl.options.{Dependency, HasShellOptions, InputAnnotationFileAnnotation, Shell, StageMain, ShellOption}
-import firrtl.ir._
-import firrtl.stage.{FirrtlCircuitAnnotation, FirrtlStage, RunFirrtlTransformAnnotation}
-import logger.LazyLogging
+import firrtl.options.Shell
 import midas.targetutils.FAMEAnnotation
 
 case class ExtractModuleNameAnnotation(name: String) extends NoTargetAnnotation with FAMEAnnotation

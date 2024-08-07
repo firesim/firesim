@@ -30,18 +30,18 @@ define make_vcs
 endef
 
 $(vcs): $(vcs_driver_deps) $(simulator_verilog)
-	$(call make_vcs, vcs,$(simulator_verilog))
+	$(call make_vcs,vcs,$(simulator_verilog))
 
 $(vcs_debug): $(vcs_driver_deps) $(simulator_verilog)
-	$(call make_vcs, vcs-debug,$(simulator_verilog))
+	$(call make_vcs,vcs-debug,$(simulator_verilog))
 
 $(vcs_post_synth): $(vcs_driver_deps) $(POST_SYNTH_RTL)
-	$(call make_vcs, vcs-post-synth,$(POST_SYNTH_RTL))
+	$(call make_vcs,vcs-post-synth,$(POST_SYNTH_RTL))
 
 $(vcs_post_synth_debug): $(vcs_driver_deps) $(POST_SYNTH_RTL)
-	$(call make_vcs, vcs-post-synth-debug,$(POST_SYNTH_RTL))
+	$(call make_vcs,vcs-post-synth-debug,$(POST_SYNTH_RTL))
 
-.PHONY: vcs vcs-debug vcs-post-synth  vcs-post-synth-f1-debug
+.PHONY: vcs vcs-debug vcs-post-synth vcs-post-synth-f1-debug
 vcs: $(vcs)
 vcs-debug: $(vcs_debug)
 vcs-post-synth: $(vcs_post_synth)

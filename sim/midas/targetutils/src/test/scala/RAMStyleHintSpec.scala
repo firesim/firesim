@@ -74,9 +74,9 @@ class RAMStyleHintSpec extends AnyFlatSpec with ElaborationUtils {
 
   behavior of "RAMStyleHint"
 
-  // Sanity check that stuff passes through elaboration. 
-  it should "correctly annotate a chisel3.SyncReadMem as BRAM" in {
-    checkSingleTargetModule(new SyncReadMemModule(Some(RAMStyles.BRAM)) with MemApplyMethod)
+  // Sanity check that stuff passes through elaboration.
+  it should "correctly annotate a chisel3.SyncReadMem as BLOCK" in {
+    checkSingleTargetModule(new SyncReadMemModule(Some(RAMStyles.BLOCK)) with MemApplyMethod)
   }
 
   it should "correctly annotate a chisel3.SyncReadMem as URAM (ReferenceTarget apply())" in {
@@ -87,8 +87,8 @@ class RAMStyleHintSpec extends AnyFlatSpec with ElaborationUtils {
     checkSingleTargetModule(new CombReadMemModule(Some(RAMStyles.ULTRA)) with MemApplyMethod)
   }
 
-  it should "correctly annotate a chisel3.Mem as BRAM (ReferenceTarget apply())" in {
-    checkSingleTargetModule(new CombReadMemModule(Some(RAMStyles.BRAM)) with RTApplyMethod)
+  it should "correctly annotate a chisel3.Mem as BLOCK (ReferenceTarget apply())" in {
+    checkSingleTargetModule(new CombReadMemModule(Some(RAMStyles.BLOCK)) with RTApplyMethod)
   }
 
   class WrapperModule extends Module {
@@ -101,12 +101,12 @@ class RAMStyleHintSpec extends AnyFlatSpec with ElaborationUtils {
     val modA = Module(new SyncReadMemModule(None))
     val modB = Module(new SyncReadMemModule(None))
     RAMStyleHint(modA.mem, RAMStyles.ULTRA)
-    RAMStyleHint(modB.mem, RAMStyles.BRAM)
+    RAMStyleHint(modB.mem, RAMStyles.BLOCK)
 //DOC include end: RAM Hint From Parent
     val modC = Module(new SyncReadMemModule(None))
     val modD = Module(new SyncReadMemModule(None))
     RAMStyleHint(modC.mem.toTarget, RAMStyles.ULTRA)
-    RAMStyleHint(modD.mem.toTarget, RAMStyles.BRAM)
+    RAMStyleHint(modD.mem.toTarget, RAMStyles.BLOCK)
 
     modA.io <> a
     modB.io <> b
@@ -120,9 +120,9 @@ class RAMStyleHintSpec extends AnyFlatSpec with ElaborationUtils {
     )
     def expectedAnnos = Seq(
       expectedAnnotation(modA, RAMStyles.ULTRA),
-      expectedAnnotation(modB, RAMStyles.BRAM),
+      expectedAnnotation(modB, RAMStyles.BLOCK),
       expectedAnnotation(modC, RAMStyles.ULTRA),
-      expectedAnnotation(modD, RAMStyles.BRAM)
+      expectedAnnotation(modD, RAMStyles.BLOCK)
     )
   }
 
@@ -152,7 +152,7 @@ class RAMStyleHintSpec extends AnyFlatSpec with ElaborationUtils {
     import midas.targetutils.xdc._
     val mem = SyncReadMem(1 << addrBits, UInt(dataBits.W))
     RAMStyleHint(mem, RAMStyles.ULTRA)
-    // Alternatively: RAMStyleHint(mem, RAMStyles.BRAM)
+    // Alternatively: RAMStyleHint(mem, RAMStyles.BLOCK)
 //DOC include end: Basic RAM Hint
 
     io.readData := mem.read(io.readAddress, io.readEnable)

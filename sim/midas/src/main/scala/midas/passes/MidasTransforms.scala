@@ -3,7 +3,6 @@
 package midas
 package passes
 
-import midas.stage._
 import midas.passes.partition._
 
 

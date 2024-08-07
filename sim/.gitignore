@@ -11,6 +11,9 @@ lib/firrtl.jar
 .bsp/
 .ivy2/
 .sbt/
+test_run_dir/
+*.fir
+*.json
 
 # VSCode related files
 .vscode/*

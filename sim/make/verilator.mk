@@ -26,10 +26,10 @@ define make_verilator
 endef
 
 $(verilator): $(verilator_driver_deps)
-	$(call make_verilator, verilator)
+	$(call make_verilator,verilator)
 
 $(verilator_debug): $(verilator_driver_deps)
-	$(call make_verilator, verilator-debug)
+	$(call make_verilator,verilator-debug)
 
 .PHONY: verilator verilator-debug
 verilator: $(verilator)

@@ -73,12 +73,12 @@ class CospikeBridgeModule(params: CospikeBridgeParams)(implicit p: Parameters)
     def roundUp(num: Int, mult: Int): Int = { (num.toFloat / mult).ceil.toInt * mult }
 
     // get the traces
-    val traces             = hPort.hBits.trace.trace.insns.map({ unmasked =>
+    val traces    = hPort.hBits.trace.trace.insns.map({ unmasked =>
       val masked = WireDefault(unmasked)
       masked.valid := unmasked.valid && !hPort.hBits.trace.reset
       masked
     })
-    val timestamp  = hPort.hBits.trace.trace.time
+    val timestamp = hPort.hBits.trace.trace.time
 
     private val iaddrWidth = roundUp(traces.map(_.iaddr.getWidth).max, 8)
     private val insnWidth  = roundUp(traces.map(_.insn.getWidth).max, 8)
@@ -94,7 +94,7 @@ class CospikeBridgeModule(params: CospikeBridgeParams)(implicit p: Parameters)
 
     def Sext(x: UInt, size: Int): UInt = {
       if (x.getWidth == size) x
-      else Cat(Fill(size - x.getWidth, x(x.getWidth-1)), x)
+      else Cat(Fill(size - x.getWidth, x(x.getWidth - 1)), x)
     }
 
     // matches order of TracedInstruction in CSR.scala
@@ -107,7 +107,7 @@ class CospikeBridgeModule(params: CospikeBridgeParams)(implicit p: Parameters)
         trace.insn.pad(insnWidth),
         Sext(trace.iaddr, iaddrWidth),
         boolPad(trace.valid, 8),
-        timestamp.pad(64)
+        timestamp.pad(64),
       )
 
       if (wdataWidth == 0) {

@@ -28,17 +28,17 @@ class Foo(w: Int) extends Module {
   io.x.a.bits  := data
 
   val d_rdy = RegInit(false.B)
-  d_rdy := !d_rdy
+  d_rdy        := !d_rdy
   io.x.d.ready := d_rdy
 
-  when (io.x.d.fire) {
+  when(io.x.d.fire) {
     data := io.x.d.bits
   }
 }
 
 class Bar(w: Int) extends Module {
   val io = IO(new Bundle {
-    val y = Flipped(new TL(w))
+    val y       = Flipped(new TL(w))
     val success = Output(Bool())
   })
   dontTouch(io)
@@ -46,10 +46,7 @@ class Bar(w: Int) extends Module {
   val can_fire = RegInit(false.B)
   can_fire := !can_fire
 
-  val resp_fire = DecoupledHelper(
-    io.y.a.valid,
-    io.y.d.ready,
-    can_fire)
+  val resp_fire = DecoupledHelper(io.y.a.valid, io.y.d.ready, can_fire)
 
   io.y.a.ready := resp_fire.fire(io.y.a.valid)
   io.y.d.valid := resp_fire.fire(io.y.d.ready)
@@ -58,9 +55,8 @@ class Bar(w: Int) extends Module {
   io.success := resp_fire.fire
 }
 
-
 class Top(w: Int) extends Module {
-  val io = IO(new Bundle {
+  val io  = IO(new Bundle {
     val success = Output(Bool())
   })
   val foo = Module(new Foo(w))
@@ -74,11 +70,9 @@ class Top(w: Int) extends Module {
 
 class CheckCombFirrtlGenerator extends AnyFreeSpec with GoldenGateCompilerTest {
   def generateFirrtl() = {
-    val (firrtl, _) = compile(new Top(2), "low", a=Seq())
+    val (firrtl, _) = compile(new Top(2), "low", a = Seq())
 
-    val firrtlWriter = new PrintWriter(new File("midas/test-inputs/simple.fir"))
-    firrtlWriter.write(firrtl)
-    firrtlWriter.close()
+    writeFile("midas/test-inputs", "simple.fir", firrtl)
   }
 }
 

@@ -3,12 +3,11 @@
 package midas
 package passes
 
-import midas.stage._
 import midas.passes.partition._
 import firrtl._
 
 class SplitModulesByPortTransforms extends Transform {
-  def inputForm = LowForm
+  def inputForm  = LowForm
   def outputForm = LowForm
 
   def execute(state: CircuitState) = {
@@ -30,9 +29,8 @@ class SplitModulesByPortTransforms extends Transform {
       new EmitFirrtl("pre-processed.fir"),
       new SplitModulesByPortsStandalone,
       new EmitFirrtl("post-split.fir"),
-      new ResolveAndCheck
-      )
-    (xforms foldLeft state)((in, xform) =>
-    xform runTransform in).copy(form=outputForm)
+      new ResolveAndCheck,
+    )
+    (xforms.foldLeft(state))((in, xform) => xform.runTransform(in)).copy(form = outputForm)
   }
 }

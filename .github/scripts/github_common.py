@@ -2,6 +2,7 @@ import math
 import requests
 import json
 
+import fabric_cfg
 from ci_variables import ci_env
 
 from typing import Dict, List, Any

@@ -6,12 +6,10 @@ import java.io.File
 import scala.io.Source
 import org.scalatest.Suites
 
-class GCDF1Test    extends TutorialSuite("GCD", basePlatformConfig = BaseConfigs.F1)
-class GCDVitisTest extends TutorialSuite("GCD", basePlatformConfig = BaseConfigs.Vitis)
+class GCDF1Test extends TutorialSuite("GCD", basePlatformConfig = BaseConfigs.F1)
 
 // Hijack Parity to test all of the Midas-level backends
-class ParityF1Test    extends TutorialSuite("Parity", basePlatformConfig = BaseConfigs.F1)
-class ParityVitisTest extends TutorialSuite("Parity", basePlatformConfig = BaseConfigs.Vitis)
+class ParityF1Test extends TutorialSuite("Parity", basePlatformConfig = BaseConfigs.F1)
 
 class CustomConstraintsF1Test extends TutorialSuite("CustomConstraints") {
 

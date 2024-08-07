@@ -69,16 +69,12 @@ abstract class LoadMemTest(
   }
 }
 
-class LoadMemF1Test    extends LoadMemTest(BaseConfigs.F1)
-class LoadMemVitisTest extends LoadMemTest(BaseConfigs.Vitis)
+class LoadMemF1Test extends LoadMemTest(BaseConfigs.F1)
 
-class FastLoadMemF1Test    extends LoadMemTest(BaseConfigs.F1, extraArgs = Seq("+fastloadmem"))
-class FastLoadMemVitisTest extends LoadMemTest(BaseConfigs.Vitis, extraArgs = Seq("+fastloadmem"))
+class FastLoadMemF1Test extends LoadMemTest(BaseConfigs.F1, extraArgs = Seq("+fastloadmem"))
 
 class MemoryCITests
     extends Suites(
       new LoadMemF1Test,
-      new LoadMemVitisTest,
       new FastLoadMemF1Test,
-      new FastLoadMemVitisTest,
     )

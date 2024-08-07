@@ -152,7 +152,7 @@ class PartitionConfig:
         if (self.mode == PartitionMode.FAST_MODE) or \
            (self.mode == PartitionMode.EXACT_MODE) or \
            (self.mode == PartitionMode.NOC_MODE):
-            return int(self.mode)
+            return self.mode.value
         else:
             print("Unrecognized topology")
             exit(1)

@@ -29,11 +29,6 @@
 # Helper to run SBT in the project.
 ################################################################################
 
-SBT_COMMAND ?= shell
-.PHONY: sbt
-sbt:
-	cd $(firesim_base_dir) && $(SBT) ";project $(FIRESIM_SBT_PROJECT); $(SBT_COMMAND)"
-
 # Scala invocation options
 JAVA_HEAP_SIZE ?= 16G
 # Disable the SBT supershell as interacts poorly with scalatest output and breaks
@@ -66,7 +61,7 @@ define run_sbt_assembly
 endef
 
 ################################################################################
-# Misc. Default Configuration
+# Misc. Default Configuration and Commands
 ################################################################################
 
 # sbt project in sim/ directory
@@ -78,6 +73,11 @@ firesim_source_dirs = \
 			midas/targetutils \
 			firesim-lib \
 	)
+
+SBT_COMMAND ?= shell
+.PHONY: sbt
+sbt:
+	cd $(firesim_base_dir) && $(SBT) ";project $(FIRESIM_SBT_PROJECT); $(SBT_COMMAND)"
 
 ################################################################################
 # Target Configuration
@@ -153,11 +153,11 @@ target-classpath: $(TARGET_CP)
 
 .PHONY: test
 test:
-	cd $(base_dir) && $(SBT) ";project $(FIRESIM_SBT_PROJECT); test"
+	cd $(firesim_base_dir) && $(SBT) ";project $(FIRESIM_SBT_PROJECT); test"
 
 .PHONY: testOnly
 testOnly:
-	cd $(base_dir) && $(SBT) ";project $(FIRESIM_SBT_PROJECT); testOnly $(SCALA_TEST)"
+	cd $(firesim_base_dir) && $(SBT) ";project $(FIRESIM_SBT_PROJECT); testOnly $(SCALA_TEST)"
 
 ################################################################################
 # ScalaDoc
@@ -165,4 +165,4 @@ testOnly:
 
 .PHONY: scaladoc
 scaladoc:
-	cd $(base_dir) && $(SBT) ";project $(FIRESIM_SBT_PROJECT); unidoc"
+	cd $(firesim_base_dir) && $(SBT) ";project $(FIRESIM_SBT_PROJECT); unidoc"

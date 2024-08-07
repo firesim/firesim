@@ -14,7 +14,7 @@ class PrintAllPass extends Transform with DependencyAPIMigration {
     ports.foreach(p => println(s"port ${p.name} ${p.direction} ${p.tpe}"))
 
     m match {
-      case Module(_, _, _, b) =>
+      case Module(_, _, _, b)             =>
         b.foreachStmt(s => println(s"statement ${s}"))
       case ExtModule(_, _, _, dn, params) =>
         params.foreach(param => println("param ${param}"))
