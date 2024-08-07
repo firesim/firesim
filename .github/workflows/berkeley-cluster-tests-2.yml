@@ -135,7 +135,7 @@ jobs:
     # note that the check is using a boolean true instead of string 'true' since it's directly using
     # the expression not a variable like if checking against the env context string.
     if: ${{ contains(github.event.pull_request.labels.*.name, 'ci:disable-scala-tests') != true }}
-    runs-on: ubuntu-22.04
+    runs-on: local-fpga-shared # since this is a longer lived job, can run on either runner
     steps:
       - uses: actions/checkout@v4
       - name: Precompile scala sources needed for tests
