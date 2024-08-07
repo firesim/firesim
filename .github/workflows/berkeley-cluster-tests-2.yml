@@ -130,7 +130,7 @@ jobs:
 
   start-scalatests:
     name: start-scalatests
-    needs: [setup-persistent-repo, start-scalatests]
+    needs: [setup-persistent-repo]
     # unable to access env context in job.if thus have to put gh-a context expression directly here.
     # note that the check is using a boolean true instead of string 'true' since it's directly using
     # the expression not a variable like if checking against the env context string.
@@ -143,7 +143,7 @@ jobs:
 
   run-targetutils-scala-tests:
     name: run-targetutils-scala-tests
-    needs: [setup-persistent-repo, start-scalatests]
+    needs: [start-scalatests]
     runs-on: local-fpga-2
     steps:
       - uses: actions/checkout@v4
@@ -152,7 +152,7 @@ jobs:
 
   run-firesimlib-scala-tests:
     name: run-firesimlib-scala-tests
-    needs: [setup-persistent-repo, start-scalatests]
+    needs: [start-scalatests]
     runs-on: local-fpga-2
     steps:
       - uses: actions/checkout@v4
@@ -161,7 +161,7 @@ jobs:
 
   run-midas-scala-tests:
     name: run-midas-scala-tests
-    needs: [setup-persistent-repo, start-scalatests]
+    needs: [start-scalatests]
     runs-on: local-fpga-2
     steps:
       - uses: actions/checkout@v4
@@ -170,7 +170,7 @@ jobs:
 
   run-midasexamples-scala-tests-groupA:
     name: run-midasexamples-scala-tests-groupA
-    needs: [setup-persistent-repo, start-scalatests]
+    needs: [start-scalatests]
     runs-on: local-fpga-shared # since this is a longer lived job, can run on either runner
     steps:
       - uses: actions/checkout@v4
@@ -179,7 +179,7 @@ jobs:
 
   run-midasexamples-scala-tests-groupB:
     name: run-midasexamples-scala-tests-groupB
-    needs: [setup-persistent-repo, start-scalatests]
+    needs: [start-scalatests]
     runs-on: local-fpga-shared # since this is a longer lived job, can run on either runner
     steps:
       - uses: actions/checkout@v4
@@ -188,7 +188,7 @@ jobs:
 
   run-bridges-scala-tests:
     name: run-bridges-scala-tests
-    needs: [setup-persistent-repo, start-scalatests]
+    needs: [start-scalatests]
     runs-on: local-fpga-2
     steps:
       - uses: actions/checkout@v4
@@ -197,7 +197,7 @@ jobs:
 
   run-firesim-scala-tests:
     name: run-firesim-scala-tests
-    needs: [setup-persistent-repo, start-scalatests]
+    needs: [start-scalatests]
     runs-on: local-fpga-shared # since this is a longer lived job, can run on either runner
     steps:
       - uses: actions/checkout@v4
