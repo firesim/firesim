@@ -26,3 +26,12 @@
 [submodule "platforms/rhsresearch_nitefury_ii/NiteFury-and-LiteFury-firesim"]
 	path = platforms/rhsresearch_nitefury_ii/NiteFury-and-LiteFury-firesim
 	url = https://github.com/firesim/NiteFury-and-LiteFury-firesim.git
+[submodule "sim/toolchain-utilities/riscv-isa-sim"]
+	path = sim/toolchain-utilities/riscv-isa-sim
+	url = https://github.com/riscv-software-src/riscv-isa-sim.git
+[submodule "sim/toolchain-utilities/riscv-pk"]
+	path = sim/toolchain-utilities/riscv-pk
+	url = https://github.com/riscv-software-src/riscv-pk.git
+[submodule "sim/toolchain-utilities/riscv-tests"]
+	path = sim/toolchain-utilities/riscv-tests
+	url = https://github.com/riscv-software-src/riscv-tests
