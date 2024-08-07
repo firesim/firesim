@@ -83,4 +83,6 @@ rm -rf "${SRCDIR}/riscv-pk/build.log"
 echo '==>  Installing RISC-V tests'
 module_all riscv-tests --prefix="${RISCV}/riscv${XLEN}-unknown-elf" --with-xlen=${XLEN}
 
+rm -rf "${SRCDIR}/riscv-tests/build.log"
+
 echo "Extra Toolchain Utilities/Tests Build Complete!"
