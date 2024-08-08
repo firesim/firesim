@@ -1,0 +1,17 @@
+{
+  "benchmark_name": "br-base-flamegraph",
+  "common_bootbinary": "../../../target-design/chipyard/software/firemarshal/images/firechip/br-base/br-base-bin",
+  "common_rootfs": "../../../target-design/chipyard/software/firemarshal/images/firechip/br-base/br-base.img"
+  "common_simulation_inputs": [
+    "../../../target-design/chipyard/software/firemarshal/images/firechip/br-base/br-base-bin-dwarf"
+  ],
+  "common_outputs": [
+    "/etc/os-release"
+  ],
+  "common_simulation_outputs": [
+    "uartlog",
+    "memory_stats*.csv",
+    "TRACEFILE*"
+  ],
+  "post_run_hook": "gen-all-flamegraphs-fireperf.sh"
+}

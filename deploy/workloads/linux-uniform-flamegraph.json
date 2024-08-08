@@ -1,9 +1,0 @@
-{
-  "benchmark_name"            : "linux-uniform",
-  "common_bootbinary"         : "br-base-bin",
-  "common_rootfs"             : "br-base.img",
-  "common_simulation_inputs"  : ["br-base-bin-dwarf"],
-  "common_outputs"            : ["/etc/os-release"],
-  "common_simulation_outputs" : ["uartlog", "memory_stats*.csv", "TRACEFILE*"],
-  "post_run_hook"             : "gen-all-flamegraphs-fireperf.sh"
-}

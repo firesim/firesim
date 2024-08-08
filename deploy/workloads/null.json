@@ -1,0 +1,7 @@
+{
+  "benchmark_name": "null",
+  "common_bootbinary": "unusedboot.bin",
+  "common_rootfs": null,
+  "common_outputs": [],
+  "common_simulation_outputs": []
+}

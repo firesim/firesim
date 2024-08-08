@@ -24,20 +24,21 @@ this like so:
 
 .. code-block:: bash
 
-    cd firesim/sw/firesim-software
+    cd firesim/target-design/chipyard/software/firemarshal
     ./init-submodules.sh
     ./marshal -v build br-base.json
+    ./marshal -v install br-base.json
 
 This process will take about 10 to 15 minutes on a ``c5.4xlarge`` instance.
 Once this is completed, you'll have the following files:
 
--  ``firesim/sw/firesim-software/images/firechip/br-base/br-base-bin`` - a bootloader + Linux
+-  ``firesim/target-design/chipyard/software/firemarshal/images/firechip/br-base/br-base-bin`` - a bootloader + Linux
    kernel image for the nodes we will simulate.
--  ``firesim/sw/firesim-software/images/firechip/br-base/br-base.img`` - a disk image for
+-  ``firesim/target-design/chipyard/software/firemarshal/images/firechip/br-base/br-base.img`` - a disk image for
    each the nodes we will simulate
 
 These files will be used to form base images to either build more complicated
-workloads (see the :ref:`defining-custom-workloads` section) or to copy around
+workloads (see the :ref:`deprecated-defining-custom-workloads` section) or to copy around
 for deploying.
 
 
@@ -228,7 +229,7 @@ nodes and switch every 10s. When you do this, you will initially see output like
 	FireSim Manager. Docs: http://docs.fires.im
 	Running: runworkload
 
-	Creating the directory: /home/centos/firesim-new/deploy/results-workload/2018-05-19--06-28-43-linux-uniform/
+	Creating the directory: /home/centos/firesim-new/deploy/results-workload/2018-05-19--06-28-43-br-base/
 	[172.30.2.178] Executing task 'instance_liveness'
 	[172.30.2.178] Checking if host instance is up...
 	[172.30.2.178] Executing task 'boot_switch_wrapper'
@@ -253,7 +254,7 @@ a live status page once simulations are kicked-off:
     FireSim Simulation Status @ 2018-05-19 06:28:56.087472
     --------------------------------------------------------------------------------
     This workload's output is located in:
-    /home/centos/firesim-new/deploy/results-workload/2018-05-19--06-28-43-linux-uniform/
+    /home/centos/firesim-new/deploy/results-workload/2018-05-19--06-28-43-br-base/
     This run's log is located in:
     /home/centos/firesim-new/deploy/logs/2018-05-19--06-28-43-runworkload-ZHZEJED9MDWNSCV7.log
     This status will update every 10s.
@@ -268,14 +269,14 @@ a live status page once simulations are kicked-off:
     --------------------------------------------------------------------------------
     Simulated Nodes/Jobs
     --------------------------------------------------------------------------------
-    Hostname/IP:   172.30.2.178 | Job: linux-uniform1 | Sim running: True
-    Hostname/IP:   172.30.2.178 | Job: linux-uniform0 | Sim running: True
-    Hostname/IP:   172.30.2.178 | Job: linux-uniform3 | Sim running: True
-    Hostname/IP:   172.30.2.178 | Job: linux-uniform2 | Sim running: True
-    Hostname/IP:   172.30.2.178 | Job: linux-uniform5 | Sim running: True
-    Hostname/IP:   172.30.2.178 | Job: linux-uniform4 | Sim running: True
-    Hostname/IP:   172.30.2.178 | Job: linux-uniform7 | Sim running: True
-    Hostname/IP:   172.30.2.178 | Job: linux-uniform6 | Sim running: True
+    Hostname/IP:   172.30.2.178 | Job: br-base1 | Sim running: True
+    Hostname/IP:   172.30.2.178 | Job: br-base0 | Sim running: True
+    Hostname/IP:   172.30.2.178 | Job: br-base3 | Sim running: True
+    Hostname/IP:   172.30.2.178 | Job: br-base2 | Sim running: True
+    Hostname/IP:   172.30.2.178 | Job: br-base5 | Sim running: True
+    Hostname/IP:   172.30.2.178 | Job: br-base4 | Sim running: True
+    Hostname/IP:   172.30.2.178 | Job: br-base7 | Sim running: True
+    Hostname/IP:   172.30.2.178 | Job: br-base6 | Sim running: True
     --------------------------------------------------------------------------------
     Summary
     --------------------------------------------------------------------------------
@@ -400,14 +401,14 @@ from the manager:
 	--------------------------------------------------------------------------------
 	Simulated Nodes/Jobs
 	--------------------------------------------------------------------------------
-	Instance IP:   172.30.2.178 | Job: linux-uniform1 | Sim running: True
-	Instance IP:   172.30.2.178 | Job: linux-uniform0 | Sim running: False
-	Instance IP:   172.30.2.178 | Job: linux-uniform3 | Sim running: True
-	Instance IP:   172.30.2.178 | Job: linux-uniform2 | Sim running: True
-	Instance IP:   172.30.2.178 | Job: linux-uniform5 | Sim running: True
-	Instance IP:   172.30.2.178 | Job: linux-uniform4 | Sim running: True
-	Instance IP:   172.30.2.178 | Job: linux-uniform7 | Sim running: True
-	Instance IP:   172.30.2.178 | Job: linux-uniform6 | Sim running: True
+	Instance IP:   172.30.2.178 | Job: br-base1 | Sim running: True
+	Instance IP:   172.30.2.178 | Job: br-base0 | Sim running: False
+	Instance IP:   172.30.2.178 | Job: br-base3 | Sim running: True
+	Instance IP:   172.30.2.178 | Job: br-base2 | Sim running: True
+	Instance IP:   172.30.2.178 | Job: br-base5 | Sim running: True
+	Instance IP:   172.30.2.178 | Job: br-base4 | Sim running: True
+	Instance IP:   172.30.2.178 | Job: br-base7 | Sim running: True
+	Instance IP:   172.30.2.178 | Job: br-base6 | Sim running: True
 	--------------------------------------------------------------------------------
 	Summary
 	--------------------------------------------------------------------------------
@@ -439,7 +440,7 @@ from the manager:
 	[172.30.2.178] Slot 7 completed! copying results.
 	[172.30.2.178] Killing switch simulation for switchslot: 0.
 	FireSim Simulation Exited Successfully. See results in:
-	/home/centos/firesim-new/deploy/results-workload/2018-05-19--06-39-35-linux-uniform/
+	/home/centos/firesim-new/deploy/results-workload/2018-05-19--06-39-35-br-base/
 	The full log of this run is:
 	/home/centos/firesim-new/deploy/logs/2018-05-19--06-39-35-runworkload-4CDB78E3A4IA9IYQ.log
 
@@ -448,44 +449,44 @@ whole simulation to be torn down -- this is because we currently do not implemen
 any kind of "disconnect" mechanism to remove one node from a globally-cycle-accurate
 simulation.
 
-If you take a look at the workload output directory given in the manager output (in this case, ``/home/centos/firesim-new/deploy/results-workload/2018-05-19--06-39-35-linux-uniform/``), you'll see the following:
+If you take a look at the workload output directory given in the manager output (in this case, ``/home/centos/firesim-new/deploy/results-workload/2018-05-19--06-39-35-br-base/``), you'll see the following:
 
 .. code-block:: bash
 
-	centos@ip-172-30-2-111.us-west-2.compute.internal:~/firesim-new/deploy/results-workload/2018-05-19--06-39-35-linux-uniform$ ls -la */*
-	-rw-rw-r-- 1 centos centos  797 May 19 06:45 linux-uniform0/memory_stats.csv
-	-rw-rw-r-- 1 centos centos  125 May 19 06:45 linux-uniform0/os-release
-	-rw-rw-r-- 1 centos centos 7476 May 19 06:45 linux-uniform0/uartlog
-	-rw-rw-r-- 1 centos centos  797 May 19 06:45 linux-uniform1/memory_stats.csv
-	-rw-rw-r-- 1 centos centos  125 May 19 06:45 linux-uniform1/os-release
-	-rw-rw-r-- 1 centos centos 8157 May 19 06:45 linux-uniform1/uartlog
-	-rw-rw-r-- 1 centos centos  797 May 19 06:45 linux-uniform2/memory_stats.csv
-	-rw-rw-r-- 1 centos centos  125 May 19 06:45 linux-uniform2/os-release
-	-rw-rw-r-- 1 centos centos 8157 May 19 06:45 linux-uniform2/uartlog
-	-rw-rw-r-- 1 centos centos  797 May 19 06:45 linux-uniform3/memory_stats.csv
-	-rw-rw-r-- 1 centos centos  125 May 19 06:45 linux-uniform3/os-release
-	-rw-rw-r-- 1 centos centos 8157 May 19 06:45 linux-uniform3/uartlog
-	-rw-rw-r-- 1 centos centos  797 May 19 06:45 linux-uniform4/memory_stats.csv
-	-rw-rw-r-- 1 centos centos  125 May 19 06:45 linux-uniform4/os-release
-	-rw-rw-r-- 1 centos centos 8157 May 19 06:45 linux-uniform4/uartlog
-	-rw-rw-r-- 1 centos centos  797 May 19 06:45 linux-uniform5/memory_stats.csv
-	-rw-rw-r-- 1 centos centos  125 May 19 06:45 linux-uniform5/os-release
-	-rw-rw-r-- 1 centos centos 8157 May 19 06:45 linux-uniform5/uartlog
-	-rw-rw-r-- 1 centos centos  797 May 19 06:45 linux-uniform6/memory_stats.csv
-	-rw-rw-r-- 1 centos centos  125 May 19 06:45 linux-uniform6/os-release
-	-rw-rw-r-- 1 centos centos 8157 May 19 06:45 linux-uniform6/uartlog
-	-rw-rw-r-- 1 centos centos  797 May 19 06:45 linux-uniform7/memory_stats.csv
-	-rw-rw-r-- 1 centos centos  125 May 19 06:45 linux-uniform7/os-release
-	-rw-rw-r-- 1 centos centos 8157 May 19 06:45 linux-uniform7/uartlog
+	centos@ip-172-30-2-111.us-west-2.compute.internal:~/firesim-new/deploy/results-workload/2018-05-19--06-39-35-br-base$ ls -la */*
+	-rw-rw-r-- 1 centos centos  797 May 19 06:45 br-base0/memory_stats.csv
+	-rw-rw-r-- 1 centos centos  125 May 19 06:45 br-base0/os-release
+	-rw-rw-r-- 1 centos centos 7476 May 19 06:45 br-base0/uartlog
+	-rw-rw-r-- 1 centos centos  797 May 19 06:45 br-base1/memory_stats.csv
+	-rw-rw-r-- 1 centos centos  125 May 19 06:45 br-base1/os-release
+	-rw-rw-r-- 1 centos centos 8157 May 19 06:45 br-base1/uartlog
+	-rw-rw-r-- 1 centos centos  797 May 19 06:45 br-base2/memory_stats.csv
+	-rw-rw-r-- 1 centos centos  125 May 19 06:45 br-base2/os-release
+	-rw-rw-r-- 1 centos centos 8157 May 19 06:45 br-base2/uartlog
+	-rw-rw-r-- 1 centos centos  797 May 19 06:45 br-base3/memory_stats.csv
+	-rw-rw-r-- 1 centos centos  125 May 19 06:45 br-base3/os-release
+	-rw-rw-r-- 1 centos centos 8157 May 19 06:45 br-base3/uartlog
+	-rw-rw-r-- 1 centos centos  797 May 19 06:45 br-base4/memory_stats.csv
+	-rw-rw-r-- 1 centos centos  125 May 19 06:45 br-base4/os-release
+	-rw-rw-r-- 1 centos centos 8157 May 19 06:45 br-base4/uartlog
+	-rw-rw-r-- 1 centos centos  797 May 19 06:45 br-base5/memory_stats.csv
+	-rw-rw-r-- 1 centos centos  125 May 19 06:45 br-base5/os-release
+	-rw-rw-r-- 1 centos centos 8157 May 19 06:45 br-base5/uartlog
+	-rw-rw-r-- 1 centos centos  797 May 19 06:45 br-base6/memory_stats.csv
+	-rw-rw-r-- 1 centos centos  125 May 19 06:45 br-base6/os-release
+	-rw-rw-r-- 1 centos centos 8157 May 19 06:45 br-base6/uartlog
+	-rw-rw-r-- 1 centos centos  797 May 19 06:45 br-base7/memory_stats.csv
+	-rw-rw-r-- 1 centos centos  125 May 19 06:45 br-base7/os-release
+	-rw-rw-r-- 1 centos centos 8157 May 19 06:45 br-base7/uartlog
 	-rw-rw-r-- 1 centos centos  153 May 19 06:45 switch0/switchlog
 
 
 What are these files? They are specified to the manager in a configuration file
-(:gh-file-ref:`deploy/workloads/linux-uniform.json`) as files that we want
+(``deploy/workloads/br-base-uniform.json``) as files that we want
 automatically copied back to our manager after we run a simulation, which is
 useful for running benchmarks automatically. Note that there is a directory for
 each simulated node and each simulated switch in the cluster. The
-:ref:`defining-custom-workloads` section describes this process in detail.
+:ref:`deprecated-defining-custom-workloads` section describes this process in detail.
 
 For now, let's wrap-up our guide by terminating the ``f1.16xlarge`` instance
 that we launched. To do so, run:

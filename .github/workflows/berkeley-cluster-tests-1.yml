@@ -130,54 +130,6 @@ jobs:
           python3 -m sphinx.ext.intersphinx docs/_build/html/objects.inv
           cat /tmp/sphinx-err*.log
 
-  cpp-lint:
-    name: cpp-lint
-    runs-on: ubuntu-22.04
-    needs: filter-jobs-on-changes
-    if: needs.filter-jobs-on-changes.outputs.run-cpp-lint == 'true'
-    steps:
-      # Clone the repository (shallow to save time).
-      - name: Checkout sources
-        uses: actions/checkout@v4
-        with:
-          fetch-depth: 2
-          submodules: false
-
-      # Checkout chipyard submodules.
-      - name: Checkout chipyard
-        run: |
-          git submodule update --init target-design/chipyard
-          cd target-design/chipyard
-          git submodule update --init generators/testchipip
-      # Install clang linters
-      - name: Install Clang linters
-        run: |
-          sudo apt update
-          sudo apt install clang-format clang-tidy-12 parallel -y
-      # Run 'clang-format', comparing against the base commit hash.
-      # If anything got reformatted, fail and output a patch.
-      - name: Run clang-format
-        run: |
-          git fetch --recurse-submodules=no origin ${{ github.base_ref }}
-          DIFF_COMMIT=$(git rev-parse origin/${{ github.base_ref }})
-          git clang-format $DIFF_COMMIT
-          git diff --ignore-submodules > clang-format.patch
-          if [ -s clang-format.patch ]; then
-            echo "error: clang-format had to fix the following files:"
-            git diff --ignore-submodules --name-only
-            echo "----- 8< ---- PATCH ----- 8< ----"
-            cat clang-format.patch
-            echo "----- 8< ---- PATCH ----- 8< ----"
-            git checkout .
-            exit 1
-          fi
-      # Run clang-tidy on the entire codebase. Error will be logged.
-      - name: Run clang-tidy
-        run: |
-          export FIRESIM_ENV_SOURCED=1
-          export FIRESIM_STANDALONE=1
-          make -C sim clang-tidy
-
   setup-persistent-repo:
     name: setup-persistent-repo
     runs-on: local-fpga
@@ -203,6 +155,40 @@ jobs:
           ./build-setup.sh --verbose
           source sourceme-manager.sh --skip-ssh-setup
           firesim managerinit --platform xilinx_alveo_u250
+
+  cpp-lint:
+    name: cpp-lint
+    needs: [filter-jobs-on-changes, setup-persistent-repo]
+    runs-on: local-fpga
+    if: needs.filter-jobs-on-changes.outputs.run-cpp-lint == 'true'
+    steps:
+      - uses: actions/checkout@v4
+      # TODO: disabled for now. clang-format error's with no modifications
+      ## Run 'clang-format', comparing against the base commit hash.
+      ## If anything got reformatted, fail and output a patch.
+      ## Ensure you are using 'git' coming from conda to get 'clang-format'.
+      #- name: Run clang-format
+      #  run: |
+      #    cd ${{ env.REMOTE_WORK_DIR }}
+      #    source sourceme-manager.sh --skip-ssh-setup
+      #    cd ${{ github.workspace }}
+      #    git fetch --recurse-submodules=no origin ${{ github.base_ref }}
+      #    DIFF_COMMIT=$(git rev-parse origin/${{ github.base_ref }})
+      #    git clang-format $DIFF_COMMIT
+      #    git diff --ignore-submodules > clang-format.patch
+      #    if [ -s clang-format.patch ]; then
+      #      echo "error: clang-format had to fix the following files:"
+      #      git diff --ignore-submodules --name-only
+      #      echo "----- 8< ---- PATCH ----- 8< ----"
+      #      cat clang-format.patch
+      #      echo "----- 8< ---- PATCH ----- 8< ----"
+      #      git checkout .
+      #      exit 1
+      #    fi
+      # TODO: disabled for now. clang-tidy is throwing alot of false positives
+      ## Run clang-tidy on the entire codebase. Error will be logged.
+      #- name: Run clang-tidy
+      #  run: ./.github/scripts/invoke-make.py "clang-tidy"
 
   run-typecheck:
     name: run-typecheck

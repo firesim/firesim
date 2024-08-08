@@ -374,7 +374,7 @@ Then, it polls all the instances in the Run Farm every 10 seconds to determine
 the state of the simulated system. If it notices that a simulation has shutdown
 (i.e. the simulation disappears from the output of ``screen -ls``), it will
 automatically copy back all results from the simulation, as defined in the
-workload configuration (see the :ref:`defining-custom-workloads` section).
+workload configuration (see the :ref:`deprecated-defining-custom-workloads` section).
 
 For
 non-networked simulations, it will wait for ALL simulations to complete (copying

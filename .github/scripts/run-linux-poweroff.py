@@ -21,7 +21,7 @@ def run_linux_poweroff():
 
     with prefix(f"cd {ci_env['REMOTE_WORK_DIR']}"):
         with prefix('source sourceme-manager.sh --skip-ssh-setup'):
-            with prefix('cd sw/firesim-software'):
+            with prefix('cd target-design/chipyard/software/firemarshal'):
                 # build outputs.yaml (use this workload since firemarshal can guestmount)
                 run("./marshal -v build test/outputs.yaml")
                 run("./marshal -v install test/outputs.yaml")

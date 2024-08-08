@@ -1,5 +1,0 @@
-*.o
-/check-rtc
-/check-rtc-linux
-/print-mcycle
-/print-mcycle-linux

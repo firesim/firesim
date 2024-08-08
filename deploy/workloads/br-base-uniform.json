@@ -1,0 +1,12 @@
+{
+  "benchmark_name": "br-base-uniform",
+  "common_bootbinary": "../../../target-design/chipyard/software/firemarshal/images/firechip/br-base/br-base-bin",
+  "common_rootfs": "../../../target-design/chipyard/software/firemarshal/images/firechip/br-base/br-base.img"
+  "common_outputs": [
+    "/etc/os-release"
+  ],
+  "common_simulation_outputs": [
+    "uartlog",
+    "memory_stats*.csv"
+  ],
+}
