@@ -5,9 +5,6 @@
 # clang-tidy
 ################################################################################
 
-testchipip_csrc_dir = $(chipyard_dir)/generators/testchipip/src/main/resources/testchipip/csrc
-
-# grep -v ignores those files
 clang_tidy_files := $(shell \
 	find $(firesim_base_dir) -name '*.cc' -or -name '*.h' \
 		| grep -v TestPointerChaser.cc \
@@ -18,17 +15,14 @@ clang_tidy_files := $(shell \
 		| grep -v fesvr \
 		| grep -v generated-src \
 		| grep -v output \
-		| grep -v toolchain-utilities \
 		| grep -v -F 'entry.cc' \
 		| grep -v -F 'dpi.cc' \
 )
 
-clang_tidy_flags := \
+clang_tidy_flags :=\
 	-I$(firesim_base_dir)/midas/src/main/cc \
-	-I$(firesim_base_dir)/midas/src/main/cc/bridges \
 	-I$(firesim_base_dir)/firesim-lib/src/main/cc \
 	-I$(firesim_base_dir)/src/main/cc/midasexamples \
-	-I$(testchipip_csrc_dir) \
 	-std=c++20 \
 	-x c++
 
@@ -39,7 +33,8 @@ clang-tidy:
 		| tr ' ' '\n' \
 	 	| parallel -I% --max-args 1 clang-tidy % -- $(clang_tidy_flags)
 
+
 # Applies fixes to issues detected.
 .PHONY: clang-tidy-fix
 clang-tidy-fix:
-	@clang-tidy --fix $(clang_tidy_files) -- $(clang_tidy_flags)
+	@clang-tidy -fix $(clang_tidy_files) -- $(clang_tidy_flags)

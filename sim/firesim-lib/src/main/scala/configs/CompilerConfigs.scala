@@ -4,7 +4,6 @@ package firesim.configs
 import firrtl.options.Dependency
 import org.chipsalliance.cde.config.Config
 import midas.TargetTransforms
-import firesim.bridges._
 
 // Experimental: mixing this in will enable assertion synthesis
 class WithSynthAsserts extends Config((site, here, up) => {
@@ -30,10 +29,15 @@ class MCRams extends WithMultiCycleRamModels
 
 class MTModels extends WithModelMultiThreading
 
-// Enables NIC loopback the NIC widget
-class WithNICWidgetLoopback  extends Config((site, here, up) => {
-  case LoopbackNIC => true
+class WithILADepth(depth: Int) extends Config((site, here, up) => {
+    case midas.ILADepthKey => depth
 })
+
+class  ILADepth1024 extends WithILADepth(1024)
+class  ILADepth2048 extends WithILADepth(2048)
+class  ILADepth4096 extends WithILADepth(4096)
+class  ILADepth8192 extends WithILADepth(8192)
+class ILADepth16384 extends WithILADepth(16384)
 
 // ADDITIONAL TARGET TRANSFORMATIONS
 // These run on the the Target FIRRTL before Target-toHost Bridges are extracted ,

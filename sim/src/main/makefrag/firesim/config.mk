@@ -22,3 +22,6 @@ TARGET_SBT_PROJECT := firechip
 # Chipyard's makefile is directly invoked.
 TARGET_SBT_DIR :=
 TARGET_SOURCE_DIRS :=
+
+# Only used in this projects makefrags
+chipyard_dir := $(abspath ..)/target-design/chipyard
