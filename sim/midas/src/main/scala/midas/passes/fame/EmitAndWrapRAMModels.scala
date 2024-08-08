@@ -41,7 +41,7 @@ trait IsMemoryPort {
       case t: BundleType if IsDecoupled(t) =>
         t.fields.collectFirst({
           case f@Field(name,_, _: GroundType) if name == "bits" => f
-          case f@Field(name,_,BundleType(subFields)) if name == "bits" =>
+          case Field(name,_,BundleType(subFields)) if name == "bits" =>
             subFields.collectFirst({
               case sf@Field(name,_,_) if name == getFieldName(rT) => sf
             }).get
@@ -213,7 +213,7 @@ class EmitAndWrapRAMModels extends Transform {
     val c = state.circuit
     val ns = Namespace(c)
 
-    val memModelAnnotations = state.annotations.collect({
+    state.annotations.collect({
       case anno: MemPortAnnotation => portAnnos.addBinding(anno.addr.moduleTarget, anno) 
     })
 

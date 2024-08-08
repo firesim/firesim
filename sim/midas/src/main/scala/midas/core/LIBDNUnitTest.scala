@@ -61,7 +61,6 @@ case class OChannelDesc[T <: Data](
   // Generate the testing hardware for a single output channel of a model
   def genEnvironment(testLength: Int): Bool = {
     val refOutputs = Module(new Queue(reference.cloneType, testLength, flow = true))
-    val refIdx   = RegInit(0.U(log2Ceil(testLength + 1).W))
     val modelIdx = RegInit(0.U(log2Ceil(testLength + 1).W))
 
     val hValidPrev = RegNext(modelChannel.valid, false.B)

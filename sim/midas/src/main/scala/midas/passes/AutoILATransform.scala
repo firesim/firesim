@@ -135,7 +135,7 @@ object AutoILATransform extends Transform with DependencyAPIMigration {
 
     val (possibleTops, submodules) = wiredState.circuit.modules.partition {
       case m: Module if m.name == c.main => true
-      case o                             => false
+      case _                             => false
     }
 
     val newTop             = possibleTops.head.asInstanceOf[Module]
@@ -150,7 +150,7 @@ object AutoILATransform extends Transform with DependencyAPIMigration {
       case Port(_, _, Output, _) => p.copy(direction = Input)
     }
     val flippedPorts = newPorts.map(flipPort).toSeq
-    val probes = extractedMappings.map { case ((cname, tpe, _, path, prefix), index) =>
+    val probes = extractedMappings.map { case ((_, tpe, _, path, prefix), index) =>
       val probeWidth = tpe match { case GroundType(IntWidth(w)) => w.toInt }
       ILAProbe(index, probeWidth, prefix + path.mkString("_"), probeTriggers)
     }
@@ -227,7 +227,7 @@ object AutoILATransform extends Transform with DependencyAPIMigration {
 
     // Re-target connect statements, which now reference the removed ports, to ILA wrapper
     def rewireConnects(s: Statement): Statement = s.map(rewireConnects) match {
-      case c @ Connect(_, WRef(portName, _, _, _), rhs) if newPortNames.contains(portName) =>
+      case c @ Connect(_, WRef(portName, _, _, _), _) if newPortNames.contains(portName) =>
         c.copy(loc = SubField(WRef(ilaWrapperInstName), portName))
       case o                                                                               => o
     }
@@ -269,9 +269,9 @@ object AutoILATransform extends Transform with DependencyAPIMigration {
     }
 
     val cleanedAnnos = newState.annotations.filter {
-      case a: TopWiringAnnotation            => false
-      case a: TopWiringOutputFilesAnnotation => false
-      case a: FirrtlFpgaDebugAnnotation      => false
+      case _: TopWiringAnnotation            => false
+      case _: TopWiringOutputFilesAnnotation => false
+      case _: FirrtlFpgaDebugAnnotation      => false
       case _                                 => true
     }
     newState.copy(annotations = cleanedAnnos)

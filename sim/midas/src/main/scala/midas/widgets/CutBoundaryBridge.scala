@@ -1,10 +1,16 @@
+// See LICENSE for license details.
+
 package midas.widgets
 
 import chisel3._
 import chisel3.util._
+
 import org.chipsalliance.cde.config._
 import freechips.rocketchip.util._
+
 import midas.{MetasimPrintfEnable, PrintfLogger}
+
+import firesim.lib.bridgeutils._
 
 object TokensBatchedAtOnceConsts {
   val TOKEN_QUEUE_DEPTH = 32 * 2
@@ -40,7 +46,8 @@ class CutBoundaryBridgeIO(cutParams: CutBoundaryParams) extends Bundle {
 
 class PCISCutBoundaryBridge(cutParams: CutBoundaryParams)(implicit p: Parameters)
     extends BlackBox
-    with Bridge[HostPortIO[CutBoundaryBridgeIO], PCISCutBoundaryBridgeModule] {
+    with Bridge[HostPortIO[CutBoundaryBridgeIO]] {
+  val moduleName = "PCISCutBoundaryBridgeModule"
   val io             = IO(new CutBoundaryBridgeIO(cutParams))
   val bridgeIO       = HostPort(io)
   val constructorArg = Some(CutBoundaryKey(cutParams))
@@ -49,7 +56,8 @@ class PCISCutBoundaryBridge(cutParams: CutBoundaryParams)(implicit p: Parameters
 
 class QSFPCutBoundaryBridge(cutParams: CutBoundaryParams)(implicit p: Parameters)
     extends BlackBox
-    with Bridge[HostPortIO[CutBoundaryBridgeIO], QSFPCutBoundaryBridgeModule] {
+    with Bridge[HostPortIO[CutBoundaryBridgeIO]] {
+  val moduleName = "QSFPCutBoundaryBridgeModule"
   val io             = IO(new CutBoundaryBridgeIO(cutParams))
   val bridgeIO       = HostPort(io)
   val constructorArg = Some(CutBoundaryKey(cutParams))
@@ -58,7 +66,8 @@ class QSFPCutBoundaryBridge(cutParams: CutBoundaryParams)(implicit p: Parameters
 
 class PCIMCutBoundaryBridge(cutParams: CutBoundaryParams)(implicit p: Parameters)
     extends BlackBox
-    with Bridge[HostPortIO[CutBoundaryBridgeIO], PCIMCutBoundaryBridgeModule] {
+    with Bridge[HostPortIO[CutBoundaryBridgeIO]] {
+  val moduleName = "PCIMCutBoundaryBridgeModule"
   val io             = IO(new CutBoundaryBridgeIO(cutParams))
   val bridgeIO       = HostPort(io)
   val constructorArg = Some(CutBoundaryKey(cutParams))

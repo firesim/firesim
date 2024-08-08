@@ -4,6 +4,7 @@ package midas.core
 
 import chisel3._
 import chisel3.util._
+
 import freechips.rocketchip.amba.axi4._
 import org.chipsalliance.cde.config.Parameters
 import freechips.rocketchip.diplomacy._
@@ -11,6 +12,8 @@ import freechips.rocketchip.diplomacy._
 import midas.widgets._
 import midas.targetutils.FireSimQueueHelper
 import midas.F1ShimHasPCIMPorts
+
+import firesim.lib.bridgeutils._
 
 class WriteMetadata(val numBeatsWidth: Int) extends Bundle {
   val numBeats = Output(UInt(numBeatsWidth.W))

@@ -1,12 +1,17 @@
 package midas
 package models
 
+import Console.{UNDERLINED, RESET}
+
 import chisel3._
 import chisel3.util._
-import org.chipsalliance.cde.config.Parameters
-import midas.widgets._
 
-import Console.{UNDERLINED, RESET}
+import org.chipsalliance.cde.config.Parameters
+
+import midas.widgets._
+import junctions.{NastiKey}
+
+import firesim.lib.nasti._
 
 case class BankConflictConfig(
     maxBanks: Int,
@@ -50,14 +55,14 @@ class BankConflictIO(cfg: BankConflictConfig)(implicit p: Parameters)
   val mmReg = new BankConflictMMRegIO(cfg)
 }
 
-class BankQueueEntry(cfg: BankConflictConfig)(implicit p: Parameters) extends Bundle {
-  val xaction = new TransactionMetaData
+class BankQueueEntry(nastiParams: NastiParameters, cfg: BankConflictConfig)(implicit p: Parameters) extends Bundle {
+  val xaction = new TransactionMetaData(nastiParams)
   val bankAddr = UInt(log2Ceil(cfg.maxBanks).W)
 }
 
 // Appends a target cycle at which this reference should be complete
-class BankConflictReference(cfg: BankConflictConfig)(implicit p: Parameters) extends Bundle {
-  val reference = new BankQueueEntry(cfg)
+class BankConflictReference(nastiParams: NastiParameters, cfg: BankConflictConfig)(implicit p: Parameters) extends Bundle {
+  val reference = new BankQueueEntry(nastiParams, cfg)
   val cycle = UInt(cfg.maxLatencyBits.W) // Indicates latency until doneness
   val done = Bool() // Set high when the cycle count expires
 }
@@ -67,7 +72,7 @@ object BankConflictConstants {
   val bankIdle :: bankBusy :: bankPrecharge :: Nil = Enum(nBankStates)
 }
 
-
+// TODO: TimingModel/SplitTransactionModel's children should directly use p(NastiKey)
 class BankConflictModel(cfg: BankConflictConfig)(implicit p: Parameters) extends SplitTransactionModel(cfg)(p) {
 
   val longName = "Bank Conflict"
@@ -79,15 +84,15 @@ class BankConflictModel(cfg: BankConflictConfig)(implicit p: Parameters) extends
   val latency = io.mmReg.latency
   val conflictPenalty = io.mmReg.conflictPenalty
 
-  val transactionQueue = Module(new Queue(new BankQueueEntry(cfg), cfg.maxWrites + cfg.maxReads))
-  val transactionQueueArb = Module(new RRArbiter(new BankQueueEntry(cfg), 2))
+  val transactionQueue = Module(new Queue(new BankQueueEntry(p(NastiKey), cfg), cfg.maxWrites + cfg.maxReads))
+  val transactionQueueArb = Module(new RRArbiter(new BankQueueEntry(p(NastiKey), cfg), 2))
 
   transactionQueueArb.io.in(0).valid := newWReq
-  transactionQueueArb.io.in(0).bits.xaction := TransactionMetaData(awQueue.io.deq.bits)
+  transactionQueueArb.io.in(0).bits.xaction := TransactionMetaData(p(NastiKey), awQueue.io.deq.bits)
   transactionQueueArb.io.in(0).bits.bankAddr := io.mmReg.bankAddr.getSubAddr(awQueue.io.deq.bits.addr)
 
   transactionQueueArb.io.in(1).valid := tNasti.ar.fire
-  transactionQueueArb.io.in(1).bits.xaction := TransactionMetaData(tNasti.ar.bits)
+  transactionQueueArb.io.in(1).bits.xaction := TransactionMetaData(p(NastiKey), tNasti.ar.bits)
   transactionQueueArb.io.in(1).bits.bankAddr := io.mmReg.bankAddr.getSubAddr(tNasti.ar.bits.addr)
 
   transactionQueue.io.enq <> transactionQueueArb.io.out
@@ -95,7 +100,7 @@ class BankConflictModel(cfg: BankConflictConfig)(implicit p: Parameters) extends
   val bankBusyCycles = Seq.fill(cfg.maxBanks)(RegInit(0.U(cfg.maxLatencyBits.W)))
   val bankConflictCounts = RegInit(VecInit(Seq.fill(cfg.maxBanks)(0.U(32.W))))
 
-  val newReference = Wire(Decoupled(new BankConflictReference(cfg)))
+  val newReference = Wire(Decoupled(new BankConflictReference(p(NastiKey), cfg)))
   newReference.valid := transactionQueue.io.deq.valid
   newReference.bits.reference := transactionQueue.io.deq.bits
   val marginalCycles = latency + VecInit(bankBusyCycles)(transactionQueue.io.deq.bits.bankAddr)
@@ -138,8 +143,8 @@ class BankConflictModel(cfg: BankConflictConfig)(implicit p: Parameters) extends
 
   val completedRef = selector.io.out.bits.reference
 
-  rResp.bits := ReadResponseMetaData(completedRef.xaction)
-  wResp.bits := WriteResponseMetaData(completedRef.xaction)
+  rResp.bits := ReadResponseMetaData(p(NastiKey), completedRef.xaction)
+  wResp.bits := WriteResponseMetaData(p(NastiKey), completedRef.xaction)
   wResp.valid := selector.io.out.valid && completedRef.xaction.isWrite
   rResp.valid := selector.io.out.valid && !completedRef.xaction.isWrite
   selector.io.out.ready := Mux(completedRef.xaction.isWrite, wResp.ready, rResp.ready)

@@ -1,4 +1,3 @@
-
 //See LICENSE for license details.
 
 package firesim.midasexamples
@@ -39,4 +38,4 @@ class WireInterconnectDUT extends Module {
   io.bOut := PipeModule(io.bIn, 1)
 }
 
-class WireInterconnect(implicit p: Parameters) extends PeekPokeMidasExampleHarness(() => new WireInterconnectDUT)
+class WireInterconnect(implicit p: Parameters) extends firesim.lib.testutils.PeekPokeHarness(() => new WireInterconnectDUT)

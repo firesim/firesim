@@ -10,9 +10,10 @@ import freechips.rocketchip.tilelink._
 import org.chipsalliance.cde.config.{Field, Parameters}
 import freechips.rocketchip.subsystem.{ExtMem, MemoryPortParams}
 
-import junctions.NastiParameters
-import midas.models.{FASEDBridge, AXI4EdgeSummary, CompleteConfig}
-import midas.widgets.{PeekPokeBridge, RationalClockBridge, ResetPulseBridge, ResetPulseBridgeParameters}
+import midas.models.{AXI4EdgeSummary}
+
+import firesim.lib.bridges.{CompleteConfig, FASEDBridge, PeekPokeBridge, RationalClockBridge, ResetPulseBridge, ResetPulseBridgeParameters}
+import firesim.lib.nasti.{NastiParameters, NastiIO}
 
 case class FuzzerParameters(numTransactions: Int, maxFlight: Int, overrideAddress: Option[AddressSet])
 case object FuzzerParametersKey extends Field[Seq[FuzzerParameters]]()
@@ -73,10 +74,11 @@ class AXI4FuzzerDUT(implicit p: Parameters) extends LazyModule with HasFuzzTarge
       val nastiKey = NastiParameters(axi4.r.bits.data.getWidth,
                                      axi4.ar.bits.addr.getWidth,
                                      axi4.ar.bits.id.getWidth)
-      val fasedInstance =  FASEDBridge(clock, axi4, reset.asBool,
-        CompleteConfig(p(firesim.configs.MemModelKey),
-                       nastiKey,
-                       Some(AXI4EdgeSummary(edge)),
+      val nastiIo = Wire(new NastiIO(nastiKey))
+      junctions.AXI4NastiAssigner.toNasti(nastiIo, axi4)
+      FASEDBridge(clock, nastiIo, reset.asBool,
+        CompleteConfig(nastiKey,
+                       Some(AXI4EdgeSummary.createCompatEdgeSummary(edge)),
                        Some("DefaultMemoryRegion")))
     }
   }
@@ -92,7 +94,7 @@ class AXI4Fuzzer(implicit val p: Parameters) extends RawModule {
   withClockAndReset(clock, resetBridge.io.reset) {
     val dummyReset = WireInit(false.B)
     val fuzzer = Module((LazyModule(new AXI4FuzzerDUT)).module)
-    val peekPokeBridge = PeekPokeBridge(clock, dummyReset,
+    PeekPokeBridge(clock, dummyReset,
                                             ("done", fuzzer.done),
                                             ("error", fuzzer.error))
   }

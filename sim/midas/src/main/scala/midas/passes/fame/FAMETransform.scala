@@ -14,7 +14,7 @@ import mutable.{LinkedHashSet, LinkedHashMap}
 
 import midas.passes._
 import midas.targetutils.xdc.{XDCFiles, XDCAnnotation}
-import midas.widgets.{RationalClock}
+import firesim.lib.bridgeutils.{RationalClock}
 
 /**************
  PRECONDITIONS:
@@ -274,7 +274,7 @@ object FAMEModuleTransformer {
           resetVal = UIntLiteral(if (isInput) 1 else 0))
         (cName, clockFlag, ports, firedReg)
       case (cName, (None, ports)) => clockChannel match {
-        case vc: VirtualClockChannel =>
+        case _: VirtualClockChannel =>
           val firedReg = hostFlagReg(suggestName = ns.newName(s"${cName}_fired"))
           (cName, UIntLiteral(1), ports, firedReg)
         case _ =>
@@ -317,7 +317,7 @@ object FAMEModuleTransformer {
         outChannelMap(name).replacePortRef(oWR)
       case cWR @ WRef(name, ClockType, PortKind, SourceFlow) if clockChannelPortNames(name) =>
         replaceClocksMap(WrappedExpression.we(cWR))
-      case e => 
+      case e =>
         e
     }
 
@@ -365,7 +365,7 @@ class FAMETransform extends Transform {
       val clockConn = Connect(NoInfo, WSubField(WRef(wi), WrapTop.hostClockName), WRef(analysis.hostClock.ref, ClockType))
       val resetConn = Connect(NoInfo, WSubField(WRef(wi), WrapTop.hostResetName), WRef(analysis.hostReset.ref, BoolType))
       Block(Seq(wi, clockConn, resetConn))
-    case Connect(_, lhs, rhs) if (lhs.tpe == ClockType) => EmptyStmt // drop ancillary clock connects
+    case Connect(_, lhs, _) if (lhs.tpe == ClockType) => EmptyStmt // drop ancillary clock connects
     case Connect(_, WRef(name, _, _, _), _) if (analysis.staleTopPorts.contains(analysis.topTarget.ref(name))) => EmptyStmt
     case Connect(_, _, WRef(name, _, _, _)) if (analysis.staleTopPorts.contains(analysis.topTarget.ref(name))) => EmptyStmt
     case s => s
@@ -399,7 +399,6 @@ class FAMETransform extends Transform {
           rt.copy(ref = newTopSinkName).field("bits").field(FAMEChannelAnalysis.removeCommonPrefix(rt.ref, c)._1)))
     })
 
-    val visitedSources = new LinkedHashSet[String]
     val sourceRenames = (analysis.transformedSources ++ analysis.transformedLoopbacks.unzip._1).flatMap({ c =>
       val newTopSourceName = topSourcePortName(c, analysis)
       if (analysis.sourcePorts(c).size == 1)
@@ -410,7 +409,7 @@ class FAMETransform extends Transform {
 
     def renamePorts(suffix: String, lookup: ModuleTarget => Map[String, (Option[Port], Seq[Port])])
                    (mT: ModuleTarget): Seq[(ReferenceTarget, ReferenceTarget)] = {
-        lookup(mT).toSeq.flatMap({ case (cName, (clockOption, pList)) =>
+        lookup(mT).toSeq.flatMap({ case (cName, (_, pList)) =>
           pList.map({ port =>
             val decoupledTarget = mT.ref(s"${cName}${suffix}").field("bits")
             if (pList.size == 1)

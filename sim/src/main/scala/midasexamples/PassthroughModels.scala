@@ -1,4 +1,3 @@
-
 // See LICENSE for license details
 
 package firesim.midasexamples
@@ -50,7 +49,7 @@ class PassthroughModelDUT extends Module {
   passthru.io.in := lfsr
   assert(passthru.io.in === passthru.io.out)
 }
-class PassthroughModel(implicit p: Parameters) extends PeekPokeMidasExampleHarness(() => new PassthroughModelDUT)
+class PassthroughModel(implicit p: Parameters) extends firesim.lib.testutils.PeekPokeHarness(() => new PassthroughModelDUT)
 
 class PassthroughModelNestedDUT extends Module {
   val io = IO(new Bundle {})
@@ -62,7 +61,7 @@ class PassthroughModelNestedDUT extends Module {
   passthru.io.in := lfsr
   assert(passthru.io.in === passthru.io.out)
 }
-class PassthroughModelNested(implicit p: Parameters) extends PeekPokeMidasExampleHarness(() => new PassthroughModelNestedDUT)
+class PassthroughModelNested(implicit p: Parameters) extends firesim.lib.testutils.PeekPokeHarness(() => new PassthroughModelNestedDUT)
 
 
 class PassthroughModelBridgeSourceDUT extends Module {
@@ -75,4 +74,4 @@ class PassthroughModelBridgeSourceDUT extends Module {
   passthru.io.in := fuzz.io.uint
   assert(fuzz.io.uint === passthru.io.out)
 }
-class PassthroughModelBridgeSource(implicit p: Parameters) extends PeekPokeMidasExampleHarness(() => new PassthroughModelBridgeSourceDUT)
+class PassthroughModelBridgeSource(implicit p: Parameters) extends firesim.lib.testutils.PeekPokeHarness(() => new PassthroughModelBridgeSourceDUT)

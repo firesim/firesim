@@ -6,6 +6,7 @@ package core
 import org.chipsalliance.cde.config.{Parameters, Field}
 import freechips.rocketchip.unittest._
 import freechips.rocketchip.util.{DecoupledHelper, ShiftQueue} // Better than chisel's
+import firesim.lib.bridgeutils.{HostReadyValid}
 
 import chisel3._
 import chisel3.util._

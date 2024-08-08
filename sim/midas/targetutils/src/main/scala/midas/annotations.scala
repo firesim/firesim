@@ -70,7 +70,7 @@ object SynthesizePrintf {
   }
 
   private def generateAnnotations(format: String, args: Seq[Bits], name: Option[String]): Printable = {
-    val thisModule = Module.currentModule.getOrElse(
+    Module.currentModule.getOrElse(
       throw new RuntimeException("Cannot annotate a printf outside of a Module"))
 
     // To preserve the behavior of the printf parameter annotator, generate a

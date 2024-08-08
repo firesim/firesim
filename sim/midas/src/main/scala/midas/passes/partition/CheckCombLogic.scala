@@ -159,7 +159,7 @@ class CheckCombLogic extends Transform with DependencyAPIMigration {
     val c                      = state.circuit
     val extModulePaths         = state.annotations.groupBy {
       case ann: ExtModulePathAnnotation => ModuleTarget(c.main, ann.source.module)
-      case ann: Annotation              => CircuitTarget(c.main)
+      case _: Annotation              => CircuitTarget(c.main)
     }
     val moduleMap              = c.modules.map({ m => (m.name, m) }).toMap
     val iKeyGraph              = InstanceKeyGraph(c)

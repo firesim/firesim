@@ -20,4 +20,4 @@ class ParityDUT extends Module {
   io.out := (state === s_odd)
 }
 
-class Parity(implicit p: Parameters) extends PeekPokeMidasExampleHarness(() => new ParityDUT)
+class Parity(implicit p: Parameters) extends firesim.lib.testutils.PeekPokeHarness(() => new ParityDUT)

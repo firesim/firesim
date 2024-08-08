@@ -5,7 +5,8 @@ package firesim.midasexamples
 import chisel3._
 import org.chipsalliance.cde.config.Parameters
 import freechips.rocketchip.util.ResetCatchAndSync
-import midas.widgets.{RationalClockBridge, PeekPokeBridge, RationalClock}
+import firesim.lib.bridges.{RationalClockBridge, PeekPokeBridge}
+import firesim.lib.bridgeutils.{RationalClock}
 
 
 // Instantiates two of the printf duts from the single-clock test
@@ -22,7 +23,7 @@ class MulticlockPrintfModule(implicit p: Parameters) extends RawModule {
     val fullRateMod = Module(new PrintfModuleDUT)
     fullRateMod.io.a := lfsr(0)
     fullRateMod.io.b := ~lfsr(0)
-    val peekPokeBridge = PeekPokeBridge(refClock, reset)
+    PeekPokeBridge(refClock, reset)
   }
   withClockAndReset(div2Clock, resetHalfRate) {
     val lfsr = chisel3.util.random.LFSR(16)

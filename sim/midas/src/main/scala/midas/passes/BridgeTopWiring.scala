@@ -204,9 +204,9 @@ class BridgeTopWiring(val prefix: String) extends firrtl.Transform {
     }).flatten
 
     val updatedAnnotations = outputAnnotations.toSeq ++ wiredState.annotations.flatMap({
-      case s: TopWiringAnnotation => None
-      case s: TopWiringOutputFilesAnnotation => None
-      case s: BridgeTopWiringAnnotation => None
+      case _: TopWiringAnnotation => None
+      case _: TopWiringOutputFilesAnnotation => None
+      case _: BridgeTopWiringAnnotation => None
       case o => Some(o)
     })
 

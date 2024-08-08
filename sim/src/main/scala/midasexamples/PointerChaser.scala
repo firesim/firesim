@@ -4,11 +4,13 @@ package firesim.midasexamples
 
 import chisel3._
 import chisel3.util._
-import junctions._
+
 import org.chipsalliance.cde.config.{Parameters, Field}
 
-import midas.widgets.{PeekPokeBridge}
-import midas.models.{FASEDBridge, BaseParams, LatencyPipeConfig, CompleteConfig}
+import junctions._
+
+import firesim.lib.bridges.{CompleteConfig, PeekPokeBridge, FASEDBridge}
+import firesim.lib.nasti._
 
 case object MemSize extends Field[Int]
 case object NMemoryChannels extends Field[Int]
@@ -20,18 +22,18 @@ case object Seed extends Field[Long]
 // node consists of a pointer to the next node and a 64 bit SInt
 // Inputs: (Decoupled) start address: the location of the first node in memory
 // Outputs: (Decoupled) result: The sum of the list
-class PointerChaserDUT(implicit val p: Parameters) extends Module with HasNastiParameters {
+class PointerChaserDUT(nastiParams: NastiParameters)(implicit val p: Parameters) extends NastiModule(nastiParams) {
   val io = IO(new Bundle {
-    val nasti = new NastiIO
+    val nasti = new NastiIO(nastiParams)
     val result = Decoupled(SInt(nastiXDataBits.W))
     val startAddr = Flipped(Decoupled(UInt(nastiXAddrBits.W)))
   })
-  
+
   val memoryIF = io.nasti
   val busy = RegInit(false.B)
   val resultReg = RegInit(0.S)
   val resultValid = RegInit(false.B)
-  
+
   val startFire = io.startAddr.valid && ~busy
   val doneFire =  io.result.valid && io.result.ready
 
@@ -65,7 +67,7 @@ class PointerChaserDUT(implicit val p: Parameters) extends Module with HasNastiP
     resultValid := false.B
     resultReg := 0.S
   }
-  
+
   val arFire = memoryIF.ar.ready && memoryIF.ar.valid
 
   val arRegAddr = RegInit(0.U)
@@ -79,6 +81,7 @@ class PointerChaserDUT(implicit val p: Parameters) extends Module with HasNastiP
   }
 
   memoryIF.ar.bits := NastiWriteAddressChannel(
+    nastiParams,
     id = 0.U,
     len = 1.U,
     size = bytesToXSize((nastiXDataBits/8).U),
@@ -88,12 +91,13 @@ class PointerChaserDUT(implicit val p: Parameters) extends Module with HasNastiP
 
   val rnd = new scala.util.Random(p(Seed))
   memoryIF.aw.bits := NastiWriteAddressChannel(
+    nastiParams,
     id = rnd.nextInt(1 << nastiWIdBits).U,
     len = rnd.nextInt(1 << nastiXLenBits).U,
     size = rnd.nextInt(1 << nastiXSizeBits).U,
     addr = rnd.nextInt.S.asUInt)
   memoryIF.aw.valid := false.B
-  memoryIF.w.bits := NastiWriteDataChannel(rnd.nextLong.S.asUInt)
+  memoryIF.w.bits := NastiWriteDataChannel(nastiParams, rnd.nextLong.S.asUInt)
   memoryIF.w.valid := false.B
   memoryIF.b.ready := true.B
 
@@ -108,11 +112,12 @@ class PointerChaser(implicit val p: Parameters) extends RawModule {
   val reset = WireInit(false.B)
 
   withClockAndReset(clock, reset) {
-    val pointerChaser = Module(new PointerChaserDUT)
-    val fasedInstance =  Module(new FASEDBridge(CompleteConfig(LatencyPipeConfig(BaseParams(16,16)), p(NastiKey))))
+    val pointerChaser = Module(new PointerChaserDUT(p(NastiKey)))
+    // TODO: how to add LatencyPipeConfig(BaseParams(16,16))
+    val fasedInstance =  Module(new FASEDBridge(CompleteConfig(p(NastiKey))))
     fasedInstance.io.axi4 <> pointerChaser.io.nasti
     fasedInstance.io.reset := reset
-    val peekPokeBridge = PeekPokeBridge(clock, reset,
+    PeekPokeBridge(clock, reset,
                                         ("io_startAddr", pointerChaser.io.startAddr),
                                         ("io_result", pointerChaser.io.result))
   }

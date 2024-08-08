@@ -52,5 +52,5 @@ class VerilogAccumulatorDUT extends Module {
   io.out := impl.io.out
 }
 
-class Accumulator(implicit p: Parameters) extends PeekPokeMidasExampleHarness(() => new AccumulatorDUT)
-class VerilogAccumulator(implicit p: Parameters) extends PeekPokeMidasExampleHarness(() => new VerilogAccumulatorDUT)
+class Accumulator(implicit p: Parameters) extends firesim.lib.testutils.PeekPokeHarness(() => new AccumulatorDUT)
+class VerilogAccumulator(implicit p: Parameters) extends firesim.lib.testutils.PeekPokeHarness(() => new VerilogAccumulatorDUT)

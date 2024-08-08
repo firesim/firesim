@@ -55,7 +55,7 @@ class PrintfModuleChild(printfPrefix: String) extends Module {
   //}
 }
 
-class PrintfModule(implicit p: Parameters) extends PeekPokeMidasExampleHarness(() => new PrintfModuleDUT)
+class PrintfModule(implicit p: Parameters) extends firesim.lib.testutils.PeekPokeHarness(() => new PrintfModuleDUT)
 
 class NarrowPrintfModuleDUT extends Module {
   val io = IO(new Bundle {
@@ -69,4 +69,4 @@ class NarrowPrintfModuleDUT extends Module {
   }
 }
 
-class NarrowPrintfModule(implicit p: Parameters) extends PeekPokeMidasExampleHarness(() => new NarrowPrintfModuleDUT)
+class NarrowPrintfModule(implicit p: Parameters) extends firesim.lib.testutils.PeekPokeHarness(() => new NarrowPrintfModuleDUT)

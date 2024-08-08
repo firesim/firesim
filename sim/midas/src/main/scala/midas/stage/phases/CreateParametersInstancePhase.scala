@@ -29,7 +29,7 @@ object CreateParametersFromConfigString {
         try {
           Class.forName(configPackage + "." + configName).newInstance.asInstanceOf[Config]
         } catch {
-          case t: java.lang.ClassNotFoundException => getConfig(oremainingPackages, configName)
+          case _: java.lang.ClassNotFoundException => getConfig(oremainingPackages, configName)
         }
       }
     }

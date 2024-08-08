@@ -91,7 +91,7 @@ private[passes] object TriggerWiring extends firrtl.Transform {
       addedAnnos += SinkAnnotation(mT.ref(triggerSyncName).toNamed, sinkWiringKey)
       Block(triggerSync, node.copy(value = WRef(triggerSync)))
     // Implement the missing cases?
-    case r@DefRegister(_,name,_,_,_,_) if sinkAnnos.isDefinedAt(name) => ???
+    case DefRegister(_,name,_,_,_,_) if sinkAnnos.isDefinedAt(name) => ???
     case s => s
   }
 
@@ -245,9 +245,9 @@ private[passes] object TriggerWiring extends firrtl.Transform {
     }
 
     val cleanedAnnos = updatedState.annotations.flatMap({
-      case a: TriggerSourceAnnotation => None
-      case a: TriggerSinkAnnotation => None
-      case a: BridgeTopWiringOutputAnnotation => None
+      case _: TriggerSourceAnnotation => None
+      case _: TriggerSinkAnnotation => None
+      case _: BridgeTopWiringOutputAnnotation => None
       case o => Some(o)
     })
     updatedState.copy(annotations = cleanedAnnos)

@@ -10,6 +10,8 @@ import chisel3.util._
 import org.chipsalliance.cde.config.{Parameters}
 import freechips.rocketchip.util.{DecoupledHelper}
 
+import firesim.lib.bridgeutils._
+
 class PrintRecord(portType: firrtl.ir.BundleType, val formatString: String) extends Record {
   def regenLeafType(tpe: firrtl.ir.Type): Data = tpe match {
     case firrtl.ir.UIntType(width: firrtl.ir.IntWidth) => UInt(width.width.toInt.W)

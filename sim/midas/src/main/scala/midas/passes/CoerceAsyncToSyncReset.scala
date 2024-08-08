@@ -23,7 +23,7 @@ object CoerceAsyncToSyncReset extends firrtl.Transform {
     case o => o
   }
   private def onExpr(e: Expression): Expression = e.map(onExpr).map(onType) match {
-    case p @ DoPrim(PrimOps.AsAsyncReset, Seq(arg), _, _) => p.copy(op = PrimOps.AsUInt, tpe = BoolType)
+    case p @ DoPrim(PrimOps.AsAsyncReset, Seq(_), _, _) => p.copy(op = PrimOps.AsUInt, tpe = BoolType)
     case o => o
   }
   private def onStmt(s: Statement): Statement = s.map(onStmt).map(onExpr).map(onType)

@@ -56,7 +56,7 @@ class MultiSRAMDUT(nCopies: Int) extends Module {
   * @see [[MultiSRAMFMR]] for a test that helps ensure threading is actually applied
   * @see [[MultiRegfile]] for an analogous test that contains optimizable memories
   */
-class MultiSRAM(implicit p: Parameters) extends PeekPokeMidasExampleHarness(() => new MultiSRAMDUT(MultiRegfile.nCopiesToTest))
+class MultiSRAM(implicit p: Parameters) extends firesim.lib.testutils.PeekPokeHarness(() => new MultiSRAMDUT(MultiRegfile.nCopiesToTest))
 
 /** A top-level target module that instantiates a large number of inner [[SRAMInner]] modules. This is used as part of
   * [[MultiSRAMFMRF1Test]] to test whether the threading optimization is actually applied. By letting a simulator run
@@ -65,4 +65,4 @@ class MultiSRAM(implicit p: Parameters) extends PeekPokeMidasExampleHarness(() =
   *
   * @see [[MultiRegfileFMR]] for an analogous test that contains optimizable memories
   */
-class MultiSRAMFMR(implicit p: Parameters) extends PeekPokeMidasExampleHarness(() => new MultiSRAMDUT(MultiRegfile.nCopiesToTime))
+class MultiSRAMFMR(implicit p: Parameters) extends firesim.lib.testutils.PeekPokeHarness(() => new MultiSRAMDUT(MultiRegfile.nCopiesToTime))

@@ -4,7 +4,7 @@ import firrtl._
 import annotations._
 
 import midas.targetutils.FAMEAnnotation
-import midas.widgets.RationalClock
+import firesim.lib.bridgeutils.RationalClock
 
 /**
   * An annotation that describes the ports that constitute one channel

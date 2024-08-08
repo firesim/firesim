@@ -1,16 +1,12 @@
 // See LICENSE for license details.
 
-package midas
-package widgets
-
-import midas.core.{TargetChannelIO}
+package midas.widgets
 
 import org.chipsalliance.cde.config.{Parameters, Field}
 
 import chisel3._
-import chisel3.experimental.{BaseModule, ChiselAnnotation, annotate}
 
-import scala.reflect.runtime.{universe => ru}
+import firesim.lib.bridgeutils.{RationalClock, HasChannels}
 
 /* Bridge
  *
@@ -31,42 +27,4 @@ abstract class BridgeModuleImp[HostPortType <: Record with HasChannels]
     (implicit p: Parameters) extends WidgetImp(wrapper) {
   def hPort: HostPortType
   def clockDomainInfo: RationalClock = p(TargetClockInfo).get
-}
-
-trait Bridge[HPType <: Record with HasChannels, WidgetType <: BridgeModule[HPType]] {
-  self: BaseModule =>
-  def constructorArg: Option[_ <: AnyRef]
-  def bridgeIO: HPType
-
-  def generateAnnotations(): Unit = {
-
-    // Adapted from https://medium.com/@giposse/scala-reflection-d835832ed13a
-    val mirror = ru.runtimeMirror(getClass.getClassLoader)
-    val classType = mirror.classSymbol(getClass)
-    // The base class here is Bridge, but it has not yet been parameterized.
-    val baseClassType = ru.typeOf[Bridge[_,_]].typeSymbol.asClass
-    // Now this will be the type-parameterized form of Bridge
-    val baseType = ru.internal.thisType(classType).baseType(baseClassType)
-    val widgetClassSymbol = baseType.typeArgs(1).typeSymbol.asClass
-
-    // Generate the bridge annotation
-    annotate(new ChiselAnnotation { def toFirrtl = {
-        BridgeAnnotation(
-          self.toNamed.toTarget,
-          bridgeIO.bridgeChannels(),
-          widgetClass = widgetClassSymbol.fullName,
-          widgetConstructorKey = constructorArg)
-      }
-    })
-  }
-}
-
-trait HasChannels {
-  /**
-    * Returns a list of channel descriptors.
-    */
-  def bridgeChannels(): Seq[BridgeChannel]
-
-  // Called in FPGATop to connect the instantiated bridge to channel ports on the wrapper
-  private[midas] def connectChannels2Port(bridgeAnno: BridgeIOAnnotation, channels: TargetChannelIO): Unit
 }

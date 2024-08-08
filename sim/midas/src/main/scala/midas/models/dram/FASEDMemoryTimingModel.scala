@@ -2,7 +2,11 @@
 package midas
 package models
 
-import firrtl.annotations.HasSerializationHints
+import scala.math.min
+import Console.{UNDERLINED, RESET}
+
+import chisel3._
+import chisel3.util._
 
 // From RC
 import org.chipsalliance.cde.config.{Parameters, Field}
@@ -11,20 +15,103 @@ import freechips.rocketchip.diplomacy.{IdRange, LazyModule, AddressSet, Transfer
 import freechips.rocketchip.amba.axi4._
 import freechips.rocketchip.tilelink._
 import freechips.rocketchip.devices.tilelink._
+
 import junctions._
-
-import chisel3._
-import chisel3.util._
-
 import midas.core._
 import midas.widgets._
 
-import scala.math.min
-import Console.{UNDERLINED, RESET}
+import firesim.lib.nasti._
+import firesim.lib.bridgeutils._
+import firesim.lib.bridges.{FASEDTargetIO}
 
+// A wrapper bundle around all of the programmable settings in the functional model (!timing model).
+class FuncModelProgrammableRegs extends Bundle with HasProgrammableRegisters {
+  val relaxFunctionalModel = Input(Bool())
+
+  val registers = Seq(
+    (relaxFunctionalModel -> RuntimeSetting(0, """Relax functional model""", max = Some(1)))
+  )
+
+  def getFuncModelSettings(): Seq[(String, BigInt)] = {
+    Console.println(s"${UNDERLINED}Functional Model Settings${RESET}")
+    setUnboundSettings()
+    getSettings()
+  }
+}
 
 // Note: NASTI -> legacy rocket chip implementation of AXI4
 case object FasedAXI4Edge extends Field[Option[AXI4EdgeSummary]](None)
+
+// A serializable summary of the diplomatic edge
+case class AXI4EdgeSummary(
+  maxReadTransfer: Int,
+  maxWriteTransfer: Int,
+  idReuse: Option[Int],
+  maxFlight: Option[Int],
+  address: Seq[AddressSet]
+) {
+  def targetAddressOffset(): BigInt = address.map(_.base).min
+}
+
+object ConvertToFireSimFasedAXI4Edge {
+  def apply(axi4Edge: Option[firesim.lib.bridges.AXI4EdgeSummary]): Option[AXI4EdgeSummary] = {
+    axi4Edge.map(e => AXI4EdgeSummary(
+      e.maxReadTransfer,
+      e.maxWriteTransfer,
+      e.idReuse,
+      e.maxFlight,
+      e.address.map(as => AddressSet(as.base, as.mask))
+    ))
+  }
+}
+
+object AXI4EdgeSummary {
+  // Returns max ID reuse; None -> unbounded
+  private def getIDReuseFromEdge(e: AXI4EdgeParameters): Option[Int] = {
+    val maxFlightPerMaster = e.master.masters.map(_.maxFlight)
+    maxFlightPerMaster.reduce( (_,_) match {
+      case (Some(prev), Some(cur)) => Some(scala.math.max(prev, cur))
+      case _ => None
+    })
+  }
+  // Returns (maxReadLength, maxWriteLength)
+  private def getMaxTransferFromEdge(e: AXI4EdgeParameters): (Int, Int) = {
+    val beatBytes = e.slave.beatBytes
+    val readXferSize  = e.slave.slaves.head.supportsRead.max
+    val writeXferSize = e.slave.slaves.head.supportsWrite.max
+    ((readXferSize + beatBytes - 1) / beatBytes, (writeXferSize + beatBytes - 1) / beatBytes)
+  }
+
+  // Sums up the maximum number of requests that can be inflight across all masters
+  // None -> unbounded
+  private def getMaxTotalFlightFromEdge(e: AXI4EdgeParameters): Option[Int] = {
+    val maxFlightPerMaster = e.master.masters.map(_.maxFlight)
+    maxFlightPerMaster.reduce( (_,_) match {
+      case (Some(prev), Some(cur)) => Some(prev + cur)
+      case _ => None
+    })
+  }
+
+  def apply(e: AXI4EdgeParameters, idx: Int = 0): AXI4EdgeSummary = {
+    val slave = e.slave.slaves(idx)
+    AXI4EdgeSummary(
+      getMaxTransferFromEdge(e)._1,
+      getMaxTransferFromEdge(e)._2,
+      getIDReuseFromEdge(e),
+      getMaxTotalFlightFromEdge(e),
+      slave.address)
+  }
+
+  def createCompatEdgeSummary(e: AXI4EdgeParameters, idx: Int = 0): firesim.lib.bridges.AXI4EdgeSummary = {
+    val slave = e.slave.slaves(idx)
+    firesim.lib.bridges.AXI4EdgeSummary(
+      getMaxTransferFromEdge(e)._1,
+      getMaxTransferFromEdge(e)._2,
+      getIDReuseFromEdge(e),
+      getMaxTotalFlightFromEdge(e),
+      slave.address.map(as => firesim.lib.bridges.AddressSet(as.base, as.mask)))
+  }
+}
 
 case class BaseParams(
   // Pessimistically provisions the functional model. Don't be cheap:
@@ -72,54 +159,8 @@ case class BaseParams(
   occupancyHistograms: Seq[Int] = Seq(0, 2, 4, 8),
   addrRangeCounters: BigInt = BigInt(0)
 )
-// A serializable summary of the diplomatic edge
-case class AXI4EdgeSummary(
-  maxReadTransfer: Int,
-  maxWriteTransfer: Int,
-  idReuse: Option[Int],
-  maxFlight: Option[Int],
-  address: Seq[AddressSet]
-) {
-  def targetAddressOffset(): BigInt = address.map(_.base).min
-}
 
-object AXI4EdgeSummary {
-  // Returns max ID reuse; None -> unbounded
-  private def getIDReuseFromEdge(e: AXI4EdgeParameters): Option[Int] = {
-    val maxFlightPerMaster = e.master.masters.map(_.maxFlight)
-    maxFlightPerMaster.reduce( (_,_) match {
-      case (Some(prev), Some(cur)) => Some(scala.math.max(prev, cur))
-      case _ => None
-    })
-  }
-  // Returns (maxReadLength, maxWriteLength)
-  private def getMaxTransferFromEdge(e: AXI4EdgeParameters): (Int, Int) = {
-    val beatBytes = e.slave.beatBytes
-    val readXferSize  = e.slave.slaves.head.supportsRead.max
-    val writeXferSize = e.slave.slaves.head.supportsWrite.max
-    ((readXferSize + beatBytes - 1) / beatBytes, (writeXferSize + beatBytes - 1) / beatBytes)
-  }
 
-  // Sums up the maximum number of requests that can be inflight across all masters
-  // None -> unbounded
-  private def getMaxTotalFlightFromEdge(e: AXI4EdgeParameters): Option[Int] = {
-    val maxFlightPerMaster = e.master.masters.map(_.maxFlight)
-    maxFlightPerMaster.reduce( (_,_) match {
-      case (Some(prev), Some(cur)) => Some(prev + cur)
-      case _ => None
-    })
-  }
-
-  def apply(e: AXI4EdgeParameters, idx: Int = 0): AXI4EdgeSummary = {
-    val slave = e.slave.slaves(idx)
-    AXI4EdgeSummary(
-    getMaxTransferFromEdge(e)._1,
-    getMaxTransferFromEdge(e)._2,
-    getIDReuseFromEdge(e),
-    getMaxTotalFlightFromEdge(e),
-    slave.address)
-  }
-}
 
 abstract class BaseConfig {
   def params: BaseParams
@@ -171,47 +212,15 @@ abstract class BaseConfig {
     TransferSizes(1, maxReadLength * p(NastiKey).dataBits/8)
 }
 
-
-// A wrapper bundle around all of the programmable settings in the functional model (!timing model).
-class FuncModelProgrammableRegs extends Bundle with HasProgrammableRegisters {
-  val relaxFunctionalModel = Input(Bool())
-
-  val registers = Seq(
-    (relaxFunctionalModel -> RuntimeSetting(0, """Relax functional model""", max = Some(1)))
-  )
-
-  def getFuncModelSettings(): Seq[(String, BigInt)] = {
-    Console.println(s"${UNDERLINED}Functional Model Settings${RESET}")
-    setUnboundSettings()
-    getSettings()
-  }
-}
-
-class FASEDTargetIO(implicit val p: Parameters) extends Bundle {
-  val axi4 = Flipped(new NastiIO)
-  val reset = Input(Bool())
-  val clock = Input(Clock())
-}
-
-// Need to wrap up all the parameters in a case class for serialization. The edge and width
-// were previously passed in via the target's Parameters object
-case class CompleteConfig(
-    userProvided: BaseConfig,
-    axi4Widths: NastiParameters,
-    axi4Edge: Option[AXI4EdgeSummary] = None,
-    memoryRegionName: Option[String] = None) extends HasSerializationHints {
-  def typeHints: Seq[Class[_]] = Seq(userProvided.getClass)
-}
-
-class FASEDMemoryTimingModel(completeConfig: CompleteConfig, hostParams: Parameters) extends BridgeModule[HostPortIO[FASEDTargetIO]]()(hostParams)
+class FASEDMemoryTimingModel(completeConfig: firesim.lib.bridges.CompleteConfig, hostParams: Parameters) extends BridgeModule[HostPortIO[FASEDTargetIO]]()(hostParams)
     with UsesHostDRAM {
 
-  val cfg = completeConfig.userProvided
+  val cfg = hostParams(firesim.configs.MemModelKey)
 
   // Reconstitute the parameters object
   implicit override val p = hostParams.alterPartial({
     case NastiKey => completeConfig.axi4Widths
-    case FasedAXI4Edge => completeConfig.axi4Edge
+    case FasedAXI4Edge => ConvertToFireSimFasedAXI4Edge(completeConfig.axi4Edge)
   })
 
   val toHostDRAMNode = AXI4MasterNode(
@@ -219,7 +228,7 @@ class FASEDMemoryTimingModel(completeConfig: CompleteConfig, hostParams: Paramet
       masters = Seq(AXI4MasterParameters(
         name = "fased-memory-timing-model",
         id   = IdRange(0, 1 << p(NastiKey).idBits),
-        aligned = true, // This must be the case for the TL-based width adapter to work 
+        aligned = true, // This must be the case for the TL-based width adapter to work
         maxFlight = Some(math.max(cfg.maxReadsPerID, cfg.maxWritesPerID))
       )))))
 
@@ -257,7 +266,7 @@ class FASEDMemoryTimingModel(completeConfig: CompleteConfig, hostParams: Paramet
   lazy val module = new Impl
   class Impl extends BridgeModuleImp(this) {
     val io = IO(new WidgetIO)
-    val hPort = IO(HostPort(new FASEDTargetIO))
+    val hPort = IO(HostPort(new FASEDTargetIO(p(NastiKey))))
     val toHostDRAM: AXI4Bundle = toHostDRAMNode.out.head._1
     val tNasti = hPort.hBits.axi4
     val tReset = hPort.hBits.reset
@@ -265,15 +274,16 @@ class FASEDMemoryTimingModel(completeConfig: CompleteConfig, hostParams: Paramet
     // Debug: Put an optional bound on the number of memory requests we can make
     // to the host memory system
     val funcModelRegs = Wire(new FuncModelProgrammableRegs)
-    val ingress = Module(new IngressModule(cfg))
+    val ingress = Module(new IngressModule(p(NastiKey), cfg))
 
-    val nastiToHostDRAM = Wire(new NastiIO)
+    val nastiToHostDRAM = Wire(new NastiIO(p(NastiKey)))
     AXI4NastiAssigner.toAXI4Slave(toHostDRAM, nastiToHostDRAM)
     nastiToHostDRAM.aw <> ingress.io.nastiOutputs.aw
     nastiToHostDRAM.ar <> ingress.io.nastiOutputs.ar
     nastiToHostDRAM.w  <> ingress.io.nastiOutputs.w
 
     val readEgress = Module(new ReadEgress(
+      p(NastiKey),
       maxRequests = cfg.maxReads,
       maxReqLength = cfg.maxReadLength,
       maxReqsPerId = cfg.maxReadsPerID))
@@ -282,6 +292,7 @@ class FASEDMemoryTimingModel(completeConfig: CompleteConfig, hostParams: Paramet
     readEgress.io.enq.bits.user := DontCare
 
     val writeEgress = Module(new WriteEgress(
+      p(NastiKey),
       maxRequests = cfg.maxWrites,
       maxReqLength = cfg.maxWriteLength,
       maxReqsPerId = cfg.maxWritesPerID))
@@ -410,6 +421,7 @@ class FASEDMemoryTimingModel(completeConfig: CompleteConfig, hostParams: Paramet
     if (cfg.params.detectAddressCollisions) {
       val discardedMSBs = 6
       val collision_checker = Module(new AddressCollisionChecker(
+        p(NastiKey),
         cfg.maxReads, cfg.maxWrites, p(NastiKey).addrBits - discardedMSBs))
       collision_checker.io.read_req.valid  := targetFire && tNasti.ar.fire
       collision_checker.io.read_req.bits   := tNasti.ar.bits.addr >> discardedMSBs
@@ -533,8 +545,8 @@ class FASEDMemoryTimingModel(completeConfig: CompleteConfig, hostParams: Paramet
 
     if (cfg.params.addrRangeCounters > 0) {
       val n = cfg.params.addrRangeCounters
-      val readRanges = AddressRangeCounter(n, model.tNasti.ar, targetFire)
-      val writeRanges = AddressRangeCounter(n, model.tNasti.aw, targetFire)
+      val readRanges = AddressRangeCounter(p(NastiKey), n, model.tNasti.ar, targetFire)
+      val writeRanges = AddressRangeCounter(p(NastiKey), n, model.tNasti.aw, targetFire)
       val numRanges = n.U(32.W)
 
       attachIO(readRanges, "readRanges_")
@@ -612,27 +624,5 @@ class FASEDMemoryTimingModel(completeConfig: CompleteConfig, hostParams: Paramet
     val functionalModelSettings = module.funcModelRegs.getFuncModelSettings()
     val timingModelSettings = module.model.io.mmReg.getTimingModelSettings()
     settingsToString(functionalModelSettings ++ timingModelSettings).mkString("\n")
-  }
-}
-
-class FASEDBridge(argument: CompleteConfig)(implicit p: Parameters)
-    extends BlackBox with Bridge[HostPortIO[FASEDTargetIO], FASEDMemoryTimingModel] {
-  val io = IO(new FASEDTargetIO)
-  val bridgeIO = HostPort(io)
-  val constructorArg = Some(argument)
-  generateAnnotations()
-}
-
-object FASEDBridge {
-  def apply(clock: Clock, axi4: AXI4Bundle, reset: Bool, cfg: CompleteConfig)(implicit p: Parameters): FASEDBridge = {
-    val ep = Module(new FASEDBridge(cfg)(p.alterPartial({ case NastiKey => cfg.axi4Widths })))
-    ep.io.reset := reset
-    ep.io.clock := clock
-    // HACK: Nasti and Diplomatic have diverged to the point where it's no longer
-    // safe to emit a partial connect leaf fields.
-    AXI4NastiAssigner.toNasti(ep.io.axi4, axi4)
-    //import chisel3.ExplicitCompileOptions.NotStrict
-    //ep.io.axi4 <> axi4
-    ep
   }
 }

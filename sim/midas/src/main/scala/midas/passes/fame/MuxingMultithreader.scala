@@ -70,7 +70,6 @@ object MuxingMultiThreader {
     val ns = Namespace(module)
 
     val hostClock = WRef(WrapTop.hostClockName)
-    val hostReset = WRef(WrapTop.hostResetName)
 
     val clockPort = module.ports.filter(p => p.name == "clock")
     val targetClock = if (clockPort.size > 0) WRef(clockPort.head) else hostClock

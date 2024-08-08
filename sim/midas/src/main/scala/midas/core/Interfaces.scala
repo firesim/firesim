@@ -21,9 +21,3 @@ class HostDecoupledIO[+T <: Data](gen: T) extends Bundle
 object HostDecoupled {
   def apply[T <: Data](gen: T): HostDecoupledIO[T] = new HostDecoupledIO(gen)
 }
-
-class HostReadyValid extends Bundle {
-  val hReady = Input(Bool())
-  val hValid = Output(Bool())
-  def fire: Bool = hReady && hValid
-}

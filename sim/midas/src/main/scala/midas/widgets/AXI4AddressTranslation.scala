@@ -16,7 +16,7 @@ class AXI4AddressTranslation(offset: BigInt, bridgeAddressSets: Seq[AddressSet],
   val virtualBase  = bridgeAddressSets.map(_.base).min
   val virtualBound = bridgeAddressSets.map(_.max).max
   lazy val module = new LazyModuleImp(this) {
-    (node.in zip node.out) foreach { case ((in, edgeIn), (out, edgeOut)) =>
+    (node.in zip node.out) foreach { case ((in, _), (out, _)) =>
       val maxHostAddr = BigInt(1) << out.ar.bits.params.addrBits
       out <> in
       // Adjust the target address to the correct host memory location. offset

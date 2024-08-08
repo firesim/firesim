@@ -10,14 +10,14 @@ import midas.widgets._
 /** Defines a test group with the id of 0
   */
 class PlusArgsModuleTestConfigGroup68Bit
-    extends Config((site, here, up) => { case PlusArgsTestNumberKey =>
+    extends Config((_, _, _) => { case PlusArgsTestNumberKey =>
       0
     })
 
 /** Defines a test group with the id of 1
   */
 class PlusArgsModuleTestConfigGroup29Bit
-    extends Config((site, here, up) => { case PlusArgsTestNumberKey =>
+    extends Config((_, _, _) => { case PlusArgsTestNumberKey =>
       1
     })
 
@@ -52,4 +52,4 @@ class PlusArgsDUT(implicit val p: Parameters) extends Module {
   io.gotPlusArgValue := PlusArgsBridge.drive(params)
 }
 
-class PlusArgsModule(implicit p: Parameters) extends PeekPokeMidasExampleHarness(() => new PlusArgsDUT)
+class PlusArgsModule(implicit p: Parameters) extends firesim.lib.testutils.PeekPokeHarness(() => new PlusArgsDUT)

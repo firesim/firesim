@@ -2,8 +2,10 @@
 package midas.widgets
 
 import chisel3._
+
 import org.chipsalliance.cde.config.Parameters
 
+import firesim.lib.bridgeutils._
 
 //Note: This file is heavily commented as it serves as a bridge walkthrough
 //example in the FireSim docs
@@ -16,7 +18,8 @@ class FuzzingUIntSourceTargetIO(val uWidth: Int) extends Bundle {
 case class FuzzingUIntSourceKey(width: Int)
 
 class FuzzingUIntSourceBridge(width: Int) extends BlackBox
-    with Bridge[HostPortIO[FuzzingUIntSourceTargetIO], FuzzingUIntSourceBridgeModule] {
+    with Bridge[HostPortIO[FuzzingUIntSourceTargetIO]] {
+  val moduleName = "FuzzingUIntSourceBridgeModule"
   val io = IO(new FuzzingUIntSourceTargetIO(width))
   val bridgeIO = HostPort(io)
   val constructorArg = Some(FuzzingUIntSourceKey(width))

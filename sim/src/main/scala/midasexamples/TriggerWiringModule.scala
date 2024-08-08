@@ -2,7 +2,8 @@
 
 package firesim.midasexamples
 
-import midas.widgets.{RationalClockBridge, PeekPokeBridge, RationalClock}
+import firesim.lib.bridges.{RationalClockBridge, PeekPokeBridge}
+import firesim.lib.bridgeutils.{RationalClock}
 import freechips.rocketchip.util.{DensePrefixSum, ResetCatchAndSync}
 import org.chipsalliance.cde.config.Parameters
 import chisel3._
@@ -105,7 +106,7 @@ class TriggerWiringModule(implicit p: Parameters) extends RawModule {
   val reset = WireInit(false.B)
   val resetHalfRate = ResetCatchAndSync(div2Clock, reset.asBool)
   withClockAndReset(refClock, reset) {
-    val peekPokeBridge = PeekPokeBridge(refClock, reset)
+    PeekPokeBridge(refClock, reset)
     val src  = Module(new TriggerSourceModule)
     val sink = Module(new TriggerSinkModule)
 

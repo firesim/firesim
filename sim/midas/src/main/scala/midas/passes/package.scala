@@ -71,13 +71,13 @@ package object passes {
 
     def transformer(cName: CircuitName) = {
       c: Circuit =>
-        c.copy(modules = c.modules ++ Some(blackbox).filterNot(bb => c.modules.contains(blackbox)))
+        c.copy(modules = c.modules ++ Some(blackbox).filterNot(_ => c.modules.contains(blackbox)))
     }
 
     def annotater(cName: CircuitName) = {
       anns: AnnotationSeq =>
         val blackboxAnn = BlackBoxInlineAnno(ModuleName(blackboxName, cName), s"${blackboxName}.v", impl)
-        anns ++ Some(blackboxAnn).filterNot(a => anns.contains(blackboxAnn))
+        anns ++ Some(blackboxAnn).filterNot(_ => anns.contains(blackboxAnn))
     }
   }
 

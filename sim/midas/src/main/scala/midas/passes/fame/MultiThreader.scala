@@ -76,7 +76,7 @@ object MultiThreader {
       // One extra register to shadow value for clock-gated registers
       val regNames = (0 to n.intValue).map(i => ns.newName(s"${reg.name}_slot_${i}"))
       freshNames.updated(reg.name, regNames)
-    case s => freshNames
+    case _ => freshNames
   }
 
   def replaceRegRefsLHS(freshNames: FreshNames)(expr: Expression): Expression = expr match {
@@ -130,7 +130,7 @@ object MultiThreader {
         val directPairs = newRegs.tail zip newRegs.tail.tail
         val directConns = directPairs.map { case (a, b) => Connect(FAME5Info.info, WRef(b), WRef(a)) }
         Block(newRegs ++: gatedUpdate +: directConns)
-      case Connect(info, lhs @ WSubField(p: WSubField, "addr", _, _), rhs) if kind(lhs) == MemKind =>
+      case Connect(info, lhs @ WSubField(_: WSubField, "addr", _, _), rhs) if kind(lhs) == MemKind =>
         Connect(info, replaceRegRefsLHS(freshNames)(lhs), transformAddr(counter, replaceRegRefsRHS(freshNames)(rhs)))
       case Connect(info, lhs, rhs) =>
         // TODO: LHS vs RHS is kind of a hack
@@ -202,7 +202,7 @@ object MultiThreader {
       case i => i
     }
 
-    val clockGaters = edgeStatus.toSeq.map { case (k, v) => v }
+    val clockGaters = edgeStatus.toSeq.map { case (_, v) => v }
     val threadedBody = Block(threadedChildren ++ clockGaters.map(_.decl) ++ Seq(tidxDecl, tidxConn, body) ++ clockGaters.map(_.assigns))
 
     val hostPorts = Seq(Port(FAME5Info.info, hostClock.name, Input, ClockType), Port(FAME5Info.info, hostReset.name, Input, BoolType))

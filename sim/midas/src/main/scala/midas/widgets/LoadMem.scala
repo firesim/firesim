@@ -2,29 +2,34 @@
 
 package midas.widgets
 
+import scala.math.{max, min}
+
 import chisel3._
 import chisel3.util._
-import junctions._
+
 import freechips.rocketchip.amba.axi4._
 import freechips.rocketchip.diplomacy._
-import org.chipsalliance.cde.config.Parameters
 import freechips.rocketchip.subsystem.{ExtMem, MasterPortParams}
+import org.chipsalliance.cde.config.Parameters
 
-import scala.math.{max, min}
+import junctions._
+
+import firesim.lib.bridgeutils._
+import firesim.lib.nasti._
 
 class LoadMemIO(implicit val p: Parameters) extends WidgetIO()(p)
 
-class LoadMemWriteRequest(implicit p: Parameters) extends NastiBundle {
+class LoadMemWriteRequest(nastiParams: NastiParameters) extends NastiBundle(nastiParams) {
   val zero = Bool()
   val addr = UInt(nastiXAddrBits.W)
   val len = UInt(nastiXAddrBits.W)
 }
 
-class LoadMemWriter(maxBurst: Int)(implicit p: Parameters) extends NastiModule {
+class LoadMemWriter(nastiParams: NastiParameters, maxBurst: Int) extends NastiModule(nastiParams) {
   val io = IO(new Bundle {
-    val req = Flipped(Decoupled(new LoadMemWriteRequest))
+    val req = Flipped(Decoupled(new LoadMemWriteRequest(nastiParams)))
     val data = Flipped(Decoupled(UInt(nastiXDataBits.W)))
-    val mem = new NastiIO
+    val mem = new NastiIO(nastiParams)
   })
 
   val wZero = Reg(Bool())
@@ -42,6 +47,7 @@ class LoadMemWriter(maxBurst: Int)(implicit p: Parameters) extends NastiModule {
 
   io.mem.aw.valid := state === s_addr
   io.mem.aw.bits := NastiWriteAddressChannel(
+    nastiParams,
     id = 0.U,
     addr = wAddr,
     len = nextBurstLen - 1.U,
@@ -50,6 +56,7 @@ class LoadMemWriter(maxBurst: Int)(implicit p: Parameters) extends NastiModule {
   io.data.ready := (state === s_data) && !wZero && io.mem.w.ready
   io.mem.w.valid := (state === s_data) && (wZero || io.data.valid)
   io.mem.w.bits := NastiWriteDataChannel(
+    nastiParams,
     data = Mux(wZero, 0.U, io.data.bits),
     last = wBeatsLeft === 0.U)
 
@@ -98,14 +105,11 @@ class LoadMemWidget(val totalDRAMAllocated: BigInt)(implicit p: Parameters) exte
 
   // prefix h -> host memory we are writing to
   // prefix c -> control nasti interface who is the master of this unit
-  val hKey = NastiParameters(memAXI4.params)
-  val hParams = p alterPartial ({ case NastiKey => hKey })
-  val cParams = p alterPartial ({ case NastiKey => p(CtrlNastiKey) })
+  val hKey = CreateNastiParameters(memAXI4.params)
 
   val cWidth = p(CtrlNastiKey).dataBits
   val hWidth = hKey.dataBits
   val size = log2Ceil(hWidth/8).U
-  val widthRatio = hWidth/cWidth
   require(hWidth >= cWidth)
   require(hKey.addrBits <= 2 * cWidth)
 
@@ -119,7 +123,7 @@ class LoadMemWidget(val totalDRAMAllocated: BigInt)(implicit p: Parameters) exte
   attachDecoupledSink(wLen, "W_LENGTH")
   attachDecoupledSink(zeroOutDram, "ZERO_OUT_DRAM")
 
-  val wAddrQ = Module(new Queue(new LoadMemWriteRequest()(hParams), 2))
+  val wAddrQ = Module(new Queue(new LoadMemWriteRequest(hKey), 2))
   wAddrQ.io.enq.valid := wLen.valid
   wAddrQ.io.enq.bits.zero := false.B
   wAddrQ.io.enq.bits.addr := Cat(wAddrH, wAddrL)
@@ -138,7 +142,7 @@ class LoadMemWidget(val totalDRAMAllocated: BigInt)(implicit p: Parameters) exte
       idBits = hKey.idBits)
   }
 
-  val reqArb = Module(new Arbiter(new LoadMemWriteRequest()(hParams), 2))
+  val reqArb = Module(new Arbiter(new LoadMemWriteRequest(hKey), 2))
   reqArb.io.in(0) <> wAddrQ.io.deq
   reqArb.io.in(1).valid := zeroOutDram.valid
   reqArb.io.in(1).bits.zero := true.B
@@ -146,7 +150,7 @@ class LoadMemWidget(val totalDRAMAllocated: BigInt)(implicit p: Parameters) exte
   reqArb.io.in(1).bits.len  := (totalDRAMAllocated >> log2Ceil(hWidth/8)).U
   zeroOutDram.ready := reqArb.io.in(1).ready
 
-  val writer = Module(new LoadMemWriter(maxBurst)(hParams))
+  val writer = Module(new LoadMemWriter(hKey, maxBurst))
   writer.io.req <> reqArb.io.out
   memNasti.aw <> writer.io.mem.aw
   memNasti.w  <> writer.io.mem.w
@@ -162,9 +166,10 @@ class LoadMemWidget(val totalDRAMAllocated: BigInt)(implicit p: Parameters) exte
   val rAddrQ = genAndAttachQueue(Wire(Decoupled(UInt(hKey.addrBits.W))), "R_ADDRESS_L")
 
   memNasti.ar.bits := NastiReadAddressChannel(
+      hKey,
       id = 0.U,
       addr = Cat(rAddrH, rAddrQ.bits),
-      size = size)(p alterPartial ({ case NastiKey => hKey }))
+      size = size)
   memNasti.ar.valid := rAddrQ.valid
   rAddrQ.ready := memNasti.ar.ready
 

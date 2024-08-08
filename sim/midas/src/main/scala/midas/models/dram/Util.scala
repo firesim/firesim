@@ -1,19 +1,21 @@
 package midas
 package models
 
-// From RC
-import org.chipsalliance.cde.config.Parameters
-import freechips.rocketchip.util.{ParameterizedBundle, UIntIsOneOf}
-import freechips.rocketchip.unittest.UnitTest
-import junctions._
-
 import chisel3._
 import chisel3.experimental.ExtModule
 import chisel3.stage.ChiselGeneratorAnnotation
 import chisel3.util._
 
+// From RC
+import org.chipsalliance.cde.config.Parameters
+import freechips.rocketchip.util.UIntIsOneOf
+import freechips.rocketchip.unittest.UnitTest
+import junctions._
+
 import midas.widgets.{D2V}
 import midas.passes.{DefineAbstractClockGate}
+
+import firesim.lib.nasti._
 
 class DualQueue[T <: Data](gen: =>T, entries: Int) extends Module {
   val io = IO(new Bundle {
@@ -224,7 +226,7 @@ class CollapsingBuffer[T <: Data](gen: T, depth: Int) extends Module {
   def linkEntries(entries: Seq[(ValidIO[T], ValidIO[T], Bool)], shifting: Bool): Unit = entries match {
     case Nil => throw new RuntimeException("Asked for 0 entry collapasing buffer?")
     // Youngest entry, connect up io.enq
-    case (entry, currentUpdate, lastEntry) :: Nil => {
+    case (entry, currentUpdate, _) :: Nil => {
       val shift = shifting || !currentUpdate.valid
       entry := Mux(shift, D2V(io.enq), currentUpdate)
       io.enq.ready := shift
@@ -265,40 +267,39 @@ trait HasAXI4Id extends HasNastiParameters { val id = UInt(nastiXIdBits.W) }
 trait HasAXI4IdAndLen extends HasAXI4Id { val len = UInt(nastiXLenBits.W) }
 trait HasReqMetaData extends HasAXI4IdAndLen { val addr = UInt(nastiXAddrBits.W) }
 
-class TransactionMetaData(implicit val p: Parameters) extends Bundle with HasAXI4IdAndLen {
+class TransactionMetaData(nastiParams: NastiParameters) extends NastiBundle(nastiParams) with HasAXI4IdAndLen {
   val isWrite = Bool()
 }
 
 object TransactionMetaData {
-  def apply(id: UInt, len: UInt, isWrite: Bool)(implicit p: Parameters): TransactionMetaData = {
-    val w = Wire(new TransactionMetaData)
+  def apply(nastiParams: NastiParameters, id: UInt, len: UInt, isWrite: Bool): TransactionMetaData = {
+    val w = Wire(new TransactionMetaData(nastiParams))
     w.id := id
     w.len := len
     w.isWrite := isWrite
     w
   }
 
-  def apply(x: NastiReadAddressChannel)(implicit p: Parameters): TransactionMetaData =
-    apply(x.id, x.len, false.B)
+  def apply(nastiParams: NastiParameters, x: NastiReadAddressChannel): TransactionMetaData =
+    apply(nastiParams, x.id, x.len, false.B)
 
-  def apply(x: NastiWriteAddressChannel)(implicit p: Parameters): TransactionMetaData =
-    apply(x.id, x.len, true.B)
-
+  def apply(nastiParams: NastiParameters, x: NastiWriteAddressChannel): TransactionMetaData =
+    apply(nastiParams, x.id, x.len, true.B)
 }
 
-class WriteResponseMetaData(implicit val p: Parameters) extends Bundle with HasAXI4Id
-class ReadResponseMetaData(implicit val p: Parameters) extends Bundle with HasAXI4IdAndLen
+class WriteResponseMetaData(nastiParams: NastiParameters) extends NastiBundle(nastiParams) with HasAXI4Id
+class ReadResponseMetaData(nastiParams: NastiParameters) extends NastiBundle(nastiParams) with HasAXI4IdAndLen
 
 object ReadResponseMetaData {
-  def apply(x: HasAXI4IdAndLen)(implicit p: Parameters): ReadResponseMetaData = {
-    val readMetaData = Wire(new ReadResponseMetaData)
+  def apply(nastiParams: NastiParameters, x: HasAXI4IdAndLen): ReadResponseMetaData = {
+    val readMetaData = Wire(new ReadResponseMetaData(nastiParams))
     readMetaData.id := x.id
     readMetaData.len := x.len
     readMetaData
   }
   // UGH. Will fix when i go to RC's AXI4 impl
-  def apply(x: NastiReadAddressChannel)(implicit p: Parameters): ReadResponseMetaData = {
-    val readMetaData = Wire(new ReadResponseMetaData)
+  def apply(nastiParams: NastiParameters, x: NastiReadAddressChannel): ReadResponseMetaData = {
+    val readMetaData = Wire(new ReadResponseMetaData(nastiParams))
     readMetaData.id := x.id
     readMetaData.len := x.len
     readMetaData
@@ -306,31 +307,31 @@ object ReadResponseMetaData {
 }
 
 object WriteResponseMetaData {
-  def apply(x: HasAXI4Id)(implicit p: Parameters): WriteResponseMetaData = {
-    val writeMetaData = Wire(new WriteResponseMetaData)
+  def apply(nastiParams: NastiParameters, x: HasAXI4Id): WriteResponseMetaData = {
+    val writeMetaData = Wire(new WriteResponseMetaData(nastiParams))
     writeMetaData.id := x.id
     writeMetaData
   }
 
-  def apply(x: NastiWriteAddressChannel)(implicit p: Parameters): WriteResponseMetaData = {
-    val writeMetaData = Wire(new WriteResponseMetaData)
+  def apply(nastiParams: NastiParameters, x: NastiWriteAddressChannel): WriteResponseMetaData = {
+    val writeMetaData = Wire(new WriteResponseMetaData(nastiParams))
     writeMetaData.id := x.id
     writeMetaData
   }
 }
 
-class AXI4ReleaserIO(implicit val p: Parameters) extends ParameterizedBundle()(p) {
-  val b = Decoupled(new NastiWriteResponseChannel)
-  val r = Decoupled(new NastiReadDataChannel)
-  val egressReq = new EgressReq
-  val egressResp = Flipped(new EgressResp)
-  val nextRead = Flipped(Decoupled(new ReadResponseMetaData))
-  val nextWrite = Flipped(Decoupled(new WriteResponseMetaData))
+class AXI4ReleaserIO(nastiParams: NastiParameters) extends Bundle {
+  val b = Decoupled(new NastiWriteResponseChannel(nastiParams))
+  val r = Decoupled(new NastiReadDataChannel(nastiParams))
+  val egressReq = new EgressReq(nastiParams)
+  val egressResp = Flipped(new EgressResp(nastiParams))
+  val nextRead = Flipped(Decoupled(new ReadResponseMetaData(nastiParams)))
+  val nextWrite = Flipped(Decoupled(new WriteResponseMetaData(nastiParams)))
 }
 
 
-class AXI4Releaser(implicit p: Parameters) extends Module {
-  val io = IO(new AXI4ReleaserIO)
+class AXI4Releaser(nastiParams: NastiParameters) extends Module {
+  val io = IO(new AXI4ReleaserIO(nastiParams))
 
   val currentRead = Queue(io.nextRead, 1, pipe = true)
   currentRead.ready := io.r.fire && io.r.bits.last
@@ -379,7 +380,7 @@ class FIFOAddressMatcher(val entries: Int, addrWidth: Int) extends Module with H
   io.hit := addrs.exists({entry =>  entry.valid && entry.bits === io.match_address })
 }
 
-class AddressCollisionCheckerIO(addrWidth: Int)(implicit p: Parameters) extends NastiBundle()(p) {
+class AddressCollisionCheckerIO(nastiParams: NastiParameters, addrWidth: Int) extends NastiBundle(nastiParams) {
   val read_req = Input(Valid(UInt(addrWidth.W)))
   val read_done = Input(Bool())
   val write_req = Input(Valid(UInt(addrWidth.W)))
@@ -387,9 +388,9 @@ class AddressCollisionCheckerIO(addrWidth: Int)(implicit p: Parameters) extends 
   val collision_addr = ValidIO(UInt(addrWidth.W))
 }
 
-class AddressCollisionChecker(numReads: Int, numWrites: Int, addrWidth: Int)(implicit p: Parameters)
-    extends NastiModule()(p) {
-  val io = IO(new AddressCollisionCheckerIO(addrWidth))
+class AddressCollisionChecker(nastiParams: NastiParameters, numReads: Int, numWrites: Int, addrWidth: Int)
+    extends NastiModule(nastiParams) {
+  val io = IO(new AddressCollisionCheckerIO(nastiParams, addrWidth))
 
   require(isPow2(numReads))
   require(isPow2(numWrites))
@@ -534,7 +535,7 @@ object HostLatencyHistogram {
 }
 
 // Pick out the relevant parts of NastiReadAddressChannel or NastiWriteAddressChannel
-class AddressRangeCounterRequest(implicit p: Parameters) extends NastiBundle {
+class AddressRangeCounterRequest(nastiParams: NastiParameters) extends NastiBundle(nastiParams) {
   val addr = UInt(nastiXAddrBits.W)
   val len  = UInt(nastiXLenBits.W)
   val size = UInt(nastiXSizeBits.W)
@@ -547,9 +548,9 @@ class AddressRangeCounterRequest(implicit p: Parameters) extends NastiBundle {
 // WARNING: Will drop range updates if attempting to read values when host
 // transactions issued
 
-class AddressRangeCounter(nRanges: BigInt)(implicit p: Parameters) extends NastiModule {
+class AddressRangeCounter(nastiParams: NastiParameters, nRanges: BigInt)(implicit p: Parameters) extends NastiModule(nastiParams) {
   val io = IO(new Bundle {
-    val req = Flipped(ValidIO(new AddressRangeCounterRequest))
+    val req = Flipped(ValidIO(new AddressRangeCounterRequest(nastiParams)))
     val readout = new CounterReadoutIO(log2Ceil(nRanges))
   })
 
@@ -575,8 +576,9 @@ class AddressRangeCounter(nRanges: BigInt)(implicit p: Parameters) extends Nasti
 
 object AddressRangeCounter {
   def apply[T <: NastiAddressChannel](
+      nastiParams: NastiParameters,
       n: BigInt, req: DecoupledIO[T], en: Bool)(implicit p: Parameters) = {
-    val counter = Module(new AddressRangeCounter(n))
+    val counter = Module(new AddressRangeCounter(nastiParams, n))
     counter.io.req.valid := req.fire && en
     counter.io.req.bits.addr := req.bits.addr
     counter.io.req.bits.len := req.bits.len
@@ -586,8 +588,7 @@ object AddressRangeCounter {
 }
 
 object AddressCollisionCheckMain extends App {
-  implicit val p = Parameters.empty.alterPartial({case NastiKey => NastiParameters(64,32,4)})
-  (new chisel3.stage.ChiselStage).execute(args, Seq(ChiselGeneratorAnnotation(() => new AddressCollisionChecker(4,4,16))))
+  (new chisel3.stage.ChiselStage).execute(args, Seq(ChiselGeneratorAnnotation(() => new AddressCollisionChecker(NastiParameters(64,32,4), 4,4,16))))
 }
 
 class CounterTableUnitTest extends UnitTest {
@@ -691,10 +692,7 @@ class LatencyHistogramUnitTest extends UnitTest {
 
 class AddressRangeCounterUnitTest(implicit p: Parameters) extends UnitTest {
   val nCounters = 8
-  val nastiP = p.alterPartial({
-    case NastiKey => NastiParameters(64, 16, 4)
-  })
-  val counters = Module(new AddressRangeCounter(nCounters)(nastiP))
+  val counters = Module(new AddressRangeCounter(NastiParameters(64, 16, 4), nCounters))
 
   val (s_start :: s_readInit :: s_run :: s_readout :: s_done :: Nil) = Enum(5)
   val state = RegInit(s_start)
@@ -744,8 +742,8 @@ class AddressRangeCounterUnitTest(implicit p: Parameters) extends UnitTest {
 // Checks AXI4 transactions to ensure they conform to the bounds
 // set in the memory model configuration eg. Max burst lengths respected
 // NOTE: For use only in a FAME1 context
-class MemoryModelMonitor(cfg: BaseConfig)(implicit p: Parameters) extends Module {
-  val axi4 = IO(Input(new NastiIO))
+class MemoryModelMonitor(nastiParams: NastiParameters, cfg: BaseConfig)(implicit p: Parameters) extends Module {
+  val axi4 = IO(Input(new NastiIO(nastiParams)))
 
   assert(!axi4.ar.fire || axi4.ar.bits.len < cfg.maxReadLength.U,
     s"Read burst length exceeds memory-model maximum of ${cfg.maxReadLength}")

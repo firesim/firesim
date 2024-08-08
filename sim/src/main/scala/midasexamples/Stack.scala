@@ -34,4 +34,4 @@ class StackDUT extends Module {
 
   io.dataOut := out
 }
-class Stack(implicit p: Parameters) extends PeekPokeMidasExampleHarness(() => new StackDUT)
+class Stack(implicit p: Parameters) extends firesim.lib.testutils.PeekPokeHarness(() => new StackDUT)

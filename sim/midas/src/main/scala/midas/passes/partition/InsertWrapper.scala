@@ -161,7 +161,7 @@ trait GroupAndInsertWrapperPass {
       insts: mutable.ArrayBuffer[InstGroup],
     ): Statement = {
       stmt match {
-        case s @ DefInstance(_, iname, mname, _) if (moduleNames.map(s => s(mname)).reduce(_ || _)) =>
+        case s @ DefInstance(_, _, mname, _) if (moduleNames.map(s => s(mname)).reduce(_ || _)) =>
           val gidx = moduleNames.zipWithIndex
             .map { case (mn, idx) =>
               if (mn(mname)) Some(idx) else None

@@ -59,7 +59,7 @@ object MultiRegfile {
   * @see [[MultiRegfileFMR]] for a test that helps ensure optimizations are actually applied
   * @see [[MultiSRAM]] for an analogous test that lacks optimizable memories
   */
-class MultiRegfile(implicit p: Parameters) extends PeekPokeMidasExampleHarness(() => new MultiRegfileDUT(MultiRegfile.nCopiesToTest))
+class MultiRegfile(implicit p: Parameters) extends firesim.lib.testutils.PeekPokeHarness(() => new MultiRegfileDUT(MultiRegfile.nCopiesToTest))
 
 /** A top-level target module that instantiates a large number of inner regfiles. This is used as part of [[MultiRegfileFMRF1Test]]
   * to test whether optimizations are actually applied. By letting a simulator run freely for many cycles, the observed FPGA-cycle-
@@ -67,4 +67,4 @@ class MultiRegfile(implicit p: Parameters) extends PeekPokeMidasExampleHarness((
   *
   * @see [[MultiSRAMFMR]] for an analogous test that lacks optimizable memories
   */
-class MultiRegfileFMR(implicit p: Parameters) extends PeekPokeMidasExampleHarness(() => new MultiRegfileDUT(MultiRegfile.nCopiesToTime))
+class MultiRegfileFMR(implicit p: Parameters) extends firesim.lib.testutils.PeekPokeHarness(() => new MultiRegfileDUT(MultiRegfile.nCopiesToTime))

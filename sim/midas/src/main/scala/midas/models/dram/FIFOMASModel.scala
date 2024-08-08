@@ -3,8 +3,10 @@ package models
 
 import chisel3._
 import chisel3.util._
+
 import org.chipsalliance.cde.config.Parameters
 
+import junctions.{NastiKey}
 
 case class FIFOMASConfig(
     dramKey: DramOrganizationParams,
@@ -41,14 +43,14 @@ class FIFOMASModel(cfg: FIFOMASConfig)(implicit p: Parameters) extends TimingMod
   lazy val io = IO(new FIFOMASIO(cfg))
   val timings = io.mmReg.dramTimings
 
-  val backend = Module(new DRAMBackend(cfg.backendKey))
-  val xactionScheduler = Module(new UnifiedFIFOXactionScheduler(cfg.transactionQueueDepth, cfg))
+  val backend = Module(new DRAMBackend(p(NastiKey), cfg.backendKey))
+  val xactionScheduler = Module(new UnifiedFIFOXactionScheduler(p(NastiKey), cfg.transactionQueueDepth, cfg))
   xactionScheduler.io.req <> nastiReq
   xactionScheduler.io.pendingAWReq := pendingAWReq.value
   xactionScheduler.io.pendingWReq := pendingWReq.value
 
   val currentReference = Queue({
-      val next =  Wire(Decoupled(new MASEntry(cfg)))
+      val next =  Wire(Decoupled(new MASEntry(p(NastiKey), cfg)))
       next.valid := xactionScheduler.io.nextXaction.valid
       next.bits.decode(xactionScheduler.io.nextXaction.bits, io.mmReg)
       xactionScheduler.io.nextXaction.ready := next.ready
@@ -136,12 +138,12 @@ class FIFOMASModel(cfg: FIFOMASConfig)(implicit p: Parameters) extends TimingMod
   currentReference.ready := memReqDone
 
   backend.io.tCycle := tCycle
-  backend.io.newRead.bits  := ReadResponseMetaData(currentReference.bits.xaction)
+  backend.io.newRead.bits  := ReadResponseMetaData(p(NastiKey), currentReference.bits.xaction)
   backend.io.newRead.valid := memReqDone && !currentReference.bits.xaction.isWrite
   backend.io.readLatency := timings.tCAS + timings.tAL + io.mmReg.backendLatency
 
   // For writes we send out the acknowledge immediately
-  backend.io.newWrite.bits := WriteResponseMetaData(currentReference.bits.xaction)
+  backend.io.newWrite.bits := WriteResponseMetaData(p(NastiKey), currentReference.bits.xaction)
   backend.io.newWrite.valid := memReqDone && currentReference.bits.xaction.isWrite
   backend.io.writeLatency := 1.U
 

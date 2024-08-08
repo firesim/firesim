@@ -64,7 +64,7 @@ object FindDefaultClocks extends Transform {
 
 
   def addDefaultClocks(hubName: String, clockGraph: ClockConnMap)(anno: Annotation): Annotation = anno match {
-    case fcca @ FAMEChannelConnectionAnnotation(name, info, None, Some(sources), Some(sinks)) =>
+    case fcca @ FAMEChannelConnectionAnnotation(_, _, None, Some(sources), Some(sinks)) =>
       // unclocked loopback channel
       val sourceModelInst = sources.head.ref
       val sinkModelInst = sinks.head.ref
@@ -86,7 +86,7 @@ object FindDefaultClocks extends Transform {
   def resolveClocksForHubSelfLoops(annos: Seq[Annotation]): Seq[Annotation] = {
     val clockMap = mutable.HashMap[Seq[ReferenceTarget], ReferenceTarget]()
     annos.collect {
-      case FAMEChannelConnectionAnnotation(name, info, Some(clock), Some(srcs), _) =>
+      case FAMEChannelConnectionAnnotation(_, _, Some(clock), Some(srcs), _) =>
         clockMap(srcs) = clock
     }
     annos map {

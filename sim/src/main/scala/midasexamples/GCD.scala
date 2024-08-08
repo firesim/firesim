@@ -60,7 +60,7 @@ class GCDDUT extends Module {
     done2 := true.B
     result2 := inner2.io.z
   }
-  
+
   inner1.io.a := io.a
   inner1.io.b := io.b
   inner1.io.e := io.e
@@ -75,4 +75,4 @@ class GCDDUT extends Module {
   assert(!done1 || !done2 || (result1 === result2), "Outputs do not match!")
 }
 
-class GCD(implicit p: Parameters) extends PeekPokeMidasExampleHarness(() => new GCDDUT)
+class GCD(implicit p: Parameters) extends firesim.lib.testutils.PeekPokeHarness(() => new GCDDUT)

@@ -213,7 +213,7 @@ class NoCPartitionRoutersPass extends Transform with DependencyAPIMigration with
   )(stmt:                Statement
   ): Unit = {
     stmt match {
-      case s @ Connect(_, WSubField(WRef(li), lref, _, _), WSubField(WRef(ri), rref, rt, _)) =>
+      case Connect(_, WSubField(WRef(li), lref, _, _), WSubField(WRef(ri), rref, _, _)) =>
         if (ri._1 == partWrapperInst) {
           val neighborIdx      = routerInstNameToIdx(li._1)
           val neighborGroupIdx = routerToGroupIdx(neighborIdx)
@@ -233,7 +233,7 @@ class NoCPartitionRoutersPass extends Transform with DependencyAPIMigration with
         }
       case s: Block                                                                          =>
         s.foreachStmt(ss => checkInterRouterConns(annos, routerToGroupIdx, wrapperPortToRouter, circuitMain)(ss))
-      case s                                                                                 => ()
+      case _                                                                                 => ()
     }
   }
 
@@ -354,9 +354,9 @@ class NoCReparentRouterGroupPass extends Transform with DependencyAPIMigration {
     val nocToWrapperPrimOps   = mutable.Map[String, (PrimOp, Seq[BigInt], Type)]()
     val wrapperRemovedNoCBody = nocModuleDef.body.map((stmt: Statement) =>
       stmt match {
-        case DefInstance(_, iname, mname, _) if (mname == partWrapperModule)                           =>
+        case DefInstance(_, _, mname, _) if (mname == partWrapperModule)                           =>
           EmptyStmt
-        case Connect(_, WRef(lref), WSubField(WRef(ri), rref, rt, _))
+        case Connect(_, WRef(lref), WSubField(WRef(ri), rref, _, _))
             if (
               nocModulePortNames.contains(lref._1) &&
                 ri._1 == partWrapperInst
@@ -470,7 +470,7 @@ class NoCReparentRouterGroupPass extends Transform with DependencyAPIMigration {
             Connect(NoInfo, WSubField(WRef(partWrapperInst), wrapperPort), rhs)
           }
           Block(conns.toSeq)
-        case Connect(_, lexp, WSubField(WRef(ri), rref, _, rf))
+        case Connect(_, lexp, WSubField(WRef(ri), rref, _, _))
             if (
               ri._1 == nocInstKey.name &&
                 portsToRemove.contains(rref)
@@ -543,7 +543,7 @@ class RemoveDirectWireConnectionPass extends Transform with DependencyAPIMigrati
     val wireRHS     = mutable.Map[String, firrtl.ir.Expression]()
     val removeWires = m.body.map((stmt: Statement) =>
       stmt match {
-        case w: DefWire                                            => EmptyStmt
+        case _: DefWire                                            => EmptyStmt
         case Connect(_, WRef(lref), rexp) if (lref._3 == WireKind) =>
           wireRHS(lref._1) = rexp
           EmptyStmt
@@ -663,9 +663,9 @@ class NoCCollectModulesInPathAndRegroupPass extends NoCReparentRouterGroupPass w
       }
       val replaceFixer       = curModule.body.mapStmt(stmt =>
         stmt match {
-          case DefInstance(_, iname, mname, _) if (mname == fixer.name)                     =>
+          case DefInstance(_, _, mname, _) if (mname == fixer.name)                     =>
             EmptyStmt
-          case Connect(_, WSubField(WRef(li), lref, lt, lf), rexpr) if (li._1 == fixerInst) =>
+          case Connect(_, WSubField(WRef(li), lref, _, _), rexpr) if (li._1 == fixerInst) =>
             if (lref == "clock" || lref == "reset") {
               val conns = (0 until numFixers).map { idx =>
                 val fixerName = getFixerModuleName(fixer.name, idx)
@@ -677,11 +677,11 @@ class NoCCollectModulesInPathAndRegroupPass extends NoCReparentRouterGroupPass w
               val fixerName = getFixerModuleName(fixer.name, fixerIdx)
               Connect(NoInfo, WSubField(WRef(fixerName), lref), rexpr)
             }
-          case Connect(_, lexpr, WSubField(WRef(ri), rref, rt, _)) if (ri._1 == fixerInst)  =>
+          case Connect(_, lexpr, WSubField(WRef(ri), rref, _, _)) if (ri._1 == fixerInst)  =>
             val fixerIdx  = portToIdxMap(rref)
             val fixerName = getFixerModuleName(fixer.name, fixerIdx)
             Connect(NoInfo, lexpr, WSubField(WRef(fixerName), rref))
-          case Connect(_, lexpr, DoPrim(op, Seq(WSubField(WRef(ri), rref, rt, _)), consts, tpe))
+          case Connect(_, lexpr, DoPrim(op, Seq(WSubField(WRef(ri), rref, _, _)), consts, tpe))
               if (ri._1 == fixerInst) =>
             val fixerIdx  = portToIdxMap(rref)
             val fixerName = getFixerModuleName(fixer.name, fixerIdx)
@@ -703,12 +703,7 @@ class NoCCollectModulesInPathAndRegroupPass extends NoCReparentRouterGroupPass w
     }
   }
 
-  private def getReadyValidSfx(name: String): String = {
-    // Ready & valid are both 5 characters
-    val len = name.length
-    if (len < 5) name
-    else name.substring(len - 5, len)
-  }
+  
 
   // Assume that all the stuff are decoupled for now
   private def splitFifoFixerModuleDef(fixer: Module): (Seq[Module], Map[String, Int]) = {
@@ -856,7 +851,7 @@ class NoCCollectModulesInPathAndRegroupPass extends NoCReparentRouterGroupPass w
       case m                                                => Seq(m)
     }
     val transformedAnnos                           = state.annotations.map {
-      case FirrtlPartWrapperParentAnnotation(it)           =>
+      case FirrtlPartWrapperParentAnnotation(_)           =>
         val target = InstanceTarget(
           state.circuit.main,
           wrapperInstKeyPath.head.dropRight(2).last.module,
@@ -884,7 +879,7 @@ class NoCCollectModulesInPathAndRegroupPass extends NoCReparentRouterGroupPass w
   )(stmt:          Statement
   ): Unit = {
     stmt match {
-      case Connect(_, WSubField(WRef(li), lref, lt, lf), WSubField(WRef(ri), rref, rt, rf)) =>
+      case Connect(_, WSubField(WRef(li), _, _, _), WSubField(WRef(ri), _, _, _)) =>
         instConnGraph(ri._1).add(li._1)
         instConnGraph(li._1).add(ri._1)
       case b: Block                                                                         => b.foreachStmt(getInstConnGraph(instConnGraph)(_))
@@ -906,13 +901,13 @@ class DedupClockAndResetPass extends Transform with DependencyAPIMigration with 
     val curModuleDef  = moduleDefs(curModuleInstKey.OfModule)
     val newModuleBody = curModuleDef.body.map((stmt: Statement) =>
       stmt match {
-        case Connect(_, WSubField(WRef(li), lref, _, _), WRef(rref))
+        case Connect(_, WSubField(WRef(li), _, _, _), WRef(rref))
             if (
               li._1 == partWrapperInst &&
                 getClockResetSfx(rref._1) == "clock"
             ) =>
           Connect(NoInfo, WSubField(WRef(nextPartWrapperInst), "clock"), WRef(rref._1))
-        case Connect(_, WSubField(WRef(li), lref, _, _), WRef(rref))
+        case Connect(_, WSubField(WRef(li), _, _, _), WRef(rref))
             if (
               li._1 == partWrapperInst &&
                 getClockResetSfx(rref._1) == "reset"
@@ -934,7 +929,7 @@ class DedupClockAndResetPass extends Transform with DependencyAPIMigration with 
               ri._1 == partWrapperInst
             ) =>
           Connect(NoInfo, WSubField(WRef(li._1), lref), WSubField(WRef(nextPartWrapperInst), rref))
-        case DefInstance(_, iname, mname, _) if (iname == partWrapperInst) =>
+        case DefInstance(_, iname, _, _) if (iname == partWrapperInst) =>
           DefInstance(NoInfo, nextPartWrapperInst, nextPartWrapperModule)
         case s                                                             => s
       }
@@ -975,7 +970,7 @@ class DedupClockAndResetPass extends Transform with DependencyAPIMigration with 
     val extractModuleAnnotation = ExtractModuleNameAnnotation(partWrapperModule)
     val removeModuleAnnotation  = RemoveModuleNameAnnotation(partWrapperModule)
 
-    val transformedAnnos = state.annotations.map(anno =>
+    state.annotations.map(anno =>
       anno match {
         case a @ FirrtlPortToNeighborRouterIdxAnno(rt, _, _) =>
           val newRt = rt.copy(component = Seq(OfModule(partWrapperModule)))

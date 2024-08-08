@@ -18,7 +18,7 @@ class QoRShim(implicit val p: Parameters) extends Module {
   val modules = p(QoRTargets)(p)
   val scanOuts = modules.map({ module =>
     val ports = DataMirror.modulePorts(module).flatMap({
-      case (_, id: Clock) => None
+      case (_, _: Clock) => None
       case (_, id) => Some(id)
     })
     ScanRegister(ports, io.scanEnable, io.scanIn)
@@ -26,7 +26,7 @@ class QoRShim(implicit val p: Parameters) extends Module {
   io.scanOut := scanOuts.reduce(_ || _)
 }
 
-class Midas2QoRTargets extends Config((site, here, up) => {
+class Midas2QoRTargets extends Config((_, _, _) => {
   case QoRTargets => (q: Parameters) => {
     implicit val p = q
     Seq(

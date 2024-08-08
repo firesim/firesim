@@ -2,17 +2,21 @@ package midas.passes.partition
 
 import scala.collection.mutable
 import scala.Console.println
+
 import firrtl._
 import firrtl.ir._
 import firrtl.Mappers._
 import firrtl.annotations._
 import firrtl.stage.OutputFileAnnotation
 import firrtl.analyses.InstanceGraph
-import midas.widgets._
-import midas.widgets.SerializationUtils._
+
 import midas.stage._
 import midas.targetutils._
 import midas._
+
+import firesim.lib.bridges.{PeekPokeKey, ClockParameters, ResetPulseBridgeParameters}
+import firesim.lib.bridgeutils._
+import firesim.lib.bridgeutils.SerializationUtils._
 
 // Extracts a module from the hierarchy, and uses that as the top level target module.
 // Generates a FireSim wrapper and adds on clock, reset, peekpoke and a cut bridge.
@@ -698,7 +702,7 @@ class PrunedExtraModulesAndAddBridgeAnnos extends Transform with DependencyAPIMi
       })
       .get
 
-    val outputBaseFileNameAnno = state.annotations.collectFirst { case a: OutputBaseFilenameAnnotation =>
+    val outputBaseFileNameAnno = state.annotations.collectFirst { case _: OutputBaseFilenameAnnotation =>
       OutputBaseFilenameAnnotation("FireSim-generated")
     }.get
 

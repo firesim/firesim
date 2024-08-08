@@ -1,16 +1,17 @@
 package midas
 package models
 
-// From RC
-import org.chipsalliance.cde.config.{Parameters}
-import freechips.rocketchip.util.{DecoupledHelper}
-import junctions._
-
 import chisel3._
 import chisel3.util.{Queue}
 
+// From RC
+import org.chipsalliance.cde.config.{Parameters}
+import freechips.rocketchip.util.{DecoupledHelper}
+
 import midas.core.{HostDecoupled}
 import midas.widgets.{SatUpDownCounter}
+
+import firesim.lib.nasti._
 
 // The ingress module queues up incoming target requests, and issues them to the
 // host memory system.
@@ -49,22 +50,22 @@ trait IngressModuleParameters {
   require(ingressAWQdepth >= cfg.maxWrites)
 }
 
-class IngressModule(val cfg: BaseConfig)(implicit val p: Parameters) extends Module 
+class IngressModule(nastiParams: NastiParameters, val cfg: BaseConfig)(implicit val p: Parameters) extends Module
     with IngressModuleParameters {
   val io = IO(new Bundle {
     // This is target valid and not decoupled because the model has handshaked
     // the target-level channels already for us
-    val nastiInputs = Flipped(HostDecoupled((new ValidNastiReqChannels)))
-    val nastiOutputs = new NastiReqChannels
+    val nastiInputs = Flipped(HostDecoupled((new ValidNastiReqChannels(nastiParams))))
+    val nastiOutputs = new NastiReqChannels(nastiParams)
     val relaxed = Input(Bool())
     val host_mem_idle = Input(Bool())
     val host_read_inflight = Input(Bool())
   })
 
 
-  val awQueue = Module(new Queue(new NastiWriteAddressChannel, ingressAWQdepth))
-  val wQueue  = Module(new Queue(new NastiWriteDataChannel, ingressWQdepth))
-  val arQueue = Module(new Queue(new NastiReadAddressChannel, ingressARQdepth))
+  val awQueue = Module(new Queue(new NastiWriteAddressChannel(nastiParams), ingressAWQdepth))
+  val wQueue  = Module(new Queue(new NastiWriteDataChannel(nastiParams), ingressWQdepth))
+  val arQueue = Module(new Queue(new NastiReadAddressChannel(nastiParams), ingressARQdepth))
 
   // Host request gating -- wait until we have a complete W transaction before
   // we issue it.
@@ -101,7 +102,7 @@ class IngressModule(val cfg: BaseConfig)(implicit val p: Parameters) extends Mod
 
   val read_req_done = arQueue.io.enq.fire
 
-  // FIFO that tracks the relative order of reads and writes are they are received 
+  // FIFO that tracks the relative order of reads and writes are they are received
   // bit 0 = Read, bit 1 = Write
   val xaction_order = Module(new DualQueue(Bool(), cfg.maxReads + cfg.maxWrites))
   xaction_order.io.enqA.valid := read_req_done

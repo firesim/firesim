@@ -8,13 +8,15 @@ import junctions._
 
 import firesim.configs.{WithDefaultMemModel, WithWiringTransform}
 
+import firesim.lib.nasti.{NastiParameters}
+
 class NoConfig extends Config(Parameters.empty)
 // This is incomplete and must be mixed into a complete platform config
 class BaseMidasExamplesConfig extends Config(
   new WithDefaultMemModel ++
   new WithWiringTransform ++
   new HostDebugFeatures ++
-  new Config((site, here, up) => {
+  new Config((_, _, _) => {
     case SynthAsserts => true
     case GenerateMultiCycleRamModels => true
     case EnableModelMultiThreading => true
@@ -33,7 +35,7 @@ class DefaultVitisConfig extends Config(
   new midas.VitisConfig
 )
 
-class PointerChaserConfig extends Config((site, here, up) => {
+class PointerChaserConfig extends Config((_, here, _) => {
   case MemSize => BigInt(1 << 30) // 1 GB
   case NMemoryChannels => 1
   case CacheBlockBytes => 64
@@ -42,10 +44,10 @@ class PointerChaserConfig extends Config((site, here, up) => {
   case Seed => System.currentTimeMillis
 })
 
-class AutoCounterPrintf extends Config((site, here, up) => {
+class AutoCounterPrintf extends Config((_, _, _) => {
   case AutoCounterUsePrintfImpl => true
 })
 
-class NoSynthAsserts extends Config((site, here, up) => {
+class NoSynthAsserts extends Config((_, _, _) => {
   case SynthAsserts => false
 })

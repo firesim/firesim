@@ -1,16 +1,17 @@
 package midas
 package models
 
-import org.chipsalliance.cde.config.Parameters
-import chisel3._
-import chisel3.util._
-
+import Console.{UNDERLINED, GREEN, RESET}
+import scala.io.Source
 import org.json4s._
 import org.json4s.native.JsonMethods._
 
-import Console.{UNDERLINED, GREEN, RESET}
-import scala.io.Source
+import chisel3._
+import chisel3.util._
 
+import org.chipsalliance.cde.config.Parameters
+
+import firesim.lib.nasti._
 
 trait HasDRAMMASConstants {
   val maxDRAMTimingBits = 7 // width of a DRAM timing
@@ -66,7 +67,7 @@ class DRAMProgrammableTimings extends Bundle with HasDRAMMASConstants with HasPr
   val registers = Seq(
     tAL   -> RuntimeSetting(0,"Additive Latency"),
     tCAS  -> JSONSetting(14,  "CAS Latency",                    { _("CL_TIME") }),
-    tCMD  -> JSONSetting(1,   "Command Transport Time",         { lut => 1 }),
+    tCMD  -> JSONSetting(1,   "Command Transport Time",         { _ => 1 }),
     tCWD  -> JSONSetting(10,  "Write CAS Latency",              { lut =>  tCAS2tCWL(lut("CL_TIME")) }),
     tCCD  -> JSONSetting(4,   "Column-to-Column Delay",         { _("TCCD") }),
     tFAW  -> JSONSetting(25,  "Four row-Activation Window",     { _("TFAW") }),
@@ -78,7 +79,7 @@ class DRAMProgrammableTimings extends Bundle with HasDRAMMASConstants with HasPr
     tRRD  -> JSONSetting(8,   "Row-to-Row Delay",               { _("TRRD") }),
     tRP   -> JSONSetting(14,  "Row-Precharge delay",            { _("TRP") }),
     tRTP  -> JSONSetting(8,   "Read-To-Precharge delay",        { lut => lut("TRTP").max(lut("TRTP_TCK")) }),
-    tRTRS -> JSONSetting(2,   "Rank-to-Rank Switching Time",    { lut => 2 }), // FIXME
+    tRTRS -> JSONSetting(2,   "Rank-to-Rank Switching Time",    { _ => 2 }), // FIXME
     tWR   -> JSONSetting(15,  "Write-Recovery time",            { _("TWR") }),
     tWTR  -> JSONSetting(8,   "Write-To-Read Turnaround Time",  { _("TWTR") })
   )
@@ -95,7 +96,7 @@ class DRAMProgrammableTimings extends Bundle with HasDRAMMASConstants with HasPr
     })
 
     registers foreach {
-      case (elem, reg: JSONSetting) => reg.setWithLUT(lutTCK)
+      case (_, reg: JSONSetting) => reg.setWithLUT(lutTCK)
       case _ => None
     }
   }
@@ -256,7 +257,7 @@ abstract class BaseDRAMMMRegIO(cfg: DRAMBaseConfig) extends MMRegIO(cfg) with Ha
     val speedGradeKey = getSpeedGrade()
 
     val lut = lookupPart(deviceDensityMib, dqWidth, speedGradeKey)
-    val dramTimingSettings = dramTimings.setDependentRegisters(lut, freqMHz)
+    dramTimings.setDependentRegisters(lut, freqMHz)
 
     // Determine the address assignment scheme
     Console.println(s"\n${UNDERLINED}Address assignment${RESET}")
@@ -299,8 +300,8 @@ trait HasLegalityUpdateIO {
 
 // Add some scheduler specific metadata to a reference
 // TODO factor out different MAS metadata into a mixin
-class MASEntry(key: DRAMBaseConfig)(implicit p: Parameters) extends Bundle {
-  val xaction = new TransactionMetaData
+class MASEntry(nastiParams: NastiParameters, key: DRAMBaseConfig)(implicit p: Parameters) extends Bundle {
+  val xaction = new TransactionMetaData(nastiParams)
   val rowAddr = UInt(key.dramKey.rowBits.W)
   val bankAddrOH = UInt(key.dramKey.maxBanks.W)
   val bankAddr = UInt(key.dramKey.bankBits.W)
@@ -322,7 +323,7 @@ class MASEntry(key: DRAMBaseConfig)(implicit p: Parameters) extends Bundle {
   }
 }
 
-class FirstReadyFCFSEntry(key: DRAMBaseConfig)(implicit p: Parameters) extends MASEntry(key)(p) {
+class FirstReadyFCFSEntry(nastiParams: NastiParameters, key: DRAMBaseConfig)(implicit p: Parameters) extends MASEntry(nastiParams, key)(p) {
   val isReady = Bool() //Set when entry hits in open row buffer
   val mayPRE = Bool() // Set when no other entires hit open row buffer
 
@@ -694,20 +695,20 @@ class RankPowerMonitor(key: DramOrganizationParams) extends Module with HasDRAMM
   io.stats := stats
 }
 
-class DRAMBackendIO(val latencyBits: Int)(implicit val p: Parameters) extends Bundle {
-  val newRead = Flipped(Decoupled(new ReadResponseMetaData))
-  val newWrite = Flipped(Decoupled(new WriteResponseMetaData))
-  val completedRead = Decoupled(new ReadResponseMetaData)
-  val completedWrite = Decoupled(new WriteResponseMetaData)
+class DRAMBackendIO(nastiParams: NastiParameters, latencyBits: Int) extends Bundle {
+  val newRead = Flipped(Decoupled(new ReadResponseMetaData(nastiParams)))
+  val newWrite = Flipped(Decoupled(new WriteResponseMetaData(nastiParams)))
+  val completedRead = Decoupled(new ReadResponseMetaData(nastiParams))
+  val completedWrite = Decoupled(new WriteResponseMetaData(nastiParams))
   val readLatency = Input(UInt(latencyBits.W))
   val writeLatency = Input(UInt(latencyBits.W))
   val tCycle = Input(UInt(latencyBits.W))
 }
 
-class DRAMBackend(key: DRAMBackendKey)(implicit p: Parameters) extends Module {
-  val io = IO(new DRAMBackendIO(key.latencyBits))
-  val rQueue = Module(new DynamicLatencyPipe(new ReadResponseMetaData, key.readDepth, key.latencyBits))
-  val wQueue = Module(new DynamicLatencyPipe(new WriteResponseMetaData, key.writeDepth, key.latencyBits))
+class DRAMBackend(nastiParams: NastiParameters, key: DRAMBackendKey)(implicit p: Parameters) extends Module {
+  val io = IO(new DRAMBackendIO(nastiParams, key.latencyBits))
+  val rQueue = Module(new DynamicLatencyPipe(new ReadResponseMetaData(nastiParams), key.readDepth, key.latencyBits))
+  val wQueue = Module(new DynamicLatencyPipe(new WriteResponseMetaData(nastiParams), key.writeDepth, key.latencyBits))
 
   io.completedRead <> rQueue.io.deq
   io.completedWrite <> wQueue.io.deq

@@ -11,6 +11,7 @@ import midas.{EnableAutoCounter, AutoCounterUsePrintfImpl}
 import midas.widgets._
 import midas.targetutils._
 import midas.passes.fame.{WireChannel, FAMEChannelConnectionAnnotation, And, Neq}
+import firesim.lib.bridgeutils.{BridgeIOAnnotation}
 
 import java.io._
 import collection.mutable
@@ -300,7 +301,7 @@ class AutoCounterTransform extends Transform with AutoCounterConsts {
       annotations = updatedState.annotations.filter {
         case AutoCounterCoverModuleFirrtlAnnotation(_) => false
         case AutoCounterFirrtlAnnotation(_,_,_,_,_,_,_) => false
-        case o => true
+        case _ => true
       })
   }
 }

@@ -5,7 +5,8 @@ package firesim.midasexamples
 import chisel3._
 import org.chipsalliance.cde.config.Parameters
 import midas.targetutils._
-import midas.widgets.{RationalClockBridge, PeekPokeBridge, RationalClock}
+import firesim.lib.bridges.{RationalClockBridge, PeekPokeBridge}
+import firesim.lib.bridgeutils.{RationalClock}
 
 abstract class GlobalResetConditionTester(elaborator: (Bool) => Unit) extends RawModule {
   val clockBridge = RationalClockBridge(RationalClock("HalfRate", 1, 2))
@@ -52,4 +53,3 @@ class AutoCounterGlobalResetCondition(implicit p: Parameters) extends GlobalRese
     val clockWire = WireDefault(Module.clock)
     PerfCounter(inReset, clockWire, Module.reset,  "ShouldBeZero", "This should not count")
 })
-

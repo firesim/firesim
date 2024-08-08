@@ -3,18 +3,25 @@
 package midas
 package core
 
-import junctions._
+import scala.collection.mutable
+import scala.collection.immutable.ListMap
+
+import chisel3._
+import chisel3.util._
+
+import freechips.rocketchip.amba.axi4._
+import freechips.rocketchip.util.DecoupledHelper
+import freechips.rocketchip.diplomacy._
+import org.chipsalliance.cde.config.{Field, Parameters}
+
 import midas.PrintfLogger
 import midas.widgets._
 import midas.passes.HostClockSource
-import chisel3._
-import chisel3.util._
-import freechips.rocketchip.amba.axi4._
-import org.chipsalliance.cde.config.{Field, Parameters}
-import freechips.rocketchip.diplomacy._
+
+import firesim.lib.nasti._
+import firesim.lib.bridgeutils._
 import midas.targetutils.xdc._
 import midas.targetutils.FireSimQueueHelper
-import scala.collection.immutable.ListMap
 
 /** The following [[Field]] s capture the parameters of the four AXI4 bus types presented to a simulator (in
   * [[FPGATop]]). A [[PlatformShim]] is free to adapt these widths, apply address offsets, etc..., but the values set
@@ -139,7 +146,7 @@ class FPGATop(implicit p: Parameters) extends LazyModule with HasWidgets {
 
   val bridgeAnnos                                                                              = p(SimWrapperKey).annotations.collect { case ba: BridgeIOAnnotation => ba }
   val bridgeModuleMap: ListMap[BridgeIOAnnotation, BridgeModule[_ <: Record with HasChannels]] =
-    ListMap((bridgeAnnos.map(anno => anno -> addWidget(anno.elaborateWidget))): _*)
+    ListMap((bridgeAnnos.map(anno => anno -> addWidget(BridgeIOAnnotationToElaboration(anno)))): _*)
 
   // Find all bridges that wish to be allocated FPGA DRAM, and group them
   // according to their memoryRegionName. Requested addresses will be unified
@@ -161,7 +168,7 @@ class FPGATop(implicit p: Parameters) extends LazyModule with HasWidgets {
     regionTuples.toSeq.sortBy(r => (BytesOfDRAMRequired(r._2), r._1.head.memoryRegionName)).reverse
 
   // Allocate memory regions using a base-and-bounds scheme
-  val dramOffsetsRev       = sortedRegionTuples.foldLeft(Seq(BigInt(0)))({ case (offsets, (bridgeSeq, addresses)) =>
+  val dramOffsetsRev       = sortedRegionTuples.foldLeft(Seq(BigInt(0)))({ case (offsets, (_, addresses)) =>
     val requestedCapacity = BytesOfDRAMRequired(addresses)
     val pageAligned4k     = ((requestedCapacity + 4095) >> 12) << 12
     (offsets.head + pageAligned4k) +: offsets
@@ -422,6 +429,78 @@ class FPGATop(implicit p: Parameters) extends LazyModule with HasWidgets {
   lazy val module = new FPGATopImp(this)
 }
 
+object HostPortIOConnectChannels2Port {
+  def apply[T <: Data](hp: HostPortIO[T], bridgeAnno: BridgeIOAnnotation, targetIO: TargetChannelIO): Unit = {
+    val local2globalName = bridgeAnno.channelMapping.toMap
+    val toHostChannels, fromHostChannels = mutable.ArrayBuffer[ReadyValidIO[Data]]()
+
+    // Bind payloads to HostPort, and collect channels
+    for ((field, localName) <- hp.inputWireChannels()) {
+      val tokenChannel = targetIO.wireOutputPortMap(local2globalName(localName))
+      field := tokenChannel.bits
+      toHostChannels += tokenChannel
+    }
+
+    for ((field, localName) <- hp.outputWireChannels()) {
+      val tokenChannel = targetIO.wireInputPortMap(local2globalName(localName))
+      tokenChannel.bits := field
+      fromHostChannels += tokenChannel
+    }
+
+    for ((field, localName) <- hp.inputRVChannels()) {
+      val (fwdChPort, revChPort) = targetIO.rvOutputPortMap(local2globalName(localName + "_fwd"))
+      field.valid := fwdChPort.bits.valid
+      revChPort.bits := field.ready
+
+      import chisel3.ExplicitCompileOptions.NotStrict
+      field.bits  := fwdChPort.bits.bits
+
+      fromHostChannels += revChPort
+      toHostChannels += fwdChPort
+    }
+
+    for ((field, localName) <- hp.outputRVChannels()) {
+      val (fwdChPort, revChPort) = targetIO.rvInputPortMap(local2globalName(localName + "_fwd"))
+      fwdChPort.bits.valid := field.valid
+      field.ready := revChPort.bits
+
+      import chisel3.ExplicitCompileOptions.NotStrict
+      fwdChPort.bits.bits := field.bits
+      fromHostChannels += fwdChPort
+      toHostChannels += revChPort
+    }
+
+    hp.toHost.hValid := toHostChannels.foldLeft(true.B)(_ && _.valid)
+    hp.fromHost.hReady := fromHostChannels.foldLeft(true.B)(_ && _.ready)
+
+    // Dequeue from toHost channels only if all toHost tokens are available,
+    // and the bridge consumes it
+    val toHostHelper   = DecoupledHelper((hp.toHost.hReady +: toHostChannels.map(_.valid)).toSeq:_*)
+    toHostChannels.foreach(ch => ch.ready := toHostHelper.fire(ch.valid))
+
+    // Enqueue into the toHost channels only once all toHost channels can accept the token
+    val fromHostHelper = DecoupledHelper((hp.fromHost.hValid +: fromHostChannels.map(_.ready)).toSeq:_*)
+    fromHostChannels.foreach(ch => ch.valid := fromHostHelper.fire(ch.ready))
+
+    // Tie off the target clock; these should be unused in the BridgeModule
+    SimUtils.findClocks(hp.hBits).map(_ := false.B.asClock)
+  }
+}
+
+object ChannelizedHostPortIOConnectChannels2Port {
+  def apply(hp: ChannelizedHostPortIO, bridgeAnno: BridgeIOAnnotation, targetIO: TargetChannelIO): Unit = {
+    val local2globalName = bridgeAnno.channelMapping.toMap
+    for ((_, channel, metadata) <- hp.channels) {
+      val localName = hp.reverseElementMap(channel)
+      if (metadata.bridgeSunk) {
+        channel <> targetIO.wireOutputPortMap(local2globalName(localName))
+      } else {
+        targetIO.wireInputPortMap(local2globalName(localName)) <> channel
+      }
+    }
+  }
+}
+
 class FPGATopImp(outer: FPGATop)(implicit p: Parameters) extends LazyModuleImp(outer) {
   // Mark the host clock so that ILA wiring and user-registered host
   // transformations can inject hardware synchronous to correct clock.
@@ -468,8 +547,11 @@ class FPGATopImp(outer: FPGATop)(implicit p: Parameters) extends LazyModuleImp(o
 
   // Instantiate bridge widgets.
   outer.bridgeModuleMap.map({ case (bridgeAnno, bridgeMod) =>
-    val widgetChannelPrefix = s"${bridgeAnno.target.ref}"
-    bridgeMod.module.hPort.connectChannels2Port(bridgeAnno, simIo)
+    bridgeMod.module.hPort match {
+      case hp: ClockTokenVector => hp.connectChannels2Port(bridgeAnno, simIo)
+      case hp: HostPortIO[_] => HostPortIOConnectChannels2Port(hp, bridgeAnno, simIo)
+      case hp: ChannelizedHostPortIO => ChannelizedHostPortIOConnectChannels2Port(hp, bridgeAnno, simIo)
+    }
   })
 
   outer.printStreamSummary(outer.toCPUStreamParams, "Bridge Streams To CPU:")
@@ -636,10 +718,7 @@ class FPGATopImp(outer: FPGATop)(implicit p: Parameters) extends LazyModuleImp(o
       printMacro(prefix, "DATA_BITS", dataBits)
     }
 
-    def printQSFPConfig(prefix: String, conf: (Int)) {
-      val (dataBits) = conf
-      printMacro(prefix, "DATA_BITS", dataBits)
-    }
+
 
     printAXIConfig("CTRL", confCtrl)
     confCPUManaged.foreach { conf =>

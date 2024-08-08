@@ -82,4 +82,4 @@ class RiscSRAMDUT extends Module {
   }
 }
 
-class RiscSRAM(implicit p: Parameters) extends PeekPokeMidasExampleHarness(() => new RiscSRAMDUT)
+class RiscSRAM(implicit p: Parameters) extends firesim.lib.testutils.PeekPokeHarness(() => new RiscSRAMDUT)

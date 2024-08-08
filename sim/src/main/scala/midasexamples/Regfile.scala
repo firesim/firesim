@@ -37,4 +37,4 @@ class RegfileDUT extends Module {
   }
 }
 
-class Regfile(implicit p: Parameters) extends PeekPokeMidasExampleHarness(() => new RegfileDUT)
+class Regfile(implicit p: Parameters) extends firesim.lib.testutils.PeekPokeHarness(() => new RegfileDUT)
