@@ -38,7 +38,7 @@ Once this is completed, you'll have the following files:
    each the nodes we will simulate
 
 These files will be used to form base images to either build more complicated
-workloads (see the :ref:`defining-custom-workloads` section) or to copy around
+workloads (see the :ref:`deprecated-defining-custom-workloads` section) or to copy around
 for deploying.
 
 
@@ -482,11 +482,11 @@ If you take a look at the workload output directory given in the manager output 
 
 
 What are these files? They are specified to the manager in a configuration file
-(:gh-file-ref:`deploy/workloads/br-base.json`) as files that we want
+(``deploy/workloads/br-base-uniform.json``) as files that we want
 automatically copied back to our manager after we run a simulation, which is
 useful for running benchmarks automatically. Note that there is a directory for
 each simulated node and each simulated switch in the cluster. The
-:ref:`defining-custom-workloads` section describes this process in detail.
+:ref:`deprecated-defining-custom-workloads` section describes this process in detail.
 
 For now, let's wrap-up our guide by terminating the ``f1.16xlarge`` instance
 that we launched. To do so, run:

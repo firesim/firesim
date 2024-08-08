@@ -34,5 +34,5 @@ Once this is completed, you'll have the following files:
    the RISC-V SoC we will simulate
 
 These files will be used to form base images to either build more complicated
-workloads (see the :ref:`defining-custom-workloads` section) or directly as a
+workloads (see the :ref:`deprecated-defining-custom-workloads` section) or directly as a
 basic, interactive Linux distribution.

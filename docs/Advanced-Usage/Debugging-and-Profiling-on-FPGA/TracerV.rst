@@ -50,7 +50,7 @@ SoC. If you have multiple cores, each will have its own file (ending in ``C1``,
 ``C2``, etc).  To copy all TracerV trace files back to your manager, you can
 add ``TRACEFILE*`` to your ``common_simulation_outputs`` or
 ``simulation_outputs`` in your workload ``.json`` file. See the
-:ref:`defining-custom-workloads` section for more information about these
+:ref:`deprecated-defining-custom-workloads` section for more information about these
 options.
 
 .. _tracerv-output-format:

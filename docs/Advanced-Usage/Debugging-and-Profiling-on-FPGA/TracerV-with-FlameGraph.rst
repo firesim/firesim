@@ -113,13 +113,13 @@ Modifying your workload description
 
 Finally, we must make three modifications to the workload description to
 complete the flame graph flow. For general documentation on workload
-descriptions, see the :ref:`defining-custom-workloads` section.
+descriptions, see the :ref:`deprecated-defining-custom-workloads` section.
 
 #. We must add the file containing our DWARF information as one of the ``simulation_inputs``, so that it is automatically copied to the remote F1 instance running the simulation.
 #. We must modify ``simulation_outputs`` to copy back the generated trace file.
 #. We must set the ``post_run_hook`` to ``gen-all-flamegraphs-fireperf.sh`` (which FireSim puts on your path by default), which will produce flame graphs from the trace files.
 
-To concretize this, let us consider the default ``br-base.json`` workload,
+To concretize this, let us consider the default ``br-base-uniform.json`` workload,
 which does not support Flame Graph generation with modifications found here: ``br-base-flamegraph.json``,
 which makes the aforementioned three changes:
 

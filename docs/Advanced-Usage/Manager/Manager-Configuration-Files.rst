@@ -212,11 +212,11 @@ Workload definitions are located in ``firesim/deploy/workloads/*.json``.
 
 Some sample workloads:
 
-``br-base.json``: This runs the default FireSim Linux distro on as many nodes
+``br-base-uniform.json``: This runs the default FireSim Linux distro on as many nodes
 as you specify when setting the ``target_config`` parameters.
 
 Others can be found in the aforementioned directory. For a description of the
-JSON format, see :ref:`defining-custom-workloads`.
+JSON format, see :ref:`deprecated-defining-custom-workloads`.
 
 
 ``terminate_on_completion``

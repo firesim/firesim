@@ -227,14 +227,12 @@ If you take a look at the workload output directory given in the manager output 
         -rw-rw-r-- 1 centos centos 7316 May 19 00:46 br-base0/uartlog
 
 What are these files? They are specified to the manager in a configuration file
-(:gh-file-ref:`deploy/workloads/br-base.json`) as files that we want
+(``deploy/workloads/br-base-uniform.json``) as files that we want
 automatically copied back from the Run Farm Machine into the ``results-workload`` directory on our manager machine, which is
 useful for running benchmarks automatically. The
-:ref:`defining-custom-workloads` section describes this process in detail.
+:ref:`deprecated-defining-custom-workloads` section describes this process in detail.
 
 Congratulations on running your first FireSim simulation! At this point, you can
 check-out some of the advanced features of FireSim in the sidebar to the left.
-For example, we expect that many people will be interested in the ability to
-automatically run the SPEC17 benchmarks: :ref:`spec-2017`.
 
 Click Next if you'd like to continue on to building your own bitstreams.

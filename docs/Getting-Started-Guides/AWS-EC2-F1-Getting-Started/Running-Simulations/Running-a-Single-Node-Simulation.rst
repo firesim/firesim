@@ -35,7 +35,7 @@ Once this is completed, you'll have the following files:
    each the nodes we will simulate
 
 These files will be used to form base images to either build more complicated
-workloads (see the :ref:`defining-custom-workloads` section) or to copy around
+workloads (see the :ref:`deprecated-defining-custom-workloads` section) or to copy around
 for deploying.
 
 Setting up the manager configuration
@@ -114,13 +114,13 @@ default, it should look like this:
 .. code-block:: yaml
 
     workload:
-        workload_name: br-base.json
+        workload_name: br-base-uniform.json
         terminate_on_completion: no
         suffix_tag: null
 
 
 We'll also leave the ``workload`` mapping unchanged here, since we
-want to run the specified buildroot-based Linux (``br-base.json``) on our
+want to run the specified buildroot-based Linux (``br-base-uniform.json``) on our
 simulated system. The ``terminate_on_completion`` feature is an advanced
 feature that you can learn more about in the :ref:`manager-configuration-files`
 section.
@@ -420,10 +420,10 @@ If you take a look at the workload output directory given in the manager output 
 	-rw-rw-r-- 1 centos centos 7316 May 19 00:46 br-base0/uartlog
 
 What are these files? They are specified to the manager in a configuration file
-(:gh-file-ref:`deploy/workloads/br-base.json`) as files that we want
+(``deploy/workloads/br-base-uniform.json``) as files that we want
 automatically copied back to our manager after we run a simulation, which is
 useful for running benchmarks automatically. The
-:ref:`defining-custom-workloads` section describes this process in detail.
+:ref:`deprecated-defining-custom-workloads` section describes this process in detail.
 
 For now, let's wrap-up our guide by terminating the ``f1.2xlarge`` instance
 that we launched. To do so, run:
@@ -468,7 +468,5 @@ the instance is in the shutting-down or terminated states. You are ultimately
 responsible for ensuring that your instances are terminated appropriately.**
 
 Congratulations on running your first FireSim simulation! At this point, you can
-check-out some of the advanced features of FireSim in the sidebar to the left
-(for example, we expect that many people will be interested in the ability to
-automatically run the SPEC17 benchmarks: :ref:`spec-2017`), or you can continue
+check-out some of the advanced features of FireSim in the sidebar to the left, or you can continue
 on with the cluster simulation guide.

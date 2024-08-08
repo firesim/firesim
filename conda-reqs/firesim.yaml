@@ -91,6 +91,7 @@ dependencies:
     # clang-format for driver coding style enforcement.
     - clang-format
     - clang-tools
+    - parallel
 
     # python packages
     # While it is possible to install using pip after creating the

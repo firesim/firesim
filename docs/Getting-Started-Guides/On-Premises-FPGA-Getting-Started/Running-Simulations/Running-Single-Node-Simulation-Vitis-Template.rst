@@ -86,7 +86,7 @@ As a final sanity check, in the mappings we changed, the ``config_runtime.yaml``
         plusarg_passthrough: ""
 
     workload:
-        workload_name: br-base.json
+        workload_name: br-base-uniform.json
         terminate_on_completion: no
         suffix_tag: null
 

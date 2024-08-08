@@ -204,15 +204,6 @@ jobs:
       - name: Run other (CITests) Scala tests
         run: ./.github/scripts/invoke-make.py "SCALA_TEST=firesim.firesim.CITests testOnly"
 
-  build-default-workloads:
-    name: build-default-workloads
-    needs: [setup-persistent-repo]
-    runs-on: local-fpga-2
-    steps:
-      - uses: actions/checkout@v4
-      - name: Build default FireSim workloads
-        run: ./.github/scripts/build-default-workloads.py
-
   cleanup-local-fpga-repo:
     name: cleanup-local-fpga-repo
     needs: [
@@ -222,8 +213,7 @@ jobs:
       run-midasexamples-scala-tests-groupA,
       run-midasexamples-scala-tests-groupB,
       run-bridges-scala-tests,
-      run-firesim-scala-tests,
-      build-default-workloads]
+      run-firesim-scala-tests]
     # uses a separate runner to cleanup (irrespective, of other jobs cancelled, running, etc)
     runs-on: local-fpga-cleanup
     if: ${{ always() }}

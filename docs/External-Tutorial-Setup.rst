@@ -78,6 +78,7 @@ Please follow along with the following steps to get setup if you already have an
     cd ../target-design/chipyard/software/firemarshal
     ./init-submodules.sh
     marshal -v build br-base.json
+    marshal -v install br-base.json
 
     cd ~/chipyard-afternoon/generators/sha3/software/
     git submodule update --init esp-isa-sim
