@@ -8,7 +8,7 @@ source $SCRIPT_DIR/defaults.sh
 
 cd .. # firesim
 
-run "cd firesim/ && source sourceme-manager.sh && sw/firesim-software && ./marshal -v build br-base.json && ./marshal -v install br-base.json"
+run "cd firesim/ && source sourceme-manager.sh && target-design/chipyard/software/firemarshal && ./marshal -v build br-base.json && ./marshal -v install br-base.json"
 run "cd firesim/ && source sourceme-manager.sh && cd deploy/workloads/ && make allpaper"
 run "cd firesim/ && source sourceme-manager.sh && cd deploy/workloads/ && ./run-all.sh"
 

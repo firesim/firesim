@@ -21,16 +21,17 @@ distribution. You can do this like so:
 
 .. code-block:: bash
 
-    cd firesim/sw/firesim-software
+    cd firesim/target-design/chipyard/software/firemarshal
     ./init-submodules.sh
     ./marshal -v build br-base.json
+    ./marshal -v install br-base.json
 
 This process will take about 10 to 15 minutes on a ``c5.4xlarge`` instance.
 Once this is completed, you'll have the following files:
 
--  ``firesim/sw/firesim-software/images/firechip/br-base/br-base-bin`` - a bootloader + Linux
+-  ``firesim/target-design/chipyard/software/firemarshal/images/firechip/br-base/br-base-bin`` - a bootloader + Linux
    kernel image for the nodes we will simulate.
--  ``firesim/sw/firesim-software/images/firechip/br-base/br-base.img`` - a disk image for
+-  ``firesim/target-design/chipyard/software/firemarshal/images/firechip/br-base/br-base.img`` - a disk image for
    each the nodes we will simulate
 
 These files will be used to form base images to either build more complicated
@@ -92,9 +93,9 @@ in the ``target_config`` section of ``firesim/deploy/config_runtime.yaml``, show
 Here are some highlights of this section:
 
 * ``topology`` is set to ``no_net_config``, indicating that we do not want a
-  network. 
+  network.
 * ``no_net_num_nodes`` is set to ``1``, indicating that we only want to
-  simulate one node. 
+  simulate one node.
 * ``default_hw_config`` is ``firesim_rocket_quadcore_no_nic_l2_llc4mb_ddr3``.
   This references a pre-built, publically-available AWS FPGA Image that is
   specified in ``firesim/deploy/config_hwdb.yaml``.  This pre-built image
@@ -108,18 +109,18 @@ Here are some highlights of this section:
 
 Finally, let's take a look at the ``workload`` section, which defines the
 target software that we'd like to run on the simulated target design. By
-default, it should look like this: 
+default, it should look like this:
 
 .. code-block:: yaml
 
     workload:
-        workload_name: linux-uniform.json
+        workload_name: br-base.json
         terminate_on_completion: no
         suffix_tag: null
 
 
 We'll also leave the ``workload`` mapping unchanged here, since we
-want to run the specified buildroot-based Linux (``linux-uniform.json``) on our
+want to run the specified buildroot-based Linux (``br-base.json``) on our
 simulated system. The ``terminate_on_completion`` feature is an advanced
 feature that you can learn more about in the :ref:`manager-configuration-files`
 section.
@@ -242,7 +243,7 @@ nodes every 10s. When you do this, you will initially see output like:
 	FireSim Manager. Docs: http://docs.fires.im
 	Running: runworkload
 
-	Creating the directory: /home/centos/firesim-new/deploy/results-workload/2018-05-19--00-38-52-linux-uniform/
+	Creating the directory: /home/centos/firesim-new/deploy/results-workload/2018-05-19--00-38-52-br-base/
 	[172.30.2.174] Executing task 'instance_liveness'
 	[172.30.2.174] Checking if host instance is up...
 	[172.30.2.174] Executing task 'boot_simulation_wrapper'
@@ -257,7 +258,7 @@ live status page:
 	FireSim Simulation Status @ 2018-05-19 00:38:56.062737
 	--------------------------------------------------------------------------------
 	This workload's output is located in:
-	/home/centos/firesim-new/deploy/results-workload/2018-05-19--00-38-52-linux-uniform/
+	/home/centos/firesim-new/deploy/results-workload/2018-05-19--00-38-52-br-base/
 	This run's log is located in:
 	/home/centos/firesim-new/deploy/logs/2018-05-19--00-38-52-runworkload-JS5IGTV166X169DZ.log
 	This status will update every 10s.
@@ -271,7 +272,7 @@ live status page:
 	--------------------------------------------------------------------------------
 	Simulated Nodes/Jobs
 	--------------------------------------------------------------------------------
-	Hostname/IP:   172.30.2.174 | Job: linux-uniform0 | Sim running: True
+	Hostname/IP:   172.30.2.174 | Job: br-base0 | Sim running: True
 	--------------------------------------------------------------------------------
 	Summary
 	--------------------------------------------------------------------------------
@@ -382,7 +383,7 @@ from the manager:
 	FireSim Simulation Status @ 2018-05-19 00:46:50.075885
 	--------------------------------------------------------------------------------
 	This workload's output is located in:
-	/home/centos/firesim-new/deploy/results-workload/2018-05-19--00-38-52-linux-uniform/
+	/home/centos/firesim-new/deploy/results-workload/2018-05-19--00-38-52-br-base/
 	This run's log is located in:
 	/home/centos/firesim-new/deploy/logs/2018-05-19--00-38-52-runworkload-JS5IGTV166X169DZ.log
 	This status will update every 10s.
@@ -396,7 +397,7 @@ from the manager:
 	--------------------------------------------------------------------------------
 	Simulated Nodes/Jobs
 	--------------------------------------------------------------------------------
-	Hostname/IP:   172.30.2.174 | Job: linux-uniform0 | Sim running: False
+	Hostname/IP:   172.30.2.174 | Job: br-base0 | Sim running: False
 	--------------------------------------------------------------------------------
 	Summary
 	--------------------------------------------------------------------------------
@@ -404,22 +405,22 @@ from the manager:
 	0/1 simulations are still running.
 	--------------------------------------------------------------------------------
 	FireSim Simulation Exited Successfully. See results in:
-	/home/centos/firesim-new/deploy/results-workload/2018-05-19--00-38-52-linux-uniform/
+	/home/centos/firesim-new/deploy/results-workload/2018-05-19--00-38-52-br-base/
 	The full log of this run is:
 	/home/centos/firesim-new/deploy/logs/2018-05-19--00-38-52-runworkload-JS5IGTV166X169DZ.log
 
 
-If you take a look at the workload output directory given in the manager output (in this case, ``/home/centos/firesim-new/deploy/results-workload/2018-05-19--00-38-52-linux-uniform/``), you'll see the following:
+If you take a look at the workload output directory given in the manager output (in this case, ``/home/centos/firesim-new/deploy/results-workload/2018-05-19--00-38-52-br-base/``), you'll see the following:
 
 .. code-block:: bash
 
-	centos@ip-172-30-2-111.us-west-2.compute.internal:~/firesim-new/deploy/results-workload/2018-05-19--00-38-52-linux-uniform$ ls -la */*
-	-rw-rw-r-- 1 centos centos  797 May 19 00:46 linux-uniform0/memory_stats.csv
-	-rw-rw-r-- 1 centos centos  125 May 19 00:46 linux-uniform0/os-release
-	-rw-rw-r-- 1 centos centos 7316 May 19 00:46 linux-uniform0/uartlog
+	centos@ip-172-30-2-111.us-west-2.compute.internal:~/firesim-new/deploy/results-workload/2018-05-19--00-38-52-br-base$ ls -la */*
+	-rw-rw-r-- 1 centos centos  797 May 19 00:46 br-base0/memory_stats.csv
+	-rw-rw-r-- 1 centos centos  125 May 19 00:46 br-base0/os-release
+	-rw-rw-r-- 1 centos centos 7316 May 19 00:46 br-base0/uartlog
 
 What are these files? They are specified to the manager in a configuration file
-(:gh-file-ref:`deploy/workloads/linux-uniform.json`) as files that we want
+(:gh-file-ref:`deploy/workloads/br-base.json`) as files that we want
 automatically copied back to our manager after we run a simulation, which is
 useful for running benchmarks automatically. The
 :ref:`defining-custom-workloads` section describes this process in detail.

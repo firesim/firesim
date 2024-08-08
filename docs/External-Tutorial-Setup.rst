@@ -75,7 +75,7 @@ Please follow along with the following steps to get setup if you already have an
     make f1
     export MAKEFLAGS=-j16
 
-    cd ../sw/firesim-software
+    cd ../target-design/chipyard/software/firemarshal
     ./init-submodules.sh
     marshal -v build br-base.json
 

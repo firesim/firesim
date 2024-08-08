@@ -119,17 +119,11 @@ descriptions, see the :ref:`defining-custom-workloads` section.
 #. We must modify ``simulation_outputs`` to copy back the generated trace file.
 #. We must set the ``post_run_hook`` to ``gen-all-flamegraphs-fireperf.sh`` (which FireSim puts on your path by default), which will produce flame graphs from the trace files.
 
-To concretize this, let us consider the default ``linux-uniform.json`` workload,
-which does not support Flame Graph generation:
-
-.. include:: /../deploy/workloads/linux-uniform.json
-   :code: json
-
-
-Below is the modified version of this workload, ``linux-uniform-flamegraph.json``,
+To concretize this, let us consider the default ``br-base.json`` workload,
+which does not support Flame Graph generation with modifications found here: ``br-base-flamegraph.json``,
 which makes the aforementioned three changes:
 
-.. include:: /../deploy/workloads/linux-uniform-flamegraph.json
+.. include:: /../deploy/workloads/br-base-flamegraph.json
    :code: json
 
 

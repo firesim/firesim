@@ -54,7 +54,7 @@ nodes every 10s. When you do this, you will initially see output like:
         FireSim Manager. Docs: https://docs.fires.im
         Running: runworkload
 
-        Creating the directory: .../firesim/deploy/results-workload/2023-03-06--01-25-34-linux-uniform/
+        Creating the directory: .../firesim/deploy/results-workload/2023-03-06--01-25-34-br-base/
         [localhost] Checking if host instance is up...
         [localhost] Starting FPGA simulation for slot: 0.
 
@@ -66,7 +66,7 @@ live status page:
         FireSim Simulation Status @ 2018-05-19 00:38:56.062737
         --------------------------------------------------------------------------------
         This workload's output is located in:
-        .../firesim/deploy/results-workload/2018-05-19--00-38-52-linux-uniform/
+        .../firesim/deploy/results-workload/2018-05-19--00-38-52-br-base/
         This run's log is located in:
         .../firesim/deploy/logs/2018-05-19--00-38-52-runworkload-JS5IGTV166X169DZ.log
         This status will update every 10s.
@@ -80,7 +80,7 @@ live status page:
         --------------------------------------------------------------------------------
         Simulated Nodes/Jobs
         --------------------------------------------------------------------------------
-        Hostname/IP:   localhost | Job: linux-uniform0 | Sim running: True
+        Hostname/IP:   localhost | Job: br-base0 | Sim running: True
         --------------------------------------------------------------------------------
         Summary
         --------------------------------------------------------------------------------
@@ -190,7 +190,7 @@ from the manager:
         FireSim Simulation Status @ 2018-05-19 00:46:50.075885
         --------------------------------------------------------------------------------
         This workload's output is located in:
-        .../firesim/deploy/results-workload/2018-05-19--00-38-52-linux-uniform/
+        .../firesim/deploy/results-workload/2018-05-19--00-38-52-br-base/
         This run's log is located in:
         .../firesim/deploy/logs/2018-05-19--00-38-52-runworkload-JS5IGTV166X169DZ.log
         This status will update every 10s.
@@ -204,7 +204,7 @@ from the manager:
         --------------------------------------------------------------------------------
         Simulated Nodes/Jobs
         --------------------------------------------------------------------------------
-        Hostname/IP:   172.30.2.174 | Job: linux-uniform0 | Sim running: False
+        Hostname/IP:   172.30.2.174 | Job: br-base0 | Sim running: False
         --------------------------------------------------------------------------------
         Summary
         --------------------------------------------------------------------------------
@@ -212,22 +212,22 @@ from the manager:
         0/1 simulations are still running.
         --------------------------------------------------------------------------------
         FireSim Simulation Exited Successfully. See results in:
-        .../firesim/deploy/results-workload/2018-05-19--00-38-52-linux-uniform/
+        .../firesim/deploy/results-workload/2018-05-19--00-38-52-br-base/
         The full log of this run is:
         .../firesim/deploy/logs/2018-05-19--00-38-52-runworkload-JS5IGTV166X169DZ.log
 
 
-If you take a look at the workload output directory given in the manager output (in this case, ``.../firesim/deploy/results-workload/2018-05-19--00-38-52-linux-uniform/``), you'll see the following:
+If you take a look at the workload output directory given in the manager output (in this case, ``.../firesim/deploy/results-workload/2018-05-19--00-38-52-br-base/``), you'll see the following:
 
 .. code-block:: bash
 
-        $ ls -la firesim/deploy/results-workload/2018-05-19--00-38-52-linux-uniform/*/*
-        -rw-rw-r-- 1 centos centos  797 May 19 00:46 linux-uniform0/memory_stats.csv
-        -rw-rw-r-- 1 centos centos  125 May 19 00:46 linux-uniform0/os-release
-        -rw-rw-r-- 1 centos centos 7316 May 19 00:46 linux-uniform0/uartlog
+        $ ls -la firesim/deploy/results-workload/2018-05-19--00-38-52-br-base/*/*
+        -rw-rw-r-- 1 centos centos  797 May 19 00:46 br-base0/memory_stats.csv
+        -rw-rw-r-- 1 centos centos  125 May 19 00:46 br-base0/os-release
+        -rw-rw-r-- 1 centos centos 7316 May 19 00:46 br-base0/uartlog
 
 What are these files? They are specified to the manager in a configuration file
-(:gh-file-ref:`deploy/workloads/linux-uniform.json`) as files that we want
+(:gh-file-ref:`deploy/workloads/br-base.json`) as files that we want
 automatically copied back from the Run Farm Machine into the ``results-workload`` directory on our manager machine, which is
 useful for running benchmarks automatically. The
 :ref:`defining-custom-workloads` section describes this process in detail.
@@ -238,4 +238,3 @@ For example, we expect that many people will be interested in the ability to
 automatically run the SPEC17 benchmarks: :ref:`spec-2017`.
 
 Click Next if you'd like to continue on to building your own bitstreams.
-

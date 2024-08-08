@@ -6,9 +6,16 @@
 .. DANGER:: This version of the Defining Custom Workloads page is kept here to
    document some of the legacy workload configurations still present in
    ``deploy/workloads/``. New workloads should NOT be generated using these
-   instructions. New workloads should be written by following the current
-   version of the :ref:`defining-custom-workloads` page.
+   instructions.
 
+This page documents the ``JSON`` input format that FireSim uses to understand
+your software workloads that run on the target design. Most of the time, you
+should not be writing these files from scratch. Instead, use :ref:`firemarshal`
+to build a workload (including Linux kernel images and root filesystems) and
+use ``firemarshal``'s ``install`` command to generate an initial ``.json`` file
+for FireSim. Once you generate a base ``.json`` with FireMarshal, you can add
+some of the options noted on this page to control additional files used as
+inputs/outputs to/from simulations.
 
 **Workloads** in FireSim consist of a series of **Jobs** that are assigned to
 be run on individual simulations. Currently, we require that a Workload defines
@@ -17,11 +24,11 @@ either:
 - A single type of job, that is run on as many simulations as specfied by the user.
   These workloads are usually suffixed with ``-uniform``, which indicates that
   all nodes in the workload run the same job. An example of such a workload is
-  :gh-file-ref:`deploy/workloads/linux-uniform.json`.
+  :gh-file-ref:`deploy/workloads/dummy.json`.
 
 - Several different jobs, in which case there must be exactly as many
   jobs as there are running simulated nodes. An example of such a workload is
-  :gh-file-ref:`deploy/workloads/ping-latency.json`.
+  :gh-file-ref:`deploy/workloads/non-uniform-example.json`.
 
 
 FireSim can take these workload definitions and perform two functions:
@@ -32,39 +39,23 @@ FireSim can take these workload definitions and perform two functions:
 
 In the following subsections, we will go through the two aforementioned example
 workload configurations, describing how these two functions use each part
-of the json file inline.
+of the JSON file inline.
 
-**ERRATA**: You will notice in the following json files the field "workloads"
+**ERRATA**: You will notice in the following JSON files the field "workloads"
 this should really be named "jobs" -- we will fix this in a future release.
-
-**ERRATA**: The following instructions assume the default buildroot-based linux
-distribution (br-base). In order to customize Fedora, you should build the
-basic Fedora image (as described in :ref:`booting-fedora`) and modify the
-image directly (or in QEMU). Imporantly, Fedora currently does not support the
-"command" option for workloads.
 
 Uniform Workload JSON
 ----------------------------
 
-:gh-file-ref:`deploy/workloads/linux-uniform.json` is an example of a "uniform"
+:gh-file-ref:`deploy/workloads/dummy.json` is an example of a "uniform"
 style workload, where each simulated node runs the same software configuration.
 
 Let's take a look at this file:
 
-.. include:: /../deploy/workloads/linux-uniform.json
+.. include:: /../deploy/workloads/dummy.json
    :code: json
 
-There is also a corresponding directory named after this workload/file:
-
-.. code-block:: bash
-
-	centos@ip-172-30-2-111.us-west-2.compute.internal:~/firesim-new/deploy/workloads/linux-uniform$ ls -la
-	total 4
-	drwxrwxr-x  2 centos centos   42 May 17 21:58 .
-	drwxrwxr-x 13 centos centos 4096 May 18 17:14 ..
-	lrwxrwxrwx  1 centos centos   41 May 17 21:58 br-base-bin -> ../../../sw/firesim-software/images/firechip/br-base/br-base-bin
-	lrwxrwxrwx  1 centos centos   41 May 17 21:58 br-base.img -> ../../../sw/firesim-software/images/firechip/br-base/br-base.img
-
+There is also a corresponding directory named after this workload/file: ``deploy/workloads/dummy``.
 We will elaborate on this later.
 
 Looking at the JSON file, you'll notice that this is a relatively simple
@@ -72,34 +63,26 @@ workload definition.
 
 In this "uniform" case, the manager will name simulations after the
 ``benchmark_name`` field, appending a number for each simulation using the
-workload (e.g.  ``linux-uniform0``, ``linux-uniform1``, and so on). It is
-standard pratice to keep ``benchmark_name``, the json filename, and the above
+workload (e.g.  ``dummy0``, ``dummy1``, and so on). It is
+standard pratice to keep ``benchmark_name``, the JSON filename, and the above
 directory name the same. In this case, we have set all of them to
-``linux-uniform``.
+``dummy``.
 
 Next, the ``common_bootbinary`` field represents the binary that the simulations
 in this workload are expected to boot from. The manager will copy this binary
 for each of the nodes in the simulation (each gets its own copy). The ``common_bootbinary`` path is
 relative to the workload's directory, in this case
-:gh-file-ref:`deploy/workloads/linux-uniform`. You'll notice in the above output
-from ``ls -la`` that this is actually just a symlink to ``br-base-bin`` that
-is built by the :ref:`FireMarshal <firemarshal>` tool.
+:gh-file-ref:`deploy/workloads/dummy`. In this case, this is a dummy workload so a dummy binary exists.
 
 Similarly, the ``common_rootfs`` field represents the disk image that the simulations
 in this workload are expected to boot from. The manager will copy this root
 filesystem image for each of the nodes in the simulation (each gets its own copy).
 The ``common_rootfs`` path is
 relative to the workload's directory, in this case
-:gh-file-ref:`deploy/workloads/linux-uniform`. You'll notice in the above output
-from ``ls -la`` that this is actually just a symlink to ``br-base.img`` that
-is built by the :ref:`FireMarshal <firemarshal>` tool.
+:gh-file-ref:`deploy/workloads/dummy`. In this case, this is a dummy workload so no root filesystem image exists.
 
 The ``common_outputs`` field is a list of outputs that the manager will copy out of
-the root filesystem image AFTER a simulation completes. In this simple example,
-when a workload running on a simulated cluster with ``firesim runworkload``
-completes, ``/etc/os-release`` will be copied out from each rootfs and placed
-in the job's output directory within the workload's output directory (See
-the :ref:`firesim-runworkload` section). You can add multiple paths
+the root filesystem image AFTER a simulation completes. You can add multiple paths
 here.
 
 The ``common_simulation_outputs`` field is a list of outputs that the manager
@@ -123,50 +106,35 @@ be fixed in a future release.
 Non-uniform Workload JSON (explicit job per simulated node)
 ---------------------------------------------------------------
 
-Now, we'll look at the ``ping-latency`` workload, which explicitly defines a
+Now, we'll look at the ``non-uniform-example`` workload, which explicitly defines a
 job per simulated node.
 
-.. include:: /../deploy/workloads/ping-latency.json
+.. include:: /../deploy/workloads/non-uniform-example.json
    :code: json
 
-Additionally, let's take a look at the state of the ``ping-latency`` directory
-AFTER the workload is built:
+Additionally, let's take a look at the state of the required ``non-uniform-example`` directory:
 
 .. code-block:: bash
 
-	centos@ip-172-30-2-111.us-west-2.compute.internal:~/firesim-new/deploy/workloads/ping-latency$ ls -la
-	total 15203216
-	drwxrwxr-x  3 centos centos       4096 May 18 07:45 .
-	drwxrwxr-x 13 centos centos       4096 May 18 17:14 ..
-	lrwxrwxrwx  1 centos centos         41 May 17 21:58 bbl-vmlinux -> ../linux-uniform/br-base-bin
-	-rw-rw-r--  1 centos centos          7 May 17 21:58 .gitignore
-	-rw-r--r--  1 centos centos 1946009600 May 18 07:45 idler-1.ext2
-	-rw-r--r--  1 centos centos 1946009600 May 18 07:45 idler-2.ext2
-	-rw-r--r--  1 centos centos 1946009600 May 18 07:45 idler-3.ext2
-	-rw-r--r--  1 centos centos 1946009600 May 18 07:45 idler-4.ext2
-	-rw-r--r--  1 centos centos 1946009600 May 18 07:45 idler-5.ext2
-	-rw-r--r--  1 centos centos 1946009600 May 18 07:46 idler-6.ext2
+	centos@ip-172-30-2-111.us-west-2.compute.internal:~/firesim-new/deploy/workloads/non-uniform-example$ ls -la
+	...
 	drwxrwxr-x  3 centos centos         16 May 17 21:58 overlay
-	-rw-r--r--  1 centos centos 1946009600 May 18 07:44 pingee.ext2
-	-rw-r--r--  1 centos centos 1946009600 May 18 07:44 pinger.ext2
-	-rw-rw-r--  1 centos centos       2236 May 17 21:58 ping-latency-graph.py
+	-rw-rw-r--  1 centos centos          0 May 17 21:58 unusedboot.bin
 
 
 First, let's identify some of these files:
 
-- ``bbl-vmlinux``: Just like in the ``linux-uniform`` case, this workload just uses the default Linux binary generated in ``firesim-software``. Note that it's named differently here, but still symlinks to ``br-base-bin`` in ``linux-uniform``.
-- ``.gitignore``: This just ignores the generated rootfses, which we'll learn about below.
-- ``idler-[1-6].ext2``, ``pingee.ext2``, ``pinger.ext2``: These are rootfses that are generated from the json script above. We'll learn how to do this shortly.
+- ``unusedboot.bin``: Just like in the ``dummy`` case, this workload is a dummy workload that doesn't use it's boot binary.
 
 Additionally, let's look at the ``overlay`` subdirectory:
 
 .. code-block:: bash
 
-    centos@ip-172-30-2-111.us-west-2.compute.internal:~/firesim-new/deploy/workloads/ping-latency/overlay$ ls -la */*
-    -rwxrwxr-x 1 centos centos 249 May 17 21:58 bin/pinglatency.sh
+    centos@ip-172-30-2-111.us-west-2.compute.internal:~/firesim-new/deploy/workloads/non-uniform-example/overlay$ ls -la */*
+    -rwxrwxr-x 1 centos centos 249 May 17 21:58 bin/unused.sh
 
-This is a file that's actually committed to the repo, that runs the benchmark we want to
-run on one of our simulated systems. We'll see how this is used soon.
+This is a file that's actually committed to the repo, that in theory would run the benchmark we want to
+run on one of our simulated systems. In this case, it's unused.
 
 Now, let's take a look at how we got here. First, let's review some of the new
 fields present in this JSON file:
@@ -181,33 +149,15 @@ fields present in this JSON file:
    - ``outputs``: Just like ``common_outputs``, but specific to this job.
 
 
-In this example, we specify one node that boots up and runs the
-``pinglatency.sh`` benchmark, then powers off cleanly and 7 nodes that just
-idle waiting to be pinged.
+In this example, we specify one node that boots up and runs
+``unused.sh && poweroff -f`` while the other just runs ``poweroff -f``.
 
-Given this JSON description, our existing ``pinglatency.sh`` script in the
-overlay directory, and the base rootfses generated in ``firesim-software``,
-the following command will automatically generate all of the rootfses that you
-see in the ``ping-latency`` directory.
-
-.. code-block:: bash
-
-    [ from the workloads/ directory ]
-    ./gen-benchmark-rootfs.py -w ping-latency.json -r -b ../../sw/firesim-software/images/firechip/br-base/br-base.img -s ping-latency/overlay
-
-Notice that we tell this script where the json file lives, where the base rootfs image is, and where we expect to find files
-that we want to include in the generated disk images. This script will take care of the rest and we'll end up with
-``idler-[1-6].ext2``, ``pingee.ext2``, and ``pinger.ext2``!
-
-You'll notice a Makefile in the ``workloads/`` directory -- it contains many
-similar commands for all of the workloads included with FireSim.
-
-Once you generate the rootfses for this workload, you can run it with the manager
-by setting ``workload_name: ping-latency.json`` in ``config_runtime.yaml``. The manager
+You can run works like this with the manager
+by setting ``workload_name: non-uniform-example.json`` in ``config_runtime.yaml``. The manager
 will automatically look for the generated rootfses (based on workload and job names
 that it reads from the json) and distribute work appropriately.
 
 Just like in the uniform case, it will copy back the results that we specify
-in the json file. We'll end up with a directory in ``firesim/deploy/results-workload/``
+in the JSON file. We'll end up with a directory in ``firesim/deploy/results-workload/``
 named after the workload name, with a subdirectory named after each job in the workload,
 which will contain the output files we want.

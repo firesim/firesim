@@ -21,19 +21,18 @@ distribution. We can build the Linux distribution like so:
     # and sourced sourceme-manager.sh
     #
     # then:
-    cd sw/firesim-software
+    cd target-design/chipyard/software/firemarshal
     ./init-submodules.sh
     ./marshal -v build br-base.json
+    ./marshal -v install br-base.json
 
 Once this is completed, you'll have the following files:
 
--  ``YOUR_FIRESIM_REPO/sw/firesim-software/images/firechip/br-base/br-base-bin`` - a bootloader + Linux
+-  ``YOUR_FIRESIM_REPO/target-design/chipyard/software/firemarshal/images/firechip/br-base/br-base-bin`` - a bootloader + Linux
    kernel image for the RISC-V SoC we will simulate.
--  ``YOUR_FIRESIM_REPO/sw/firesim-software/images/firechip/br-base/br-base.img`` - a disk image for
+-  ``YOUR_FIRESIM_REPO/target-design/chipyard/software/firemarshal/images/firechip/br-base/br-base.img`` - a disk image for
    the RISC-V SoC we will simulate
 
 These files will be used to form base images to either build more complicated
 workloads (see the :ref:`defining-custom-workloads` section) or directly as a
 basic, interactive Linux distribution.
-
-

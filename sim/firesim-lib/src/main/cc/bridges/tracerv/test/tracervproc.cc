@@ -3,6 +3,6 @@
 int main(int argc, char *argv[]) {
   ObjdumpedBinary bin(
       (argc > 1) ? argv[1]
-                 : "../../../../../../sw/firesim-software/riscv-linux/vmlinux");
+                 : "../../../../../../target-design/chipyard/software/firemarshal/riscv-linux/vmlinux");
   return 0;
 }

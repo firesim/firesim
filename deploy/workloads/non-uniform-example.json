@@ -1,0 +1,27 @@
+{
+  "benchmark_name" : "non-uniform-example",
+  "common_bootbinary" : "unusedboot.bin",
+  "common_rootfs" : "unusedrootfs.img",
+  "common_outputs" : [],
+  "common_simulation_outputs" : ["uartlog"],
+  "deliver_dir" : "/",
+  "common_args" : [],
+  "common_files" : ["bin/unused.sh"],
+  "no_post_run_hook": "",
+  "workloads" : [
+    {
+      "name": "job0",
+      "files": [],
+      "command": "unused.sh && poweroff -f",
+      "simulation_outputs": [],
+      "outputs": []
+    },
+    {
+      "name": "job1",
+      "files": [],
+      "command": "poweroff -f",
+      "simulation_outputs": [],
+      "outputs": []
+    }
+  ]
+}

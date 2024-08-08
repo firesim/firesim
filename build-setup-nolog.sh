@@ -180,21 +180,14 @@ else
       echo "firesim-dir: '../../../../'" > $marshal_cfg
     fi
 
-    # setup marshal symlink (for convenience)
-    ln -sf ../target-design/chipyard/software/firemarshal $FDIR/sw/firesim-software
-
-    pushd $FDIR/sw/firesim-software
+    pushd $FDIR/target-design/chipyard/software/firemarshal
     ./init-submodules.sh
     popd
 
     env_append "export FIRESIM_STANDALONE=1"
-    env_append "export PATH=$FDIR/sw/firesim-software:\$PATH"
+    env_append "export PATH=$FDIR/target-design/chipyard/software/firemarshal:\$PATH"
     env_append "source $FDIR/scripts/fix-open-files.sh"
 fi
-
-
-# setup marshal symlink (for convenience)
-ln -sf ${CHIPYARD_DIR}/software/firemarshal $FDIR/sw/firesim-software
 
 cd "$FDIR"
 
