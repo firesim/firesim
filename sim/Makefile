@@ -29,7 +29,6 @@ firesim_base_dir := $(abspath .)
 #
 # Currently these projects are:
 # 	midasexamples: simple chisel designs demonstrating FireSim's features
-# 	bridges: test bridges
 # 	fasedtests: test memory models and backing host memory system
 TARGET_PROJECT ?= midasexamples
 
