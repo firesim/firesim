@@ -2,7 +2,7 @@
 package firesim.configs
 
 import firrtl.options.Dependency
-import org.chipsalliance.cde.config.Config
+import org.chipsalliance.cde.config.{Config, Parameters}
 import midas.TargetTransforms
 
 // Experimental: mixing this in will enable assertion synthesis
@@ -115,3 +115,21 @@ class BaseVitisConfig extends Config(
   new WithAsyncResetReplacement ++
   new midas.VitisConfig
 )
+
+class NoConfig extends Config(Parameters.empty)
+
+class BaseBridgesConfig
+    extends Config(
+      new WithDefaultMemModel
+    )
+
+class DefaultF1Config
+    extends Config(
+      new BaseBridgesConfig ++
+        new midas.F1Config
+    )
+class DefaultVitisConfig
+    extends Config(
+      new BaseBridgesConfig ++
+        new midas.VitisConfig
+    )

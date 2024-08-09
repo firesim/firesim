@@ -33,28 +33,17 @@ abstract class BridgeModuleImp[HostPortType <: Record with HasChannels]
   def clockDomainInfo: RationalClock = p(TargetClockInfo).get
 }
 
-trait Bridge[HPType <: Record with HasChannels, WidgetType <: BridgeModule[HPType]] {
+trait Bridge {
   self: BaseModule =>
   def constructorArg: Option[_ <: AnyRef]
-  def bridgeIO: HPType
+  def moduleName: String
 
   def generateAnnotations(): Unit = {
-
-    // Adapted from https://medium.com/@giposse/scala-reflection-d835832ed13a
-    val mirror = ru.runtimeMirror(getClass.getClassLoader)
-    val classType = mirror.classSymbol(getClass)
-    // The base class here is Bridge, but it has not yet been parameterized.
-    val baseClassType = ru.typeOf[Bridge[_,_]].typeSymbol.asClass
-    // Now this will be the type-parameterized form of Bridge
-    val baseType = ru.internal.thisType(classType).baseType(baseClassType)
-    val widgetClassSymbol = baseType.typeArgs(1).typeSymbol.asClass
-
     // Generate the bridge annotation
     annotate(new ChiselAnnotation { def toFirrtl = {
         BridgeAnnotation(
           self.toNamed.toTarget,
-          bridgeIO.bridgeChannels(),
-          widgetClass = widgetClassSymbol.fullName,
+          widgetClass = moduleName,
           widgetConstructorKey = constructorArg)
       }
     })
