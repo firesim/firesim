@@ -8,10 +8,10 @@ UNITTEST_CONFIG ?= AllUnitTests
 
 firesim_root_sbt_project := {file:$(firesim_base_dir)}firesim
 
-rocketchip_dir := $(chipyard_dir)/generators/rocket-chip
-unittest_generated_dir := $(firesim_base_dir)/generated-src/unittests/$(UNITTEST_CONFIG)
+rocketchip_dir := $(firesim_base_dir)/rocket-chip
+unittest_generated_dir := $(base_dir)/generated-src/unittests/$(UNITTEST_CONFIG)
 unittest_args = \
-		BASE_DIR=$(firesim_base_dir) \
+		BASE_DIR=$(base_dir) \
 		EMUL=$(EMUL) \
 		ROCKETCHIP_DIR=$(rocketchip_dir) \
 		GEN_DIR=$(unittest_generated_dir) \
