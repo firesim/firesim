@@ -33,8 +33,8 @@ abstract class TestSuiteBase extends org.scalatest.flatspec.AnyFlatSpec {
   def platformMakeArgs: Seq[String] = Seq()
   def extraMakeArgs: Seq[String]    = Seq()
 
-  // TODO: Unsure why this doesn't use the env. FIRESIM_STANDALONE variable?
-  // maybe move everything to use this to not rely on env. var?
+  // since this test suite is used in Chipyard and FireSim you want to resolve the
+  // FireSim path based on something other than the FIRESIM_STANDALONE env. var.
   val firesimDir = {
     // can either be in <firesim>/sim or in <chipyard>/
     val cwd             = System.getProperty("user.dir")
