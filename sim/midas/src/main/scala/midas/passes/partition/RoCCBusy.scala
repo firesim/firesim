@@ -197,7 +197,7 @@ trait MakeRoCCBusyBitLatencyInsensitivePass {
       val replacedCircuit = roccBusy.zipWithIndex.foldLeft(circuit)((cir, brvidx) =>
         cir.map(transformWrapper(wrapperModuleName, brvidx._1, brvidx._2))
       )
-      println(s"- ReplaceIncomingBusyWithRoCCFired done")
+      println("- ReplaceIncomingBusyWithRoCCFired done")
       state.copy(circuit = replacedCircuit)
     }
   }

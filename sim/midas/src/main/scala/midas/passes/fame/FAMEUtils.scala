@@ -369,8 +369,8 @@ private[fame] class FAMEChannelAnalysis(val state: CircuitState) {
 
     def prettyPrint(): String = {
       val modulePreamble = s"Deduper for module ${mTarget.module}"
-      val outputPreamble = s"  Output Ports"
-      val inputPreamble = s"  Input Ports"
+      val outputPreamble = "  Output Ports"
+      val inputPreamble = "  Input Ports"
       val outputs = outputChannelDedups.groupBy(_._2).map { case (pName, channels) => 
         Seq(s"    Port ${pName} drives channels:") ++: channels.map { case (ch, _) =>  s"      ${ch}" }
       }

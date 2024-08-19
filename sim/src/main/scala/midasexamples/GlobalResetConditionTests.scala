@@ -3,7 +3,6 @@
 package firesim.midasexamples
 
 import chisel3._
-import org.chipsalliance.cde.config.Parameters
 import midas.targetutils._
 import firesim.lib.bridges.{RationalClockBridge, PeekPokeBridge}
 import firesim.lib.bridgeutils.{RationalClock}
@@ -21,7 +20,7 @@ abstract class GlobalResetConditionTester(elaborator: (Bool) => Unit) extends Ra
   val pipelinedResetA = withClock(clockA) { RegNext(RegNext(reset)) }
   val pipelinedResetB = withClock(clockB) { RegNext(RegNext(reset)) }
 
-  def instantiateDomain(clock: Clock, reset: Bool) {
+  def instantiateDomain(clock: Clock, reset: Bool): Unit = {
     withClockAndReset(clock, reset) {
       val reg = RegInit(1.U(8.W))
       // Confuse CP with an additional assignment  so that it doesn't optimize
@@ -38,16 +37,16 @@ abstract class GlobalResetConditionTester(elaborator: (Bool) => Unit) extends Ra
   val peekPokeBridge = PeekPokeBridge(clockA, reset)
 }
 
-class AssertGlobalResetCondition(implicit p: Parameters) extends GlobalResetConditionTester(
-  (inReset: Bool) => { assert(!inReset, s"This should not fire\n") }
+class AssertGlobalResetCondition extends GlobalResetConditionTester(
+  (inReset: Bool) => { assert(!inReset, "This should not fire\n") }
 )
 
-class PrintfGlobalResetCondition(implicit p: Parameters) extends GlobalResetConditionTester(
+class PrintfGlobalResetCondition extends GlobalResetConditionTester(
   (inReset: Bool) => {
-    when(inReset) { SynthesizePrintf(printf(s"This should not print. %b\n", inReset)) }
+    when(inReset) { SynthesizePrintf(printf("This should not print. %b\n", inReset)) }
 })
 
-class AutoCounterGlobalResetCondition(implicit p: Parameters) extends GlobalResetConditionTester(
+class AutoCounterGlobalResetCondition extends GlobalResetConditionTester(
   (inReset: Bool) => {
     // Extra wire to workaround https://github.com/firesim/firesim/issues/789
     val clockWire = WireDefault(Module.clock)

@@ -225,11 +225,11 @@ abstract class WidgetImp(wrapper: Widget) extends LazyModuleImp(wrapper) {
     if (regs.nonEmpty) {
       sb.append("#ifdef GET_SUBSTRUCT_CHECKS\n")
       regs.zipWithIndex.foreach { case ((regName, _), i) =>
-        sb.append(s"static_assert(")
+        sb.append("static_assert(")
         sb.append(s"offsetof(${mmioName}_struct, ${regName}) == ${i} * sizeof(uint64_t), ")
         sb.append(s"${'\"'}invalid ${regName}${'\"'});\\\n")
       }
-      sb.append(s"static_assert(")
+      sb.append("static_assert(")
       sb.append(s"sizeof(${mmioName}_struct) == ${regs.length} * sizeof(uint64_t), ")
       sb.append(s"${'\"'}invalid structure${'\"'}); \\\n\n")
       sb.append(s"#endif // ${mmioName}_checks\n")
@@ -237,7 +237,7 @@ abstract class WidgetImp(wrapper: Widget) extends LazyModuleImp(wrapper) {
 
     sb.append(s"#ifdef ${guard}\n")
     sb.append(s"registry.add_widget(new ${bridgeDriverClassName}(\n")
-    sb.append(s"  simif,\n")
+    sb.append("  simif,\n")
     if (hasStreams) {
       sb.append("  *registry.get_stream_engine(),\n")
     }
@@ -256,11 +256,11 @@ abstract class WidgetImp(wrapper: Widget) extends LazyModuleImp(wrapper) {
       sb.append("},\n")
     }
     sb.append(s"  ${wrapper.getWId},\n")
-    sb.append(s"  args\n  ")
+    sb.append("  args\n  ")
     for (arg <- args) {
       sb.append(s",  ${arg.toC}\n")
     }
-    sb.append(s"));\n")
+    sb.append("));\n")
     sb.append(s"#endif // ${guard}\n")
   }
 

@@ -133,7 +133,7 @@ class QSFPBundle(qsfpBitWidth: Int) extends Bundle {
 }
 
 object QSFPBundle {
-  def apply(qsfpBitWidth: Int)(implicit p: Parameters): QSFPBundle = {
+  def apply(qsfpBitWidth: Int): QSFPBundle = {
     new QSFPBundle(qsfpBitWidth)
   }
 }
@@ -693,7 +693,7 @@ class FPGATopImp(outer: FPGATop)(implicit p: Parameters) extends LazyModuleImp(o
       case Some(conf) => printAXIConfig(conf)
     }
 
-    sb.append(s",\n.qsfp = ")
+    sb.append(",\n.qsfp = ")
     printQSFPConfig(qsfpBitWidth)
 
     sb.append(s",\n.target_name = ${CStrLit(target).toC}")
@@ -704,14 +704,14 @@ class FPGATopImp(outer: FPGATop)(implicit p: Parameters) extends LazyModuleImp(o
     sb.append("#endif // GET_METASIM_INTERFACE_CONFIG\n")
   }
 
-  def genVHeader(sb: StringBuilder)(implicit p: Parameters) = {
+  def genVHeader(sb: StringBuilder) = {
     sb.append("\n// Simulation Constants\n")
 
     def printMacro(prefix: String, name: String, value: Long): Unit = {
       sb.append(s"`define ${prefix}_${name} ${value}\n")
     }
 
-    def printAXIConfig(prefix: String, conf: (Int, Int, Int)) {
+    def printAXIConfig(prefix: String, conf: (Int, Int, Int)): Unit = {
       val (idBits, addrBits, dataBits) = conf
       printMacro(prefix, "ID_BITS", idBits)
       printMacro(prefix, "ADDR_BITS", addrBits)
@@ -741,11 +741,11 @@ class FPGATopImp(outer: FPGATop)(implicit p: Parameters) extends LazyModuleImp(o
     printAXIConfig("MEM", confMem)
   }
 
-  def genPartitioningConstants(sb: StringBuilder, target: String)(implicit p: Parameters) = {
+  def genPartitioningConstants(sb: StringBuilder) = {
     outer.genPartitioningConstants(sb)
   }
 
-  def genPeerToPeerAddrMap(sb: StringBuilder, target: String)(implicit p: Parameters) = {
+  def genPeerToPeerAddrMap(sb: StringBuilder) = {
     outer.genPeerToPeerAddrMap(sb)
   }
 }

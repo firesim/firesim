@@ -112,9 +112,9 @@ class VitisShim(implicit p: Parameters) extends PlatformShim {
     }
 
     GoldenGateOutputFileAnnotation.annotateFromChisel(
-      s"// Vitis Shim requires no dynamically generated macros \n",
+      "// Vitis Shim requires no dynamically generated macros \n",
       fileSuffix = ".defines.vh",
     )
-    GoldenGateOutputFileAnnotation.annotateFromChisel(s"# Currenty unused", ".env.tcl")
+    GoldenGateOutputFileAnnotation.annotateFromChisel("# Currenty unused", ".env.tcl")
   }
 }

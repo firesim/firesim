@@ -50,14 +50,14 @@ class ILADepth16384 extends WithILADepth(16384)
 
 // Replaces Rocket Chip's black-box async resets with a synchronous equivalent
 class WithAsyncResetReplacement
-    extends Config((site, _, up) => { case TargetTransforms =>
-      Dependency(firesim.passes.AsyncResetRegPass) +: up(TargetTransforms, site)
+    extends Config((_, _, up) => { case TargetTransforms =>
+      Dependency(firesim.passes.AsyncResetRegPass) +: up(TargetTransforms)
     })
 
 // The wiring transform is normally only run as part of ReplSeqMem
 class WithWiringTransform
-    extends Config((site, _, up) => { case TargetTransforms =>
-      Dependency[firrtl.passes.wiring.WiringTransform] +: up(TargetTransforms, site)
+    extends Config((_, _, up) => { case TargetTransforms =>
+      Dependency[firrtl.passes.wiring.WiringTransform] +: up(TargetTransforms)
     })
 
 // ADDITIONAL HOST TRANSFORMATIONS

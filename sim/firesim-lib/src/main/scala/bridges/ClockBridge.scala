@@ -46,7 +46,7 @@ class RationalClockBridge(val allClocks: Seq[RationalClock]) extends BlackBox wi
   outer =>
   require(
     allClocks.exists(c => c.multiplier == c.divisor),
-    s"At least one requested clock must have multiplier / divisor == 1. This will be used as the base clock of the simulator.",
+    "At least one requested clock must have multiplier / divisor == 1. This will be used as the base clock of the simulator.",
   )
   val io = IO(new Bundle {
     val clocks = Output(Vec(allClocks.size, Clock()))

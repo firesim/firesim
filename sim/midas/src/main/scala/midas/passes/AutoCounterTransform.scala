@@ -267,7 +267,7 @@ class AutoCounterTransform extends Transform with AutoCounterConsts {
     val selectedsignals = filteredCounterAnnos.groupBy(_.enclosingModule()).map { case (k, v) => k -> v.toSeq }
 
     if (!selectedsignals.isEmpty) {
-      println(s"[AutoCounter] signals are:")
+      println("[AutoCounter] signals are:")
       selectedsignals.foreach({ case (modName, localEvents) =>
         println(s"  Module ${modName}")
         localEvents.foreach({ anno => println(s"   ${anno.label}: ${anno.description}") })

@@ -21,7 +21,7 @@ class StreamAdapterIO(val w: Int) extends Bundle {
   val in = Flipped(Decoupled(UInt(w.W)))
   val out = Decoupled(UInt(w.W))
 
-  def flipConnect(other: StreamAdapterIO) {
+  def flipConnect(other: StreamAdapterIO): Unit = {
     in <> other.out
     other.in <> out
   }

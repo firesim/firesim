@@ -252,14 +252,14 @@ class MCRFileMap(bytesPerAddress: Int) {
     val readRegs  = regAddrs.filter(_._1.permissions.readable)
     val writeRegs = regAddrs.filter(_._1.permissions.writeable)
 
-    sb.append(s"  AddressMap{\n")
-    sb.append(s"    std::vector<std::pair<std::string, uint32_t>>{\n")
+    sb.append("  AddressMap{\n")
+    sb.append("    std::vector<std::pair<std::string, uint32_t>>{\n")
     emitArrays(readRegs.toSeq)
-    sb.append(s"    },\n")
-    sb.append(s"    std::vector<std::pair<std::string, uint32_t>>{\n")
+    sb.append("    },\n")
+    sb.append("    std::vector<std::pair<std::string, uint32_t>>{\n")
     emitArrays(writeRegs.toSeq)
-    sb.append(s"    }\n")
-    sb.append(s"  }")
+    sb.append("    }\n")
+    sb.append("  }")
   }
 
   def printCRs: Unit = {

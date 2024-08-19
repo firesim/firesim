@@ -311,7 +311,7 @@ trait GroupAndInsertWrapperPass {
         group.foreach { dm => instToGroupWrapperMap(dm.name) = groupWrapperModuleName }
 
         println(s"Generating a wrapper (${groupWrapperModuleName})")
-        println(s"- Grouped Modules")
+        println("- Grouped Modules")
         group.foreach(inst => println(s"  - ${inst.name}"))
 
         generateWrapperForGroup(group, instPortMap, groupWrapperModuleName, igraph, modulePortToWrapperPortMap)

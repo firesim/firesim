@@ -710,7 +710,7 @@ class SplitModulesByPortsStandalone extends Transform with DependencyAPIMigratio
       inst
     }
 
-    Logger.critical(s"replaceBodyWithSplitMods")
+    Logger.critical("replaceBodyWithSplitMods")
 
     val newbdy         = mutable.ArrayBuffer[Statement]()
     val orig_inst2mod  = mutable.Map[String, String]()

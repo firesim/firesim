@@ -78,7 +78,7 @@ class FPGAManagedStreamEngine(p: Parameters, val params: StreamEngineParameters)
 
       require(
         BridgeStreamConstants.streamWidthBits == axi4.params.dataBits,
-        s"FPGAManagedStreamEngine requires stream widths to match FPGA-managed AXI4 data width",
+        "FPGAManagedStreamEngine requires stream widths to match FPGA-managed AXI4 data width",
       )
       val cpuBufferDepthBeats = chParams.fpgaBufferDepth
       require(cpuBufferDepthBeats > pageBeats)

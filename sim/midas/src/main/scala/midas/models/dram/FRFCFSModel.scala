@@ -37,7 +37,7 @@ class FirstReadyFCFSMMRegIO(val cfg: FirstReadyFCFSConfig) extends BaseDRAMMMReg
         max     = Some(cfg.transactionQueueDepth)))
 
   def requestSettings(): Unit = {
-    Console.println(s"Configuring First-Ready First-Come First Serve Model")
+    Console.println("Configuring First-Ready First-Come First Serve Model")
     setBaseDRAMSettings()
   }
 }

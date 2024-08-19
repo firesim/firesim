@@ -118,7 +118,7 @@ object PromotePassthroughConnections extends Transform with DependencyAPIMigrati
             val newRHS = sourceNode match {
               case LogicNode(portName, Some(instName), None) => WSubField(WRef(instName), portName)
               case LogicNode(portName, None, None) => WRef(portName)
-              case _ => throw new Exception(s"memport field of source LogicNode should be unset.")
+              case _ => throw new Exception("memport field of source LogicNode should be unset.")
             }
             c.copy(expr = newRHS)
           case None => c

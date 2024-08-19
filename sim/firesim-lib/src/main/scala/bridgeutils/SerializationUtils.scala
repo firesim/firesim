@@ -22,10 +22,10 @@ object SerializationUtils {
 
   object SerializableField {
     def apply(name: String, field: Data): SerializableField = field match {
-      case _: Aggregate => throw new Exception(s"Cannot serialize aggregate types; pass in leaf fields instead.")
+      case _: Aggregate => throw new Exception("Cannot serialize aggregate types; pass in leaf fields instead.")
       case f: UInt      => SerializableField(name, UIntType, f.getWidth)
       case f: SInt      => SerializableField(name, SIntType, f.getWidth)
-      case _            => throw new Exception(s"Cannot serialize this field type")
+      case _            => throw new Exception("Cannot serialize this field type")
     }
   }
 

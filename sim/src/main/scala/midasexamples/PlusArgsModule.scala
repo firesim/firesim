@@ -44,7 +44,7 @@ class PlusArgsDUT(implicit val p: Parameters) extends Module {
   val params = p(PlusArgsTestNumberKey) match {
     case 0 => testGroup0()
     case 1 => testGroup1()
-    case _ => throw new RuntimeException(s"Test Group #{p(PlusArgsTestNumberKey)} does not exist")
+    case _ => throw new RuntimeException("Test Group #{p(PlusArgsTestNumberKey)} does not exist")
   }
 
   val io = IO(new PlusArgsModuleIO(params))

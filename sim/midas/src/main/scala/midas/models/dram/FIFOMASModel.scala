@@ -22,7 +22,7 @@ class FIFOMASMMRegIO(val cfg: FIFOMASConfig) extends BaseDRAMMMRegIO(cfg) {
   val registers = dramBaseRegisters
 
   def requestSettings(): Unit = {
-    Console.println(s"Configuring a First-Come First-Serve Model")
+    Console.println("Configuring a First-Come First-Serve Model")
     setBaseDRAMSettings()
   }
 }

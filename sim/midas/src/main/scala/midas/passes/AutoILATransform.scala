@@ -106,7 +106,7 @@ object AutoILATransform extends Transform with DependencyAPIMigration {
 
     // Map debug annotations to top wiring annotations
     val targetAnnos = ilaAnnos match {
-      case p => p.map { case FirrtlFpgaDebugAnnotation(target) => TopWiringAnnotation(target, s"ila_") }
+      case p => p.map { case FirrtlFpgaDebugAnnotation(target) => TopWiringAnnotation(target, "ila_") }
     }
 
     // Sneak out mapping, which has information about port widths needed for

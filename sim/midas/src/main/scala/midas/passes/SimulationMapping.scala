@@ -46,7 +46,7 @@ private[passes] class SimulationMapping(targetName: String) extends firrtl.Trans
         |// This file encodes partition interface widths.
         |""".stripMargin,
       fileSuffix = ".partition.const.h")
-    c.genPartitioningHeader(psb.getBuilder, targetName)
+    c.genPartitioningHeader(psb.getBuilder)
 
     // Golden Gate-generated Peer to Peer addr map
     // This file encodes AXI4 address ranges for bridges
@@ -55,11 +55,11 @@ private[passes] class SimulationMapping(targetName: String) extends firrtl.Trans
     val p2psb = new OutputFileBuilder(
       "",
       fileSuffix = ".peer2peer.const.yaml")
-    c.genPeerToPeerAddrMap(p2psb.getBuilder, targetName)
+    c.genPeerToPeerAddrMap(p2psb.getBuilder)
 
     vsb append "`ifndef __%s_H\n".format(targetName.toUpperCase)
     vsb append "`define __%s_H\n".format(targetName.toUpperCase)
-    c.genVHeader(vsb.getBuilder, targetName)
+    c.genVHeader(vsb.getBuilder)
     vsb append "`endif  // __%s_H\n".format(targetName.toUpperCase)
     Seq(csb.toAnnotation, vsb.toAnnotation, psb.toAnnotation, p2psb.toAnnotation)
   }
@@ -133,4 +133,3 @@ private[passes] class SimulationMapping(targetName: String) extends firrtl.Trans
     linkedState.copy(annotations = linkedState.annotations ++ generateHeaderAnnos(shim))
   }
 }
-

@@ -188,7 +188,7 @@ object PlusArgsWiringTransform extends Transform {
     }
 
     if (!plusArgAnnos.isEmpty) {
-      println(s"[PlusArgs] PlusArgs are:")
+      println("[PlusArgs] PlusArgs are:")
       plusArgAnnos.foreach(println(_))
       connectBridge(state, plusArgAnnos.toSeq)
     } else { state }
