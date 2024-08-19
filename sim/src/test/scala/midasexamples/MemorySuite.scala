@@ -16,7 +16,7 @@ import firesim.{BasePlatformConfig, TestSuiteCommon}
 abstract class LoadMemTest(
   override val basePlatformConfig: BasePlatformConfig,
   val extraArgs:                   Seq[String] = Seq(),
-) extends TutorialSuite("LoadMemModule", platformConfigs = Seq("NoSynthAsserts"))
+) extends TutorialSuite("LoadMemModule", platformConfigs = Seq("NoSynthAsserts", "LoadMemLPC"))
     with Matchers {
 
   /** Helper to generate tests strings.

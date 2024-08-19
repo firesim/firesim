@@ -131,10 +131,6 @@ class LoadMemDUT(implicit p: Parameters) extends LazyModule {
         nastiIo,
         reset.asBool,
         CompleteConfig(
-          // TODO: AJG: done separately... how
-          //new LatencyPipeConfig(
-          //  BaseParams(maxReads = 16, maxWrites = 16, beatCounters = true, llcKey = None)
-          //),
           nastiKey,
           Some(AXI4EdgeSummary.createCompatEdgeSummary(edge)),
           Some("DefaultMemoryRegion"),

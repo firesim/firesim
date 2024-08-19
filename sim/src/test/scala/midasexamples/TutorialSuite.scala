@@ -17,11 +17,11 @@ object BaseConfigs {
 
 abstract class TutorialSuite(
   val targetName:                  String,
-  override val targetConfigs:      String                  = "NoConfig",
-  override val platformConfigs:    Seq[Class[_ <: Config]] = Seq(),
-  override val basePlatformConfig: BasePlatformConfig      = BaseConfigs.F1,
-  val simulationArgs:              Seq[String]             = Seq(),
-  val shouldPass:                  Boolean                 = true,
+  override val targetConfigs:      String             = "NoConfig",
+  override val platformConfigs:    Seq[String]        = Seq(),
+  override val basePlatformConfig: BasePlatformConfig = BaseConfigs.F1,
+  val simulationArgs:              Seq[String]        = Seq(),
+  val shouldPass:                  Boolean            = true,
 ) extends TestSuiteCommon("midasexamples")
     with Matchers {
 

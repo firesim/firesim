@@ -113,7 +113,6 @@ class PointerChaser(implicit val p: Parameters) extends RawModule {
 
   withClockAndReset(clock, reset) {
     val pointerChaser = Module(new PointerChaserDUT(p(NastiKey)))
-    // TODO: how to add LatencyPipeConfig(BaseParams(16,16))
     val fasedInstance =  Module(new FASEDBridge(CompleteConfig(p(NastiKey))))
     fasedInstance.io.axi4 <> pointerChaser.io.nasti
     fasedInstance.io.reset := reset
