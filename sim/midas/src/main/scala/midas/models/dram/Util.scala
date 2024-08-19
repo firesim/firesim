@@ -548,7 +548,7 @@ class AddressRangeCounterRequest(nastiParams: NastiParameters) extends NastiBund
 // WARNING: Will drop range updates if attempting to read values when host
 // transactions issued
 
-class AddressRangeCounter(nastiParams: NastiParameters, nRanges: BigInt)(implicit p: Parameters) extends NastiModule(nastiParams) {
+class AddressRangeCounter(nastiParams: NastiParameters, nRanges: BigInt) extends NastiModule(nastiParams) {
   val io = IO(new Bundle {
     val req = Flipped(ValidIO(new AddressRangeCounterRequest(nastiParams)))
     val readout = new CounterReadoutIO(log2Ceil(nRanges))
@@ -577,7 +577,7 @@ class AddressRangeCounter(nastiParams: NastiParameters, nRanges: BigInt)(implici
 object AddressRangeCounter {
   def apply[T <: NastiAddressChannel](
       nastiParams: NastiParameters,
-      n: BigInt, req: DecoupledIO[T], en: Bool)(implicit p: Parameters) = {
+      n: BigInt, req: DecoupledIO[T], en: Bool) = {
     val counter = Module(new AddressRangeCounter(nastiParams, n))
     counter.io.req.valid := req.fire && en
     counter.io.req.bits.addr := req.bits.addr
@@ -690,7 +690,7 @@ class LatencyHistogramUnitTest extends UnitTest {
   io.finished := state === s_done
 }
 
-class AddressRangeCounterUnitTest(implicit p: Parameters) extends UnitTest {
+class AddressRangeCounterUnitTest extends UnitTest {
   val nCounters = 8
   val counters = Module(new AddressRangeCounter(NastiParameters(64, 16, 4), nCounters))
 

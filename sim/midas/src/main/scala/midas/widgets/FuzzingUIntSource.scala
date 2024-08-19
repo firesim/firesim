@@ -19,7 +19,7 @@ case class FuzzingUIntSourceKey(width: Int)
 
 class FuzzingUIntSourceBridge(width: Int) extends BlackBox
     with Bridge[HostPortIO[FuzzingUIntSourceTargetIO]] {
-  val moduleName = "FuzzingUIntSourceBridgeModule"
+  val moduleName = "midas.widgets.FuzzingUIntSourceBridgeModule"
   val io = IO(new FuzzingUIntSourceTargetIO(width))
   val bridgeIO = HostPort(io)
   val constructorArg = Some(FuzzingUIntSourceKey(width))

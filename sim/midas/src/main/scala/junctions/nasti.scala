@@ -143,9 +143,6 @@ class NastiArbiterIO(nastiParams: NastiParameters, arbN: Int) extends Bundle {
   val slave = new NastiIO(nastiParams)
 }
 
-// ABE: TODO: HasNastiParameters now exists, so instead of doing nastiParams.XYZ, should just be XYZ
-// anything that doesn't use implicits anymore should remove the implicit params (including the parameterized bundle)
-
 abstract class NastiModule(val nastiParams: NastiParameters) extends Module
   with HasNastiParameters
 

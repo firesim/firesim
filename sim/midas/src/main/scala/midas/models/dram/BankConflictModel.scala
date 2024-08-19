@@ -72,7 +72,6 @@ object BankConflictConstants {
   val bankIdle :: bankBusy :: bankPrecharge :: Nil = Enum(nBankStates)
 }
 
-// TODO: TimingModel/SplitTransactionModel's children should directly use p(NastiKey)
 class BankConflictModel(cfg: BankConflictConfig)(implicit p: Parameters) extends SplitTransactionModel(cfg)(p) {
 
   val longName = "Bank Conflict"

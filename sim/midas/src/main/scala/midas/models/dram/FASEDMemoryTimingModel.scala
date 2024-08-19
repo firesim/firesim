@@ -24,23 +24,55 @@ import firesim.lib.nasti._
 import firesim.lib.bridgeutils._
 import firesim.lib.bridges.{FASEDTargetIO}
 
-// A wrapper bundle around all of the programmable settings in the functional model (!timing model).
-class FuncModelProgrammableRegs extends Bundle with HasProgrammableRegisters {
-  val relaxFunctionalModel = Input(Bool())
-
-  val registers = Seq(
-    (relaxFunctionalModel -> RuntimeSetting(0, """Relax functional model""", max = Some(1)))
-  )
-
-  def getFuncModelSettings(): Seq[(String, BigInt)] = {
-    Console.println(s"${UNDERLINED}Functional Model Settings${RESET}")
-    setUnboundSettings()
-    getSettings()
-  }
-}
-
 // Note: NASTI -> legacy rocket chip implementation of AXI4
 case object FasedAXI4Edge extends Field[Option[AXI4EdgeSummary]](None)
+
+case class BaseParams(
+  // Pessimistically provisions the functional model. Don't be cheap:
+  // underprovisioning will force functional model to assert backpressure on
+  // target AW. W or R channels, which may lead to unexpected bandwidth throttling.
+  maxReads: Int,
+  maxWrites: Int,
+  nastiKey: Option[NastiParameters] = None,
+  edge: Option[AXI4EdgeParameters] = None,
+
+  // If not providing an AXI4 edge, use these to constrain the amount of FPGA DRAM
+  // used by the memory model
+  targetAddressOffset: Option[BigInt]    = None,
+  targetAddressSpaceSize: Option[BigInt] = None,
+
+  // AREA OPTIMIZATIONS:
+  // AXI4 bursts(INCR) can be 256 beats in length -- some
+  // area can be saved if the target design only issues smaller requests
+  maxReadLength: Int = 256,
+  maxReadsPerID: Option[Int] = None,
+  maxWriteLength: Int = 256,
+  maxWritesPerID: Option[Int] = None,
+
+  // DEBUG FEATURES
+  // Check for collisions in pending reads and writes to the host memory system
+  // May produce false positives in timing models that reorder requests
+  detectAddressCollisions: Boolean = false,
+
+  // HOST INSTRUMENTATION
+  stallEventCounters: Boolean = false, // To track causes of target-time stalls
+  localHCycleCount: Boolean = false, // Host Cycle Counter
+  latencyHistograms: Boolean = false, // Creates a BRAM histogram of various system latencies
+
+  // BASE TIMING-MODEL SETTINGS
+  // Some(key) instantiates an LLC model in front of the DRAM timing model
+  llcKey: Option[LLCParams] = None,
+
+  // BASE TIMING-MODEL INSTRUMENTATION
+  xactionCounters: Boolean = true, // Numbers of read and write AXI4 xactions
+  beatCounters: Boolean = false, // Numbers of read and write beats in AXI4 xactions
+  targetCycleCounter: Boolean = false, // Redundant in a full simulator; useful for testing
+
+  // Number of xactions in flight in a given cycle. Bin N contains the range
+  // (occupancyHistograms[N-1], occupancyHistograms[N]]
+  occupancyHistograms: Seq[Int] = Seq(0, 2, 4, 8),
+  addrRangeCounters: BigInt = BigInt(0)
+)
 
 // A serializable summary of the diplomatic edge
 case class AXI4EdgeSummary(
@@ -113,59 +145,10 @@ object AXI4EdgeSummary {
   }
 }
 
-case class BaseParams(
-  // Pessimistically provisions the functional model. Don't be cheap:
-  // underprovisioning will force functional model to assert backpressure on
-  // target AW. W or R channels, which may lead to unexpected bandwidth throttling.
-  maxReads: Int,
-  maxWrites: Int,
-  nastiKey: Option[NastiParameters] = None,
-  edge: Option[AXI4EdgeParameters] = None,
-
-  // If not providing an AXI4 edge, use these to constrain the amount of FPGA DRAM
-  // used by the memory model
-  targetAddressOffset: Option[BigInt]    = None,
-  targetAddressSpaceSize: Option[BigInt] = None,
-
-  // AREA OPTIMIZATIONS:
-  // AXI4 bursts(INCR) can be 256 beats in length -- some
-  // area can be saved if the target design only issues smaller requests
-  maxReadLength: Int = 256,
-  maxReadsPerID: Option[Int] = None,
-  maxWriteLength: Int = 256,
-  maxWritesPerID: Option[Int] = None,
-
-  // DEBUG FEATURES
-  // Check for collisions in pending reads and writes to the host memory system
-  // May produce false positives in timing models that reorder requests
-  detectAddressCollisions: Boolean = false,
-
-  // HOST INSTRUMENTATION
-  stallEventCounters: Boolean = false, // To track causes of target-time stalls
-  localHCycleCount: Boolean = false, // Host Cycle Counter
-  latencyHistograms: Boolean = false, // Creates a BRAM histogram of various system latencies
-
-  // BASE TIMING-MODEL SETTINGS
-  // Some(key) instantiates an LLC model in front of the DRAM timing model
-  llcKey: Option[LLCParams] = None,
-
-  // BASE TIMING-MODEL INSTRUMENTATION
-  xactionCounters: Boolean = true, // Numbers of read and write AXI4 xactions
-  beatCounters: Boolean = false, // Numbers of read and write beats in AXI4 xactions
-  targetCycleCounter: Boolean = false, // Redundant in a full simulator; useful for testing
-
-  // Number of xactions in flight in a given cycle. Bin N contains the range
-  // (occupancyHistograms[N-1], occupancyHistograms[N]]
-  occupancyHistograms: Seq[Int] = Seq(0, 2, 4, 8),
-  addrRangeCounters: BigInt = BigInt(0)
-)
-
-
-
 abstract class BaseConfig {
   def params: BaseParams
 
-  private def getMaxPerID(e: Option[AXI4EdgeSummary], modelMaxXactions: Int, userMax: Option[Int])(implicit p: Parameters): Int = {
+  private def getMaxPerID(e: Option[AXI4EdgeSummary], modelMaxXactions: Int, userMax: Option[Int]): Int = {
     e.flatMap(_.idReuse).getOrElse(min(userMax.getOrElse(modelMaxXactions), modelMaxXactions))
   }
 
@@ -210,6 +193,21 @@ abstract class BaseConfig {
 
   def targetRTransfer(implicit p: Parameters): TransferSizes =
     TransferSizes(1, maxReadLength * p(NastiKey).dataBits/8)
+}
+
+// A wrapper bundle around all of the programmable settings in the functional model (!timing model).
+class FuncModelProgrammableRegs extends Bundle with HasProgrammableRegisters {
+  val relaxFunctionalModel = Input(Bool())
+
+  val registers = Seq(
+    (relaxFunctionalModel -> RuntimeSetting(0, """Relax functional model""", max = Some(1)))
+  )
+
+  def getFuncModelSettings(): Seq[(String, BigInt)] = {
+    Console.println(s"${UNDERLINED}Functional Model Settings${RESET}")
+    setUnboundSettings()
+    getSettings()
+  }
 }
 
 class FASEDMemoryTimingModel(completeConfig: firesim.lib.bridges.CompleteConfig, hostParams: Parameters) extends BridgeModule[HostPortIO[FASEDTargetIO]]()(hostParams)

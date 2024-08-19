@@ -47,7 +47,7 @@ class CutBoundaryBridgeIO(cutParams: CutBoundaryParams) extends Bundle {
 class PCISCutBoundaryBridge(cutParams: CutBoundaryParams)
     extends BlackBox
     with Bridge[HostPortIO[CutBoundaryBridgeIO]] {
-  val moduleName     = "PCISCutBoundaryBridgeModule"
+  val moduleName     = "midas.widgets.PCISCutBoundaryBridgeModule"
   val io             = IO(new CutBoundaryBridgeIO(cutParams))
   val bridgeIO       = HostPort(io)
   val constructorArg = Some(CutBoundaryKey(cutParams))
@@ -57,7 +57,7 @@ class PCISCutBoundaryBridge(cutParams: CutBoundaryParams)
 class QSFPCutBoundaryBridge(cutParams: CutBoundaryParams)
     extends BlackBox
     with Bridge[HostPortIO[CutBoundaryBridgeIO]] {
-  val moduleName     = "QSFPCutBoundaryBridgeModule"
+  val moduleName     = "midas.widgets.QSFPCutBoundaryBridgeModule"
   val io             = IO(new CutBoundaryBridgeIO(cutParams))
   val bridgeIO       = HostPort(io)
   val constructorArg = Some(CutBoundaryKey(cutParams))
@@ -67,7 +67,7 @@ class QSFPCutBoundaryBridge(cutParams: CutBoundaryParams)
 class PCIMCutBoundaryBridge(cutParams: CutBoundaryParams)
     extends BlackBox
     with Bridge[HostPortIO[CutBoundaryBridgeIO]] {
-  val moduleName     = "PCIMCutBoundaryBridgeModule"
+  val moduleName     = "midas.widgets.PCIMCutBoundaryBridgeModule"
   val io             = IO(new CutBoundaryBridgeIO(cutParams))
   val bridgeIO       = HostPort(io)
   val constructorArg = Some(CutBoundaryKey(cutParams))

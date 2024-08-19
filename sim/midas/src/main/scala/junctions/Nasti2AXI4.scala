@@ -31,7 +31,7 @@ class Nasti2AXI4Monitor(params: AXI4BundleParameters)
     extends RawModule with InlineInstance {
   val io = IO(new Bundle {
     val axi4 = Output(new AXI4Bundle(params))
-    val nasti = Flipped(new NastiIO(CreateNastiParameters(params)))
+    val nasti = new NastiIO(CreateNastiParameters(params))
   })
   import chisel3.ExplicitCompileOptions.NotStrict
   io.axi4 := io.nasti

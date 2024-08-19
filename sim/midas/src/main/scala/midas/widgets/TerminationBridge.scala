@@ -48,7 +48,7 @@ class TerminationBridgeHostIO(params: TerminationBridgeParams)
 
 class TerminationBridge(params: TerminationBridgeParams) extends BlackBox
     with Bridge[TerminationBridgeHostIO] {
-  val moduleName = "TerminationBridgeModule"
+  val moduleName = "midas.widgets.TerminationBridgeModule"
   val io = IO(new TerminationBridgeTargetIO(params))
   val bridgeIO = new TerminationBridgeHostIO(params)(io)
 

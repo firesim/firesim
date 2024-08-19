@@ -71,7 +71,7 @@ class PlusArgsBridgeHostIO(
   *   Describes the name, width and default PlusArg value
   */
 class PlusArgsBridge(params: PlusArgsBridgeParams) extends BlackBox with Bridge[PlusArgsBridgeHostIO] {
-  val moduleName = "PlusArgsBridgeModule"
+  val moduleName = "midas.widgets.PlusArgsBridgeModule"
   val io         = IO(new PlusArgsBridgeTargetIO(params))
   val bridgeIO   = new PlusArgsBridgeHostIO(params)(io)
 
