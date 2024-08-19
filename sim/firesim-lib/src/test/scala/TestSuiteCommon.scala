@@ -37,16 +37,32 @@ abstract class TestSuiteBase extends org.scalatest.flatspec.AnyFlatSpec {
   // FireSim path based on something other than the FIRESIM_STANDALONE env. var.
   val firesimDir = {
     // can either be in <firesim>/sim or in <chipyard>/
-    val curDir                 = System.getProperty("user.dir")
-    val fromChipyardFireSimDir = new File(curDir, "sims/firesim-staging/firesim-symlink/sim")
-    // check if we are running out of chipyard by checking if the chipyard-symlink exists and works
-    val filedir                = if (fromChipyardFireSimDir.exists()) {
-      fromChipyardFireSimDir // chipyard-as-top
+    val curDir = new File(System.getProperty("user.dir"))
+
+    // determine if in a firesim or chipyard area
+    val chipyardReadme = new File(curDir, "README.md") // HACK: chipyard README.md is in same dir as build.sbt
+
+    val filetypeDir = if (chipyardReadme.exists()) {
+      val chipyardDir = curDir
+
+      // from chipyard, two ways to access firesim (from symlink (if firesim-as-top) or from sims/firesim (if chipyard-as-top))
+      val fromChipyardFireSimSymlinkDir    = new File(chipyardDir, "sims/firesim-staging/firesim-symlink/sim")
+      val fromChipyardFireSimNonSymlinkDir = new File(chipyardDir, "sims/firesim/sim")
+      if (fromChipyardFireSimSymlinkDir.exists()) {
+        fromChipyardFireSimSymlinkDir // firesim-as-top
+      } else {
+        if (fromChipyardFireSimNonSymlinkDir.exists()) { // double-check that the chipyard-as-top sims/firesim dir exists
+          fromChipyardFireSimNonSymlinkDir
+        } else {
+          throw new Exception("Unable to determine FireSim dir to needed for building tests")
+        }
+      }
     } else {
-      new File(curDir) // firesim-as-top
+      curDir
     }
+
     // convert to path to use toRealPath (which does resolve symlinks unlike File.toAbsolutePath)
-    val pathdir                = filedir.toPath().toRealPath()
+    val pathdir = filetypeDir.toPath().toRealPath()
     // convert back to File to keep same API
     pathdir.toFile()
   }
