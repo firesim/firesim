@@ -37,17 +37,16 @@ abstract class TestSuiteBase extends org.scalatest.flatspec.AnyFlatSpec {
   // FireSim path based on something other than the FIRESIM_STANDALONE env. var.
   val firesimDir = {
     // can either be in <firesim>/sim or in <chipyard>/
-    val cwd             = System.getProperty("user.dir")
+    val curDir             = System.getProperty("user.dir")
+    val fromChipyardFireSimDir = new File(curDir, "sims/firesim-staging/firesim-symlink/sim")
     // check if we are running out of chipyard by checking if the chipyard-symlink exists and works
-    val firesimAsTopDir = new File(cwd, "sims/firesim-staging/firesim-symlink/sim")
-    // get dir and resolve it to an abs. path. (using getAbsolutePath on File doesn't really resolve symlinks)
-    val filedir         = if (firesimAsTopDir.exists()) {
-      firesimAsTopDir
+    val filedir = if (fromChipyardFireSimDir.exists()) {
+      fromChipyardFireSimDir // chipyard-as-top
     } else {
-      new File(cwd)
+      new File(curDir) // firesim-as-top
     }
-    // convert to path to use toRealPath (which does resolve symlinks)
-    val pathdir         = filedir.toPath().toRealPath()
+    // convert to path to use toRealPath (which does resolve symlinks unlike File.toAbsolutePath)
+    val pathdir = filedir.toPath().toRealPath()
     // convert back to File to keep same API
     pathdir.toFile()
   }
