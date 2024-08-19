@@ -12,7 +12,7 @@ import org.chipsalliance.cde.config.Config
 import firesim.{BasePlatformConfig, TestSuiteCommon}
 
 object BaseConfigs {
-  case object F1 extends BasePlatformConfig("f1", Seq(classOf[DefaultF1Config]))
+  case object F1 extends BasePlatformConfig("f1", Seq("DefaultF1Config"))
 }
 
 abstract class TutorialSuite(

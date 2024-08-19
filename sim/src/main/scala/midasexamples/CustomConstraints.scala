@@ -12,4 +12,5 @@ class CustomConstraintsDUT extends ShiftRegisterDUT {
   XDC(XDCFiles.Implementation, "constrain_impl2 [reg {}]", r1)
 }
 
-class CustomConstraints(implicit p: Parameters) extends firesim.lib.testutils.PeekPokeHarness(() => new CustomConstraintsDUT)
+class CustomConstraints(implicit p: Parameters)
+    extends firesim.lib.testutils.PeekPokeHarness(() => new CustomConstraintsDUT)

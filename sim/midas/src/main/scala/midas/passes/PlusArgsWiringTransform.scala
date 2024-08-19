@@ -64,7 +64,7 @@ object PlusArgsWiringTransform extends Transform {
           } else {
             wsf
           }
-        case other                                                   =>
+        case other                                                  =>
           other.mapExpr(swapRefs)
       }
     }

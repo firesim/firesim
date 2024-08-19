@@ -9,10 +9,9 @@ import chisel3._
 import chisel3.util._
 import chisel3.experimental.DataMirror
 
-
 import junctions._
 
-import firesim.lib.bridgeutils.{CStrLit}
+import firesim.lib.bridgeutils.CStrLit
 import firesim.lib.nasti._
 
 /** Takes an arbtirary Data type, and flattens it (akin to .flatten()). Returns a Seq of the leaf nodes with their
@@ -369,7 +368,7 @@ class MCRFile(nastiParams: NastiParameters, numRegs: Int) extends NastiModule(na
     decoupled.ready := (rIndex === idx.U) && arFired && io.nasti.r.ready
   }
   // TODO: set to wStrb?
-  io.mcr.wstrb := 0.U
+  io.mcr.wstrb               := 0.U
 
   io.nasti.r.bits  := NastiReadDataChannel(nastiParams, rId, io.mcr.read(rIndex).bits)
   io.nasti.r.valid := arFired && io.mcr.read(rIndex).valid

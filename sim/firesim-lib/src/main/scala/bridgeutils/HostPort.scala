@@ -2,7 +2,6 @@
 
 package firesim.lib.bridgeutils
 
-
 import chisel3._
 import chisel3.util.ReadyValidIO
 
@@ -21,85 +20,89 @@ import chisel3.util.ReadyValidIO
 // We're using a Record here because reflection in Bundle prematurely initializes our lazy vals
 class HostPortIO[+T <: Data](private val targetPortProto: T) extends Record with HasChannels {
   val fromHost = new HostReadyValid
-  val toHost = Flipped(new HostReadyValid)
-  val hBits  = targetPortProto
+  val toHost   = Flipped(new HostReadyValid)
+  val hBits    = targetPortProto
 
-  val elements = collection.immutable.ListMap(Seq("fromHost" -> fromHost, "toHost" -> toHost, "hBits" -> hBits):_*)
+  val elements = collection.immutable.ListMap(Seq("fromHost" -> fromHost, "toHost" -> toHost, "hBits" -> hBits): _*)
 
   def getClock(): Clock = {
     val allTargetClocks = SimUtils.findClocks(targetPortProto)
-    require(allTargetClocks.nonEmpty,
-      s"Target-side bridge interface of ${targetPortProto.getClass} has no clock field.")
-    require(allTargetClocks.size == 1,
-      s"Target-side bridge interface of ${targetPortProto.getClass} has ${allTargetClocks.size} clocks but must define only one.")
+    require(
+      allTargetClocks.nonEmpty,
+      s"Target-side bridge interface of ${targetPortProto.getClass} has no clock field.",
+    )
+    require(
+      allTargetClocks.size == 1,
+      s"Target-side bridge interface of ${targetPortProto.getClass} has ${allTargetClocks.size} clocks but must define only one.",
+    )
     allTargetClocks.head
   }
 
   // These are lazy because parsePorts needs a directioned gen; these can be called once
   // this Record has been bound to Hardware
   //private lazy val (ins, outs, rvIns, rvOuts) = SimUtils.parsePorts(targetPortProto, alsoFlattenRVPorts = false)
-  private lazy val (ins, outs, rvIns, rvOuts) = try {
-    SimUtils.parsePorts(targetPortProto, alsoFlattenRVPorts = false)
-  } catch {
-    case e: chisel3.BindingException =>
-      SimUtils.parsePorts(hBits, alsoFlattenRVPorts = false)
-  }
+  private lazy val (ins, outs, rvIns, rvOuts) =
+    try {
+      SimUtils.parsePorts(targetPortProto, alsoFlattenRVPorts = false)
+    } catch {
+      case e: chisel3.BindingException =>
+        SimUtils.parsePorts(hBits, alsoFlattenRVPorts = false)
+    }
 
-
-  def inputWireChannels(): Seq[(Data, String)] = ins
-  def outputWireChannels(): Seq[(Data, String)] = outs
-  def inputRVChannels(): Seq[(ReadyValidIO[Data], String)] = rvIns
+  def inputWireChannels(): Seq[(Data, String)]              = ins
+  def outputWireChannels(): Seq[(Data, String)]             = outs
+  def inputRVChannels(): Seq[(ReadyValidIO[Data], String)]  = rvIns
   def outputRVChannels(): Seq[(ReadyValidIO[Data], String)] = rvOuts
-  lazy val name2Wire = Map((ins ++ outs).map({ case (wire, name) => name -> wire }):_*)
-  lazy val name2ReadyValid = Map((rvIns ++ rvOuts).map({ case (wire, name) => name -> wire }):_*)
+  lazy val name2Wire                                        = Map((ins ++ outs).map({ case (wire, name) => name -> wire }): _*)
+  lazy val name2ReadyValid                                  = Map((rvIns ++ rvOuts).map({ case (wire, name) => name -> wire }): _*)
 
   def bridgeChannels(): Seq[BridgeChannel] = {
     val clockRT = getClock.toNamed.toTarget
 
     inputWireChannels().map({ case (field, chName) =>
       PipeBridgeChannel(
-          chName,
-          clock = clockRT,
-          sinks = Seq(),
-          sources = Seq(field.toNamed.toTarget),
-          latency = 1
+        chName,
+        clock   = clockRT,
+        sinks   = Seq(),
+        sources = Seq(field.toNamed.toTarget),
+        latency = 1,
       )
     }) ++
-    outputWireChannels().map({ case (field, chName) =>
-      PipeBridgeChannel(
+      outputWireChannels().map({ case (field, chName) =>
+        PipeBridgeChannel(
           chName,
-          clock = clockRT,
-          sinks = Seq(field.toNamed.toTarget),
+          clock   = clockRT,
+          sinks   = Seq(field.toNamed.toTarget),
           sources = Seq(),
-          latency = 1
-      )
-    }) ++
-    rvIns.map({ case (field, chName) =>
-      val (fwdChName, revChName)  = SimUtils.rvChannelNamePair(chName)
-      val validTarget = field.valid.toNamed.toTarget
-      ReadyValidBridgeChannel(
-        fwdChName,
-        revChName,
-        clock = getClock.toNamed.toTarget,
-        sinks = Seq(),
-        sources = SimUtils.lowerAggregateIntoLeafTargets(field.bits) ++ Seq(validTarget),
-        valid = validTarget,
-        ready = field.ready.toNamed.toTarget
-      )
-    }) ++
-    rvOuts.map({ case (field, chName) =>
-      val (fwdChName, revChName)  = SimUtils.rvChannelNamePair(chName)
-      val validTarget = field.valid.toNamed.toTarget
-      ReadyValidBridgeChannel(
-        fwdChName,
-        revChName,
-        clock = getClock.toNamed.toTarget,
-        sinks = SimUtils.lowerAggregateIntoLeafTargets(field.bits) ++ Seq(validTarget),
-        sources = Seq(),
-        valid = validTarget,
-        ready = field.ready.toNamed.toTarget
-      )
-    })
+          latency = 1,
+        )
+      }) ++
+      rvIns.map({ case (field, chName) =>
+        val (fwdChName, revChName) = SimUtils.rvChannelNamePair(chName)
+        val validTarget            = field.valid.toNamed.toTarget
+        ReadyValidBridgeChannel(
+          fwdChName,
+          revChName,
+          clock   = getClock.toNamed.toTarget,
+          sinks   = Seq(),
+          sources = SimUtils.lowerAggregateIntoLeafTargets(field.bits) ++ Seq(validTarget),
+          valid   = validTarget,
+          ready   = field.ready.toNamed.toTarget,
+        )
+      }) ++
+      rvOuts.map({ case (field, chName) =>
+        val (fwdChName, revChName) = SimUtils.rvChannelNamePair(chName)
+        val validTarget            = field.valid.toNamed.toTarget
+        ReadyValidBridgeChannel(
+          fwdChName,
+          revChName,
+          clock   = getClock.toNamed.toTarget,
+          sinks   = SimUtils.lowerAggregateIntoLeafTargets(field.bits) ++ Seq(validTarget),
+          sources = Seq(),
+          valid   = validTarget,
+          ready   = field.ready.toNamed.toTarget,
+        )
+      })
   }
 }
 

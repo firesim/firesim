@@ -431,7 +431,7 @@ class FPGATop(implicit p: Parameters) extends LazyModule with HasWidgets {
 
 object HostPortIOConnectChannels2Port {
   def apply[T <: Data](hp: HostPortIO[T], bridgeAnno: BridgeIOAnnotation, targetIO: TargetChannelIO): Unit = {
-    val local2globalName = bridgeAnno.channelMapping.toMap
+    val local2globalName                 = bridgeAnno.channelMapping.toMap
     val toHostChannels, fromHostChannels = mutable.ArrayBuffer[ReadyValidIO[Data]]()
 
     // Bind payloads to HostPort, and collect channels
@@ -449,11 +449,11 @@ object HostPortIOConnectChannels2Port {
 
     for ((field, localName) <- hp.inputRVChannels()) {
       val (fwdChPort, revChPort) = targetIO.rvOutputPortMap(local2globalName(localName + "_fwd"))
-      field.valid := fwdChPort.bits.valid
+      field.valid    := fwdChPort.bits.valid
       revChPort.bits := field.ready
 
       import chisel3.ExplicitCompileOptions.NotStrict
-      field.bits  := fwdChPort.bits.bits
+      field.bits := fwdChPort.bits.bits
 
       fromHostChannels += revChPort
       toHostChannels += fwdChPort
@@ -462,7 +462,7 @@ object HostPortIOConnectChannels2Port {
     for ((field, localName) <- hp.outputRVChannels()) {
       val (fwdChPort, revChPort) = targetIO.rvInputPortMap(local2globalName(localName + "_fwd"))
       fwdChPort.bits.valid := field.valid
-      field.ready := revChPort.bits
+      field.ready          := revChPort.bits
 
       import chisel3.ExplicitCompileOptions.NotStrict
       fwdChPort.bits.bits := field.bits
@@ -470,16 +470,16 @@ object HostPortIOConnectChannels2Port {
       toHostChannels += revChPort
     }
 
-    hp.toHost.hValid := toHostChannels.foldLeft(true.B)(_ && _.valid)
+    hp.toHost.hValid   := toHostChannels.foldLeft(true.B)(_ && _.valid)
     hp.fromHost.hReady := fromHostChannels.foldLeft(true.B)(_ && _.ready)
 
     // Dequeue from toHost channels only if all toHost tokens are available,
     // and the bridge consumes it
-    val toHostHelper   = DecoupledHelper((hp.toHost.hReady +: toHostChannels.map(_.valid)).toSeq:_*)
+    val toHostHelper   = DecoupledHelper((hp.toHost.hReady +: toHostChannels.map(_.valid)).toSeq: _*)
     toHostChannels.foreach(ch => ch.ready := toHostHelper.fire(ch.valid))
 
     // Enqueue into the toHost channels only once all toHost channels can accept the token
-    val fromHostHelper = DecoupledHelper((hp.fromHost.hValid +: fromHostChannels.map(_.ready)).toSeq:_*)
+    val fromHostHelper = DecoupledHelper((hp.fromHost.hValid +: fromHostChannels.map(_.ready)).toSeq: _*)
     fromHostChannels.foreach(ch => ch.valid := fromHostHelper.fire(ch.ready))
 
     // Tie off the target clock; these should be unused in the BridgeModule
@@ -548,8 +548,8 @@ class FPGATopImp(outer: FPGATop)(implicit p: Parameters) extends LazyModuleImp(o
   // Instantiate bridge widgets.
   outer.bridgeModuleMap.map({ case (bridgeAnno, bridgeMod) =>
     bridgeMod.module.hPort match {
-      case hp: ClockTokenVector => hp.connectChannels2Port(bridgeAnno, simIo)
-      case hp: HostPortIO[_] => HostPortIOConnectChannels2Port(hp, bridgeAnno, simIo)
+      case hp: ClockTokenVector      => hp.connectChannels2Port(bridgeAnno, simIo)
+      case hp: HostPortIO[_]         => HostPortIOConnectChannels2Port(hp, bridgeAnno, simIo)
       case hp: ChannelizedHostPortIO => ChannelizedHostPortIOConnectChannels2Port(hp, bridgeAnno, simIo)
     }
   })
@@ -717,8 +717,6 @@ class FPGATopImp(outer: FPGATop)(implicit p: Parameters) extends LazyModuleImp(o
       printMacro(prefix, "ADDR_BITS", addrBits)
       printMacro(prefix, "DATA_BITS", dataBits)
     }
-
-
 
     printAXIConfig("CTRL", confCtrl)
     confCPUManaged.foreach { conf =>

@@ -173,20 +173,20 @@ trait GroupAndInsertWrapperPass {
 
           insts(gidx).append(s)
           EmptyStmt
-        case s: DefInstance                                                                         => s
-        case s: DefWire                                                                             => s
-        case s: DefRegister                                                                         => s
-        case s: DefMemory                                                                           => s
-        case s: DefNode                                                                             => s
-        case s: Conditionally                                                                       => s
-        case s: PartialConnect                                                                      => s
-        case s: Connect                                                                             => s
-        case s: IsInvalid                                                                           => s
-        case s: Attach                                                                              => s
-        case s: Stop                                                                                => s
-        case s: Print                                                                               => s
-        case s: Verification                                                                        => s
-        case s                                                                                      => findAndRemoveModuleInstances(s, insts)
+        case s: DefInstance                                                                     => s
+        case s: DefWire                                                                         => s
+        case s: DefRegister                                                                     => s
+        case s: DefMemory                                                                       => s
+        case s: DefNode                                                                         => s
+        case s: Conditionally                                                                   => s
+        case s: PartialConnect                                                                  => s
+        case s: Connect                                                                         => s
+        case s: IsInvalid                                                                       => s
+        case s: Attach                                                                          => s
+        case s: Stop                                                                            => s
+        case s: Print                                                                           => s
+        case s: Verification                                                                    => s
+        case s                                                                                  => findAndRemoveModuleInstances(s, insts)
       }
     }
 

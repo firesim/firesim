@@ -2,8 +2,8 @@
 
 package firesim.lib.bridgeutils
 
-import chisel3.{Record}
-import chisel3.experimental.{BaseModule, ChiselAnnotation, annotate}
+import chisel3.Record
+import chisel3.experimental.{annotate, BaseModule, ChiselAnnotation}
 
 /* Bridge
  *
@@ -14,25 +14,27 @@ import chisel3.experimental.{BaseModule, ChiselAnnotation, annotate}
 trait Bridge[HostPortType <: Record with HasChannels] {
   self: BaseModule =>
   def constructorArg: Option[_ <: AnyRef]
-  def bridgeIO: HostPortType
-  def moduleName: String
+  def bridgeIO:       HostPortType
+  def moduleName:     String
 
   def generateAnnotations(): Unit = {
     // Generate the bridge annotation
-    annotate(new ChiselAnnotation { def toFirrtl = {
+    annotate(new ChiselAnnotation {
+      def toFirrtl = {
         BridgeAnnotation(
           self.toNamed.toTarget,
           bridgeIO.bridgeChannels(),
-          widgetClass = moduleName,
-          widgetConstructorKey = constructorArg)
+          widgetClass          = moduleName,
+          widgetConstructorKey = constructorArg,
+        )
       }
     })
   }
 }
 
 trait HasChannels {
-  /**
-    * Returns a list of channel descriptors.
+
+  /** Returns a list of channel descriptors.
     */
   def bridgeChannels(): Seq[BridgeChannel]
 }

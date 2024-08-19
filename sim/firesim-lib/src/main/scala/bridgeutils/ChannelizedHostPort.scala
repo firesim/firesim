@@ -9,23 +9,18 @@ import chisel3.util._
 import chisel3.experimental.Direction
 import chisel3.experimental.DataMirror.directionOf
 
-/**
-  * A utility trait for translating chisel references into unidirected FCCAs
-  * This becomes more useful when there are channel types.
-  *
+/** A utility trait for translating chisel references into unidirected FCCAs This becomes more useful when there are
+  * channel types.
   */
 case class PipeChannelMetadata(field: Data, clock: Clock, bridgeSunk: Boolean, latency: Int = 0) {
   def fieldRTs = Seq(field.toTarget)
-  def clockRT = clock.toTarget
+  def clockRT  = clock.toTarget
   // TODO: AJG: Figure out
   //def chInfo = midas.passes.fame.PipeChannel(latency)
 }
 
-/**
-  * A host-side bridge interface trait that permits finer-grained control over
-  * channel definition versus [[HostPortIO]]. Required for describing bridges
-  * that are combinationally coupled to the target.
-  *
+/** A host-side bridge interface trait that permits finer-grained control over channel definition versus [[HostPortIO]].
+  * Required for describing bridges that are combinationally coupled to the target.
   */
 trait ChannelizedHostPortIO extends HasChannels { this: Record =>
   // All channels in a bridge are "tokenized" on the positive edge of a single
@@ -43,42 +38,42 @@ trait ChannelizedHostPortIO extends HasChannels { this: Record =>
   val channels = mutable.ArrayBuffer[(Data, ChannelType[_ <: Data], PipeChannelMetadata)]()
 
   // These will only be called after the record has been finalized.
-  def reverseElementMap = elements.map({ case (chName, chField) => chField -> chName  }).toMap
+  def reverseElementMap = elements.map({ case (chName, chField) => chField -> chName }).toMap
 
   private def getLeafDirs(token: Data): Seq[Direction] = token match {
-    case c: Clock => Seq(directionOf(c))
-    case b: Record => b.elements.flatMap({ case (_, e) => getLeafDirs(e)}).toSeq
+    case c: Clock  => Seq(directionOf(c))
+    case b: Record => b.elements.flatMap({ case (_, e) => getLeafDirs(e) }).toSeq
     case v: Vec[_] => v.flatMap(getLeafDirs)
-    case b: Bits => Seq(directionOf(b))
+    case b: Bits   => Seq(directionOf(b))
   }
 
   private def checkFieldDirection(field: Data, bridgeSunk: Boolean): Unit = {
-    val directions = getLeafDirs(field)
+    val directions       = getLeafDirs(field)
     val isUnidirectional = directions.zip(directions.tail).map({ case (a, b) => a == b }).foldLeft(true)(_ && _)
     require(isUnidirectional, "Token channels must have a unidirectioned payload")
-    val channelDir = if (bridgeSunk) Direction.Input else Direction.Output
-    require(directions.head == channelDir,
-      s"Direction of target fields ${directions.head} must match direction of requested channel.")
+    val channelDir       = if (bridgeSunk) Direction.Input else Direction.Output
+    require(
+      directions.head == channelDir,
+      s"Direction of target fields ${directions.head} must match direction of requested channel.",
+    )
   }
 
   // Simplifying assumption: if the user wants to aggregate a bunch of wires
   // into a single channel they should aggregate them into a Bundle on their record
   private def channelField[T <: Data](direction: Direction, field: T): ChannelType[T] = {
     val ch = direction match {
-      case Direction.Input => Flipped(Decoupled(field.cloneType))
+      case Direction.Input  => Flipped(Decoupled(field.cloneType))
       case Direction.Output => Decoupled(field.cloneType)
-      case _ => throw new Exception("Channel direction must be Input or Output")
+      case _                => throw new Exception("Channel direction must be Input or Output")
     }
     ch
   }
 
-  /**
-    * Marks an input to the bridge as being a distinct channel. It will become a
-    * bridge-sunk ready-valid interface on this host port definition, with the
-    * target datatype as its payload.
+  /** Marks an input to the bridge as being a distinct channel. It will become a bridge-sunk ready-valid interface on
+    * this host port definition, with the target datatype as its payload.
     *
-    * @param field A field in the target interface that corresponds to a channel.F
-    *
+    * @param field
+    *   A field in the target interface that corresponds to a channel.F
     */
   def InputChannel[A <: Data](field: A): ChannelType[A] = {
     val ch = channelField(Direction.Input, field)
@@ -86,12 +81,11 @@ trait ChannelizedHostPortIO extends HasChannels { this: Record =>
     ch
   }
 
-  /**
-    * The reverse of [[ChannelizedHostPortIO.InputChannel]], in that it marks
-    * an output to the bridge as being a distinct channel.
+  /** The reverse of [[ChannelizedHostPortIO.InputChannel]], in that it marks an output to the bridge as being a
+    * distinct channel.
     *
-    * @param field A field in the target interface that corresponds to a channel.
-    *
+    * @param field
+    *   A field in the target interface that corresponds to a channel.
     */
   def OutputChannel[A <: Data](field: A): ChannelType[A] = {
     val ch = channelField(Direction.Output, field)

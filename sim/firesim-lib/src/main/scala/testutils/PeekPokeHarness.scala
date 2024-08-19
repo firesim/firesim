@@ -15,8 +15,12 @@ class PeekPokeHarness(dutGen: () => Module) extends RawModule {
 
   withClockAndReset(clock, reset) {
     val dut = Module(dutGen())
-    PeekPokeBridge(clock, reset, chisel3.experimental.DataMirror.modulePorts(dut).filterNot {
-      case (name, _) => name == "clock" | name == "reset"
-    }:_*)
+    PeekPokeBridge(
+      clock,
+      reset,
+      chisel3.experimental.DataMirror.modulePorts(dut).filterNot { case (name, _) =>
+        name == "clock" | name == "reset"
+      }: _*
+    )
   }
 }

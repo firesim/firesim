@@ -70,12 +70,10 @@ class PlusArgsBridgeHostIO(
   * @param params
   *   Describes the name, width and default PlusArg value
   */
-class PlusArgsBridge(params: PlusArgsBridgeParams)
-    extends BlackBox
-    with Bridge[PlusArgsBridgeHostIO] {
+class PlusArgsBridge(params: PlusArgsBridgeParams) extends BlackBox with Bridge[PlusArgsBridgeHostIO] {
   val moduleName = "PlusArgsBridgeModule"
-  val io       = IO(new PlusArgsBridgeTargetIO(params))
-  val bridgeIO = new PlusArgsBridgeHostIO(params)(io)
+  val io         = IO(new PlusArgsBridgeTargetIO(params))
+  val bridgeIO   = new PlusArgsBridgeHostIO(params)(io)
 
   val constructorArg = Some(params)
 

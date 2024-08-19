@@ -151,10 +151,10 @@ abstract class WidgetImp(wrapper: Widget) extends LazyModuleImp(wrapper) {
     val shadowReg   = Reg(default.cloneType)
     shadowReg.suggestName(s"${name}_mmreg")
     Seq.tabulate((default.getWidth + ctrlWidth - 1) / ctrlWidth)({ i =>
-        val msb   = math.min(ctrlWidth * (i + 1) - 1, default.getWidth - 1)
-        val slice = shadowReg(msb, ctrlWidth * i)
-        attach(slice, s"${name}_$i", ReadOnly, substruct)
-      })
+      val msb   = math.min(ctrlWidth * (i + 1) - 1, default.getWidth - 1)
+      val slice = shadowReg(msb, ctrlWidth * i)
+      attach(slice, s"${name}_$i", ReadOnly, substruct)
+    })
     // When a read request is made of the low order address snapshot the entire register
     val latchEnable = WireInit(false.B).suggestName(s"${name}_latchEnable")
     attach(latchEnable, s"${name}_latch", WriteOnly, substruct)

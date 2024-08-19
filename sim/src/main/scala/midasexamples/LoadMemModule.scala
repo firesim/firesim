@@ -123,10 +123,8 @@ class LoadMemDUT(implicit p: Parameters) extends LazyModule {
     io <> reader.module.io
 
     for ((axi4, edge) <- slave.in) {
-      val nastiKey = NastiParameters(axi4.r.bits.data.getWidth,
-                                     axi4.ar.bits.addr.getWidth,
-                                     axi4.ar.bits.id.getWidth)
-      val nastiIo = Wire(new NastiIO(nastiKey))
+      val nastiKey = NastiParameters(axi4.r.bits.data.getWidth, axi4.ar.bits.addr.getWidth, axi4.ar.bits.id.getWidth)
+      val nastiIo  = Wire(new NastiIO(nastiKey))
       junctions.AXI4NastiAssigner.toNasti(nastiIo, axi4)
       FASEDBridge(
         clock,

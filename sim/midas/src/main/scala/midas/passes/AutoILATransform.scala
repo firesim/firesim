@@ -229,7 +229,7 @@ object AutoILATransform extends Transform with DependencyAPIMigration {
     def rewireConnects(s: Statement): Statement = s.map(rewireConnects) match {
       case c @ Connect(_, WRef(portName, _, _, _), _) if newPortNames.contains(portName) =>
         c.copy(loc = SubField(WRef(ilaWrapperInstName), portName))
-      case o                                                                               => o
+      case o                                                                             => o
     }
     val rewiredTop = newTopWithOldPorts.copy(
       body = Block(ilaWrapperInst, newTopWithOldPorts.body.map(rewireConnects))

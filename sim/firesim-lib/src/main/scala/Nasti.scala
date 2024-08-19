@@ -5,46 +5,41 @@ package firesim.lib.nasti
 import chisel3._
 import chisel3.util.{Decoupled, MuxLookup}
 
-import scala.math.{max}
+import scala.math.max
 
 case class NastiParameters(dataBits: Int, addrBits: Int, idBits: Int)
 
 // Explicitly chose to not use implicits s.t. it is clear where parameters are propagating.
 trait HasNastiParameters {
   val nastiParams: NastiParameters
-  val nastiXDataBits = nastiParams.dataBits
+  val nastiXDataBits   = nastiParams.dataBits
   val nastiWStrobeBits = nastiXDataBits / 8
-  val nastiXAddrBits = nastiParams.addrBits
-  val nastiWIdBits = nastiParams.idBits
-  val nastiRIdBits = nastiParams.idBits
-  val nastiXIdBits = max(nastiWIdBits, nastiRIdBits)
-  val nastiXUserBits = 1
-  val nastiAWUserBits = nastiXUserBits
-  val nastiWUserBits = nastiXUserBits
-  val nastiBUserBits = nastiXUserBits
-  val nastiARUserBits = nastiXUserBits
-  val nastiRUserBits = nastiXUserBits
-  val nastiXLenBits = 8
-  val nastiXSizeBits = 3
-  val nastiXBurstBits = 2
-  val nastiXCacheBits = 4
-  val nastiXProtBits = 3
-  val nastiXQosBits = 4
+  val nastiXAddrBits   = nastiParams.addrBits
+  val nastiWIdBits     = nastiParams.idBits
+  val nastiRIdBits     = nastiParams.idBits
+  val nastiXIdBits     = max(nastiWIdBits, nastiRIdBits)
+  val nastiXUserBits   = 1
+  val nastiAWUserBits  = nastiXUserBits
+  val nastiWUserBits   = nastiXUserBits
+  val nastiBUserBits   = nastiXUserBits
+  val nastiARUserBits  = nastiXUserBits
+  val nastiRUserBits   = nastiXUserBits
+  val nastiXLenBits    = 8
+  val nastiXSizeBits   = 3
+  val nastiXBurstBits  = 2
+  val nastiXCacheBits  = 4
+  val nastiXProtBits   = 3
+  val nastiXQosBits    = 4
   val nastiXRegionBits = 4
-  val nastiXRespBits = 2
-  def bytesToXSize(bytes: UInt) = MuxLookup(bytes, "b111".U, Array(
-      1.U -> 0.U,
-      2.U -> 1.U,
-      4.U -> 2.U,
-      8.U -> 3.U,
-     16.U -> 4.U,
-     32.U -> 5.U,
-     64.U -> 6.U,
-    128.U -> 7.U))
+  val nastiXRespBits   = 2
+  def bytesToXSize(bytes: UInt) = MuxLookup(
+    bytes,
+    "b111".U,
+    Array(1.U -> 0.U, 2.U -> 1.U, 4.U -> 2.U, 8.U -> 3.U, 16.U -> 4.U, 32.U -> 5.U, 64.U -> 6.U, 128.U -> 7.U),
+  )
 }
 
-abstract class NastiBundle(val nastiParams: NastiParameters) extends Bundle
-  with HasNastiParameters
+abstract class NastiBundle(val nastiParams: NastiParameters) extends Bundle with HasNastiParameters
 
 abstract class NastiChannel(nastiParams: NastiParameters) extends NastiBundle(nastiParams)
 abstract class NastiMasterToSlaveChannel(nastiParams: NastiParameters) extends NastiChannel(nastiParams)
@@ -81,8 +76,9 @@ trait HasNastiMetadata extends HasNastiParameters {
   val region = UInt(nastiXRegionBits.W)
 }
 
-class NastiAddressChannel(nastiParams: NastiParameters) extends NastiMasterToSlaveChannel(nastiParams)
-  with HasNastiMetadata
+class NastiAddressChannel(nastiParams: NastiParameters)
+    extends NastiMasterToSlaveChannel(nastiParams)
+    with HasNastiMetadata
 
 class NastiResponseChannel(nastiParams: NastiParameters) extends NastiSlaveToMasterChannel(nastiParams) {
   val resp = UInt(nastiXRespBits.W)
@@ -98,8 +94,9 @@ trait HasNastiData extends HasNastiParameters {
   val last = Bool()
 }
 
-class NastiWriteDataChannel(nastiParams: NastiParameters) extends NastiMasterToSlaveChannel(nastiParams)
-  with HasNastiData {
+class NastiWriteDataChannel(nastiParams: NastiParameters)
+    extends NastiMasterToSlaveChannel(nastiParams)
+    with HasNastiData {
   val id   = UInt(nastiWIdBits.W)
   val strb = UInt(nastiWStrobeBits.W)
   val user = UInt(nastiWUserBits.W)
@@ -115,8 +112,7 @@ class NastiReadAddressChannel(nastiParams: NastiParameters) extends NastiAddress
   val user = UInt(nastiARUserBits.W)
 }
 
-class NastiReadDataChannel(nastiParams: NastiParameters) extends NastiResponseChannel(nastiParams)
-  with HasNastiData {
+class NastiReadDataChannel(nastiParams: NastiParameters) extends NastiResponseChannel(nastiParams) with HasNastiData {
   val id   = UInt(nastiRIdBits.W)
   val user = UInt(nastiRUserBits.W)
 }

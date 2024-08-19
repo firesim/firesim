@@ -270,11 +270,11 @@ class SplitModulesByPortsStandalone extends Transform with DependencyAPIMigratio
           val ref = baseRef(expr)._2
           assert(ref.isDefined, s"BaseRef of IsInvalid is not defined yet ${s}")
           childStmts(ref.get).add(s)
-        case Verification(_, _, _, _, _, _)             =>
+        case Verification(_, _, _, _, _, _)                 =>
           ()
-        case Stop(_, _, _, _)                           =>
+        case Stop(_, _, _, _)                               =>
           ()
-        case Print(_)                                   =>
+        case Print(_)                                       =>
           ()
         case Block(s)                                       =>
           s.foreach(onStmt(_))
@@ -675,7 +675,7 @@ class SplitModulesByPortsStandalone extends Transform with DependencyAPIMigratio
           } else {
             newbdy.append(s)
           }
-        case s                                                     => newbdy.append(s)
+        case s                                                  => newbdy.append(s)
       }
     )
     m.copy(body = Block(newbdy.toSeq))

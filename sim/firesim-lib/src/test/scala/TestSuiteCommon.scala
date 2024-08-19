@@ -31,7 +31,7 @@ abstract class TestSuiteBase extends org.scalatest.flatspec.AnyFlatSpec {
   def targetName:     String
   def targetConfigs: String         = "NoConfig"
   def platformMakeArgs: Seq[String] = Seq()
-  def extraMakeArgs: Seq[String] = Seq()
+  def extraMakeArgs: Seq[String]    = Seq()
 
   // TODO: Unsure why this doesn't use the env. FIRESIM_STANDALONE variable?
   // maybe move everything to use this to not rely on env. var?
@@ -41,13 +41,13 @@ abstract class TestSuiteBase extends org.scalatest.flatspec.AnyFlatSpec {
     // check if we are running out of chipyard by checking if the chipyard-symlink exists and works
     val firesimAsTopDir = new File(cwd, "sims/firesim-staging/firesim-symlink/sim")
     // get dir and resolve it to an abs. path. (using getAbsolutePath on File doesn't really resolve symlinks)
-    val filedir = if (firesimAsTopDir.exists()) {
+    val filedir         = if (firesimAsTopDir.exists()) {
       firesimAsTopDir
     } else {
       new File(cwd)
     }
     // convert to path to use toRealPath (which does resolve symlinks)
-    val pathdir = filedir.toPath().toRealPath()
+    val pathdir         = filedir.toPath().toRealPath()
     // convert back to File to keep same API
     pathdir.toFile()
   }

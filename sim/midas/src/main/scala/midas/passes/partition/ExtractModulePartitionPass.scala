@@ -14,7 +14,7 @@ import midas.stage._
 import midas.targetutils._
 import midas._
 
-import firesim.lib.bridges.{PeekPokeKey, ClockParameters, ResetPulseBridgeParameters}
+import firesim.lib.bridges.{ClockParameters, PeekPokeKey, ResetPulseBridgeParameters}
 import firesim.lib.bridgeutils._
 import firesim.lib.bridgeutils.SerializationUtils._
 

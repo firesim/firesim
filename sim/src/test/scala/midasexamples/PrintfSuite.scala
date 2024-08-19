@@ -11,10 +11,10 @@ import firesim.BasePlatformConfig
 
 abstract class PrintfSuite(
   targetName:         String,
-  targetConfigs:      String                  = "NoConfig",
-  platformConfigs:    Seq[Class[_ <: Config]] = Seq(),
-  basePlatformConfig: BasePlatformConfig      = BaseConfigs.F1,
-  simulationArgs:     Seq[String]             = Seq(),
+  targetConfigs:      String             = "NoConfig",
+  platformConfigs:    Seq[String]        = Seq(),
+  basePlatformConfig: BasePlatformConfig = BaseConfigs.F1,
+  simulationArgs:     Seq[String]        = Seq(),
 ) extends TutorialSuite(targetName, targetConfigs, platformConfigs, basePlatformConfig, simulationArgs) {
 
   /** Check that we are extracting from the desired ROI by checking that the bridge-inserted cycle prefix matches the
@@ -115,7 +115,7 @@ class AutoCounterPrintfF1Test
     extends PrintfSuite(
       "AutoCounterPrintfModule",
       simulationArgs  = Seq("+print-file=synthprinttest.out"),
-      platformConfigs = Seq(classOf[AutoCounterPrintf]),
+      platformConfigs = Seq("AutoCounterPrintf"),
     ) {
   override def addChecks(backend: String) {
     diffSynthesizedLog(backend, "synthprinttest.out0", stdoutPrefix = "AUTOCOUNTER_PRINT CYCLE", synthPrefix = "CYCLE")
