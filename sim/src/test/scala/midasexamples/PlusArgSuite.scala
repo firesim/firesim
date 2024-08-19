@@ -15,13 +15,13 @@ class PlusArgsGroup68Bit
     extends TutorialSuite("PlusArgsModule", "PlusArgsModuleTestConfigGroup68Bit")
     with PlusArgsKey {
 
-  override def defineTests(backend: String, debug: Boolean) {
+  override def defineTests(backend: String, debug: Boolean): Unit = {
     it should "provide the correct default value, 3 slice" in {
       assert(run(backend, debug, args = Seq(getKey(0, 0))) == 0)
     }
 
     it should "accept an int from the command line" in {
-      assert(run(backend, debug, args = Seq(s"+plusar_v=3", getKey(0, 1))) == 0)
+      assert(run(backend, debug, args = Seq("+plusar_v=3", getKey(0, 1))) == 0)
       assert(run(backend, debug, args = Seq(s"+plusar_v=${BigInt("f00000000", 16)}", getKey(0, 2))) == 0)
       assert(run(backend, debug, args = Seq(s"+plusar_v=${BigInt("f0000000000000000", 16)}", getKey(0, 3))) == 0)
     }
@@ -35,7 +35,7 @@ class PlusArgsGroup68Bit
 class PlusArgsGroup29Bit
     extends TutorialSuite("PlusArgsModule", "PlusArgsModuleTestConfigGroup29Bit")
     with PlusArgsKey {
-  override def defineTests(backend: String, debug: Boolean) {
+  override def defineTests(backend: String, debug: Boolean): Unit = {
     it should "provide the correct default value, 1 slice" in {
       assert(run(backend, debug, args = Seq(getKey(1, 0))) == 0)
     }

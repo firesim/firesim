@@ -2,13 +2,9 @@
 
 package firesim.midasexamples
 
-import java.io.File
-import scala.util.matching.Regex
-import scala.io.Source
 import org.scalatest.Suites
 import org.scalatest.matchers.should._
 
-import org.chipsalliance.cde.config.Config
 import firesim.{BasePlatformConfig, TestSuiteCommon}
 
 object BaseConfigs {
@@ -25,7 +21,7 @@ abstract class TutorialSuite(
 ) extends TestSuiteCommon("midasexamples")
     with Matchers {
 
-  override def defineTests(backend: String, debug: Boolean) {
+  override def defineTests(backend: String, debug: Boolean): Unit = {
     val prefix   = if (shouldPass) "pass in " else "fail "
     val wavesStr = if (debug) " with waves enabled" else ""
     val argStr   = " with args: " + simulationArgs.mkString(" ")

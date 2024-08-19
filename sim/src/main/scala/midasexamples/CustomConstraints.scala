@@ -3,6 +3,7 @@
 package firesim.midasexamples
 
 import midas.targetutils.xdc._
+import org.chipsalliance.cde.config.Parameters
 
 class CustomConstraintsDUT extends ShiftRegisterDUT {
   XDC(XDCFiles.Synthesis, "constrain_synth1")
@@ -11,4 +12,5 @@ class CustomConstraintsDUT extends ShiftRegisterDUT {
   XDC(XDCFiles.Implementation, "constrain_impl2 [reg {}]", r1)
 }
 
-class CustomConstraints extends firesim.lib.testutils.PeekPokeHarness(() => new CustomConstraintsDUT)
+class CustomConstraints(implicit p: Parameters)
+    extends firesim.lib.testutils.PeekPokeHarness(() => new CustomConstraintsDUT)

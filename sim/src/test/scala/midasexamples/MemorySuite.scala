@@ -7,11 +7,7 @@ import java.io._
 import org.scalatest.Suites
 import org.scalatest.matchers.should._
 
-import org.chipsalliance.cde.config.Config
-import org.chipsalliance.cde.config.Parameters
-import org.chipsalliance.cde.config._
-
-import firesim.{BasePlatformConfig, TestSuiteCommon}
+import firesim.BasePlatformConfig
 
 abstract class LoadMemTest(
   override val basePlatformConfig: BasePlatformConfig,
@@ -38,7 +34,7 @@ abstract class LoadMemTest(
     * @param debug
     *   When true, captures waves from the simulation
     */
-  override def defineTests(backend: String, debug: Boolean) {
+  override def defineTests(backend: String, debug: Boolean): Unit = {
     it should "read data provided by LoadMem" in {
       // Generate a random string spanning 2 sectors with a fixed seed.
       val numLines = 128

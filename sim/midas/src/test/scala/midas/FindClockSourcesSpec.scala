@@ -1,10 +1,8 @@
-
 package goldengate.tests
 
 import midas.passes._
 
 import firrtl._
-import firrtl.ir._
 import firrtl.annotations._
 import firrtl.stage.transforms.Compiler
 import firrtl.stage.Forms
@@ -31,7 +29,7 @@ class FindClockSourceSpec extends LowTransformSpec  {
       finalState
    }
 
-   "FindClockSources" should s"find sources for submodule clocks" in {
+   "FindClockSources" should "find sources for submodule clocks" in {
       val input =
          """circuit Top :
            |  module Top :
@@ -49,7 +47,7 @@ class FindClockSourceSpec extends LowTransformSpec  {
       executeAnnosOnly(input, annos, checkAnnos)
     }
 
-   it should s"find sources that pass through other modules" in {
+   it should "find sources that pass through other modules" in {
       val input =
          """circuit Top :
            |  module Top :
@@ -73,7 +71,7 @@ class FindClockSourceSpec extends LowTransformSpec  {
       executeAnnosOnly(input, annos, checkAnnos)
     }
 
-   it should s"find sources for clocks at the root of the module hiearchy" in {
+   it should "find sources for clocks at the root of the module hiearchy" in {
       val input =
          """circuit Top :
            |  module Top :
@@ -89,7 +87,7 @@ class FindClockSourceSpec extends LowTransformSpec  {
       executeAnnosOnly(input, annos, checkAnnos)
    }
 
-   it should s"find sources for intermediate nodes in a chain of clock connections" in {
+   it should "find sources for intermediate nodes in a chain of clock connections" in {
       val input =
          """circuit Top :
            |  module Top :

@@ -6,7 +6,7 @@ import midas._
 import org.chipsalliance.cde.config._
 import junctions._
 
-import firesim.configs.{WithDefaultMemModel, WithWiringTransform}
+import firesim.configs.{WithDefaultMemModel, WithWiringTransform, MemModelKey}
 import midas.models.{LatencyPipeConfig, BaseParams}
 
 import firesim.lib.nasti.{NastiParameters}
@@ -39,7 +39,9 @@ class DefaultVitisConfig extends Config(
 )
 
 // used for PointerChaser testing
-class PointerChaserLPC extends LatencyPipeConfig(BaseParams(16, 16))
+class PointerChaserLPC extends Config((_, _, _) => {
+  case MemModelKey => new LatencyPipeConfig(BaseParams(16, 16))
+})
 class PointerChaserConfig extends Config((_, here, _) => {
   case MemSize => BigInt(1 << 30) // 1 GB
   case NMemoryChannels => 1
@@ -55,7 +57,9 @@ class AutoCounterPrintf extends Config((_, _, _) => {
 })
 
 // used for LoadMem testing
-class LoadMemLPC extends LatencyPipeConfig(BaseParams(maxReads=16, maxWrites=16, beatCounters=true, llcKey=None))
+class LoadMemLPC extends Config((_, _, _) => {
+  case MemModelKey => new LatencyPipeConfig(BaseParams(maxReads=16, maxWrites=16, beatCounters=true, llcKey=None))
+})
 class NoSynthAsserts extends Config((_, _, _) => {
   case SynthAsserts => false
 })

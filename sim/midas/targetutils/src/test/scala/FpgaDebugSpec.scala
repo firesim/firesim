@@ -2,7 +2,6 @@
 
 package midas.targetutils
 
-import org.scalatest._
 import org.scalatest.flatspec.AnyFlatSpec
 
 import chisel3._

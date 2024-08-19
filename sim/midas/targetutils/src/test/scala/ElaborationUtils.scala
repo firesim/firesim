@@ -50,7 +50,7 @@ trait ElaborationUtils { self: AnyFlatSpec =>
     * annotator croaks when used before the IO is still unbound, but not otherwise.
     *
     */
-  def checkBehaviorOnUnboundTargets[T <: Data](gen: =>T, annotator: T => Unit) { 
+  def checkBehaviorOnUnboundTargets[T <: Data](gen: =>T, annotator: T => Unit): Unit = { 
     it should "elaborate and compile correctly when annotating HW types" in {
       elaborate(new AnnotateHardwareModule(gen, annotator))
     }

@@ -3,7 +3,6 @@
 package firesim.midasexamples
 
 import java.io.File
-import org.chipsalliance.cde.config.Config
 import org.scalatest.Suites
 
 import firesim.TestSuiteUtil._
@@ -20,7 +19,7 @@ abstract class PrintfSuite(
   /** Check that we are extracting from the desired ROI by checking that the bridge-inserted cycle prefix matches the
     * target-side cycle prefix
     */
-  def checkPrintCycles(filename: String, startCycle: Int, endCycle: Int, linesPerCycle: Int) {
+  def checkPrintCycles(filename: String, startCycle: Int, endCycle: Int, linesPerCycle: Int): Unit = {
     val synthLogFile     = new File(genDir, s"/${filename}")
     val synthPrintOutput = extractLines(synthLogFile, prefix = "")
     val length           = synthPrintOutput.size
@@ -44,7 +43,7 @@ abstract class PrintfSuite(
     stdoutPrefix:     String = "SYNTHESIZED_PRINT ",
     synthPrefix:      String = "SYNTHESIZED_PRINT ",
     synthLinesToDrop: Int    = 0,
-  ) {
+  ): Unit = {
     val verilatedLogFile = new File(outDir, s"/${targetName}.${backend}.out")
     val synthLogFile     = new File(genDir, s"/${synthLog}")
     val verilatedOutput  = extractLines(verilatedLogFile, stdoutPrefix).sorted
@@ -54,7 +53,7 @@ abstract class PrintfSuite(
 
   def addChecks(backend: String): Unit
 
-  override def defineTests(backend: String, debug: Boolean) {
+  override def defineTests(backend: String, debug: Boolean): Unit = {
     it should "run in the simulator" in {
       assert(run(backend, debug, args = simulationArgs) == 0)
     }
@@ -70,7 +69,7 @@ abstract class PrintModuleTest(val platform: BasePlatformConfig)
       simulationArgs     = Seq("+print-no-cycle-prefix", "+print-file=synthprinttest.out"),
       basePlatformConfig = platform,
     ) {
-  override def addChecks(backend: String) {
+  override def addChecks(backend: String): Unit = {
     diffSynthesizedLog(backend, "synthprinttest.out0")
   }
 }
@@ -83,7 +82,7 @@ abstract class NarrowPrintfModuleTest(val platform: BasePlatformConfig)
       simulationArgs     = Seq("+print-no-cycle-prefix", "+print-file=synthprinttest.out"),
       basePlatformConfig = platform,
     ) {
-  override def addChecks(backend: String) {
+  override def addChecks(backend: String): Unit = {
     diffSynthesizedLog(backend, "synthprinttest.out0")
   }
 }
@@ -96,7 +95,7 @@ abstract class MulticlockPrintfModuleTest(val platform: BasePlatformConfig)
       simulationArgs     = Seq("+print-file=synthprinttest.out", "+print-no-cycle-prefix"),
       basePlatformConfig = platform,
     ) {
-  override def addChecks(backend: String) {
+  override def addChecks(backend: String): Unit = {
     diffSynthesizedLog(backend, "synthprinttest.out0")
     diffSynthesizedLog(
       backend,
@@ -117,14 +116,14 @@ class AutoCounterPrintfF1Test
       simulationArgs  = Seq("+print-file=synthprinttest.out"),
       platformConfigs = Seq("AutoCounterPrintf"),
     ) {
-  override def addChecks(backend: String) {
+  override def addChecks(backend: String): Unit = {
     diffSynthesizedLog(backend, "synthprinttest.out0", stdoutPrefix = "AUTOCOUNTER_PRINT CYCLE", synthPrefix = "CYCLE")
   }
 }
 
 class TriggerPredicatedPrintfF1Test
     extends PrintfSuite("TriggerPredicatedPrintf", simulationArgs = Seq("+print-file=synthprinttest.out")) {
-  override def addChecks(backend: String) {
+  override def addChecks(backend: String): Unit = {
     import TriggerPredicatedPrintfConsts._
     checkPrintCycles("synthprinttest.out0", assertTriggerCycle + 2, deassertTriggerCycle + 2, linesPerCycle = 2)
   }
@@ -139,7 +138,7 @@ class PrintfCycleBoundsTestBase(startCycle: Int, endCycle: Int)
         s"+print-end=${endCycle}",
       ),
     ) {
-  override def addChecks(backend: String) {
+  override def addChecks(backend: String): Unit = {
     checkPrintCycles("synthprinttest.out0", startCycle, endCycle, linesPerCycle = 4)
   }
 }
@@ -152,7 +151,7 @@ class PrintfGlobalResetConditionTest
       simulationArgs = Seq("+print-no-cycle-prefix", "+print-file=synthprinttest.out"),
     ) {
 
-  def assertSynthesizedLogEmpty(synthLog: String, backend: String) {
+  def assertSynthesizedLogEmpty(synthLog: String, backend: String): Unit = {
     s"${synthLog} for ${backend}" should "be empty" in {
       val synthLogFile = new File(genDir, s"/${synthLog}")
       val lines        = extractLines(synthLogFile, prefix = "")
@@ -160,7 +159,7 @@ class PrintfGlobalResetConditionTest
     }
   }
 
-  override def defineTests(backend: String, debug: Boolean) {
+  override def defineTests(backend: String, debug: Boolean): Unit = {
     it should s"run in the ${backend} simulator" in {
       assert(run(backend, debug, args = simulationArgs) == 0)
     }

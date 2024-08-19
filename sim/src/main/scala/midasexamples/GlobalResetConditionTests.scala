@@ -6,6 +6,7 @@ import chisel3._
 import midas.targetutils._
 import firesim.lib.bridges.{RationalClockBridge, PeekPokeBridge}
 import firesim.lib.bridgeutils.{RationalClock}
+import org.chipsalliance.cde.config.{Parameters}
 
 abstract class GlobalResetConditionTester(elaborator: (Bool) => Unit) extends RawModule {
   val clockBridge = RationalClockBridge(RationalClock("HalfRate", 1, 2))
@@ -37,16 +38,16 @@ abstract class GlobalResetConditionTester(elaborator: (Bool) => Unit) extends Ra
   val peekPokeBridge = PeekPokeBridge(clockA, reset)
 }
 
-class AssertGlobalResetCondition extends GlobalResetConditionTester(
+class AssertGlobalResetCondition(implicit p: Parameters) extends GlobalResetConditionTester(
   (inReset: Bool) => { assert(!inReset, "This should not fire\n") }
 )
 
-class PrintfGlobalResetCondition extends GlobalResetConditionTester(
+class PrintfGlobalResetCondition(implicit p: Parameters) extends GlobalResetConditionTester(
   (inReset: Bool) => {
     when(inReset) { SynthesizePrintf(printf("This should not print. %b\n", inReset)) }
 })
 
-class AutoCounterGlobalResetCondition extends GlobalResetConditionTester(
+class AutoCounterGlobalResetCondition(implicit p: Parameters) extends GlobalResetConditionTester(
   (inReset: Bool) => {
     // Extra wire to workaround https://github.com/firesim/firesim/issues/789
     val clockWire = WireDefault(Module.clock)

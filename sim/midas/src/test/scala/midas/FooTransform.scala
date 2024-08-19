@@ -9,7 +9,7 @@ package firrtlTests.options
   * classes as a workaround until this is fixed properly.
   */
 
-import firrtl.options.{RegisteredTransform, RegisteredLibrary, ShellOption}
+import firrtl.options.{RegisteredTransform, RegisteredLibrary}
 import firrtl.passes.Pass
 import firrtl.ir.Circuit
 
@@ -22,4 +22,3 @@ class BarLibrary extends RegisteredLibrary {
   def name: String = "Bar"
   val options = Seq()
 }
-

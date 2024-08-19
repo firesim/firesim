@@ -6,8 +6,6 @@ package midas.tests
 import midas.passes._
 import midas.targetutils.xdc._
 
-import firrtl._
-import firrtl.ir._
 import firrtl.annotations._
 import firrtl.testutils._
 

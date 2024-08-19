@@ -95,7 +95,6 @@ class DefaultConfig extends Config(
   new WithoutTLMonitors ++
   new WithDefaultFuzzer ++
   new WithDefaultMemPort ++
-  new WithDefaultMemModel ++
   new Config((site, _, _) => {
     case junctions.NastiKey => NastiParameters(site(BeatBytes) * 8, site(AddrBits), site(IDBits))
   })
@@ -117,8 +116,8 @@ class LLCDRAMConfig extends Config(
   * Host memory system fragments
   */
 
-class WithNHostIdBits(num: Int) extends Config((site, _, up) => {
-  case midas.core.HostMemChannelKey => up(midas.core.HostMemChannelKey, site).copy(idBits = num)
+class WithNHostIdBits(num: Int) extends Config((_, _, up) => {
+  case midas.core.HostMemChannelKey => up(midas.core.HostMemChannelKey).copy(idBits = num)
 })
 
 class ConstrainHostIds(idBits: Int) extends Config((_, _, _) => {
@@ -129,7 +128,9 @@ class ConstrainHostIds(idBits: Int) extends Config((_, _, _) => {
   * Complete platform / compiler configurations
   */
 
-class DefaultF1Config extends Config(new midas.F1Config)
+class DefaultF1Config extends Config(
+  new WithDefaultMemModel ++
+  new midas.F1Config)
 
 class SmallQuadChannelHostConfig extends Config(new Config((site, _, _) => {
   case midas.core.HostMemNumChannels => 4
@@ -137,9 +138,9 @@ class SmallQuadChannelHostConfig extends Config(new Config((site, _, _) => {
     size      = (BigInt(1) << site(AddrBits)) / site(midas.core.HostMemNumChannels),
     beatBytes = 8,
     idBits    = 6)
-}) ++ new midas.F1Config)
+}) ++ new DefaultF1Config)
 
 class ConstrainedIdHostConfig extends Config(
   new ConstrainHostIds(2) ++
   new WithNHostIdBits(2) ++
-  new midas.F1Config)
+  new DefaultF1Config)

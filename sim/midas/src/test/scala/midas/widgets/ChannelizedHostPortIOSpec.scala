@@ -2,16 +2,13 @@
 
 package goldengate.tests.widgets
 
-import org.scalatest._
 import org.scalatest.flatspec.AnyFlatSpec
 
 import chisel3._
 import chisel3.stage.ChiselStage
 import chisel3.experimental.{BaseModule, annotate, ChiselAnnotation}
 
-import org.chipsalliance.cde.config.Parameters
-
-import midas.widgets._
+import firesim.lib.bridgeutils.{BridgeAnnotation, ChannelizedHostPortIO}
 
 // Can't elaborate a top-level that is a blackbox, so wrap it
 class BlackBoxWrapper(mod: => BaseModule) extends Module {
@@ -19,7 +16,6 @@ class BlackBoxWrapper(mod: => BaseModule) extends Module {
 }
 
 class ChannelizedHostPortIOSpec extends AnyFlatSpec {
-  // 
   class BridgeTargetIO extends Bundle {
     val out = Output(Bool())
     val in =  Input(Bool())

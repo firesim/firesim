@@ -2,12 +2,10 @@
 
 package midas.targetutils
 
-import org.scalatest._
 import org.scalatest.flatspec.AnyFlatSpec
 
 import chisel3._
 import firrtl.annotations.ModuleTarget
-import firrtl.annotations.ReferenceTarget
 
 class RAMStyleHintSpec extends AnyFlatSpec with ElaborationUtils {
   import midas.targetutils.xdc._

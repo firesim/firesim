@@ -55,13 +55,13 @@ class BankConflictIO(cfg: BankConflictConfig)(implicit p: Parameters)
   val mmReg = new BankConflictMMRegIO(cfg)
 }
 
-class BankQueueEntry(nastiParams: NastiParameters, cfg: BankConflictConfig)(implicit p: Parameters) extends Bundle {
+class BankQueueEntry(nastiParams: NastiParameters, cfg: BankConflictConfig) extends Bundle {
   val xaction = new TransactionMetaData(nastiParams)
   val bankAddr = UInt(log2Ceil(cfg.maxBanks).W)
 }
 
 // Appends a target cycle at which this reference should be complete
-class BankConflictReference(nastiParams: NastiParameters, cfg: BankConflictConfig)(implicit p: Parameters) extends Bundle {
+class BankConflictReference(nastiParams: NastiParameters, cfg: BankConflictConfig) extends Bundle {
   val reference = new BankQueueEntry(nastiParams, cfg)
   val cycle = UInt(cfg.maxLatencyBits.W) // Indicates latency until doneness
   val done = Bool() // Set high when the cycle count expires

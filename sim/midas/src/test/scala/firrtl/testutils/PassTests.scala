@@ -2,7 +2,6 @@
 
 package firrtl.testutils
 
-import org.scalatest.flatspec.AnyFlatSpec
 import firrtl.ir.Circuit
 import firrtl.options.{Dependency, IdentityLike}
 import firrtl.passes.{PassExceptions, RemoveEmpty}

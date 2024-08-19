@@ -11,7 +11,7 @@ class AssertModuleF1Test extends TutorialSuite("AssertModule")
 class MulticlockAssertF1Test extends TutorialSuite("MulticlockAssertModule")
 
 class AssertTortureTest extends TutorialSuite("AssertTorture") with AssertTortureConstants {
-  override def defineTests(backend: String, debug: Boolean) {
+  override def defineTests(backend: String, debug: Boolean): Unit = {
     it should "run in the simulator" in {
       assert(run(backend, debug, args = simulationArgs) == 0)
     }
