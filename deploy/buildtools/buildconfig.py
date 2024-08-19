@@ -11,6 +11,7 @@ from awstools.awstools import valid_aws_configure_creds, aws_resource_names
 from buildtools.bitbuilder import BitBuilder
 import buildtools
 from util.deepmerge import deep_merge
+from util.targetprojectutils import extra_target_project_make_args
 
 # imports needed for python type checking
 from typing import Set, Any, Optional, Dict, TYPE_CHECKING
@@ -203,7 +204,7 @@ class BuildConfig:
         """
         return f"{self.launch_time}-{self.name}"
 
-    def make_recipe(self, recipe: str) -> str:
+    def make_recipe(self, recipe: str, deploy_dir: str) -> str:
         """Create make command for a given recipe using the tuple variables.
 
         Args:
@@ -212,7 +213,7 @@ class BuildConfig:
         Returns:
             Fully specified make command.
         """
-        return f"""make PLATFORM={self.PLATFORM} TARGET_PROJECT={self.TARGET_PROJECT} DESIGN={self.DESIGN} TARGET_CONFIG={self.TARGET_CONFIG} PLATFORM_CONFIG={self.PLATFORM_CONFIG} {recipe}"""
+        return f"""make PLATFORM={self.PLATFORM} TARGET_PROJECT={self.TARGET_PROJECT} {extra_target_project_make_args(self.TARGET_PROJECT, deploy_dir)} DESIGN={self.DESIGN} TARGET_CONFIG={self.TARGET_CONFIG} PLATFORM_CONFIG={self.PLATFORM_CONFIG} {recipe}"""
 
     def __repr__(self) -> str:
         return f"< {type(self)}(name={self.name!r}, build_config_file={self.build_config_file!r}) @{id(self)} >"

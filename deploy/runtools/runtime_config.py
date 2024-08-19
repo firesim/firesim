@@ -34,6 +34,7 @@ from util.inheritors import inheritors
 from util.deepmerge import deep_merge
 from util.streamlogger import InfoStreamLogger
 from util.export import create_export_string
+from util.targetprojectutils import extra_target_project_make_args
 from buildtools.bitbuilder import get_deploy_dir
 from util.io import downloadURI
 
@@ -535,7 +536,7 @@ class RuntimeHWConfig:
             prefix(create_export_string({'RISCV', 'PATH', 'LD_LIBRARY_PATH'})), \
             prefix('source sourceme-manager.sh --skip-ssh-setup'), \
             prefix('cd sim/'):
-            driverbuildcommand = f"make PLATFORM={self.get_platform()} TARGET_PROJECT={target_project} DESIGN={design} TARGET_CONFIG={target_config} PLATFORM_CONFIG={platform_config} {self.get_driver_build_target()}"
+            driverbuildcommand = f"make PLATFORM={self.get_platform()} TARGET_PROJECT={target_project} {extra_target_project_make_args(target_project, get_deploy_dir())} DESIGN={design} TARGET_CONFIG={target_config} PLATFORM_CONFIG={platform_config} {self.get_driver_build_target()}"
             buildresult = run(driverbuildcommand)
             self.handle_failure(buildresult, 'driver build', 'firesim/sim', driverbuildcommand)
 

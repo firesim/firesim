@@ -67,7 +67,7 @@ class BitBuilder(metaclass=abc.ABCMeta):
             prefix('source sourceme-manager.sh --skip-ssh-setup'), \
             InfoStreamLogger('stdout'), \
             prefix('cd sim/'):
-            run(self.build_config.make_recipe("replace-rtl"))
+            run(self.build_config.make_recipe("replace-rtl", get_deploy_dir()))
 
     def build_driver(self) -> None:
         """Build FireSim FPGA driver from build config. Should run on the manager host."""
@@ -78,7 +78,7 @@ class BitBuilder(metaclass=abc.ABCMeta):
             prefix(create_export_string({'RISCV', 'PATH', 'LD_LIBRARY_PATH'})), \
             prefix('source sourceme-manager.sh --skip-ssh-setup'), \
             prefix('cd sim/'):
-            run(self.build_config.make_recipe("driver"))
+            run(self.build_config.make_recipe("driver", get_deploy_dir()))
 
     @abc.abstractmethod
     def build_bitstream(self, bypass: bool = False) -> bool:
