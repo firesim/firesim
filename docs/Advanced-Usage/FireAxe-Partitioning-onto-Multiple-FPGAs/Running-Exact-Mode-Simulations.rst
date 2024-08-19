@@ -11,7 +11,7 @@ This assumes that you have read the :ref:`FireAxe running fast-mode simulations<
 
 We will be reusing the FireAxe target configurations from :ref:`fast-mode<FIREAXE-FAST-MODE>`.
 
-.. literalinclude:: ../../../sim/firesim-lib/src/main/scala/configs/FireAxeTargetConfigs.scala
+.. literalinclude:: ../../../sim/midas/src/main/scala/configs/FireAxeTargetConfigs.scala
    :language: scala
    :start-after: DOC include start: F1 Rocket Partition
    :end-before: DOC include end: F1 Rocket Partition

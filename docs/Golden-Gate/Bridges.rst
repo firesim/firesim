@@ -1,28 +1,29 @@
+.. _target-to-host-bridges:
+
 Target-to-Host Bridges
 ======================
 
 A custom model in a FireSim Simulation, either CPU-hosted or FPGA-hosted, is
 deployed by using a *Target-to-Host Bridge*, or Bridge for short. Bridges provide the
-means to inject hardware and software models that produce and consume token streams. 
+means to inject hardware and software models that produce and consume token streams.
 
 Bridges enable:
 
 #. **Deterministic, host-agnostic I/O models.** This is the most common use case.
    Here you instantiate bridges at the I/O boundary of your chip, to provide
    a simulation models of the environment your design is executing in.  For an
-   FPGA-hosted model, see FASED memory timing models. For co-simulated models
-   see the UARTBridge, BlockDeviceBridge, and TSIBridge.
+   FPGA-hosted model, see FASED memory timing models.
 
 #. **Verification against a software golden model.** Attach an bridge (anywhere
    in your target RTL) to an interface you'd like to monitor, (e.g., a
    processor trace port). In the host, you can pipe the token stream coming off
    this interface to a software model running on a CPU (e.g, a functional ISA
-   simulator). See TracerV.
+   simulator).
 
 #. **Distributed simulation.** The original FireSim application. You can stitch
    together networks of simulated machines by instantiating bridges at your
    SoC boundary. Then write software models and bridge drivers that move
-   tokens between each FPGA. See the SimpleNICBridge.
+   tokens between each FPGA.
 
 #. **Resource optimizations.** Resource-intensive components of the target can
    be replaced with models that use fewer FPGA resources or run entirely in
@@ -31,9 +32,7 @@ Bridges enable:
 
 The use of Bridges in a FireSim simulation has many analogs to doing
 mixed-language (Verilog-C++) simulation of the same system in software. Where
-possible, we'll draw analogies. After reading this page we encourage you to read the 
-:ref:`bridge-walkthrough`, which concretely explains the implementation of the UARTBridge.
-
+possible, we'll draw analogies.
 
 Terminology
 --------------------------
@@ -48,14 +47,14 @@ that interface being the host side.
 Target Side
 ----------------------
 
-In your target side, you will mix-in ``midas.widgets.Bridge`` into a Chisel
+In your target side, you will mix-in ``firesim.lib.bridgeutils.Bridge`` into a Chisel
 ``BaseModule`` (this can be a black or white-box Chisel module) and implement
 its abstract members. This trait indicates that the associated module will be
 replaced with a connection to the host-side of the bridge that sources and
 sinks token streams. During compilation, the target-side module will be extracted by Golden Gate and
 its interface will be driven by your bridge's host-side implementation.
 
-This trait has two type parameters and two abstract members you'll need define
+This trait has one type parameter and few abstract members you'll need define
 for your Bridge. Since you must mix ``Bridge`` into a Chisel ``BaseModule``, the IO you
 define for that module constitutes the target-side interface of your bridge.
 
@@ -70,9 +69,6 @@ Type Parameters:
    streams. We suggest starting with ``HostPortIO[T]`` when defining a Bridge for modeling IO devices, as it is the simplest
    to reasonable about and can run at FMR = 1. For other port types, see Bridge Host Interaces.
 
-#. **BridgeModule Type** ``WidgetType <: BridgeModule``: The type of the
-   host-land BridgeModule you want Golden Gate to connect in-place of your target-side module.
-   Golden Gate will use its class name to invoke its constructor.
 
 Abstract Members:
 +++++++++++++++++
@@ -87,6 +83,10 @@ Abstract Members:
    consumed later by Golden Gate. If provided, your case class should capture all
    target-land configuration information you'll need in your Module's
    generator.
+
+#. **BridgeModule Type** ``moduleName: String``: The type of the
+   host-land BridgeModule you want Golden Gate to connect in-place of your target-side module as a fully qualifed Scala class (package and name of class).
+   Golden Gate will use its class name to invoke its constructor.
 
 
 Finally at the bottom of your Bridge's class definition **you'll need to call generateAnnotations()**. This is necessary to have Golden Gate properly detect your bridge.

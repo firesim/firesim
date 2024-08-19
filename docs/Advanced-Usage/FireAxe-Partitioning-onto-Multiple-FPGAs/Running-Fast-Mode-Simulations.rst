@@ -11,10 +11,10 @@ the FireSim workflow.
 1. Building Partitioned Sims: Setting up FireAxe Target configs
 ----------------------------------------------------------------
 
-To build bitstreams for partitioned simulations, we need specify which modules we want to partition out. 
-We can do that in :gh-file-ref:`sim/firesim-lib/src/main/scala/configs/FireAxeTargetConfigs.scala`.
+To build bitstreams for partitioned simulations, we need specify which modules we want to partition out.
+We can do that in :gh-file-ref:`sim/midas/src/main/scala/configs/FireAxeTargetConfigs.scala`.
 
-.. literalinclude:: ../../../sim/firesim-lib/src/main/scala/configs/FireAxeTargetConfigs.scala
+.. literalinclude:: ../../../sim/midas/src/main/scala/configs/FireAxeTargetConfigs.scala
    :language: scala
    :start-after: DOC include start: F1 Rocket Partition
    :end-before: DOC include end: F1 Rocket Partition
