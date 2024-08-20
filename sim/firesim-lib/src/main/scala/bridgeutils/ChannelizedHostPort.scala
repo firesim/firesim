@@ -15,8 +15,6 @@ import chisel3.experimental.DataMirror.directionOf
 case class PipeChannelMetadata(field: Data, clock: Clock, bridgeSunk: Boolean, latency: Int = 0) {
   def fieldRTs = Seq(field.toTarget)
   def clockRT  = clock.toTarget
-  // TODO: AJG: Figure out
-  //def chInfo = midas.passes.fame.PipeChannel(latency)
 }
 
 /** A host-side bridge interface trait that permits finer-grained control over channel definition versus [[HostPortIO]].
