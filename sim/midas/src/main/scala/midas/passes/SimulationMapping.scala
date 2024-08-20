@@ -98,7 +98,7 @@ private[passes] class SimulationMapping(targetName: String) extends firrtl.Trans
 
     // Generate the encapsulating simulator RTL
     lazy val shim = PlatformShim(SimWrapperConfig(innerState.annotations, portTypeMap))
-    val (chirrtl, elaboratedAnnos) = midas.targetutils.ElaborateChiselSubCircuit(LazyModule(shim).module)
+    val (chirrtl, elaboratedAnnos) = midas.ElaborateChiselSubCircuit(LazyModule(shim).module)
 
     val outerAnnos = PreLinkRenamingAnnotation(Namespace(innerCircuit)) +: elaboratedAnnos
     val outerState = new Compiler(Forms.LowForm ++ Seq(Dependency(PreLinkRenaming)))

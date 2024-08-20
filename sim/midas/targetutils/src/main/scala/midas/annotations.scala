@@ -2,19 +2,18 @@
 
 package midas.targetutils
 
-import chisel3._
+import chisel3.{Data, Reset, MemBase, UInt, Clock, Bool, WireDefault, Printable, Bits, RegNext, when, Wire, fromBooleanToLiteral, Module, dontTouch}
+import chisel3.printf.{Printf}
 import chisel3.experimental.{BaseModule, ChiselAnnotation, annotate, requireIsHardware}
-
 import firrtl.{RenameMap}
-import firrtl.annotations._
-import firrtl.annotations.Annotation
-import firrtl.transforms.DontTouchAllTargets
+import firrtl.annotations.{ReferenceTarget, Annotation, InstanceTarget, SingleTargetAnnotation, ModuleTarget, ComponentName, HasSerializationHints}
+import firrtl.transforms.{DontTouchAllTargets}
 
 /**
   * These are consumed by [[midas.passes.AutoILATransform]] to directly
   * instantiate an ILA at the top of simulator's design hierarchy (the PlatformShim level).
   */
-case class FpgaDebugAnnotation(target: chisel3.Data) extends ChiselAnnotation {
+case class FpgaDebugAnnotation(target: Data) extends ChiselAnnotation {
   def toFirrtl = FirrtlFpgaDebugAnnotation(target.toNamed)
 }
 
@@ -24,9 +23,9 @@ case class FirrtlFpgaDebugAnnotation(target: ComponentName) extends
 }
 
 object FpgaDebug {
-  def apply(targets: chisel3.Data*): Unit = {
+  def apply(targets: Data*): Unit = {
     targets foreach { requireIsHardware(_, "Target passed to FpgaDebug:") }
-    targets.map({ t => chisel3.experimental.annotate(FpgaDebugAnnotation(t)) })
+    targets.map({ t => annotate(FpgaDebugAnnotation(t)) })
   }
 }
 
@@ -62,8 +61,8 @@ object SynthesizePrintf {
     *
     * @return The original input, so that this annotator may be applied inline if desired.
     */
-  def apply(printf: chisel3.printf.Printf): chisel3.printf.Printf = {
-    chisel3.experimental.annotate(new ChiselAnnotation {
+  def apply(printf: Printf): Printf = {
+    annotate(new ChiselAnnotation {
       def toFirrtl = SynthPrintfAnnotation(printf.toTarget)
     })
     printf
@@ -121,7 +120,7 @@ trait FAMEAnnotation {
 /**
   * This labels an instance so that it is extracted as a separate FAME model.
   */
-case class FAMEModelAnnotation(target: BaseModule) extends chisel3.experimental.ChiselAnnotation {
+case class FAMEModelAnnotation(target: BaseModule) extends ChiselAnnotation {
   def toFirrtl: FirrtlFAMEModelAnnotation = {
     val parent = ModuleTarget(target.toNamed.circuit.name, target.parentModName)
     FirrtlFAMEModelAnnotation(parent.instOf(target.instanceName, target.name))
@@ -137,7 +136,7 @@ case class FirrtlFAMEModelAnnotation(
 /**
   * This specifies that the module should be automatically multi-threaded (Chisel annotator).
   */
-case class EnableModelMultiThreadingAnnotation(target: BaseModule) extends chisel3.experimental.ChiselAnnotation {
+case class EnableModelMultiThreadingAnnotation(target: BaseModule) extends ChiselAnnotation {
   def toFirrtl: FirrtlEnableModelMultiThreadingAnnotation = {
     val parent = ModuleTarget(target.toNamed.circuit.name, target.parentModName)
     FirrtlEnableModelMultiThreadingAnnotation(parent.instOf(target.instanceName, target.name))
@@ -156,8 +155,8 @@ case class FirrtlEnableModelMultiThreadingAnnotation(
 /**
   * This labels a target Mem so that it is extracted and replaced with a separate model.
   */
-case class MemModelAnnotation[T <: chisel3.Data](target: chisel3.MemBase[T])
-    extends chisel3.experimental.ChiselAnnotation {
+case class MemModelAnnotation[T <: Data](target: MemBase[T])
+    extends ChiselAnnotation {
   def toFirrtl = FirrtlMemModelAnnotation(target.toNamed.toTarget)
 }
 
@@ -233,8 +232,8 @@ case class AutoCounterCoverModuleAnnotation(target: ModuleTarget) extends Chisel
 
 object PerfCounter {
   private def emitAnnotation(
-      target: chisel3.UInt,
-      clock: chisel3.Clock,
+      target: UInt,
+      clock: Clock,
       reset: Reset,
       label: String,
       description: String,
@@ -276,8 +275,8 @@ object PerfCounter {
     *
     */
   def apply(
-      target: chisel3.UInt,
-      clock: chisel3.Clock,
+      target: UInt,
+      clock: Clock,
       reset: Reset,
       label: String,
       description: String,
@@ -288,7 +287,7 @@ object PerfCounter {
     * A simplified variation of the full apply method above that uses the
     * implicit clock and reset.
     */
-  def apply(target: chisel3.UInt, label: String, description: String): Unit =
+  def apply(target: UInt, label: String, description: String): Unit =
     emitAnnotation(target, Module.clock, Module.reset, label, description, PerfCounterOps.Accumulate)
 
   /**
@@ -301,7 +300,7 @@ object PerfCounter {
     * handling uniform in the transform.
     *
     */
-  def identity(target: chisel3.UInt, label: String, description: String): Unit = {
+  def identity(target: UInt, label: String, description: String): Unit = {
     require(target.getWidth <= 64,
       s"""|PerfCounter.identity can only accept fields <= 64b wide. Provided target for label:
           |  $label
@@ -487,9 +486,9 @@ extends firrtl.annotations.Annotation with FAMEAnnotation {
 
 object MakeRoCCBusyLatencyInsensitive {
   def apply(
-    target: chisel3.Bool,
-    ready: chisel3.Bool,
-    valid: chisel3.Bool): Unit = {
+    target: Bool,
+    ready: Bool,
+    valid: Bool): Unit = {
       requireIsHardware(target, "Target passed to ..:")
       requireIsHardware(ready,  "Ready passed to ..:")
       requireIsHardware(valid,  "Valid passed to ..:")

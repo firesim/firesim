@@ -3,7 +3,6 @@ package firesim
 
 import java.io.File
 import scala.sys.process.{stringSeqToProcess, ProcessLogger}
-
 import scala.collection.mutable
 
 /** A base class that captures the platform-specific parts of the configuration of a test.

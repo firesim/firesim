@@ -4,10 +4,10 @@ package firesim.lib.bridgeutils
 
 import scala.collection.mutable
 
-import chisel3._
-import chisel3.util._
-import chisel3.experimental.Direction
-import chisel3.experimental.DataMirror.directionOf
+import chisel3.{Clock, Data, Flipped, Vec, Bits, Record}
+import chisel3.util.{DecoupledIO, Decoupled}
+import chisel3.experimental.{Direction}
+import chisel3.reflect.{DataMirror}
 
 /** A utility trait for translating chisel references into unidirected FCCAs This becomes more useful when there are
   * channel types.
@@ -39,10 +39,10 @@ trait ChannelizedHostPortIO extends HasChannels { this: Record =>
   def reverseElementMap = elements.map({ case (chName, chField) => chField -> chName }).toMap
 
   private def getLeafDirs(token: Data): Seq[Direction] = token match {
-    case c: Clock  => Seq(directionOf(c))
+    case c: Clock  => Seq(DataMirror.directionOf(c))
     case b: Record => b.elements.flatMap({ case (_, e) => getLeafDirs(e) }).toSeq
     case v: Vec[_] => v.flatMap(getLeafDirs)
-    case b: Bits   => Seq(directionOf(b))
+    case b: Bits   => Seq(DataMirror.directionOf(b))
   }
 
   private def checkFieldDirection(field: Data, bridgeSunk: Boolean): Unit = {

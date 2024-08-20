@@ -1,13 +1,15 @@
 // See LICENSE for license details.
 
-package midas.targetutils
+package goldengate.tests
+
+import org.scalatest.flatspec.AnyFlatSpec
 
 import chisel3._
 import chisel3.stage.ChiselStage
 
 import firrtl.stage.{FirrtlPhase,  FirrtlCircuitAnnotation, RunFirrtlTransformAnnotation}
 
-import org.scalatest.flatspec.AnyFlatSpec
+import midas.targetutils._
 
 trait ElaborationUtils { self: AnyFlatSpec =>
   /**
@@ -50,7 +52,7 @@ trait ElaborationUtils { self: AnyFlatSpec =>
     * annotator croaks when used before the IO is still unbound, but not otherwise.
     *
     */
-  def checkBehaviorOnUnboundTargets[T <: Data](gen: =>T, annotator: T => Unit): Unit = { 
+  def checkBehaviorOnUnboundTargets[T <: Data](gen: =>T, annotator: T => Unit): Unit = {
     it should "elaborate and compile correctly when annotating HW types" in {
       elaborate(new AnnotateHardwareModule(gen, annotator))
     }
@@ -62,4 +64,3 @@ trait ElaborationUtils { self: AnyFlatSpec =>
     }
   }
 }
-

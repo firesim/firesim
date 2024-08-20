@@ -2,8 +2,8 @@
 
 package midas.targetutils.xdc
 
-import chisel3.experimental.ChiselAnnotation
-import firrtl.annotations.ReferenceTarget
+import chisel3.experimental.{ChiselAnnotation}
+import firrtl.annotations.{ReferenceTarget}
 
 sealed trait RAMStyle
 

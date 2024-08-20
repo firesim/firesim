@@ -1,11 +1,13 @@
 // See LICENSE for license details.
 
-package midas.targetutils
+package goldengate.tests
 
 import org.scalatest.flatspec.AnyFlatSpec
 
 import chisel3._
 import firrtl.annotations.ModuleTarget
+
+import midas.targetutils._
 
 class RAMStyleHintSpec extends AnyFlatSpec with ElaborationUtils {
   import midas.targetutils.xdc._

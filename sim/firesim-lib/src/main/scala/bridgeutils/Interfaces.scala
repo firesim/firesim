@@ -2,7 +2,7 @@
 
 package firesim.lib.bridgeutils
 
-import chisel3._
+import chisel3.{Input, Output, Bool, Bundle}
 
 class HostReadyValid extends Bundle {
   val hReady     = Input(Bool())

@@ -80,6 +80,14 @@ class PointerChaserDUT(nastiParams: NastiParameters)(implicit val p: Parameters)
     arValid := false.B
   }
 
+  def bytesToXSize(bytes: UInt) = {
+    MuxLookup(
+      bytes,
+      7.U,
+      Array(1.U -> 0.U, 2.U -> 1.U, 4.U -> 2.U, 8.U -> 3.U, 16.U -> 4.U, 32.U -> 5.U, 64.U -> 6.U, 128.U -> 7.U),
+    )
+  }
+
   memoryIF.ar.bits := NastiWriteAddressChannel(
     nastiParams,
     id = 0.U,

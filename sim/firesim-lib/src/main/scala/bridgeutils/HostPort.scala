@@ -2,8 +2,8 @@
 
 package firesim.lib.bridgeutils
 
-import chisel3._
-import chisel3.util.ReadyValidIO
+import chisel3.{Record, Flipped, Data, Clock}
+import chisel3.util.{ReadyValidIO}
 
 /*
  *  The MIDAS-I legacy HostPort. Bridges using this Class to implement it's host-land interface

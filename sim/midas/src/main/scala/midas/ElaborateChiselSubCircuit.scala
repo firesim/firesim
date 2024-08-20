@@ -1,14 +1,14 @@
 // See LICENSE for license details.
 
-package midas.targetutils
+package midas
 
+import chisel3.{RawModule}
+import chisel3.stage.{ChiselGeneratorAnnotation, ChiselCircuitAnnotation}
+import chisel3.experimental.RunFirrtlTransform
 import firrtl.{AnnotationSeq, Transform}
 import firrtl.ir.Circuit
 import firrtl.options.{Dependency, PhaseManager}
 import firrtl.stage.{FirrtlCircuitAnnotation, RunFirrtlTransformAnnotation}
-import chisel3.{RawModule}
-import chisel3.stage.{ChiselGeneratorAnnotation, ChiselCircuitAnnotation}
-import chisel3.experimental.RunFirrtlTransform
 
 object ElaborateChiselSubCircuit {
 /**

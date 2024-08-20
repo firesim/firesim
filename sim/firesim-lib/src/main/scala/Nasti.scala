@@ -2,8 +2,8 @@
 
 package firesim.lib.nasti
 
-import chisel3._
-import chisel3.util.{Decoupled, MuxLookup}
+import chisel3.{Flipped, Bundle, UInt, Bool, fromIntToWidth}
+import chisel3.util.{Decoupled}
 
 import scala.math.max
 
@@ -32,11 +32,6 @@ trait HasNastiParameters {
   val nastiXQosBits    = 4
   val nastiXRegionBits = 4
   val nastiXRespBits   = 2
-  def bytesToXSize(bytes: UInt) = MuxLookup(
-    bytes,
-    "b111".U,
-    Array(1.U -> 0.U, 2.U -> 1.U, 4.U -> 2.U, 8.U -> 3.U, 16.U -> 4.U, 32.U -> 5.U, 64.U -> 6.U, 128.U -> 7.U),
-  )
 }
 
 abstract class NastiBundle(val nastiParams: NastiParameters) extends Bundle with HasNastiParameters

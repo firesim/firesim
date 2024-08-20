@@ -2,7 +2,8 @@
 
 package firesim.lib.testutils
 
-import chisel3._
+import chisel3.{fromBooleanToLiteral, WireInit, Module, RawModule, withClockAndReset}
+import chisel3.reflect.{DataMirror}
 
 import firesim.lib.bridges._
 
@@ -18,7 +19,7 @@ class PeekPokeHarness(dutGen: () => Module) extends RawModule {
     PeekPokeBridge(
       clock,
       reset,
-      chisel3.experimental.DataMirror.modulePorts(dut).filterNot { case (name, _) =>
+      DataMirror.modulePorts(dut).filterNot { case (name, _) =>
         name == "clock" | name == "reset"
       }: _*
     )
