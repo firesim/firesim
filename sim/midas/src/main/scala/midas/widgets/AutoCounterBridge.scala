@@ -25,9 +25,9 @@ trait AutoCounterConsts {
   *
   * @param portName the name of the IF exposed to the bridge by the autocounter transform
   *
-  * @param label The user provided [[AutoCounterFirrtlAnnotation]].label prepended with an instance path.
+  * @param label The user provided [[InternalAutoCounterFirrtlAnnotation]].label prepended with an instance path.
   *
-  * @param description A passthrough of [[AutoCounterFirrtlAnnotation]].description
+  * @param description A passthrough of [[InternalAutoCounterFirrtlAnnotation]].description
   *
   * @param width The bitwidth of the event
   *

@@ -11,11 +11,12 @@ import firrtl.WrappedExpression._
 import firrtl.Utils.{zero, BoolType}
 
 
+import midas.{InternalGlobalResetConditionSink}
 import midas.passes.Utils.cat
 import midas.widgets.{AssertBridgeModule, AssertBridgeParameters}
 import midas.passes.fame.{FAMEChannelConnectionAnnotation, WireChannel}
 import midas.stage.phases.ConfigParametersAnnotation
-import midas.targetutils.{ExcludeInstanceAssertsAnnotation, GlobalResetConditionSink}
+import midas.targetutils.{ExcludeInstanceAssertsAnnotation}
 import firesim.lib.bridgeutils.{BridgeIOAnnotation}
 
 private[passes] class AssertionSynthesis extends firrtl.Transform {
@@ -221,7 +222,7 @@ private[passes] class AssertionSynthesis extends firrtl.Transform {
         val bitExtracts = asserts.map(idx => DoPrim(PrimOps.Bits, Seq(WRef(allAssertsWire)), Seq(idx, idx), UIntType(IntWidth(1))))
         val connectAsserts = Connect(NoInfo, WRef(port), cat(bitExtracts.reverse))
         val connectClock   = Connect(NoInfo, WRef(clockPort), WRef(clockRT.ref))
-        // In the event no GlobalResetCondition is provided, tie this off
+        // In the event no InternalGlobalResetCondition is provided, tie this off
         val connectReset   = Connect(NoInfo, WRef(resetPort), zero)
 
         stmts ++= Seq(connectClock, connectAsserts, connectReset)
@@ -233,7 +234,7 @@ private[passes] class AssertionSynthesis extends firrtl.Transform {
 
         val resetPortRT = topMT.ref(resetPortName)
         val resetFCCA = FAMEChannelConnectionAnnotation.source(resetPortName, WireChannel, Some(clockPortRT), Seq(resetPortRT))
-        val resetConditionAnno = GlobalResetConditionSink(resetPortRT)
+        val resetConditionAnno = InternalGlobalResetConditionSink(resetPortRT)
 
         val assertMessages = asserts.map(formattedMessages(_))
         val bridgeAnno = BridgeIOAnnotation(

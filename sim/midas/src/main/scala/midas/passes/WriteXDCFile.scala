@@ -9,6 +9,7 @@ import firrtl.analyses.InstanceKeyGraph
 
 import midas.stage.{GoldenGateFileEmission}
 import midas.targetutils.xdc._
+import midas.InternalXDCAnnotation
 
 /**
   * We could reuse [[GoldenGateOutputFileAnnotation]] here, but this makes it
@@ -62,7 +63,7 @@ private[midas] object WriteXDCFile extends Transform with DependencyAPIMigration
   }
 
   private def serializeXDC(
-      anno: XDCAnnotation,
+      anno: InternalXDCAnnotation,
       iGraph: InstanceKeyGraph,
       pathToCircuit: Option[String]): Iterable[String] = {
     val segments = specifierRegex.split(anno.formatString)
@@ -82,7 +83,7 @@ private[midas] object WriteXDCFile extends Transform with DependencyAPIMigration
 
     val iGraph = InstanceKeyGraph(state.circuit)
     val xdcAnnosGroupedByFile = state.annotations
-      .collect { case a: XDCAnnotation => a }
+      .collect { case a: InternalXDCAnnotation => a }
       .groupBy { _.destinationFile }
       .toMap
 
@@ -97,7 +98,7 @@ private[midas] object WriteXDCFile extends Transform with DependencyAPIMigration
     }
 
     val cleanedAnnotations = state.annotations.filterNot {
-      case _: XDCAnnotation => true
+      case _: InternalXDCAnnotation => true
       case _: XDCPathToCircuitAnnotation => true
       case _ => false
     }

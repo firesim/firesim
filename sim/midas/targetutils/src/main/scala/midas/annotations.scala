@@ -7,7 +7,6 @@ import chisel3.printf.{Printf}
 import chisel3.experimental.{BaseModule, ChiselAnnotation, annotate, requireIsHardware}
 import firrtl.{RenameMap}
 import firrtl.annotations.{ReferenceTarget, Annotation, InstanceTarget, SingleTargetAnnotation, ModuleTarget, ComponentName, HasSerializationHints}
-import firrtl.transforms.{DontTouchAllTargets}
 
 /**
   * These are consumed by [[midas.passes.AutoILATransform]] to directly
@@ -18,7 +17,7 @@ case class FpgaDebugAnnotation(target: Data) extends ChiselAnnotation {
 }
 
 case class FirrtlFpgaDebugAnnotation(target: ComponentName) extends
-    SingleTargetAnnotation[ComponentName] with DontTouchAllTargets {
+    SingleTargetAnnotation[ComponentName] {
   def duplicate(n: ComponentName) = this.copy(target = n)
 }
 
@@ -33,9 +32,9 @@ private[midas] class ReferenceTargetRenamer(renames: RenameMap) {
   // TODO: determine order for multiple renames, or just check of == 1 rename?
   def exactRename(rt: ReferenceTarget): ReferenceTarget = {
     val renameMatches = renames.get(rt).getOrElse(Seq(rt)).collect({ case rt: ReferenceTarget => rt })
-    assert(renameMatches.length == 1,
-      s"${rt} should be renamed exactly once. Suggested renames: ${renameMatches}")
-    renameMatches.head
+    assert(renameMatches.length <= 1,
+      s"${rt} should be renamed exactly once (or not at all). Suggested renames: ${renameMatches}")
+    renameMatches.headOption.getOrElse(rt)
   }
 
   def apply(rt: ReferenceTarget): Seq[ReferenceTarget] = {
@@ -205,7 +204,7 @@ case class AutoCounterFirrtlAnnotation(
   description: String,
   opType: PerfCounterOpType = PerfCounterOps.Accumulate,
   coverGenerated: Boolean = false)
-    extends firrtl.annotations.Annotation with DontTouchAllTargets with HasSerializationHints {
+    extends firrtl.annotations.Annotation with HasSerializationHints {
   def update(renames: RenameMap): Seq[firrtl.annotations.Annotation] = {
     val renamer = new ReferenceTargetRenamer(renames)
     val renamedTarget = renamer.exactRename(target)
@@ -348,7 +347,7 @@ case class TriggerSourceAnnotation(
     target: ReferenceTarget,
     clock: ReferenceTarget,
     reset: Option[ReferenceTarget],
-    sourceType: Boolean) extends Annotation with FAMEAnnotation with DontTouchAllTargets {
+    sourceType: Boolean) extends Annotation with FAMEAnnotation {
   def update(renames: RenameMap): Seq[firrtl.annotations.Annotation] = {
     val renamer = new ReferenceTargetRenamer(renames)
     val renamedTarget = renamer.exactRename(target)
@@ -363,7 +362,7 @@ case class TriggerSourceAnnotation(
 
 case class TriggerSinkAnnotation(
     target: ReferenceTarget,
-    clock: ReferenceTarget) extends Annotation with FAMEAnnotation with DontTouchAllTargets {
+    clock: ReferenceTarget) extends Annotation with FAMEAnnotation {
   def update(renames: RenameMap): Seq[firrtl.annotations.Annotation] = {
     val renamer = new ReferenceTargetRenamer(renames)
     val renamedTarget = renamer.exactRename(target)

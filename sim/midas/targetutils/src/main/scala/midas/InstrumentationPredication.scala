@@ -5,7 +5,6 @@ package midas.targetutils
 import chisel3.{Module, Output, Input, Bool, fromBooleanToLiteral}
 import chisel3.experimental.{ChiselAnnotation, annotate}
 import firrtl.annotations.{ReferenceTarget, SingleTargetAnnotation}
-import firrtl.transforms.{DontTouchAllTargets}
 
 /**
   * Masks off assertions, printfs, and autocounter events when the target bool is deasserted.
@@ -29,7 +28,7 @@ import firrtl.transforms.{DontTouchAllTargets}
   */
 
 case class GlobalResetCondition(target: ReferenceTarget) extends
-    SingleTargetAnnotation[ReferenceTarget] with DontTouchAllTargets {
+    SingleTargetAnnotation[ReferenceTarget] {
   def duplicate(n: ReferenceTarget) = this.copy(target = n)
 }
 
@@ -38,7 +37,7 @@ case class GlobalResetCondition(target: ReferenceTarget) extends
   * globalResetCondition if it is available.
   */
 case class GlobalResetConditionSink(target: ReferenceTarget) extends
-    SingleTargetAnnotation[ReferenceTarget] with DontTouchAllTargets {
+    SingleTargetAnnotation[ReferenceTarget] {
   def duplicate(n: ReferenceTarget) = this.copy(target = n)
 }
 

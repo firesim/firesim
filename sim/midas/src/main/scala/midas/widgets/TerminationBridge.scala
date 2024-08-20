@@ -4,7 +4,7 @@ import chisel3._
 import chisel3.util._
 
 import org.chipsalliance.cde.config.Parameters
-import midas.targetutils._
+import midas.InternalGlobalResetCondition
 import freechips.rocketchip.util.{DecoupledHelper}
 
 import firesim.lib.bridgeutils._
@@ -76,7 +76,7 @@ object TerminationBridge {
 
     val terminationBridgeTarget = Module(new TerminationBridge(paddedParams))
     val finish = paddedBools.reduce(_||_)
-    terminationBridgeTarget.io.valid := finish && !reset.asBool && !GlobalResetCondition.produceSink()
+    terminationBridgeTarget.io.valid := finish && !reset.asBool && !InternalGlobalResetCondition.produceSink()
     terminationBridgeTarget.io.clock := clock
     terminationBridgeTarget.io.terminationCode := PriorityEncoder(paddedBools)
     terminationBridgeTarget

@@ -2,8 +2,8 @@
 
 package midas.passes
 
-import midas.targetutils.{TriggerSourceAnnotation, TriggerSinkAnnotation}
 import midas.passes.fame._
+import midas.{InternalTriggerSinkAnnotation, InternalTriggerSourceAnnotation}
 
 import freechips.rocketchip.util.DensePrefixSum
 import firrtl._
@@ -28,7 +28,7 @@ private[passes] object TriggerWiring extends firrtl.Transform {
   val topWiringPrefix = "simulationTrigger_"
   val sinkWiringKey = "trigger_sink"
 
-  // Defines the width of credit and debit counters local to a specific clock domain 
+  // Defines the width of credit and debit counters local to a specific clock domain
   // For the trigger to function correctly:
   // localWidth >= log2Ceil(max(localCreditSources, localDebitSources) * Ceil(N/M))
   // where:
@@ -42,8 +42,8 @@ private[passes] object TriggerWiring extends firrtl.Transform {
   val globalCType = UIntType(IntWidth(32))
 
   // Masks off trigger sources when the are under reset.
-  private def gateEventsWithReset(sourceModuleMap: Map[String, Seq[TriggerSourceAnnotation]],
-                                  updatedAnnos: mutable.ArrayBuffer[TriggerSourceAnnotation])
+  private def gateEventsWithReset(sourceModuleMap: Map[String, Seq[InternalTriggerSourceAnnotation]],
+                                  updatedAnnos: mutable.ArrayBuffer[InternalTriggerSourceAnnotation])
                                  (mod: DefModule): DefModule = mod match {
     case m: Module if sourceModuleMap.isDefinedAt(m.name) =>
       val annos = sourceModuleMap(m.name)
@@ -64,7 +64,7 @@ private[passes] object TriggerWiring extends firrtl.Transform {
   }
 
   // Generates the sink-side hardware. See onStmtSink
-  private def onModuleSink(sinkAnnoModuleMap: Map[String, Seq[TriggerSinkAnnotation]],
+  private def onModuleSink(sinkAnnoModuleMap: Map[String, Seq[InternalTriggerSinkAnnotation]],
                    addedAnnos: mutable.ArrayBuffer[Annotation])
                   (m: DefModule): DefModule = m match {
     case m: Module if sinkAnnoModuleMap.isDefinedAt(m.name) =>
@@ -79,7 +79,7 @@ private[passes] object TriggerWiring extends firrtl.Transform {
     * 1) Emit a register that will synchronize the trigger signal to the to local domain (from the base one)
     * 2) Emit a wiring annotation pointing at that register.
     */
-  private def onStmtSink(sinkAnnos: Map[String, TriggerSinkAnnotation],
+  private def onStmtSink(sinkAnnos: Map[String, InternalTriggerSinkAnnotation],
                  addedAnnos: mutable.ArrayBuffer[Annotation],
                  ns: Namespace)
                 (s: Statement): Statement = s.map(onStmtSink(sinkAnnos, addedAnnos, ns)) match {
@@ -101,13 +101,13 @@ private[passes] object TriggerWiring extends firrtl.Transform {
     val topMod = state.circuit.modules.find(_.name == topModName).get
     val prexistingPorts = topMod.ports
     // 1) Collect Trigger Annotations, and generate BridgeTopWiring annotations
-    val srcCreditAnnos = new mutable.ArrayBuffer[TriggerSourceAnnotation]()
-    val srcDebitAnnos  = new mutable.ArrayBuffer[TriggerSourceAnnotation]()
-    val sinkAnnos      = new mutable.ArrayBuffer[TriggerSinkAnnotation]()
+    val srcCreditAnnos = new mutable.ArrayBuffer[InternalTriggerSourceAnnotation]()
+    val srcDebitAnnos  = new mutable.ArrayBuffer[InternalTriggerSourceAnnotation]()
+    val sinkAnnos      = new mutable.ArrayBuffer[InternalTriggerSinkAnnotation]()
     state.annotations.collect({
-      case a: TriggerSourceAnnotation if a.sourceType => srcCreditAnnos += a
-      case a: TriggerSourceAnnotation                 => srcDebitAnnos += a
-      case a: TriggerSinkAnnotation                   => sinkAnnos += a
+      case a: InternalTriggerSourceAnnotation if a.sourceType => srcCreditAnnos += a
+      case a: InternalTriggerSourceAnnotation                 => srcDebitAnnos += a
+      case a: InternalTriggerSinkAnnotation                   => sinkAnnos += a
     })
 
     require(!(srcCreditAnnos.isEmpty && srcDebitAnnos.nonEmpty), "Provided trigger debit sources but no credit sources")
@@ -119,7 +119,7 @@ private[passes] object TriggerWiring extends firrtl.Transform {
       state
     } else {
       // Step 1) Gate credits and debits with their associated reset, if provided
-      val updatedAnnos = new mutable.ArrayBuffer[TriggerSourceAnnotation]()
+      val updatedAnnos = new mutable.ArrayBuffer[InternalTriggerSourceAnnotation]()
       val srcAnnoMap = (srcCreditAnnos ++ srcDebitAnnos).groupBy(_.enclosingModule()).map { case (k, v) => k -> v.toSeq }
       val gatedCircuit = state.circuit.map(gateEventsWithReset(srcAnnoMap, updatedAnnos))
       val (gatedCredits, gatedDebits) = updatedAnnos.partition(_.sourceType)
@@ -153,7 +153,7 @@ private[passes] object TriggerWiring extends firrtl.Transform {
       val ns = Namespace(wiredTopModule)
       val addedStmts = new mutable.ArrayBuffer[Statement]()
 
-      def addReduce(bools: Seq[WRef]): WRef = DensePrefixSum(bools)({ case (a, b) => 
+      def addReduce(bools: Seq[WRef]): WRef = DensePrefixSum(bools)({ case (a, b) =>
         val name = ns.newTemp
         val node = DefNode(NoInfo, name, DoPrim(PrimOps.Add, Seq(a, b), Seq.empty, UnknownType))
         addedStmts += node
@@ -245,8 +245,8 @@ private[passes] object TriggerWiring extends firrtl.Transform {
     }
 
     val cleanedAnnos = updatedState.annotations.flatMap({
-      case _: TriggerSourceAnnotation => None
-      case _: TriggerSinkAnnotation => None
+      case _: InternalTriggerSourceAnnotation => None
+      case _: InternalTriggerSinkAnnotation => None
       case _: BridgeTopWiringOutputAnnotation => None
       case o => Some(o)
     })
