@@ -166,6 +166,7 @@ class RuntimeHWConfig:
     bitstream_tar: Optional[str]
 
     deploy_quintuplet: Optional[str]
+    deploy_makefrag: Optional[str]
     customruntimeconfig: str
     # note whether we've built a copy of the simulation driver for this hwconf
     driver_built: bool
@@ -226,6 +227,11 @@ class RuntimeHWConfig:
         if self.deploy_quintuplet is not None:
             rootLogger.warning(f"{name} is overriding a deploy quintuplet in your config_hwdb.yaml file. Make sure you understand why!")
 
+        hwconfig_override_build_makefrag = hwconfig_dict.get('deploy_makefrag_override')
+        self.deploy_makefrag = hwconfig_override_build_makefrag
+        if self.deploy_makefrag is not None:
+            rootLogger.warning(f"{name} is overriding a deploy makefrag in your config_hwdb.yaml file. Make sure you understand why!")
+
         self.customruntimeconfig = hwconfig_dict['custom_runtime_config']
 
         self.additional_required_files = []
@@ -258,15 +264,25 @@ class RuntimeHWConfig:
     def get_driver_build_target(self) -> str:
         return self.get_platform()
 
+    def set_check(self, lhs: Optional[str], rhs: str, name: str) -> None:
+        if lhs is not None:
+            assert lhs == rhs, f"{name} is already set to {lhs} (cannot set it to {rhs})"
+        return
+
     def set_platform(self, platform: str) -> None:
-        if self.platform is not None:
-            assert self.platform == platform, f"platform is already set to {self.platform} cannot set it to {platform}"
+        self.set_check(self.platform, platform, "platform")
         self.platform = platform
 
     def set_deploy_quintuplet(self, deploy_quintuplet: str) -> None:
-        if self.deploy_quintuplet is not None:
-            assert self.deploy_quintuplet == deploy_quintuplet, f"deploy_quintuplet is already set to {self.deploy_quintuplet} cannot set it to {deploy_quintuplet}"
+        self.set_check(self.deploy_quintuplet, deploy_quintuplet, "deploy_quintuplet")
         self.deploy_quintuplet = deploy_quintuplet
+
+    def set_deploy_makefrag(self, deploy_makefrag: Optional[str]) -> None:
+        if self.deploy_makefrag is not None:
+            # self.deploy_makefrag comes from the override and thus takes precedent (can't override)
+            return
+        # otherwise, you can override from deploy_makefrag (which should come from metadata)
+        self.deploy_makefrag = deploy_makefrag
 
     def get_deployquintuplet_for_config(self) -> str:
         """ Get the deployquintuplet for this configuration. This memoizes the request
@@ -283,9 +299,15 @@ class RuntimeHWConfig:
 
         return self.deploy_quintuplet
 
+    def get_deployquintuplet_pieces_for_config(self) -> List[str]:
+        return self.get_deployquintuplet_for_config().split("-")
+
+    def get_deploymakefrag_for_config(self) -> Optional[str]:
+        return self.deploy_makefrag
+
     def get_design_name(self) -> str:
         """ Returns the name used to prefix MIDAS-emitted files. (The DESIGN make var) """
-        return self.get_deployquintuplet_for_config().split("-")[2]
+        return self.get_deployquintuplet_pieces_for_config()[2]
 
     def get_local_driver_binaryname(self) -> str:
         """ Get the name of the driver binary. """
@@ -500,16 +522,19 @@ class RuntimeHWConfig:
 
                     self.set_platform(metadata['firesim-deployquintuplet'].split("-")[0])
                     self.set_deploy_quintuplet(metadata['firesim-deployquintuplet'])
+                    deploy_makefrag = metadata.get('firesim-deploymakefrag', "None") # support old metadatas that don't have this
+                    rootLogger.debug(f"Got {deploy_makefrag} from metadata")
+                    self.set_deploy_makefrag(deploy_makefrag if deploy_makefrag != "None" else None)
 
                     break
 
     def get_partition_fpga_cnt(self) -> int:
-        quintuplet_pieces = self.get_deployquintuplet_for_config().split("-")
+        quintuplet_pieces = self.get_deployquintuplet_pieces_for_config()
         target_split_fpga_cnt  = quintuplet_pieces[5]
         return int(target_split_fpga_cnt)
 
     def get_partition_fpga_idx(self) -> int:
-        quintuplet_pieces = self.get_deployquintuplet_for_config().split("-")
+        quintuplet_pieces = self.get_deployquintuplet_pieces_for_config()
         target_split_fpga_idx = quintuplet_pieces[6]
         if (target_split_fpga_idx.isnumeric()):
             return int(target_split_fpga_idx)
@@ -523,7 +548,8 @@ class RuntimeHWConfig:
             # we already built the driver at some point
             return
         # TODO there is a duplicate of this in runtools
-        quintuplet_pieces = self.get_deployquintuplet_for_config().split("-")
+        quintuplet_pieces = self.get_deployquintuplet_pieces_for_config()
+        target_project_makefrag = self.get_deploymakefrag_for_config()
 
         platform = quintuplet_pieces[0]
         target_project = quintuplet_pieces[1]
@@ -537,7 +563,7 @@ class RuntimeHWConfig:
             prefix(create_export_string({'RISCV', 'PATH', 'LD_LIBRARY_PATH'})), \
             prefix('source sourceme-manager.sh --skip-ssh-setup'), \
             prefix('cd sim/'):
-            driverbuildcommand = f"make PLATFORM={self.get_platform()} TARGET_PROJECT={target_project} {extra_target_project_make_args(target_project, deploy_dir)} DESIGN={design} TARGET_CONFIG={target_config} PLATFORM_CONFIG={platform_config} {self.get_driver_build_target()}"
+            driverbuildcommand = f"make PLATFORM={self.get_platform()} TARGET_PROJECT={target_project} {extra_target_project_make_args(target_project, target_project_makefrag, deploy_dir)} DESIGN={design} TARGET_CONFIG={target_config} PLATFORM_CONFIG={platform_config} {self.get_driver_build_target()}"
             buildresult = run(driverbuildcommand)
             self.handle_failure(buildresult, 'driver build', 'firesim/sim', driverbuildcommand)
 
@@ -593,7 +619,7 @@ class RuntimeHWConfig:
             self.tarball_built = True
 
     def __str__(self) -> str:
-        return """RuntimeHWConfig: {}\nDeployQuintuplet: {}\nAGFI: {}\nBitstream tar: {}\nCustomRuntimeConf: {}""".format(self.name, self.deploy_quintuplet, self.agfi, self.bitstream_tar, str(self.customruntimeconfig))
+        return """RuntimeHWConfig: {}\nDeployQuintuplet: {}\nDeployMakefrag: {}\nAGFI: {}\nBitstream tar: {}\nCustomRuntimeConf: {}""".format(self.name, self.deploy_quintuplet, self.deploy_makefrag, self.agfi, self.bitstream_tar, str(self.customruntimeconfig))
 
 
 
@@ -602,6 +628,7 @@ class RuntimeBuildRecipeConfig(RuntimeHWConfig):
     """ A pythonic version of the entires in config_build_recipes.yaml """
 
     def __init__(self, name: str, build_recipe_dict: Dict[str, Any],
+                 build_recipes_config_file: str,
                  default_metasim_host_sim: str,
                  metasimulation_only_plusargs: str,
                  metasimulation_only_vcs_plusargs: str) -> None:
@@ -615,6 +642,21 @@ class RuntimeBuildRecipeConfig(RuntimeHWConfig):
         self.uri_list = []
 
         self.deploy_quintuplet = build_recipe_dict.get('PLATFORM', 'f1') + "-" + build_recipe_dict.get('TARGET_PROJECT', 'firesim') + "-" + build_recipe_dict['DESIGN'] + "-" + build_recipe_dict['TARGET_CONFIG'] + "-" + build_recipe_dict['PLATFORM_CONFIG']
+
+        # resolve the path as an absolute path if set
+        self.deploy_makefrag = build_recipe_dict.get('TARGET_PROJECT_MAKEFRAG')
+        if self.deploy_makefrag:
+            tpm_relpath = Path(self.deploy_makefrag)
+            if tpm_relpath.exists():
+                self.deploy_makefrag = str(tpm_relpath.absolute())
+            else:
+                # search for the file relative to the build config file path
+                bcf_parent_path = Path(build_recipes_config_file).absolute().parent
+                tpm_path: Path = bcf_parent_path / tpm_path
+                if tpm_path.exists():
+                    self.deploy_makefrag = str(tpm_path.absolute())
+                else:
+                    raise Exception(f"Unable to find TARGET_PROJECT_MAKEFRAG ({self.deploy_makefrag}) either as an absolute path or relative to {bcf_parent_path}")
 
         self.customruntimeconfig = build_recipe_dict['metasim_customruntimeconfig']
         # note whether we've built a copy of the simulation driver for this hwconf
@@ -741,7 +783,7 @@ class RuntimeBuildRecipes(RuntimeHWDB):
 
         recipes_dict = recipes_configfile
 
-        self.hwconf_dict = {s: RuntimeBuildRecipeConfig(s, v, metasim_host_simulator, metasimulation_only_plusargs, metasimulation_only_vcs_plusargs) for s, v in recipes_dict.items()}
+        self.hwconf_dict = {s: RuntimeBuildRecipeConfig(s, v, build_recipes_config_file, metasim_host_simulator, metasimulation_only_plusargs, metasimulation_only_vcs_plusargs) for s, v in recipes_dict.items()}
 
 
 class InnerRuntimeConfiguration:

@@ -6,6 +6,7 @@ import logging
 from time import strftime, gmtime
 import pprint
 import yaml
+from pathlib import Path
 
 from awstools.awstools import valid_aws_configure_creds, aws_resource_names
 from buildtools.bitbuilder import BitBuilder
@@ -51,6 +52,7 @@ class BuildConfig:
         name: Name of config i.e. name of `config_build_recipe.yaml` section.
         build_config_file: Pointer to global build config file.
         TARGET_PROJECT: Target project to build.
+        TARGET_PROJECT_MAKEFRAG: Target project makefrag location to build.
         DESIGN: Design to build.
         TARGET_CONFIG: Target config to build.
         deploy_quintuplet: Deploy quintuplet override.
@@ -64,6 +66,7 @@ class BuildConfig:
     name: str
     build_config_file: BuildConfigFile
     TARGET_PROJECT: str
+    TARGET_PROJECT_MAKEFRAG: Optional[str]
     DESIGN: str
     TARGET_CONFIG: str
     deploy_quintuplet: Optional[str]
@@ -92,6 +95,22 @@ class BuildConfig:
         # default provided for old build recipes that don't specify TARGET_PROJECT, PLATFORM
         self.PLATFORM = recipe_config_dict.get('PLATFORM', 'f1')
         self.TARGET_PROJECT = recipe_config_dict.get('TARGET_PROJECT', 'firesim')
+
+        # resolve the path as an absolute path if set
+        self.TARGET_PROJECT_MAKEFRAG = recipe_config_dict.get('TARGET_PROJECT_MAKEFRAG')
+        if self.TARGET_PROJECT_MAKEFRAG:
+            tpm_relpath = Path(self.TARGET_PROJECT_MAKEFRAG)
+            if tpm_relpath.exists():
+                self.TARGET_PROJECT_MAKEFRAG = str(tpm_relpath.absolute())
+            else:
+                # search for the file relative to the build config file path
+                bcf_parent_path = Path(build_config_file.path).absolute().parent
+                tpm_path: Path = bcf_parent_path / tpm_path
+                if tpm_path.exists():
+                    self.TARGET_PROJECT_MAKEFRAG = str(tpm_path.absolute())
+                else:
+                    raise Exception(f"Unable to find TARGET_PROJECT_MAKEFRAG ({self.TARGET_PROJECT_MAKEFRAG}) either as an absolute path or relative to {bcf_parent_path}")
+
         self.DESIGN = recipe_config_dict['DESIGN']
         self.TARGET_CONFIG = recipe_config_dict['TARGET_CONFIG']
 
@@ -108,6 +127,7 @@ class BuildConfig:
 
         if self.deploy_quintuplet is not None and len(self.deploy_quintuplet.split("-")) == 3:
             self.deploy_quintuplet = 'f1-firesim-' + self.deploy_quintuplet
+
         self.launch_time = launch_time
 
         # run platform specific options
@@ -154,7 +174,7 @@ class BuildConfig:
 
     def get_effective_deploy_triplet(self) -> str:
         """Get the effective deploy triplet, i.e. the triplet version of
-        get_effective_deploy_quadruplet().
+        get_effective_deploy_quintuplet().
 
         Returns:
             Effective deploy triplet
@@ -179,6 +199,9 @@ class BuildConfig:
         if self.deploy_quintuplet:
             return self.deploy_quintuplet
         return self.get_chisel_quintuplet()
+
+    def get_deploy_makefrag(self) -> Optional[str]:
+        return self.TARGET_PROJECT_MAKEFRAG
 
     def get_frequency(self) -> float:
         """Get the desired fpga frequency.
@@ -213,7 +236,7 @@ class BuildConfig:
         Returns:
             Fully specified make command.
         """
-        return f"""make PLATFORM={self.PLATFORM} TARGET_PROJECT={self.TARGET_PROJECT} {extra_target_project_make_args(self.TARGET_PROJECT, deploy_dir)} DESIGN={self.DESIGN} TARGET_CONFIG={self.TARGET_CONFIG} PLATFORM_CONFIG={self.PLATFORM_CONFIG} {recipe}"""
+        return f"""make PLATFORM={self.PLATFORM} TARGET_PROJECT={self.TARGET_PROJECT} {extra_target_project_make_args(self.TARGET_PROJECT, self.TARGET_PROJECT_MAKEFRAG, deploy_dir)} DESIGN={self.DESIGN} TARGET_CONFIG={self.TARGET_CONFIG} PLATFORM_CONFIG={self.PLATFORM_CONFIG} {recipe}"""
 
     def __repr__(self) -> str:
         return f"< {type(self)}(name={self.name!r}, build_config_file={self.build_config_file!r}) @{id(self)} >"
