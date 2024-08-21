@@ -2,6 +2,23 @@
 
 This changelog follows the format defined here: https://keepachangelog.com/en/1.0.0/
 
+## [1.20.1] - 2024-08-21
+
+Small QoL updates and fixes. Moves FireSim paper workloads to Chipyard.
+
+## Changed
+
+- Invoke Chipyard's makefile from FireSim's build (by @abejgonzalez in https://github.com/firesim/firesim/pull/1759)
+- Move FireSim paper workloads to Chipyard (by @abejgonzalez in https://github.com/firesim/firesim/pull/1788)
+
+## Fixed
+
+- Fix missing workload for `enumeratefpgas` (by @abejgonzalez in https://github.com/firesim/firesim/pull/1802)
+
+## Uncategorized
+
+- Update generate-conda-lockfile.sh (by @abejgonzalez in https://github.com/firesim/firesim/pull/1789)
+
 ## [1.20.0] - 2024-08-07
 
 Various fixes from 1.19.0 release.
