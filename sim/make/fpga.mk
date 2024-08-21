@@ -44,7 +44,7 @@ fpga_delivery_files = $(addprefix $(fpga_delivery_dir)/$(BASE_FILE_NAME), \
 fpga_sim_delivery_files = $(fpga_driver_dir)/$(DESIGN)-$(PLATFORM)
 
 $(fpga_work_dir)/stamp: $(shell find $(board_dir)/cl_firesim -name '*')
-	mkdir -p $(driver_dir) #Could just set up in the shell project
+	mkdir -p $(@D)
 	cp -rf $(board_dir)/cl_firesim -T $(fpga_work_dir)
 	touch $@
 
