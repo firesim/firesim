@@ -12,6 +12,6 @@ class FpgaDebugSpec extends AnyFlatSpec with ElaborationUtils {
   def annotator(t: Bool) = FpgaDebug(t)
   def ioGen = Input(Bool())
 
-  behavior of "FPGADebug"
+  behavior.of("FPGADebug")
   checkBehaviorOnUnboundTargets(ioGen, annotator)
 }

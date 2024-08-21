@@ -2,8 +2,8 @@
 
 package midas.targetutils
 
-import chisel3.{Data, chiselTypeOf, Module}
-import chisel3.util.{Queue, DecoupledIO, QueueIO}
+import chisel3.{chiselTypeOf, Data, Module}
+import chisel3.util.{DecoupledIO, Queue, QueueIO}
 
 import midas.targetutils.xdc._
 

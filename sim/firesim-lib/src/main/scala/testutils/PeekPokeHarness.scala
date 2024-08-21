@@ -2,8 +2,8 @@
 
 package firesim.lib.testutils
 
-import chisel3.{fromBooleanToLiteral, WireInit, Module, RawModule, withClockAndReset}
-import chisel3.reflect.{DataMirror}
+import chisel3.{fromBooleanToLiteral, withClockAndReset, Module, RawModule, WireInit}
+import chisel3.reflect.DataMirror
 
 import firesim.lib.bridges._
 

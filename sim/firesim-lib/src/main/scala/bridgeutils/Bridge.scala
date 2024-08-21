@@ -2,7 +2,7 @@
 
 package firesim.lib.bridgeutils
 
-import chisel3.{Record}
+import chisel3.Record
 import chisel3.experimental.{annotate, BaseModule, ChiselAnnotation}
 
 /* Bridge

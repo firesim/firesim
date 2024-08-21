@@ -2,7 +2,7 @@
 
 package midas.targetutils.xdc
 
-import chisel3.experimental.{ChiselAnnotation}
+import chisel3.experimental.ChiselAnnotation
 
 /** Some rough guidance, based on Ultrascale+, is provided in the scala doc for each hint. Consult the Xilinx UGs for
   * your target architecture and the synthesis UG (UG901).

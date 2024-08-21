@@ -7,14 +7,12 @@ import org.scalatest.flatspec.AnyFlatSpec
 import chisel3._
 import firrtl.annotations.ModuleTarget
 
-import midas.targetutils._
-
 class RAMStyleHintSpec extends AnyFlatSpec with ElaborationUtils {
   import midas.targetutils.xdc._
   class MemoryModuleIO(addrBits: Int, dataBits: Int) extends Bundle {
-    val readAddress  = Input(UInt(addrBits.W))
-    val readEnable   = Input(Bool())
-    val readData     = Output(UInt(dataBits.W))
+    val readAddress = Input(UInt(addrBits.W))
+    val readEnable  = Input(Bool())
+    val readData    = Output(UInt(dataBits.W))
 
     val writeAddress = Input(UInt(addrBits.W))
     val writeData    = Input(UInt(dataBits.W))
@@ -25,7 +23,7 @@ class RAMStyleHintSpec extends AnyFlatSpec with ElaborationUtils {
     // Arbitrarily selected.
     val dataBits = 64
     val addrBits = 16
-    val io = IO(new MemoryModuleIO(addrBits, dataBits))
+    val io       = IO(new MemoryModuleIO(addrBits, dataBits))
     val ramStyle = style
 
     def mem: MemBase[_]
@@ -34,10 +32,9 @@ class RAMStyleHintSpec extends AnyFlatSpec with ElaborationUtils {
       XDCAnnotation(
         XDCFiles.Synthesis,
         RAMStyleHint.propertyTemplate(style.get),
-        ModuleTarget(this.instanceName, this.instanceName).ref(mem.instanceName)
+        ModuleTarget(this.instanceName, this.instanceName).ref(mem.instanceName),
       )
   }
-
 
   class SyncReadMemModule(style: Option[RAMStyle]) extends BaseMemoryModule(style) {
     // Lazy so this is elaborated  before annotator executes
@@ -50,29 +47,29 @@ class RAMStyleHintSpec extends AnyFlatSpec with ElaborationUtils {
   // due to the pipelining of the data read out. So the check annotator still accepts these.
   class CombReadMemModule(style: Option[RAMStyle]) extends BaseMemoryModule(style) {
     lazy val mem = Mem(1 << addrBits, UInt(dataBits.W))
-    when(io.readEnable)  { io.readData          := RegNext(mem(io.readAddress)) }
+    when(io.readEnable) { io.readData := RegNext(mem(io.readAddress)) }
     when(io.writeEnable) { mem(io.writeAddress) := io.writeData }
   }
 
   trait MemApplyMethod {
     self: BaseMemoryModule =>
-      ramStyle.foreach { RAMStyleHint(mem, _) }
+    ramStyle.foreach { RAMStyleHint(mem, _) }
   }
 
   trait RTApplyMethod {
     self: BaseMemoryModule =>
-      ramStyle.foreach { RAMStyleHint(mem.toTarget, _) }
+    ramStyle.foreach { RAMStyleHint(mem.toTarget, _) }
   }
 
-  def checkSingleTargetModule(gen: =>BaseMemoryModule): Unit = {
+  def checkSingleTargetModule(gen: => BaseMemoryModule): Unit = {
     // Lazy, so that we may introspect on the elaborated module class
     lazy val mod = gen
-    val annos = elaborate(mod)._2.collect { case a: XDCAnnotation => a }
+    val annos    = elaborate(mod)._2.collect { case a: XDCAnnotation => a }
     assert(annos.size == 1)
     assert(annos.head == mod.expectedAnnotation)
   }
 
-  behavior of "RAMStyleHint"
+  behavior.of("RAMStyleHint")
 
   // Sanity check that stuff passes through elaboration.
   it should "correctly annotate a chisel3.SyncReadMem as BLOCK" in {
@@ -114,52 +111,54 @@ class RAMStyleHintSpec extends AnyFlatSpec with ElaborationUtils {
     modD.io <> d
 
     private def expectedAnnotation(mod: SyncReadMemModule, style: RAMStyle) = XDCAnnotation(
-        XDCFiles.Synthesis,
-        RAMStyleHint.propertyTemplate(style),
-        ModuleTarget(this.instanceName, this.instanceName).instOf(mod.instanceName, mod.getClass().getSimpleName()).ref(mod.mem.instanceName)
+      XDCFiles.Synthesis,
+      RAMStyleHint.propertyTemplate(style),
+      ModuleTarget(this.instanceName, this.instanceName)
+        .instOf(mod.instanceName, mod.getClass().getSimpleName())
+        .ref(mod.mem.instanceName),
     )
     def expectedAnnos = Seq(
       expectedAnnotation(modA, RAMStyles.ULTRA),
       expectedAnnotation(modB, RAMStyles.BLOCK),
       expectedAnnotation(modC, RAMStyles.ULTRA),
-      expectedAnnotation(modD, RAMStyles.BLOCK)
+      expectedAnnotation(modD, RAMStyles.BLOCK),
     )
   }
 
   it should "not trivially break deduplication" in {
     lazy val mod = new WrapperModule()
-    val annos = elaborateAndLower(mod)
+    val annos    = elaborateAndLower(mod)
 
     val dedupResultAnnos = annos.collect { case a: firrtl.transforms.DedupedResult => a }
     assert(dedupResultAnnos.size == 4)
 
     val xdcAnnos = annos.collect { case a: XDCAnnotation => a }
     assert(xdcAnnos.size == 4)
-    mod.expectedAnnos.foreach {
-      anno => assert(xdcAnnos.contains(anno))
+    mod.expectedAnnos.foreach { anno =>
+      assert(xdcAnnos.contains(anno))
     }
   }
 
-  behavior of "Simple RAMStyleHint Demo Module"
+  behavior.of("Simple RAMStyleHint Demo Module")
 
   it should "elaborate" in {
     class MemoryModule extends Module {
-    val dataBits = 64
-    val addrBits = 16
-    val io = IO(new MemoryModuleIO(addrBits, dataBits))
+      val dataBits = 64
+      val addrBits = 16
+      val io       = IO(new MemoryModuleIO(addrBits, dataBits))
 
 //DOC include start: Basic RAM Hint
-    import midas.targetutils.xdc._
-    val mem = SyncReadMem(1 << addrBits, UInt(dataBits.W))
-    RAMStyleHint(mem, RAMStyles.ULTRA)
-    // Alternatively: RAMStyleHint(mem, RAMStyles.BLOCK)
+      import midas.targetutils.xdc._
+      val mem = SyncReadMem(1 << addrBits, UInt(dataBits.W))
+      RAMStyleHint(mem, RAMStyles.ULTRA)
+      // Alternatively: RAMStyleHint(mem, RAMStyles.BLOCK)
 //DOC include end: Basic RAM Hint
 
-    io.readData := mem.read(io.readAddress, io.readEnable)
-    when(io.writeEnable) { mem(io.writeAddress) := io.writeData }
-  }
-  val annos = elaborateAndLower(new MemoryModule)
-  val xdcAnnos = annos.collect { case a: XDCAnnotation => a }
-  assert(xdcAnnos.size == 1)
+      io.readData := mem.read(io.readAddress, io.readEnable)
+      when(io.writeEnable) { mem(io.writeAddress) := io.writeData }
+    }
+    val annos = elaborateAndLower(new MemoryModule)
+    val xdcAnnos = annos.collect { case a: XDCAnnotation => a }
+    assert(xdcAnnos.size == 1)
   }
 }

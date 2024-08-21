@@ -50,7 +50,7 @@ object RAMStyles {
 object RAMStyleHint {
   // _reg suffix is applied to memory cells by Vivado, the glob manages
   // duplication for multibit memories.
-  private [midas] def propertyTemplate(style: RAMStyle): String =
+  def propertyTemplate(style: RAMStyle): String =
     s"set_property RAM_STYLE ${style} [get_cells -hierarchical -regexp .*{}_reg.*]"
 
   private def annotate(style: RAMStyle, rT: =>ReferenceTarget): Unit = {

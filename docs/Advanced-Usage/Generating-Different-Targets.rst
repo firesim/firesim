@@ -133,7 +133,7 @@ relying on wildcard / glob matches from a static XDC specification.
 
 Chisel memories can be annotated *in situ* like so:
 
-.. literalinclude:: ../../sim/midas/targetutils/src/test/scala/RAMStyleHintSpec.scala
+.. literalinclude:: ../../sim/midas/src/test/scala/RAMStyleHintSpec.scala
     :language: scala
     :start-after: DOC include start: Basic RAM Hint
     :end-before: DOC include end: Basic RAM Hint
@@ -141,7 +141,7 @@ Chisel memories can be annotated *in situ* like so:
 Alternatively, you can "dot-in" (traverse public members of a Scala class
 hierarchy) to annotate a memory in a submodule. Here's an example:
 
-.. literalinclude:: ../../sim/midas/targetutils/src/test/scala/RAMStyleHintSpec.scala
+.. literalinclude:: ../../sim/midas/src/test/scala/RAMStyleHintSpec.scala
     :language: scala
     :start-after: DOC include start: RAM Hint From Parent
     :end-before: DOC include end: RAM Hint From Parent

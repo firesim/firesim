@@ -2,14 +2,14 @@
 
 package firesim.lib.bridgeutils
 
-import scala.collection.mutable.{ArrayBuffer}
-import scala.collection.immutable.{ListMap}
+import scala.collection.mutable.ArrayBuffer
+import scala.collection.immutable.ListMap
 
-import chisel3.{Clock, Data, Bits, fromIntToWidth, Aggregate, Bool, Vec, UInt, SInt, Record}
+import chisel3.{fromIntToWidth, Bits, Bool, Clock, Data, Record, SInt, UInt, Vec}
 import chisel3.util.{ReadyValidIO, ValidIO}
-import chisel3.experimental.{Direction}
-import chisel3.reflect.DataMirror.{directionOf}
-import firrtl.annotations.{ReferenceTarget}
+import chisel3.experimental.Direction
+import chisel3.reflect.DataMirror.directionOf
+import firrtl.annotations.ReferenceTarget
 
 // A collection of useful types and methods for moving between target and host-land interfaces
 object SimUtils {

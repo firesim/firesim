@@ -4,7 +4,7 @@ package firesim.lib.bridgeutils
 
 import scala.collection.immutable
 
-import chisel3.{fromIntToWidth, UInt, SInt, Data, Input, Output, Aggregate, Record}
+import chisel3.{fromIntToWidth, Aggregate, Data, Input, Output, Record, SInt, UInt}
 
 object SerializationUtils {
   // Boxed types for different leaf chisel types we currently support

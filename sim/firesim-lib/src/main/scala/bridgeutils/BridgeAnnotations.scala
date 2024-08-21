@@ -2,11 +2,11 @@
 
 package firesim.lib.bridgeutils
 
-import firrtl.{RenameMap}
-import firrtl.annotations.{SingleTargetAnnotation} // Deprecated
+import firrtl.RenameMap
+import firrtl.annotations.SingleTargetAnnotation // Deprecated
 import firrtl.annotations.{Annotation, HasSerializationHints, ModuleTarget, ReferenceTarget}
 
-import midas.targetutils.{FAMEAnnotation}
+import midas.targetutils.FAMEAnnotation
 
 sealed trait BridgeChannel {
   def update(renames: RenameMap): BridgeChannel

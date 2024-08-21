@@ -12,6 +12,6 @@ class PerfCounterSpec extends AnyFlatSpec with ElaborationUtils {
   def annotator(t: Bool) = PerfCounter(t, "", "")
   def ioGen = Input(Bool())
 
-  behavior of "PerfCounter"
+  behavior.of("PerfCounter")
   checkBehaviorOnUnboundTargets(ioGen, annotator)
 }

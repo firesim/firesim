@@ -2,10 +2,10 @@
 
 package midas.targetutils.xdc
 
-import chisel3.{Bits, Data}
+import chisel3.Data
 import chisel3.experimental.{ChiselAnnotation}
 import firrtl.{RenameMap}
-import firrtl.annotations.{Annotation, NoTargetAnnotation, ReferenceTarget, SingleTargetAnnotation, ModuleTarget, InstanceTarget, HasSerializationHints}
+import firrtl.annotations.{Annotation, NoTargetAnnotation, ReferenceTarget, HasSerializationHints}
 import firrtl.transforms.{DontTouchAllTargets}
 
 import midas.targetutils.ReferenceTargetRenamer

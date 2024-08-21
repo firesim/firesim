@@ -2,8 +2,8 @@
 
 package firesim.lib.nasti
 
-import chisel3.{Flipped, Bundle, UInt, Bool, fromIntToWidth}
-import chisel3.util.{Decoupled}
+import chisel3.{fromIntToWidth, Bool, Bundle, Flipped, UInt}
+import chisel3.util.Decoupled
 
 import scala.math.max
 

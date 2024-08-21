@@ -2,8 +2,8 @@
 
 package firesim.lib.bridgeutils
 
-import firrtl.{RenameMap}
-import firrtl.annotations.{ReferenceTarget}
+import firrtl.RenameMap
+import firrtl.annotations.ReferenceTarget
 
 object RTRenamer {
   // TODO: determine order for multiple renames, or just check of == 1 rename?

@@ -4,10 +4,10 @@ package firesim.lib.bridgeutils
 
 import scala.collection.mutable
 
-import chisel3.{Clock, Data, Flipped, Vec, Bits, Record}
-import chisel3.util.{DecoupledIO, Decoupled}
-import chisel3.experimental.{Direction}
-import chisel3.reflect.{DataMirror}
+import chisel3.{Bits, Clock, Data, Flipped, Record, Vec}
+import chisel3.util.{Decoupled, DecoupledIO}
+import chisel3.experimental.Direction
+import chisel3.reflect.DataMirror
 
 /** A utility trait for translating chisel references into unidirected FCCAs This becomes more useful when there are
   * channel types.
