@@ -9,6 +9,8 @@ def extra_target_project_make_args(targetproject: str, deploydir: str) -> str:
     Returns:
         any extra args needed for FireSim's make command to function
     """
-    if targetproject in ["firesim", "bridges"]:
-        return f"TARGET_PROJECT_MAKEFRAG={deploydir}/../target-design/chipyard/generators/firechip/core/src/main/makefrag/{targetproject}"
+    if targetproject == "firesim":
+        return f"TARGET_PROJECT_MAKEFRAG={deploydir}/../target-design/chipyard/generators/firechip/chip/src/main/makefrag/{targetproject}"
+    if targetproject == "bridges":
+        return f"TARGET_PROJECT_MAKEFRAG={deploydir}/../target-design/chipyard/generators/firechip/bridgestubs/src/main/makefrag/{targetproject}"
     return ""
