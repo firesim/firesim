@@ -142,7 +142,7 @@ firesim_supernode_rocket_singlecore_nic_l2_lbp:
     TARGET_PROJECT: firesim
     DESIGN: FireSim
     TARGET_CONFIG: WithNIC_SupernodeFireSimRocketConfig
-    PLATFORM_CONFIG: WithAutoILA_WithDefaultMemModel_BaseF1Config
+    PLATFORM_CONFIG: WithAutoILA_BaseF1Config
     deploy_quintuplet: null
     platform_config_args:
         fpga_frequency: 85
@@ -172,7 +172,7 @@ firesim_rocket_singlecore_no_nic_l2_lbp:
     TARGET_PROJECT: firesim
     DESIGN: FireSim
     TARGET_CONFIG: WithDefaultFireSimBridges_WithFireSimHighPerfConfigTweaks_chipyard.RocketConfig
-    PLATFORM_CONFIG: WithDefaultMemModel_BaseF1Config
+    PLATFORM_CONFIG: BaseF1Config
     deploy_quintuplet: null
     platform_config_args:
         fpga_frequency: 90
@@ -232,7 +232,7 @@ vitis_firesim_rocket_singlecore_no_nic:
     TARGET_PROJECT: firesim
     DESIGN: FireSim
     TARGET_CONFIG: FireSimRocketMMIOOnlyConfig
-    PLATFORM_CONFIG: WithDefaultMemModel_BaseVitisConfig
+    PLATFORM_CONFIG: BaseVitisConfig
     deploy_quintuplet: null
     platform_config_args:
         fpga_frequency: 30 # previously reached 140. using 30 for build speed
@@ -247,7 +247,7 @@ firesim_gemmini_rocket_singlecore_no_nic:
     TARGET_PROJECT: firesim
     DESIGN: FireSim
     TARGET_CONFIG: FireSimLeanGemminiRocketConfig
-    PLATFORM_CONFIG: WithDefaultMemModel_BaseF1Config
+    PLATFORM_CONFIG: BaseF1Config
     deploy_quintuplet: null
     platform_config_args:
         fpga_frequency: 30 # AJG: conservative for now, later sweep for higher frequency
@@ -262,7 +262,7 @@ firesim_gemmini_printf_rocket_singlecore_no_nic:
     TARGET_PROJECT: firesim
     DESIGN: FireSim
     TARGET_CONFIG: FireSimLeanGemminiPrintfRocketConfig
-    PLATFORM_CONFIG: WithPrintfSynthesis_WithDefaultMemModel_BaseF1Config
+    PLATFORM_CONFIG: WithPrintfSynthesis_BaseF1Config
     deploy_quintuplet: null
     platform_config_args:
         fpga_frequency: 10 # AJG: conservative for now, later sweep for higher frequency
@@ -277,7 +277,7 @@ alveo_u250_firesim_rocket_singlecore_no_nic:
     TARGET_PROJECT: firesim
     DESIGN: FireSim
     TARGET_CONFIG: FireSimRocketConfig
-    PLATFORM_CONFIG: WithDefaultMemModel_BaseXilinxAlveoU250Config
+    PLATFORM_CONFIG: BaseXilinxAlveoU250Config
     deploy_quintuplet: null
     platform_config_args:
         fpga_frequency: 60
@@ -291,7 +291,7 @@ alveo_u250_firesim_rocket_quadcore_no_nic:
     TARGET_PROJECT: firesim
     DESIGN: FireSim
     TARGET_CONFIG: FireSimQuadRocketConfig
-    PLATFORM_CONFIG: WithDefaultMemModel_BaseXilinxAlveoU250Config
+    PLATFORM_CONFIG: BaseXilinxAlveoU250Config
     deploy_quintuplet: null
     platform_config_args:
         fpga_frequency: 60
@@ -305,7 +305,7 @@ alveo_u250_firesim_boom_singlecore_no_nic:
     TARGET_PROJECT: firesim
     DESIGN: FireSim
     TARGET_CONFIG: FireSimLargeBoomConfig
-    PLATFORM_CONFIG: WithDefaultMemModel_BaseXilinxAlveoU250Config
+    PLATFORM_CONFIG: BaseXilinxAlveoU250Config
     deploy_quintuplet: null
     platform_config_args:
         fpga_frequency: 60
@@ -319,7 +319,7 @@ alveo_u250_firesim_rocket_singlecore_nic:
     TARGET_PROJECT: firesim
     DESIGN: FireSim
     TARGET_CONFIG: WithNIC_FireSimRocketConfig
-    PLATFORM_CONFIG: WithDefaultMemModel_BaseXilinxAlveoU250Config
+    PLATFORM_CONFIG: BaseXilinxAlveoU250Config
     deploy_quintuplet: null
     platform_config_args:
         fpga_frequency: 60
@@ -335,7 +335,7 @@ alveo_u250_firesim_gemmini_rocket_singlecore_no_nic:
     TARGET_PROJECT: firesim
     DESIGN: FireSim
     TARGET_CONFIG: FireSimLeanGemminiRocketConfig
-    PLATFORM_CONFIG: WithDefaultMemModel_BaseXilinxAlveoU250Config
+    PLATFORM_CONFIG: BaseXilinxAlveoU250Config
     deploy_quintuplet: null
     platform_config_args:
         fpga_frequency: 60
@@ -350,7 +350,7 @@ alveo_u280_firesim_rocket_singlecore_no_nic:
     TARGET_PROJECT: firesim
     DESIGN: FireSim
     TARGET_CONFIG: FireSimRocketConfig
-    PLATFORM_CONFIG: WithDefaultMemModel_BaseXilinxAlveoU280Config
+    PLATFORM_CONFIG: BaseXilinxAlveoU280Config
     deploy_quintuplet: null
     platform_config_args:
         fpga_frequency: 60
@@ -365,7 +365,7 @@ alveo_u200_firesim_rocket_singlecore_no_nic:
     TARGET_PROJECT: firesim
     DESIGN: FireSim
     TARGET_CONFIG: FireSimRocketConfig
-    PLATFORM_CONFIG: WithDefaultMemModel_BaseXilinxAlveoU200Config
+    PLATFORM_CONFIG: BaseXilinxAlveoU200Config
     deploy_quintuplet: null
     platform_config_args:
         fpga_frequency: 60
@@ -380,7 +380,7 @@ xilinx_vcu118_firesim_rocket_singlecore_4GB_no_nic:
     TARGET_PROJECT: firesim
     DESIGN: FireSim
     TARGET_CONFIG: FireSimRocket4GiBDRAMConfig
-    PLATFORM_CONFIG: WithDefaultMemModel_BaseXilinxVCU118Config
+    PLATFORM_CONFIG: BaseXilinxVCU118Config
     deploy_quintuplet: null
     platform_config_args:
         fpga_frequency: 90
@@ -395,7 +395,7 @@ nitefury_firesim_rocket_singlecore_no_nic:
     TARGET_PROJECT: firesim
     DESIGN: FireSim
     TARGET_CONFIG: FireSimRocket1GiBDRAMConfig
-    PLATFORM_CONFIG: WithDefaultMemModel_BaseNitefuryConfig
+    PLATFORM_CONFIG: BaseNitefuryConfig
     deploy_quintuplet: null
     platform_config_args:
         fpga_frequency: 50
@@ -413,7 +413,7 @@ f1_rocket_split_soc_fast:
   TARGET_PROJECT: firesim
   DESIGN: FireSim
   TARGET_CONFIG: FireSimRocketConfig
-  PLATFORM_CONFIG: WithDefaultMemModel_RocketTileF1PCIMBase
+  PLATFORM_CONFIG: RocketTileF1PCIMBase
   deploy_quintuplet: null
   platform_config_args:
     fpga_frequency: 90
@@ -427,7 +427,7 @@ f1_rocket_split_tile_fast:
   TARGET_PROJECT: firesim
   DESIGN: FireSim
   TARGET_CONFIG: FireSimRocketConfig
-  PLATFORM_CONFIG: WithDefaultMemModel_RocketTileF1PCIMPartition0
+  PLATFORM_CONFIG: RocketTileF1PCIMPartition0
   deploy_quintuplet: null
   platform_config_args:
     fpga_frequency: 90
@@ -446,7 +446,7 @@ f1_firesim_rocket_soc_exact:
   TARGET_PROJECT: firesim
   DESIGN: FireSim
   TARGET_CONFIG: FireSimRocketConfig
-  PLATFORM_CONFIG: ExactMode_WithDefaultMemModel_RocketTileF1PCIMBase
+  PLATFORM_CONFIG: ExactMode_RocketTileF1PCIMBase
   deploy_quintuplet: null
   platform_config_args:
     fpga_frequency: 90
@@ -460,7 +460,7 @@ f1_firesim_rocket_tile_exact:
   TARGET_PROJECT: firesim
   DESIGN: FireSim
   TARGET_CONFIG: FireSimRocketConfig
-  PLATFORM_CONFIG: ExactMode_WithDefaultMemModel_RocketTileF1PCIMPartition0
+  PLATFORM_CONFIG: ExactMode_RocketTileF1PCIMPartition0
   deploy_quintuplet: null
   platform_config_args:
     fpga_frequency: 90
@@ -478,7 +478,7 @@ xilinx_u250_firesim_dual_rocket_split_base:
   TARGET_PROJECT: firesim
   DESIGN: FireSim
   TARGET_CONFIG: WithDefaultFireSimBridges_WithFireSimConfigTweaks_chipyard.DualRocketConfig
-  PLATFORM_CONFIG: WithDefaultMemModel_DualRocketTileQSFPBase
+  PLATFORM_CONFIG: DualRocketTileQSFPBase
   deploy_quintuplet: null
   platform_config_args:
     fpga_frequency: 90
@@ -492,7 +492,7 @@ xilinx_u250_firesim_dual_rocket_split_0:
   TARGET_PROJECT: firesim
   DESIGN: FireSim
   TARGET_CONFIG: WithDefaultFireSimBridges_WithFireSimConfigTweaks_chipyard.DualRocketConfig
-  PLATFORM_CONFIG: WithDefaultMemModel_DualRocketTileQSFP0
+  PLATFORM_CONFIG: DualRocketTileQSFP0
   deploy_quintuplet: null
   platform_config_args:
     fpga_frequency: 90
@@ -506,7 +506,7 @@ xilinx_u250_firesim_dual_rocket_split_1:
   TARGET_PROJECT: firesim
   DESIGN: FireSim
   TARGET_CONFIG: WithDefaultFireSimBridges_WithFireSimConfigTweaks_chipyard.DualRocketConfig
-  PLATFORM_CONFIG: WithDefaultMemModel_DualRocketTileQSFP1
+  PLATFORM_CONFIG: DualRocketTileQSFP1
   deploy_quintuplet: null
   platform_config_args:
     fpga_frequency: 90
@@ -525,7 +525,7 @@ xilinx_u250_quad_rocket_ring_base:
   TARGET_PROJECT: firesim
   DESIGN: FireSim
   TARGET_CONFIG: FireSimQuadRocketSbusRingNoCConfig
-  PLATFORM_CONFIG: WithDefaultMemModel_QuadTileRingNoCBase
+  PLATFORM_CONFIG: QuadTileRingNoCBase
   deploy_quintuplet: null
   platform_config_args:
     fpga_frequency: 90
@@ -539,7 +539,7 @@ xilinx_u250_quad_rocket_ring_0:
   TARGET_PROJECT: firesim
   DESIGN: FireSim
   TARGET_CONFIG: FireSimQuadRocketSbusRingNoCConfig
-  PLATFORM_CONFIG: WithDefaultMemModel_QuadTileRingNoC0
+  PLATFORM_CONFIG: QuadTileRingNoC0
   deploy_quintuplet: null
   platform_config_args:
     fpga_frequency: 90
@@ -553,7 +553,7 @@ xilinx_u250_quad_rocket_ring_1:
   TARGET_PROJECT: firesim
   DESIGN: FireSim
   TARGET_CONFIG: FireSimQuadRocketSbusRingNoCConfig
-  PLATFORM_CONFIG: WithDefaultMemModel_QuadTileRingNoC1
+  PLATFORM_CONFIG: QuadTileRingNoC1
   deploy_quintuplet: null
   platform_config_args:
     fpga_frequency: 90

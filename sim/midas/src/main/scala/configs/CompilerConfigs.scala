@@ -85,49 +85,56 @@ class WithAutoCounterPrintf
 
 class BaseF1Config
     extends Config(
-      new WithWiringTransform ++
+      new WithDefaultMemModel ++
+        new WithWiringTransform ++
         new WithAsyncResetReplacement ++
         new midas.EC2F1Config
     )
 
 class BaseXilinxAlveoU200Config
     extends Config(
-      new WithWiringTransform ++
+      new WithDefaultMemModel ++
+        new WithWiringTransform ++
         new WithAsyncResetReplacement ++
         new midas.XilinxAlveoU200Config
     )
 
 class BaseXilinxAlveoU250Config
     extends Config(
-      new WithWiringTransform ++
+      new WithDefaultMemModel ++
+        new WithWiringTransform ++
         new WithAsyncResetReplacement ++
         new midas.XilinxAlveoU250Config
     )
 
 class BaseXilinxAlveoU280Config
     extends Config(
-      new WithWiringTransform ++
+      new WithDefaultMemModel ++
+        new WithWiringTransform ++
         new WithAsyncResetReplacement ++
         new midas.XilinxAlveoU280Config
     )
 
 class BaseNitefuryConfig
     extends Config(
-      new WithWiringTransform ++
+      new WithDefaultMemModel ++
+        new WithWiringTransform ++
         new WithAsyncResetReplacement ++
         new midas.NitefuryConfig
     )
 
 class BaseXilinxVCU118Config
     extends Config(
-      new WithWiringTransform ++
+      new WithDefaultMemModel ++
+        new WithWiringTransform ++
         new WithAsyncResetReplacement ++
         new midas.XilinxVCU118Config
     )
 
 class BaseVitisConfig
     extends Config(
-      new WithWiringTransform ++
+      new WithDefaultMemModel ++
+        new WithWiringTransform ++
         new WithAsyncResetReplacement ++
         new midas.VitisConfig
     )
