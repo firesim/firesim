@@ -5,7 +5,9 @@ package midas.tests
 
 import midas.passes._
 import midas.targetutils.xdc._
+import midas.{ConvertExternalToInternalAnnotations}
 
+import firrtl.AnnotationSeq
 import firrtl.annotations._
 import firrtl.testutils._
 
@@ -46,7 +48,7 @@ class WriteXDCFileSpec extends LowTransformSpec with FirrtlRunners with XDCAnnot
   // Destination file, rT in input, paths to instances
   type XDCSnippetSpec = (XDCDestinationFile, ReferenceTarget, Seq[String])
 
-  def buildAnnotations(specs: XDCSnippetSpec*): (Seq[XDCAnnotation], Seq[XDCOutputAnnotation]) = {
+  def buildAnnotations(specs: XDCSnippetSpec*): (AnnotationSeq, Seq[XDCOutputAnnotation]) = {
     val xdcAnnos = for ((oFile, rT, _) <- specs) yield {
       XDCAnnotation(oFile, "{}", rT)
     }
@@ -56,7 +58,7 @@ class WriteXDCFileSpec extends LowTransformSpec with FirrtlRunners with XDCAnnot
         .mkString("\n")
       XDCOutputAnnotation(body, Some(oFile.fileSuffix))
     }
-    (xdcAnnos.toSeq, outputAnnos.toSeq)
+    (ConvertExternalToInternalAnnotations(xdcAnnos.toSeq), outputAnnos.toSeq)
   }
 
 
