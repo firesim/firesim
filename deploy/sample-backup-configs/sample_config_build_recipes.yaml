@@ -32,6 +32,7 @@
 firesim_rocket_quadcore_nic_l2_llc4mb_ddr3:
     PLATFORM: f1
     TARGET_PROJECT: firesim
+    TARGET_PROJECT_MAKEFRAG: null
     DESIGN: FireSim
     TARGET_CONFIG: WithNIC_WithDefaultFireSimBridges_WithFireSimHighPerfConfigTweaks_chipyard.QuadRocketConfig
     PLATFORM_CONFIG: WithAutoILA_FRFCFS16GBQuadRankLLC4MB_BaseF1Config
@@ -48,6 +49,7 @@ firesim_rocket_quadcore_nic_l2_llc4mb_ddr3:
 firesim_rocket_quadcore_no_nic_l2_llc4mb_ddr3:
     PLATFORM: f1
     TARGET_PROJECT: firesim
+    TARGET_PROJECT_MAKEFRAG: null
     DESIGN: FireSim
     TARGET_CONFIG: WithDefaultFireSimBridges_WithFireSimTestChipConfigTweaks_chipyard.QuadRocketConfig
     PLATFORM_CONFIG: WithAutoILA_FRFCFS16GBQuadRankLLC4MB_BaseF1Config
@@ -64,6 +66,7 @@ firesim_rocket_quadcore_no_nic_l2_llc4mb_ddr3:
 firesim_boom_singlecore_nic_l2_llc4mb_ddr3:
     PLATFORM: f1
     TARGET_PROJECT: firesim
+    TARGET_PROJECT_MAKEFRAG: null
     DESIGN: FireSim
     TARGET_CONFIG: WithNIC_WithDefaultFireSimBridges_WithFireSimHighPerfConfigTweaks_chipyard.LargeBoomV3Config
     PLATFORM_CONFIG: WithAutoILA_FRFCFS16GBQuadRankLLC4MB_BaseF1Config
@@ -80,6 +83,7 @@ firesim_boom_singlecore_nic_l2_llc4mb_ddr3:
 firesim_boom_singlecore_no_nic_l2_llc4mb_ddr3:
     PLATFORM: f1
     TARGET_PROJECT: firesim
+    TARGET_PROJECT_MAKEFRAG: null
     DESIGN: FireSim
     TARGET_CONFIG: WithDefaultFireSimBridges_WithFireSimTestChipConfigTweaks_chipyard.LargeBoomV3Config
     PLATFORM_CONFIG: WithAutoILA_FRFCFS16GBQuadRankLLC4MB_BaseF1Config
@@ -95,6 +99,7 @@ firesim_boom_singlecore_no_nic_l2_llc4mb_ddr3:
 firesim_cva6_singlecore_no_nic_l2_llc4mb_ddr3:
     PLATFORM: f1
     TARGET_PROJECT: firesim
+    TARGET_PROJECT_MAKEFRAG: null
     DESIGN: FireSim
     TARGET_CONFIG: WithDefaultFireSimBridges_WithFireSimConfigTweaks_chipyard.CVA6Config
     PLATFORM_CONFIG: WithAutoILA_FRFCFS16GBQuadRankLLC4MB_BaseF1Config
@@ -110,6 +115,7 @@ firesim_cva6_singlecore_no_nic_l2_llc4mb_ddr3:
 firesim_rocket_singlecore_gemmini_no_nic_l2_llc4mb_ddr3:
     PLATFORM: f1
     TARGET_PROJECT: firesim
+    TARGET_PROJECT_MAKEFRAG: null
     DESIGN: FireSim
     TARGET_CONFIG: WithDefaultFireSimBridges_WithFireSimConfigTweaks_chipyard.GemminiRocketConfig
     PLATFORM_CONFIG: WithAutoILA_FRFCFS16GBQuadRankLLC4MB_BaseF1Config
@@ -125,6 +131,7 @@ firesim_rocket_singlecore_gemmini_no_nic_l2_llc4mb_ddr3:
 firesim_boom_singlecore_no_nic_l2_llc4mb_ddr3_ramopts:
     PLATFORM: f1
     TARGET_PROJECT: firesim
+    TARGET_PROJECT_MAKEFRAG: null
     DESIGN: FireSim
     TARGET_CONFIG: WithDefaultFireSimBridges_WithFireSimTestChipConfigTweaks_chipyard.LargeBoomV3Config
     PLATFORM_CONFIG: WithAutoILA_MCRams_FRFCFS16GBQuadRankLLC4MB_BaseF1Config
@@ -140,6 +147,7 @@ firesim_boom_singlecore_no_nic_l2_llc4mb_ddr3_ramopts:
 firesim_supernode_rocket_singlecore_nic_l2_lbp:
     PLATFORM: f1
     TARGET_PROJECT: firesim
+    TARGET_PROJECT_MAKEFRAG: null
     DESIGN: FireSim
     TARGET_CONFIG: WithNIC_SupernodeFireSimRocketConfig
     PLATFORM_CONFIG: WithAutoILA_BaseF1Config
@@ -155,6 +163,7 @@ firesim_supernode_rocket_singlecore_nic_l2_lbp:
 midasexamples_gcd:
     PLATFORM: f1
     TARGET_PROJECT: midasexamples
+    TARGET_PROJECT_MAKEFRAG: null
     DESIGN: GCD
     TARGET_CONFIG: NoConfig
     PLATFORM_CONFIG: DefaultF1Config
@@ -170,6 +179,7 @@ midasexamples_gcd:
 firesim_rocket_singlecore_no_nic_l2_lbp:
     PLATFORM: f1
     TARGET_PROJECT: firesim
+    TARGET_PROJECT_MAKEFRAG: null
     DESIGN: FireSim
     TARGET_CONFIG: WithDefaultFireSimBridges_WithFireSimHighPerfConfigTweaks_chipyard.RocketConfig
     PLATFORM_CONFIG: BaseF1Config
@@ -185,6 +195,7 @@ firesim_rocket_singlecore_no_nic_l2_lbp:
 firesim_rocket_singlecore_sha3_nic_l2_llc4mb_ddr3:
     PLATFORM: f1
     TARGET_PROJECT: firesim
+    TARGET_PROJECT_MAKEFRAG: null
     DESIGN: FireSim
     TARGET_CONFIG: WithNIC_WithDefaultFireSimBridges_WithFireSimHighPerfConfigTweaks_chipyard.Sha3RocketConfig
     PLATFORM_CONFIG: FRFCFS16GBQuadRankLLC4MB_BaseF1Config
@@ -200,6 +211,7 @@ firesim_rocket_singlecore_sha3_nic_l2_llc4mb_ddr3:
 firesim_rocket_singlecore_sha3_no_nic_l2_llc4mb_ddr3:
     PLATFORM: f1
     TARGET_PROJECT: firesim
+    TARGET_PROJECT_MAKEFRAG: null
     DESIGN: FireSim
     TARGET_CONFIG: WithDefaultFireSimBridges_WithFireSimHighPerfConfigTweaks_chipyard.Sha3RocketConfig
     PLATFORM_CONFIG: FRFCFS16GBQuadRankLLC4MB_BaseF1Config
@@ -215,6 +227,7 @@ firesim_rocket_singlecore_sha3_no_nic_l2_llc4mb_ddr3:
 firesim_rocket_singlecore_sha3_no_nic_l2_llc4mb_ddr3_printf:
     PLATFORM: f1
     TARGET_PROJECT: firesim
+    TARGET_PROJECT_MAKEFRAG: null
     DESIGN: FireSim
     TARGET_CONFIG: WithDefaultFireSimBridges_WithFireSimHighPerfConfigTweaks_chipyard.Sha3RocketPrintfConfig
     PLATFORM_CONFIG: WithPrintfSynthesis_FRFCFS16GBQuadRankLLC4MB_BaseF1Config
@@ -230,6 +243,7 @@ firesim_rocket_singlecore_sha3_no_nic_l2_llc4mb_ddr3_printf:
 vitis_firesim_rocket_singlecore_no_nic:
     PLATFORM: vitis
     TARGET_PROJECT: firesim
+    TARGET_PROJECT_MAKEFRAG: null
     DESIGN: FireSim
     TARGET_CONFIG: FireSimRocketMMIOOnlyConfig
     PLATFORM_CONFIG: BaseVitisConfig
@@ -245,6 +259,7 @@ vitis_firesim_rocket_singlecore_no_nic:
 firesim_gemmini_rocket_singlecore_no_nic:
     PLATFORM: f1
     TARGET_PROJECT: firesim
+    TARGET_PROJECT_MAKEFRAG: null
     DESIGN: FireSim
     TARGET_CONFIG: FireSimLeanGemminiRocketConfig
     PLATFORM_CONFIG: BaseF1Config
@@ -260,6 +275,7 @@ firesim_gemmini_rocket_singlecore_no_nic:
 firesim_gemmini_printf_rocket_singlecore_no_nic:
     PLATFORM: f1
     TARGET_PROJECT: firesim
+    TARGET_PROJECT_MAKEFRAG: null
     DESIGN: FireSim
     TARGET_CONFIG: FireSimLeanGemminiPrintfRocketConfig
     PLATFORM_CONFIG: WithPrintfSynthesis_BaseF1Config
@@ -275,6 +291,7 @@ firesim_gemmini_printf_rocket_singlecore_no_nic:
 alveo_u250_firesim_rocket_singlecore_no_nic:
     PLATFORM: xilinx_alveo_u250
     TARGET_PROJECT: firesim
+    TARGET_PROJECT_MAKEFRAG: null
     DESIGN: FireSim
     TARGET_CONFIG: FireSimRocketConfig
     PLATFORM_CONFIG: BaseXilinxAlveoU250Config
@@ -289,6 +306,7 @@ alveo_u250_firesim_rocket_singlecore_no_nic:
 alveo_u250_firesim_rocket_quadcore_no_nic:
     PLATFORM: xilinx_alveo_u250
     TARGET_PROJECT: firesim
+    TARGET_PROJECT_MAKEFRAG: null
     DESIGN: FireSim
     TARGET_CONFIG: FireSimQuadRocketConfig
     PLATFORM_CONFIG: BaseXilinxAlveoU250Config
@@ -303,6 +321,7 @@ alveo_u250_firesim_rocket_quadcore_no_nic:
 alveo_u250_firesim_boom_singlecore_no_nic:
     PLATFORM: xilinx_alveo_u250
     TARGET_PROJECT: firesim
+    TARGET_PROJECT_MAKEFRAG: null
     DESIGN: FireSim
     TARGET_CONFIG: FireSimLargeBoomConfig
     PLATFORM_CONFIG: BaseXilinxAlveoU250Config
@@ -317,6 +336,7 @@ alveo_u250_firesim_boom_singlecore_no_nic:
 alveo_u250_firesim_rocket_singlecore_nic:
     PLATFORM: xilinx_alveo_u250
     TARGET_PROJECT: firesim
+    TARGET_PROJECT_MAKEFRAG: null
     DESIGN: FireSim
     TARGET_CONFIG: WithNIC_FireSimRocketConfig
     PLATFORM_CONFIG: BaseXilinxAlveoU250Config
@@ -333,6 +353,7 @@ alveo_u250_firesim_rocket_singlecore_nic:
 alveo_u250_firesim_gemmini_rocket_singlecore_no_nic:
     PLATFORM: xilinx_alveo_u250
     TARGET_PROJECT: firesim
+    TARGET_PROJECT_MAKEFRAG: null
     DESIGN: FireSim
     TARGET_CONFIG: FireSimLeanGemminiRocketConfig
     PLATFORM_CONFIG: BaseXilinxAlveoU250Config
@@ -348,6 +369,7 @@ alveo_u250_firesim_gemmini_rocket_singlecore_no_nic:
 alveo_u280_firesim_rocket_singlecore_no_nic:
     PLATFORM: xilinx_alveo_u280
     TARGET_PROJECT: firesim
+    TARGET_PROJECT_MAKEFRAG: null
     DESIGN: FireSim
     TARGET_CONFIG: FireSimRocketConfig
     PLATFORM_CONFIG: BaseXilinxAlveoU280Config
@@ -363,6 +385,7 @@ alveo_u280_firesim_rocket_singlecore_no_nic:
 alveo_u200_firesim_rocket_singlecore_no_nic:
     PLATFORM: xilinx_alveo_u200
     TARGET_PROJECT: firesim
+    TARGET_PROJECT_MAKEFRAG: null
     DESIGN: FireSim
     TARGET_CONFIG: FireSimRocketConfig
     PLATFORM_CONFIG: BaseXilinxAlveoU200Config
@@ -378,6 +401,7 @@ alveo_u200_firesim_rocket_singlecore_no_nic:
 xilinx_vcu118_firesim_rocket_singlecore_4GB_no_nic:
     PLATFORM: xilinx_vcu118
     TARGET_PROJECT: firesim
+    TARGET_PROJECT_MAKEFRAG: null
     DESIGN: FireSim
     TARGET_CONFIG: FireSimRocket4GiBDRAMConfig
     PLATFORM_CONFIG: BaseXilinxVCU118Config
@@ -393,6 +417,7 @@ xilinx_vcu118_firesim_rocket_singlecore_4GB_no_nic:
 nitefury_firesim_rocket_singlecore_no_nic:
     PLATFORM: rhsresearch_nitefury_ii
     TARGET_PROJECT: firesim
+    TARGET_PROJECT_MAKEFRAG: null
     DESIGN: FireSim
     TARGET_CONFIG: FireSimRocket1GiBDRAMConfig
     PLATFORM_CONFIG: BaseNitefuryConfig
@@ -411,6 +436,7 @@ nitefury_firesim_rocket_singlecore_no_nic:
 f1_rocket_split_soc_fast:
   PLATFORM: f1
   TARGET_PROJECT: firesim
+  TARGET_PROJECT_MAKEFRAG: null
   DESIGN: FireSim
   TARGET_CONFIG: FireSimRocketConfig
   PLATFORM_CONFIG: RocketTileF1PCIMBase
@@ -425,6 +451,7 @@ f1_rocket_split_soc_fast:
 f1_rocket_split_tile_fast:
   PLATFORM: f1
   TARGET_PROJECT: firesim
+  TARGET_PROJECT_MAKEFRAG: null
   DESIGN: FireSim
   TARGET_CONFIG: FireSimRocketConfig
   PLATFORM_CONFIG: RocketTileF1PCIMPartition0
@@ -444,6 +471,7 @@ f1_rocket_split_tile_fast:
 f1_firesim_rocket_soc_exact:
   PLATFORM: f1
   TARGET_PROJECT: firesim
+  TARGET_PROJECT_MAKEFRAG: null
   DESIGN: FireSim
   TARGET_CONFIG: FireSimRocketConfig
   PLATFORM_CONFIG: ExactMode_RocketTileF1PCIMBase
@@ -458,6 +486,7 @@ f1_firesim_rocket_soc_exact:
 f1_firesim_rocket_tile_exact:
   PLATFORM: f1
   TARGET_PROJECT: firesim
+  TARGET_PROJECT_MAKEFRAG: null
   DESIGN: FireSim
   TARGET_CONFIG: FireSimRocketConfig
   PLATFORM_CONFIG: ExactMode_RocketTileF1PCIMPartition0
@@ -476,6 +505,7 @@ f1_firesim_rocket_tile_exact:
 xilinx_u250_firesim_dual_rocket_split_base:
   PLATFORM: xilinx_alveo_u250
   TARGET_PROJECT: firesim
+  TARGET_PROJECT_MAKEFRAG: null
   DESIGN: FireSim
   TARGET_CONFIG: WithDefaultFireSimBridges_WithFireSimConfigTweaks_chipyard.DualRocketConfig
   PLATFORM_CONFIG: DualRocketTileQSFPBase
@@ -490,6 +520,7 @@ xilinx_u250_firesim_dual_rocket_split_base:
 xilinx_u250_firesim_dual_rocket_split_0:
   PLATFORM: xilinx_alveo_u250
   TARGET_PROJECT: firesim
+  TARGET_PROJECT_MAKEFRAG: null
   DESIGN: FireSim
   TARGET_CONFIG: WithDefaultFireSimBridges_WithFireSimConfigTweaks_chipyard.DualRocketConfig
   PLATFORM_CONFIG: DualRocketTileQSFP0
@@ -504,6 +535,7 @@ xilinx_u250_firesim_dual_rocket_split_0:
 xilinx_u250_firesim_dual_rocket_split_1:
   PLATFORM: xilinx_alveo_u250
   TARGET_PROJECT: firesim
+  TARGET_PROJECT_MAKEFRAG: null
   DESIGN: FireSim
   TARGET_CONFIG: WithDefaultFireSimBridges_WithFireSimConfigTweaks_chipyard.DualRocketConfig
   PLATFORM_CONFIG: DualRocketTileQSFP1
@@ -523,6 +555,7 @@ xilinx_u250_firesim_dual_rocket_split_1:
 xilinx_u250_quad_rocket_ring_base:
   PLATFORM: xilinx_alveo_u250
   TARGET_PROJECT: firesim
+  TARGET_PROJECT_MAKEFRAG: null
   DESIGN: FireSim
   TARGET_CONFIG: FireSimQuadRocketSbusRingNoCConfig
   PLATFORM_CONFIG: QuadTileRingNoCBase
@@ -537,6 +570,7 @@ xilinx_u250_quad_rocket_ring_base:
 xilinx_u250_quad_rocket_ring_0:
   PLATFORM: xilinx_alveo_u250
   TARGET_PROJECT: firesim
+  TARGET_PROJECT_MAKEFRAG: null
   DESIGN: FireSim
   TARGET_CONFIG: FireSimQuadRocketSbusRingNoCConfig
   PLATFORM_CONFIG: QuadTileRingNoC0
@@ -551,6 +585,7 @@ xilinx_u250_quad_rocket_ring_0:
 xilinx_u250_quad_rocket_ring_1:
   PLATFORM: xilinx_alveo_u250
   TARGET_PROJECT: firesim
+  TARGET_PROJECT_MAKEFRAG: null
   DESIGN: FireSim
   TARGET_CONFIG: FireSimQuadRocketSbusRingNoCConfig
   PLATFORM_CONFIG: QuadTileRingNoC1
