@@ -42,20 +42,7 @@ abstract class TestSuiteBase extends org.scalatest.flatspec.AnyFlatSpec {
     val chipyardReadme = new File(curDir, "README.md") // HACK: chipyard README.md is in same dir as build.sbt
 
     val filetypeDir = if (chipyardReadme.exists()) {
-      val chipyardDir = curDir
-
-      // from chipyard, two ways to access firesim (from symlink (if firesim-as-top) or from sims/firesim (if chipyard-as-top))
-      val fromChipyardFireSimSymlinkDir    = new File(chipyardDir, "sims/firesim-staging/firesim-symlink/sim")
-      val fromChipyardFireSimNonSymlinkDir = new File(chipyardDir, "sims/firesim/sim")
-      if (fromChipyardFireSimSymlinkDir.exists()) {
-        fromChipyardFireSimSymlinkDir // firesim-as-top
-      } else {
-        if (fromChipyardFireSimNonSymlinkDir.exists()) { // double-check that the chipyard-as-top sims/firesim dir exists
-          fromChipyardFireSimNonSymlinkDir
-        } else {
-          throw new Exception("Unable to determine FireSim dir to needed for building tests")
-        }
-      }
+      new File(curDir, "sims/firesim/sim")
     } else {
       curDir
     }

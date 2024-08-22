@@ -9,7 +9,7 @@ import firesim.lib.bridges.{PeekPokeBridge, RationalClockBridge, ResetPulseBridg
 
 import freechips.rocketchip.prci._
 import freechips.rocketchip.diplomacy._
-import org.chipsalliance.cde.config.{Config, Field, Parameters}
+import org.chipsalliance.cde.config.Parameters
 
 class TLBundle extends Bundle {
   val a = Decoupled(UInt(4.W))
@@ -263,67 +263,3 @@ class FireSim(implicit p: Parameters) extends RawModule {
   val clockBridge = Module(new RationalClockBridge(allClocks))
   buildtopClock := clockBridge.io.clocks(0)
 }
-
-case object DummyField extends Field[Int](8)
-class WithDummyField(n: Int)
-    extends Config((_, _, _) => { case DummyField =>
-      n
-    })
-class RingNoCConfig    extends Config(new WithDummyField(0))
-
-// TODO: fix and re-enable
-// class NoCExtractPartitionSpec extends FireSimFirrtlAndAnnotationGenerator {
-//   generateFireSimFirrtlAndAnnotations(new RingNoCConfig)
-//   "NoCExtractPartition" in {
-//     GoldenGateMain.main(
-//       Array(
-//         "-i", // FIRRTL_FILE
-//         "midas/generated-src/firesim.fir",
-//         "-td",
-//         "midas/generated-src",
-//         "-ggcp",
-//         "firesim.midasexamples",
-//         "-faf",
-//         "midas/generated-src/firesim.anno.json",
-//         "-ggcs",
-//         "F1Config",
-//         "-ofb",
-//         "FireSim-generated",
-//         "--no-dedup",
-//         "-NOCPART",
-//         "0~1+2.3+4",
-//         "-NOCIDX",
-//         "0",
-//         "-NOCEXTRACT",
-//       )
-//     )
-//   }
-// }
-//
-// class NoCRemovePartitionSpec extends FireSimFirrtlAndAnnotationGenerator {
-//   generateFireSimFirrtlAndAnnotations(new RingNoCConfig)
-//   "NoCRemovePartition" in {
-//     GoldenGateMain.main(
-//       Array(
-//         "-i", // FIRRTL_FILE
-//         "midas/generated-src/firesim.fir",
-//         "-td",
-//         "midas/generated-src",
-//         "-ggcp",
-//         "firesim.midasexamples",
-//         "-faf",
-//         "midas/generated-src/firesim.anno.json",
-//         "-ggcs",
-//         "F1Config",
-//         "-ofb",
-//         "FireSim-generated",
-//         "--no-dedup",
-//         "-NOCPART",
-//         "0~1+2.3+4",
-//         "-NOCIDX",
-//         "2",
-//         "-NOCREMOVE",
-//       )
-//     )
-//   }
-// }

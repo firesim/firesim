@@ -11,32 +11,16 @@ import java.io.File
 import java.io.FileWriter
 
 object Logger {
-  val file        = if (sys.env.get("FIRESIM_STANDALONE") == None) {
-    new File("sims/firesim/sim/midas/test-outputs/stmt-graph.log")
-  } else {
-    new File("midas/test-outputs/stmt-graph.log")
-  }
+  val file        = new File("midas/test-outputs/stmt-graph.log")
   val graphWriter = new java.io.FileWriter(file)
 
-  val debugFile   = if (sys.env.get("FIRESIM_STANDALONE") == None) {
-    new File("sims/firesim/sim/midas/test-outputs/debug.log")
-  } else {
-    new File("midas/test-outputs/debug.log")
-  }
+  val debugFile   = new File("midas/test-outputs/debug.log")
   val debugWriter = new java.io.FileWriter(debugFile)
 
-  val stmtFile   = if (sys.env.get("FIRESIM_STANDALONE") == None) {
-    new File("sims/firesim/sim/midas/test-outputs/grouped-stmts.log")
-  } else {
-    new File("midas/test-outputs/grouped-stmts.log")
-  }
+  val stmtFile   = new File("midas/test-outputs/grouped-stmts.log")
   val stmtWriter = new java.io.FileWriter(stmtFile)
 
-  val replaceFile   = if (sys.env.get("FIRESIM_STANDALONE") == None) {
-    new File("sims/firesim/sim/midas/test-outputs/replace-debug.log")
-  } else {
-    new File("midas/test-outputs/replace-debug.log")
-  }
+  val replaceFile   = new File("midas/test-outputs/replace-debug.log")
   val replaceWriter = new java.io.FileWriter(replaceFile)
 
   def logPortToGroupIdx(p2i: Map[Port, Int]): Unit = {

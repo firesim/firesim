@@ -1,12 +1,11 @@
 .. _printf-synthesis:
 
 Printf Synthesis: Capturing RTL printf Calls when Running on the FPGA
-=============================================================================
+=====================================================================
 
-Golden Gate can synthesize printfs present in Chisel/FIRRTL (implemented as
-``printf`` statements) that would otherwise be lost in the FPGA synthesis flow.
-Rocket and BOOM have printfs of their commit logs and other useful transaction
-streams.
+Golden Gate can synthesize printfs present in Chisel/FIRRTL (implemented as ``printf``
+statements) that would otherwise be lost in the FPGA synthesis flow. Rocket and BOOM
+have printfs of their commit logs and other useful transaction streams.
 
 .. code-block:: text
 
@@ -21,67 +20,69 @@ streams.
 Synthesizing these printfs lets you capture the same logs on a running FireSim instance.
 
 Enabling Printf Synthesis
-----------------------------
+-------------------------
 
-To synthesize a printf, you need to annotate the specific printfs you'd like to
-capture in your Chisel source code like so::
+To synthesize a printf, you need to annotate the specific printfs you'd like to capture
+in your Chisel source code like so:
+
+::
 
     midas.targetutils.SynthesizePrintf(printf("x%d p%d 0x%x\n", rf_waddr, rf_waddr, rf_wdata))
 
-Be judicious, as synthesizing many, frequently active printfs will slow down your simulator.
+Be judicious, as synthesizing many, frequently active printfs will slow down your
+simulator.
 
-Once your printfs have been annotated, enable printf synthesis by prepending
-the ``WithPrintfSynthesis`` configuration mixin to your ``PLATFORM_CONFIG`` in
-``config_build_recipes.yaml``.
-For example, if your previous ``PLATFORM_CONFIG`` was
+Once your printfs have been annotated, enable printf synthesis by prepending the
+``WithPrintfSynthesis`` configuration mixin to your ``PLATFORM_CONFIG`` in
+``config_build_recipes.yaml``. For example, if your previous ``PLATFORM_CONFIG`` was
 ``PLATFORM_CONFIG=BaseF1Config``, then change it to
-``PLATFORM_CONFIG=WithPrintfSynthesis_BaseF1Config``. Note, you must prepend
-the mixin.  During compilation, Golden
-Gate will print the number of printfs it has synthesized.  In the target's
-generated header (``FireSim-generated.const.h``), you'll find metadata for each of the
-printfs Golden Gate synthesized.  This is passed as argument to the constructor
-of the ``synthesized_prints_t`` bridge driver, which will be automatically
+``PLATFORM_CONFIG=WithPrintfSynthesis_BaseF1Config``. Note, you must prepend the mixin.
+During compilation, Golden Gate will print the number of printfs it has synthesized. In
+the target's generated header (``FireSim-generated.const.h``), you'll find metadata for
+each of the printfs Golden Gate synthesized. This is passed as argument to the
+constructor of the ``synthesized_prints_t`` bridge driver, which will be automatically
 instantiated in FireSim driver.
 
 Runtime Arguments
----------------------------
+-----------------
 
 **+print-file**
-    Specifies the file name prefix. Generated files will be of the form `<print-file><N>`,
-    with one output file generated per clock domain. The associated clock
-    domain's name and frequency relative to the base clock is included in the
+    Specifies the file name prefix. Generated files will be of the form
+    `<print-file><N>`, with one output file generated per clock domain. The associated
+    clock domain's name and frequency relative to the base clock is included in the
     header of the output file.
 
 **+print-start**
-    Specifies the target-cycle in cycles of the base clock at which the printf trace should be captured in the
-    simulator. Since capturing high-bandwidth printf traces will slow down
-    simulation, this allows the user to reach the region-of-interest at full simulation speed.
+    Specifies the target-cycle in cycles of the base clock at which the printf trace
+    should be captured in the simulator. Since capturing high-bandwidth printf traces
+    will slow down simulation, this allows the user to reach the region-of-interest at
+    full simulation speed.
 
 **+print-end**
-    Specifies the target-cycle in cycles of the base clock at which to stop pulling the synthesized print
-    trace from the simulator.
+    Specifies the target-cycle in cycles of the base clock at which to stop pulling the
+    synthesized print trace from the simulator.
 
 **+print-binary**
-    By default, a captured printf trace will be written to file formatted
-    as it would be emitted by a software RTL simulator. Setting this dumps the
-    raw binary coming off the FPGA instead, improving simulation rate.
+    By default, a captured printf trace will be written to file formatted as it would be
+    emitted by a software RTL simulator. Setting this dumps the raw binary coming off
+    the FPGA instead, improving simulation rate.
 
 **+print-no-cycle-prefix**
-    (Formatted output only) This removes the cycle prefix from each printf to
-    save bandwidth in cases where the printf already includes a cycle field. In
-    binary-output mode, since the target cycle is implicit in the token stream,
-    this flag has no effect.
+    (Formatted output only) This removes the cycle prefix from each printf to save
+    bandwidth in cases where the printf already includes a cycle field. In binary-output
+    mode, since the target cycle is implicit in the token stream, this flag has no
+    effect.
 
-You can set some of these options by changing the fields in the "synthprint"
-section of your config_runtime.yaml.
+You can set some of these options by changing the fields in the "synthprint" section of
+your config_runtime.yaml.
 
 .. literalinclude:: /../deploy/sample-backup-configs/sample_config_runtime.yaml
-   :language: yaml
-   :start-after: DOCREF START: Synthesized Prints
-   :end-before: DOCREF END: Synthesized Prints
+    :language: yaml
+    :start-after: DOCREF START: Synthesized Prints
+    :end-before: DOCREF END: Synthesized Prints
 
-The "start" field corresponds to "print-start", "end" to "print-end", and
-"cycleprefix" to "print-no-cycle-prefix".
+The "start" field corresponds to "print-start", "end" to "print-end", and "cycleprefix"
+to "print-no-cycle-prefix".
 
 Related Publications
 --------------------

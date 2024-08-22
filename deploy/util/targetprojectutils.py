@@ -26,7 +26,7 @@ def extra_target_project_make_args(targetproject: str, targetprojectmakefrag: Op
         else:
             raise Exception(f"Invalid makefrag path given: {targetprojectmakefrag}")
     else:
-        chipyard_dir = f"{deploydir}/../target-design/chipyard" if os.environ.get('FIRESIM_STANDALONE') else f"{deploydir}/../../.."
+        chipyard_dir = f"{deploydir}/../../.." # assumes firesim is a library inside of chipyard
         rootLogger.debug(f"Having manager assume makefrag path from hardcoded Chipyard dir: {chipyard_dir}")
         if targetproject == "firesim":
             return f"TARGET_PROJECT_MAKEFRAG={chipyard_dir}/generators/firechip/chip/src/main/makefrag/{targetproject}"

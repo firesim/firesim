@@ -90,7 +90,8 @@ jobs:
               - '**/*.h'
 
             conda-reqs:
-                - 'conda-reqs/*.yaml'
+                - 'conda-reqs/firesim.yaml'
+                - 'conda-reqs/ci-shared.yaml'
 
             conda-lockfile:
                 - 'conda-reqs/*.conda-lock.yml'
@@ -120,6 +121,9 @@ jobs:
         with:
           environment-file: conda-reqs/docs.yaml
           miniforge-version: latest
+      - name: Check documentation formatting
+        run: |
+          make -C docs formatcheck
       - name: Check that documentation builds with selective warnings/errors
         run: |
           make -C docs html
@@ -219,50 +223,14 @@ jobs:
       - name: Check docs components that require manual re-generation (e.g. config_runtime.yaml example)
         run: ./.github/scripts/check-docs-generated-components.py --platform xilinx_alveo_u250
 
-  run-metasims-and-build-driver-xilinx_alveo_u250:
-    name: run-metasims-and-build-driver-xilinx_alveo_u250
+  build-driver-xilinx_alveo_u250:
+    name: build-driver-xilinx_alveo_u250
     needs: [setup-persistent-repo]
     runs-on: local-fpga
     steps:
       - uses: actions/checkout@v4
-      - name: Run metasims (VCS + Verilator)
-        run: .github/scripts/run-metasims.py
       - name: Build driver
         run: .github/scripts/build-driver.py --platform xilinx_alveo_u250
-
-  run-basic-linux-poweroffs-xilinx_alveo_u250:
-    name: run-basic-linux-poweroffs-xilinx_alveo_u250
-    if: contains(github.event.pull_request.labels.*.name, 'ci:fpga-deploy')
-    needs: [setup-persistent-repo]
-    runs-on: local-fpga
-    steps:
-      # This forces a fresh clone of the repo during the `checkout` step
-      # to resolve stale submodule URLs. See https://github.com/ucb-bar/chipyard/pull/1156.
-      - name: Delete old checkout
-        run: |
-          rm -rf ${{ github.workspace }}/* || true
-          rm -rf ${{ github.workspace }}/.* || true
-      - uses: actions/checkout@v4
-      - name: Run non-networked single-node Linux poweroff tests (single-core Rocket/BOOM, multi-core Rocket) w/ Xilinx Alveo U250
-        run: .github/scripts/run-linux-poweroff.py --platform xilinx_alveo_u250
-
-  build-default-bitstreams:
-    name: build-default-bitstreams
-    if: contains(github.event.pull_request.labels.*.name, 'ci:local-fpga-buildbitstream-deploy')
-    needs: [setup-persistent-repo]
-    runs-on: local-fpga
-    steps:
-      - uses: actions/checkout@v4
-      - name: Run buildbitstream command and update sample local bitstreams
-        run: .github/scripts/build-default-bitstreams.py
-      - uses: peter-evans/create-pull-request@v6
-        with:
-          base: ${{ github.head_ref }}
-          add-paths: "deploy/sample-backup-configs/sample_config_hwdb.yaml"
-          commit-message: "Update local bitstream(s) [ci skip]"
-          body: "Update local bitstream(s) for PR #${{ github.event.pull_request.number }}"
-          branch-suffix: random
-          title: "Update local bitstream(s) for PR #${{ github.event.pull_request.number }} (`${{ github.head_ref }}`)"
 
   cleanup-local-fpga-repo:
     name: cleanup-local-fpga-repo
@@ -270,9 +238,7 @@ jobs:
       run-typecheck,
       run-scala-lint,
       check-docs-generated-components-xilinx_alveo_u250,
-      run-metasims-and-build-driver-xilinx_alveo_u250,
-      run-basic-linux-poweroffs-xilinx_alveo_u250,
-      build-default-bitstreams]
+      build-driver-xilinx_alveo_u250]
     # uses a separate runner to cleanup (irrespective, of other jobs cancelled, running, etc)
     runs-on: local-fpga-cleanup
     if: ${{ always() }}

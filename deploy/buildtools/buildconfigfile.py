@@ -30,7 +30,8 @@ class BuildConfigFile:
         build_ip_set: List of IPs to use for builds.
         num_builds: Number of builds to run.
         build_farm: Build farm used to host builds.
-        path: Path to build config file
+        build_config_file_path: Path to build config file
+        build_config_recipes_file_path: Path to build config recipes file
     """
     args: argparse.Namespace
     forceterminate: bool
@@ -41,7 +42,8 @@ class BuildConfigFile:
     build_ip_set: Set[str]
     num_builds: int
     build_farm: BuildFarm
-    path: str
+    build_config_file_path: str
+    build_config_recipes_file_path: str
 
     def __init__(self, args: argparse.Namespace) -> None:
         """
@@ -61,8 +63,6 @@ class BuildConfigFile:
         with open(args.buildconfigfile, "r") as yaml_file:
             global_build_config_file = yaml.safe_load(yaml_file)
 
-        self.path = args.buildconfigfile
-
         # aws specific options
         self.agfistoshare = global_build_config_file['agfis_to_share']
         swa_dict = global_build_config_file['share_with_accounts']
@@ -75,6 +75,9 @@ class BuildConfigFile:
         build_recipes_config_file = None
         with open(args.buildrecipesconfigfile, "r") as yaml_file:
             build_recipes_config_file = yaml.safe_load(yaml_file)
+
+        self.build_config_file_path = args.buildconfigfile
+        self.build_config_recipes_file_path = args.buildrecipesconfigfile
 
         build_recipes = dict()
         for section_name, section_dict in build_recipes_config_file.items():

@@ -74,6 +74,7 @@ echo "Please review build-setup-log for more information."
 END_INITIAL_ENV_SH
 
 env_append "export FIRESIM_ENV_SOURCED=1"
+env_append "export FS_DIR=${FDIR}"
 
 #### Conda setup ####
 
@@ -116,9 +117,6 @@ else
     source $FDIR/.conda-env/etc/profile.d/conda.sh
     conda activate $FDIR/.conda-env
 
-    # add other toolchain utilities to environment (spike, fesvr, pk)
-    ./scripts/build-toolchain-extra.sh -p $RISCV
-
     # provide a sourceable snippet that can be used in subshells that may not have
     # inhereted conda functions that would be brought in under a login shell that
     # has run conda init (e.g., VSCode, CI)
@@ -140,53 +138,15 @@ fi
 git config submodule.target-design/chipyard.update none
 git submodule update --init --recursive
 
-#### Chipyard setup ####
 
 if [ "$IS_LIBRARY" = true ]; then
+    #### Chipyard setup ####
+
+    # TODO: need a better way to remove chipyard references
     CHIPYARD_DIR="$FDIR/../.."
 
     # chipyard env.sh should be sourced in library mode.
     env_append "source $CHIPYARD_DIR/env.sh"
-else
-    CHIPYARD_DIR="$FDIR/target-design/chipyard"
-
-    # this checks if firemarshal has already been configured by someone. If
-    # not, we will provide our own config. This must be checked before calling
-    # chipyard setup because that will configure firemarshal.
-    marshal_cfg="$CHIPYARD_DIR/software/firemarshal/marshal-config.yaml"
-    if [ ! -f "$marshal_cfg" ]; then
-      first_init=true
-    else
-      first_init=false
-    fi
-
-    git config --unset submodule.target-design/chipyard.update
-    git submodule update --init target-design/chipyard
-
-    # setup chipyard (it has it's own conda environment)
-    pushd "$CHIPYARD_DIR"
-    ./build-setup.sh \
-        $VERBOSE_FLAG \
-        --skip-conda `# skip conda setup since we share it with chipyard` \
-        --skip-ctags `# skip ctags for speed` \
-        --skip-firesim `# skip firesim setup since we are running in top-mode` \
-        --skip-marshal `# skip firemarshal for speed`
-    popd
-
-    # configure firemarshal to know where our firesim installation is.
-    # If this is a fresh init of chipyard, we can safely overwrite the marshal
-    # config, otherwise we have to assume the user might have changed it
-    if [ $first_init = true ]; then
-      echo "firesim-dir: '../../../../'" > $marshal_cfg
-    fi
-
-    pushd $FDIR/target-design/chipyard/software/firemarshal
-    ./init-submodules.sh
-    popd
-
-    env_append "export FIRESIM_STANDALONE=1"
-    env_append "export PATH=$FDIR/target-design/chipyard/software/firemarshal:\$PATH"
-    env_append "source $FDIR/scripts/fix-open-files.sh"
 fi
 
 cd "$FDIR"

@@ -651,12 +651,12 @@ class RuntimeBuildRecipeConfig(RuntimeHWConfig):
                 self.deploy_makefrag = str(tpm_relpath.absolute())
             else:
                 # search for the file relative to the build config file path
-                bcf_parent_path = Path(build_recipes_config_file).absolute().parent
-                tpm_path: Path = bcf_parent_path / tpm_path
+                bcrf_parent_path = Path(build_recipes_config_file).absolute().parent
+                tpm_path: Path = bcrf_parent_path / tpm_relpath
                 if tpm_path.exists():
                     self.deploy_makefrag = str(tpm_path.absolute())
                 else:
-                    raise Exception(f"Unable to find TARGET_PROJECT_MAKEFRAG ({self.deploy_makefrag}) either as an absolute path or relative to {bcf_parent_path}")
+                    raise Exception(f"Unable to find TARGET_PROJECT_MAKEFRAG ({self.deploy_makefrag}) either as an absolute path or relative to {bcrf_parent_path}")
 
         self.customruntimeconfig = build_recipe_dict['metasim_customruntimeconfig']
         # note whether we've built a copy of the simulation driver for this hwconf

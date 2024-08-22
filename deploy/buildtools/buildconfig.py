@@ -103,13 +103,13 @@ class BuildConfig:
             if tpm_relpath.exists():
                 self.TARGET_PROJECT_MAKEFRAG = str(tpm_relpath.absolute())
             else:
-                # search for the file relative to the build config file path
-                bcf_parent_path = Path(build_config_file.path).absolute().parent
-                tpm_path: Path = bcf_parent_path / tpm_path
+                # search for the file relative to the build config recipes file path
+                bcrf_parent_path = Path(build_config_file.build_config_recipes_file_path).absolute().parent
+                tpm_path: Path = bcrf_parent_path / tpm_relpath
                 if tpm_path.exists():
                     self.TARGET_PROJECT_MAKEFRAG = str(tpm_path.absolute())
                 else:
-                    raise Exception(f"Unable to find TARGET_PROJECT_MAKEFRAG ({self.TARGET_PROJECT_MAKEFRAG}) either as an absolute path or relative to {bcf_parent_path}")
+                    raise Exception(f"Unable to find TARGET_PROJECT_MAKEFRAG ({self.TARGET_PROJECT_MAKEFRAG}) either as an absolute path or relative to {bcrf_parent_path}")
 
         self.DESIGN = recipe_config_dict['DESIGN']
         self.TARGET_CONFIG = recipe_config_dict['TARGET_CONFIG']

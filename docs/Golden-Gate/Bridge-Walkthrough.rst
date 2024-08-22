@@ -1,20 +1,24 @@
 .. _bridge-deep-dive:
 
 Bridge Deep Dive
-==================
+================
 
-.. warning: This documentation was written on 08/19/2023. Current APIs are experimental and are subject to change.
+..
+    warning: This documentation was written on 08/19/2023. Current APIs are experimental and are subject to change.
 
-In this section, we'll walkthrough a simple Target-to-Host bridge associated with Chipyard called the UARTBridge.
-It serves as an example of how to use FireSim as a library to create your own bridges.
-The UARTBridge uses host-MMIO to model a UART device.
+In this section, we'll walkthrough a simple Target-to-Host bridge associated with
+Chipyard called the UARTBridge. It serves as an example of how to use FireSim as a
+library to create your own bridges. The UARTBridge uses host-MMIO to model a UART
+device.
 
-Reading the :ref:`target-to-host-bridges` section is a prerequisite to reading these sections.
+Reading the :ref:`target-to-host-bridges` section is a prerequisite to reading these
+sections.
 
 UART Bridge (Host-MMIO)
 -----------------------
 
-Source code for the UART Bridge lives in Chipyard. Specifically, the following directories:
+Source code for the UART Bridge lives in Chipyard in the
+:cy-gh-file-ref:`generators/firechip` area. Specifically, the following directories:
 
 .. code-block:: text
 
@@ -40,54 +44,55 @@ Source code for the UART Bridge lives in Chipyard. Specifically, the following d
                     metasim.mk    # Custom run commands for meta-simulation
 
 Target Side
-+++++++++++
+~~~~~~~~~~~
 
-The first order of business when designing a new bridge is to implement its
-target side. In the case of UART we've defined a Chisel BlackBox [#]_ extending Bridge.
-We'll instantiate this BlackBox and connect it to UART IO in the
-top-level of our chip.  We first define a class that captures the target-side interface of the Bridge (in ``chipyard/generators/firechip/bridgeinterfaces/src/main/scala/UART.scala``):
+The first order of business when designing a new bridge is to implement its target side.
+In the case of UART we've defined a Chisel BlackBox [1]_ extending Bridge. We'll
+instantiate this BlackBox and connect it to UART IO in the top-level of our chip. We
+first define a class that captures the target-side interface of the Bridge (in
+:cy-gh-file-ref:`generators/firechip/bridgeinterfaces/src/main/scala/UART.scala`):
 
 .. code-block:: Scala
 
-   class UARTPortIO extends Bundle {
-      val txd = Output(Bool())
-      val rxd = Input(Bool())
-    }
+    class UARTPortIO extends Bundle {
+       val txd = Output(Bool())
+       val rxd = Input(Bool())
+     }
 
-    class UARTBridgeTargetIO extends Bundle {
-      val clock = Input(Clock())
-      val uart = Flipped(new UARTPortIO)
-      // Note this reset is optional and used only to reset target-state modeled
-      // in the bridge. This reset is just like any other Bool included in your target
-      // interface, simply appears as another Bool in the input token.
-      val reset = Input(Bool())
-    }
+     class UARTBridgeTargetIO extends Bundle {
+       val clock = Input(Clock())
+       val uart = Flipped(new UARTPortIO)
+       // Note this reset is optional and used only to reset target-state modeled
+       // in the bridge. This reset is just like any other Bool included in your target
+       // interface, simply appears as another Bool in the input token.
+       val reset = Input(Bool())
+     }
 
+.. [1] You can also extend a non-BlackBox Chisel Module, but any Chisel source contained
+    within will be removed by Golden Gate. You may wish to do this to enclose a
+    synthesizable model of the Bridge for other simulation backends, or simply to wrap a
+    larger chunk RTL you wish to model in the host-side of the Bridge.
 
-.. [#] You can also extend a non-BlackBox Chisel Module, but any Chisel source
-    contained within will be removed by Golden Gate. You may wish to do this to
-    enclose a synthesizable model of the Bridge for other simulation backends, or
-    simply to wrap a larger chunk RTL you wish to model in the host-side of the
-    Bridge.
-
-Here, we define a case class (in ``chipyard/generators/firechip/bridgeinterfaces/src/main/scala/UART.scala``) that carries additional metadata to the host-side
-BridgeModule.  For UART, this is simply the clock-division required to produce the
-baudrate:
+Here, we define a case class (in
+:cy-gh-file-ref:`generators/firechip/bridgeinterfaces/src/main/scala/UART.scala`) that
+carries additional metadata to the host-side BridgeModule. For UART, this is simply the
+clock-division required to produce the baudrate:
 
 .. code-block:: scala
 
-   // Out bridge module constructor argument. This captures all of the extra
-   // metadata we'd like to pass to the host-side BridgeModule. Note, we need to
-   // use a single case class to do so, even if it is simply to wrap a primitive
-   // type, as is the case for the div Int.
-   case class UARTKey(div: Int)
+    // Out bridge module constructor argument. This captures all of the extra
+    // metadata we'd like to pass to the host-side BridgeModule. Note, we need to
+    // use a single case class to do so, even if it is simply to wrap a primitive
+    // type, as is the case for the div Int.
+    case class UARTKey(div: Int)
 
-Both these IOs and the case class needs be fully isolated from the target.
-This means that they should compile with FireSim's Chisel version (Chisel 3) and not include any
-target-specific classes, IOs, etc.
-Both the IOs and the case class is compiled in the target and is copied to FireSim to be compiled there as well.
+Both these IOs and the case class needs be fully isolated from the target. This means
+that they should compile with FireSim's Chisel version (Chisel 3) and not include any
+target-specific classes, IOs, etc. Both the IOs and the case class is compiled in the
+target and is copied to FireSim to be compiled there as well.
 
-Finally, we define the actual target-side module (specifically, a BlackBox)(in ``chipyard/generators/firechip/bridgestubs/src/main/scala/uart/UARTBridge.scala``):
+Finally, we define the actual target-side module (specifically, a BlackBox)(in
+:cy-gh-file-ref:`generators/firechip/bridgestubs/src/main/scala/uart/UARTBridge.scala`):
 
 .. code-block:: scala
 
@@ -114,8 +119,9 @@ Finally, we define the actual target-side module (specifically, a BlackBox)(in `
       generateAnnotations()
     }
 
-To make it easier to instantiate our target-side module, we've also defined an
-optional companion object (in ``chipyard/generators/firechip/bridgestubs/src/main/scala/uart/UARTBridge.scala``):
+To make it easier to instantiate our target-side module, we've also defined an optional
+companion object (in
+:cy-gh-file-ref:`generators/firechip/bridgestubs/src/main/scala/uart/UARTBridge.scala`):
 
 .. code-block:: scala
 
@@ -130,18 +136,20 @@ optional companion object (in ``chipyard/generators/firechip/bridgestubs/src/mai
       }
     }
 
-This target-side module doesn't compile with FireSim at all (except for the APIs given by the ``firesim-lib`` Scala project).
+This target-side module doesn't compile with FireSim at all (except for the APIs given
+by the ``firesim-lib`` Scala project).
 
 That completes the target-side definition.
 
 Host-Side BridgeModule
-++++++++++++++++++++++
+~~~~~~~~~~~~~~~~~~~~~~
 
-The remainder of the file is dedicated to the host-side BridgeModule
-definition. Here we have to process tokens generated by the target, and
-expose a memory-mapped interface to the bridge driver.
+The remainder of the file is dedicated to the host-side BridgeModule definition. Here we
+have to process tokens generated by the target, and expose a memory-mapped interface to
+the bridge driver.
 
-Inspecting the top of the class (in ``chipyard/generators/firechip/goldengateimplementations/src/main/scala/UARTBridge.scala``):
+Inspecting the top of the class (in
+:cy-gh-file-ref:`generators/firechip/goldengateimplementations/src/main/scala/UARTBridge.scala`):
 
 .. code-block:: scala
 
@@ -183,11 +191,11 @@ Inspecting the top of the class (in ``chipyard/generators/firechip/goldengateimp
         hPort.toHost.hReady := fire
         hPort.fromHost.hValid := fire
 
-Most of what follows is responsible for modeling the timing of the UART.
-As a bridge designer, you're free to take as many host-cycles as you need to
-process tokens. In simpler models, like this one, it's often easiest to write
-logic that operates in a single cycle but gate state-updates using a
-"fire" signal that is asserted when the required tokens are available.
+Most of what follows is responsible for modeling the timing of the UART. As a bridge
+designer, you're free to take as many host-cycles as you need to process tokens. In
+simpler models, like this one, it's often easiest to write logic that operates in a
+single cycle but gate state-updates using a "fire" signal that is asserted when the
+required tokens are available.
 
 Now, we'll skip to the end to see how to add registers to the simulator's memory map
 that can be accessed using MMIO from bridge driver.
@@ -213,21 +221,23 @@ that can be accessed using MMIO from bridge driver.
     // the simulation control bus (AXI4-lite)
     genCRFile()
 
-This module is injected into the FireSim compiler and is never compiled by the target. Thus it has access to all APIs given by MIDAS.
+This module is injected into the FireSim compiler and is never compiled by the target.
+Thus it has access to all APIs given by MIDAS.
 
 Host-Side Driver
-++++++++++++++++
+~~~~~~~~~~~~~~~~
 
 To complete our host-side definition, we need to define a CPU-hosted bridge driver.
-Bridge Drivers extend the ``bridge_driver_t`` interface, which declares 5 virtual methods
-a concrete bridge driver must implement:
+Bridge Drivers extend the ``bridge_driver_t`` interface, which declares 5 virtual
+methods a concrete bridge driver must implement:
 
 .. literalinclude:: ../../sim/midas/src/main/cc/core/bridge_driver.h
     :language: c++
     :start-after: DOC include start: Bridge Driver Interface
     :end-before: DOC include end: Bridge Driver Interface
 
-The declaration of the UART bridge is inlined below from ``chipyard/generators/firechip/bridgestubs/src/main/cc/uart.h``:
+The declaration of the UART bridge is inlined below from
+:cy-gh-file-ref:`generators/firechip/bridgestubs/src/main/cc/bridges/uart.h`:
 
 .. code-block:: c++
 
@@ -297,26 +307,24 @@ The declaration of the UART bridge is inlined below from ``chipyard/generators/f
 
     #endif // __UART_H
 
-The bulk of the driver's work is done in its ``tick()`` method. Here, the driver
-polls the BridgeModule and then does some work. Note: the name, ``tick`` is vestigial: one
-invocation of tick() may do work corresponding to an arbitrary number of
-target cycles. It's critical that tick be non-blocking, as waiting for work
-from the BridgeModule may deadlock the simulator.
-
+The bulk of the driver's work is done in its ``tick()`` method. Here, the driver polls
+the BridgeModule and then does some work. Note: the name, ``tick`` is vestigial: one
+invocation of tick() may do work corresponding to an arbitrary number of target cycles.
+It's critical that tick be non-blocking, as waiting for work from the BridgeModule may
+deadlock the simulator.
 
 Build-System Modifications
-++++++++++++++++++++++++++
+~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-The final consideration in adding your bridge concerns the build system. You
-should be able to host the Scala sources for your bridge with rest of your
-target RTL: SBT will make sure those classes are available on the runtime
-classpath. If you're hosting your bridge driver sources outside of the existing
-directories, you'll need to modify your target-project make fragments to include
-them. The default Chipyard/Rocket Chip-based one lives in ``chipyard/generators/firechip/chip/src/main/makefrag/firesim/``.
+The final consideration in adding your bridge concerns the build system. You should be
+able to host the Scala sources for your bridge with rest of your target RTL: SBT will
+make sure those classes are available on the runtime classpath. If you're hosting your
+bridge driver sources outside of the existing directories, you'll need to modify your
+target-project make fragments to include them. The default Chipyard/Rocket Chip-based
+one lives in :cy-gh-file-ref:`generators/firechip/chip/src/main/makefrag/firesim`.
 
-Here the main order of business is to add header and source files to
-``DRIVER_H`` and ``DRIVER_CC`` respectively in `driver.mk`, by modifying the
-lines below:
+Here the main order of business is to add header and source files to ``DRIVER_H`` and
+``DRIVER_CC`` respectively in `driver.mk`, by modifying the lines below:
 
 .. code-block:: make
 
@@ -386,6 +394,6 @@ lines below:
                     -I$(GENERATED_DIR) \
                     -g
 
-Then the other ``.mk`` files in the directory handle copying sources from the target to FireSim, building RTL, and more.
-That's it! At this point you should be able to both test your bridge in software
-simulation using metasimulation, or deploy it to an FPGA.
+Then the other ``.mk`` files in the directory handle copying sources from the target to
+FireSim, building RTL, and more. That's it! At this point you should be able to both
+test your bridge in software simulation using metasimulation, or deploy it to an FPGA.

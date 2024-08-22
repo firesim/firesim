@@ -1,14 +1,6 @@
-from fabric.api import run # type: ignore
 from enum import Enum
 import argparse
-
-def search_match_in_last_workloads_output_file(file_name: str = "uartlog", match_key: str = "*** PASSED ***") -> int:
-    # if grep doesn't find any results, this command will fail
-    out = run(f"""cd deploy/results-workload/ && LAST_DIR=$(ls | tail -n1) && if [ -d "$LAST_DIR" ]; then grep -an "{match_key}" $LAST_DIR/*/{file_name}; fi""")
-    out_split = [e for e in out.split('\n') if match_key in e]
-    out_count = len(out_split)
-    print(f"Found {out_count} '{match_key}' strings in {file_name}")
-    return out_count
+import os
 
 class FpgaPlatform(Enum):
     vitis = 'vitis'
@@ -22,3 +14,17 @@ def create_args():
     parser.add_argument('--platform', type=FpgaPlatform, choices=list(FpgaPlatform), required=True)
     args = parser.parse_args()
     return args
+
+def setup_shell_env_vars():
+    # if the following env. vars exist, then propagate to fabric subprocess
+    shell_env_vars = {
+        "TEST_DISABLE_VERILATOR",
+        "TEST_DISABLE_VIVADO",
+        "TEST_DISABLE_BENCHMARKS",
+    }
+    export_shell_env_vars = set()
+    for v in shell_env_vars:
+        if v in os.environ:
+            export_shell_env_vars.add(f"{v}={os.environ[v]}")
+
+    return ("export " + " ".join(export_shell_env_vars)) if export_shell_env_vars else "true"
