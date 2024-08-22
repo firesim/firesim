@@ -244,7 +244,7 @@ jobs:
           rm -rf ${{ github.workspace }}/.* || true
       - uses: actions/checkout@v4
       - name: Run non-networked single-node Linux poweroff tests (single-core Rocket/BOOM, multi-core Rocket) w/ Xilinx Alveo U250
-        run: .github/scripts/run-linux-poweroff-local.py --platform xilinx_alveo_u250
+        run: .github/scripts/run-linux-poweroff.py --platform xilinx_alveo_u250
 
   build-default-bitstreams:
     name: build-default-bitstreams

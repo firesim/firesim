@@ -2,34 +2,13 @@ package goldengate.tests
 
 import chisel3._
 import chisel3.util._
-import chisel3.experimental.{annotate, DataMirror, IO}
-import chisel3.stage.{ChiselCircuitAnnotation, ChiselGeneratorAnnotation, ChiselStage, CircuitSerializationAnnotation}
+import chisel3.experimental.IO
 
-import java.io.{File, PrintWriter}
-import org.scalatest.freespec.AnyFreeSpec
-import org.scalatest.TestSuite
-
-import firrtl._
-import firrtl.annotations.{DeletedAnnotation, JsonProtocol}
-import firrtl.options.TargetDirAnnotation
-import firrtl.stage.{FirrtlCircuitAnnotation, RunFirrtlTransformAnnotation}
-import firrtl.transforms.DontTouchAnnotation
-
-import midas.stage._
-import midas.targetutils._
-import midas.widgets.{
-  BridgeAnnotation,
-  PeekPokeBridge,
-  RationalClock,
-  RationalClockBridge,
-  ResetPulseBridge,
-  ResetPulseBridgeParameters,
-}
-import midas.passes.partition.PrintAllPass
+import firesim.lib.bridgeutils.RationalClock
+import firesim.lib.bridges.{PeekPokeBridge, RationalClockBridge, ResetPulseBridge, ResetPulseBridgeParameters}
 
 import freechips.rocketchip.prci._
 import freechips.rocketchip.diplomacy._
-import freechips.rocketchip.util.DecoupledHelper
 import org.chipsalliance.cde.config.{Config, Field, Parameters}
 
 class TLBundle extends Bundle {
@@ -37,7 +16,7 @@ class TLBundle extends Bundle {
   val d = Flipped(Decoupled(UInt(4.W)))
 }
 
-class Tile()(implicit p: Parameters) extends Module {
+class Tile extends Module {
   val io = IO(new Bundle {
     val tl     = new TLBundle
     val int    = Input(UInt(1.W))
@@ -53,7 +32,7 @@ class Tile()(implicit p: Parameters) extends Module {
   io.tl.d.ready := true.B
 }
 
-class Converter()(implicit p: Parameters) extends Module {
+class Converter extends Module {
   val io = IO(new Bundle {
     val protocol = Flipped(new TLBundle)
     val nocin0   = Decoupled(UInt(4.W))
@@ -64,7 +43,7 @@ class Converter()(implicit p: Parameters) extends Module {
   io.protocol.d <> io.nocout0
 }
 
-class RouterDomain(iCnt: Int, oCnt: Int)(implicit p: Parameters) extends Module {
+class RouterDomain(iCnt: Int, oCnt: Int) extends Module {
   val io = IO(new Bundle {
     val in      = Vec(iCnt, Flipped(Decoupled(UInt(4.W))))
     val out     = Vec(oCnt, Decoupled(UInt(4.W)))
@@ -90,7 +69,7 @@ class RouterDomain(iCnt: Int, oCnt: Int)(implicit p: Parameters) extends Module 
   io.dst_in.ready  := true.B
 }
 
-class NoC()(implicit p: Parameters) extends Module {
+class NoC extends Module {
   val io = IO(new Bundle {
     val in  = Vec(4, Flipped(Decoupled(UInt(4.W))))
     val out = Vec(5, Decoupled(UInt(4.W)))
@@ -120,7 +99,7 @@ class NoC()(implicit p: Parameters) extends Module {
   router_sink_domain.io.dst_in   <> router_sink_domain_4.io.src_out
 }
 
-class ProtocolNoC()(implicit p: Parameters) extends Module {
+class ProtocolNoC extends Module {
   val io = IO(new Bundle {
     val ingress = Vec(4, Flipped(new TLBundle))
     val egress  = Decoupled(UInt(4.W))
@@ -162,7 +141,7 @@ class TLFIFOFixer(n: Int) extends Module {
   }
 }
 
-class RingNoC()(implicit p: Parameters) extends Module {
+class RingNoC extends Module {
   val io   = IO(new Bundle {
     val ingress = Vec(4, Flipped(new TLBundle))
     val egress  = Decoupled(UInt(4.W))
@@ -174,7 +153,7 @@ class RingNoC()(implicit p: Parameters) extends Module {
   io.egress <> pnoc.io.egress
 }
 
-class InterruptNode()(implicit p: Parameters) extends Module {
+class InterruptNode extends Module {
   val io = IO(new Bundle {
     val int = Output(UInt(1.W))
   })
@@ -287,7 +266,7 @@ class FireSim(implicit p: Parameters) extends RawModule {
 
 case object DummyField extends Field[Int](8)
 class WithDummyField(n: Int)
-    extends Config((site, here, up) => { case DummyField =>
+    extends Config((_, _, _) => { case DummyField =>
       n
     })
 class RingNoCConfig    extends Config(new WithDummyField(0))

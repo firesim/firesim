@@ -11,6 +11,7 @@ import midas.{EnableAutoCounter, AutoCounterUsePrintfImpl}
 import midas.widgets._
 import midas.targetutils._
 import midas.passes.fame.{WireChannel, FAMEChannelConnectionAnnotation, And, Neq}
+import firesim.lib.bridgeutils.{BridgeIOAnnotation}
 
 import java.io._
 import collection.mutable
@@ -266,7 +267,7 @@ class AutoCounterTransform extends Transform with AutoCounterConsts {
     val selectedsignals = filteredCounterAnnos.groupBy(_.enclosingModule()).map { case (k, v) => k -> v.toSeq }
 
     if (!selectedsignals.isEmpty) {
-      println(s"[AutoCounter] signals are:")
+      println("[AutoCounter] signals are:")
       selectedsignals.foreach({ case (modName, localEvents) =>
         println(s"  Module ${modName}")
         localEvents.foreach({ anno => println(s"   ${anno.label}: ${anno.description}") })
@@ -300,7 +301,7 @@ class AutoCounterTransform extends Transform with AutoCounterConsts {
       annotations = updatedState.annotations.filter {
         case AutoCounterCoverModuleFirrtlAnnotation(_) => false
         case AutoCounterFirrtlAnnotation(_,_,_,_,_,_,_) => false
-        case o => true
+        case _ => true
       })
   }
 }

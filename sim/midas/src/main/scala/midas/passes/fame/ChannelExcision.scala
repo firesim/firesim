@@ -43,7 +43,7 @@ class ChannelExcision extends Transform {
           // sink ports. The forking is handled in simulation wrapper during channel generation
 
           val srcP = Port(NoInfo, s"${rhsiname}_${rhspname}_source", Output, lType)
-          val srcAssign = if (!srcPorts(srcP)) {
+          if (!srcPorts(srcP)) {
             addedPorts += srcP
             srcPorts += srcP
             renames.record(rhsTarget, portTarget(srcP))
@@ -58,8 +58,8 @@ class ChannelExcision extends Transform {
         }
       // Potential fanouts from a bridge-source to multiple models. Excise the
       // channel by duplicating the input port
-      case c @ Connect(_, lhs @ WSubField(WRef(lhsiname, _, InstanceKind, _), lhspname, lType, _),
-                          rhs @ WRef(rhspname, rType, PortKind, _)) =>
+      case c @ Connect(_, lhs @ WSubField(WRef(_, _, InstanceKind, _), _, _, _),
+                          WRef(rhspname, rType, PortKind, _)) =>
         val rhsTarget = topTarget.ref(rhspname)
         if (bridgeSourcedPipeChannels.contains(rhsTarget)) {
           sourcePortDups.get(rhsTarget) match {
@@ -80,7 +80,7 @@ class ChannelExcision extends Transform {
         }
       // Fanout paths from a bridge source to a bridge sink.
       case c @ Connect(_, lhs @ WRef(_, _, PortKind, _),
-                          rhs @ WRef(rhspname, rType, PortKind, _)) =>
+                          WRef(rhspname, rType, PortKind, _)) =>
         val rhsTarget = topTarget.ref(rhspname)
         if (bridgeSourcedPipeChannels.contains(rhsTarget)) {
           sourcePortDups.get(rhsTarget) match {
@@ -116,7 +116,7 @@ class ChannelExcision extends Transform {
 
     // Step 1: Analysis -> build a map from reference targets to channel name
     state.annotations.collect {
-      case fta@ FAMEChannelConnectionAnnotation(name, PipeChannel(_), _, Some(srcs), Some(sinks)) =>
+      case FAMEChannelConnectionAnnotation(name, PipeChannel(_), _, Some(srcs), Some(sinks)) =>
         modelSourcedFanouts.addBinding(srcs, name)
           sinks.zip(srcs).foreach { model2modelPipeChannels(_) = name }
       case fta@ FAMEChannelConnectionAnnotation(name, PipeChannel(_), _, None, Some(sinks)) =>

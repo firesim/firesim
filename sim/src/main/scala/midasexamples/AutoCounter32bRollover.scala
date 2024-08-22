@@ -12,7 +12,7 @@ import firesim.midasexamples.AutoCounterWrappers.{PerfCounter}
   * implementations accumulation registers are divided into 32b segments for
   * MMIO.
   */
-class AutoCounter32bRollover(implicit p: Parameters) extends PeekPokeMidasExampleHarness(() =>
+class AutoCounter32bRollover(implicit p: Parameters) extends firesim.lib.testutils.PeekPokeHarness(() =>
   new AutoCounter32bRolloverDUT()(new AutoCounterValidator))
 
 class AutoCounter32bRolloverDUT(val instName: String = "dut")(implicit val v: AutoCounterValidator) extends Module
@@ -25,4 +25,3 @@ class AutoCounter32bRolloverDUT(val instName: String = "dut")(implicit val v: Au
 
   v.generateValidationPrintfs
 }
-

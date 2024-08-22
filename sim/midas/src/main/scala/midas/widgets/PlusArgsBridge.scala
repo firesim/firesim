@@ -2,7 +2,10 @@ package midas.widgets
 
 import chisel3._
 import chisel3.util._
+
 import org.chipsalliance.cde.config.Parameters
+
+import firesim.lib.bridgeutils._
 
 /** Defines a PlusArgs interface. The signature here was copied from rocket-chip/src/main/scala/util/PlusArg.scala
   *
@@ -67,11 +70,10 @@ class PlusArgsBridgeHostIO(
   * @param params
   *   Describes the name, width and default PlusArg value
   */
-class PlusArgsBridge(params: PlusArgsBridgeParams)
-    extends BlackBox
-    with Bridge[PlusArgsBridgeHostIO, PlusArgsBridgeModule] {
-  val io       = IO(new PlusArgsBridgeTargetIO(params))
-  val bridgeIO = new PlusArgsBridgeHostIO(params)(io)
+class PlusArgsBridge(params: PlusArgsBridgeParams) extends BlackBox with Bridge[PlusArgsBridgeHostIO] {
+  val moduleName = "midas.widgets.PlusArgsBridgeModule"
+  val io         = IO(new PlusArgsBridgeTargetIO(params))
+  val bridgeIO   = new PlusArgsBridgeHostIO(params)(io)
 
   val constructorArg = Some(params)
 

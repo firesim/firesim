@@ -28,7 +28,6 @@ class ClockSourceFinder(state: CircuitState) {
     case Port(_, name, Input, ClockType) => LogicNode(name)
   }
 
-  private val moduleMap = state.circuit.modules.map(m => m.name -> m).toMap
   private val inputClockNodeSets = state.circuit.modules.map(m => m.name -> inputClockNodes(m).toSet).toMap
   private lazy val connectivity = new CheckCombLoops().analyzeFull(state)
 

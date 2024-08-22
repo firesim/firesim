@@ -5,7 +5,8 @@ package firesim.midasexamples
 import chisel3._
 import freechips.rocketchip.util.ResetCatchAndSync
 import org.chipsalliance.cde.config.Parameters
-import midas.widgets.{RationalClockBridge, PeekPokeBridge, RationalClock}
+import firesim.lib.bridges.{RationalClockBridge, PeekPokeBridge}
+import firesim.lib.bridgeutils.{RationalClock}
 
 
 // Instantiates two of the autocounter duts from the single-clock test
@@ -23,7 +24,7 @@ class MulticlockAutoCounterModule(implicit p: Parameters) extends RawModule {
     val lfsr = chisel3.util.random.LFSR(16)
     val fullRateMod = Module(new AutoCounterModuleDUT(instName = "secondRate")(new AutoCounterValidator))
     fullRateMod.io.a := lfsr(0)
-    val peekPokeBridge = PeekPokeBridge(refClock, reset)
+    PeekPokeBridge(refClock, reset)
   }
 
   withClockAndReset(slowClock, slowReset) {

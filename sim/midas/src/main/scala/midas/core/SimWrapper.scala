@@ -3,21 +3,22 @@
 package midas
 package core
 
-import midas.widgets.BridgeIOAnnotation
-import midas.passes.fame
-import midas.passes.fame.{FAMEChannelConnectionAnnotation, DecoupledForwardChannel, FAMEChannelFanoutAnnotation}
-import midas.core.SimUtils._
-
-import org.chipsalliance.cde.config.{Parameters, Field}
-import freechips.rocketchip.util.{DecoupledHelper}
+import scala.collection.immutable.ListMap
+import scala.collection.mutable
 
 import chisel3._
 import chisel3.util._
 import chisel3.experimental.{ChiselAnnotation, annotate}
 import firrtl.annotations.{Annotation, SingleTargetAnnotation, ReferenceTarget, IsModule}
 
-import scala.collection.immutable.ListMap
-import scala.collection.mutable
+import org.chipsalliance.cde.config.{Parameters, Field}
+import freechips.rocketchip.util.{DecoupledHelper}
+
+import midas.passes.fame
+import midas.passes.fame.{FAMEChannelConnectionAnnotation, DecoupledForwardChannel, FAMEChannelFanoutAnnotation}
+
+import firesim.lib.bridgeutils._
+import firesim.lib.bridgeutils.SimUtils._
 
 case object SimWrapperKey extends Field[SimWrapperConfig]
 
@@ -197,11 +198,11 @@ class TargetBoxIO(config: SimWrapperConfig) extends ChannelizedWrapperIO(config)
 
   def regenClockType(refTargets: Seq[ReferenceTarget]): Data = refTargets.size match {
     case 1 => Clock()
-    case size => new ClockRecord(refTargets.size)
+    case _ => new ClockRecord(refTargets.size)
   }
 
   val clockElement: (String, DecoupledIO[Data]) = chAnnos.collectFirst({
-    case ch @ FAMEChannelConnectionAnnotation(globalName, fame.TargetClockChannel(_, _), _, _, Some(sinks)) =>
+    case FAMEChannelConnectionAnnotation(_, fame.TargetClockChannel(_, _), _, _, Some(sinks)) =>
       sinks.head.ref.stripSuffix("_bits") -> Flipped(Decoupled(regenClockType(sinks)))
   }).get
 
@@ -221,7 +222,7 @@ class SimWrapperChannels(config: SimWrapperConfig) extends ChannelizedWrapperIO(
   def regenClockType(refTargets: Seq[ReferenceTarget]): Vec[Bool] = Vec(refTargets.size, Bool())
 
   val clockElement: (String, DecoupledIO[Vec[Bool]]) = chAnnos.collectFirst({
-    case ch @ FAMEChannelConnectionAnnotation(globalName, fame.TargetClockChannel(_,_), _, _, Some(sinks)) =>
+    case FAMEChannelConnectionAnnotation(_, fame.TargetClockChannel(_,_), _, _, Some(sinks)) =>
       sinks.head.ref.stripSuffix("_bits") -> Flipped(Decoupled(regenClockType(sinks)))
   }).get
 
@@ -244,9 +245,9 @@ class SimWrapper(val config: SimWrapperConfig)(implicit val p: Parameters) exten
   val isSecondaryFanout = fanoutAnnos.flatMap(_.channelNames.tail).toSet
 
   val outerConfig = config.copy(annotations = config.annotations.filterNot {
-    case fca @ FAMEChannelConnectionAnnotation(_,_,_,Some(_), Some(_)) => true
+    case FAMEChannelConnectionAnnotation(_,_,_,Some(_), Some(_)) => true
     case fca @ FAMEChannelConnectionAnnotation(_,_,_,_,Some(_)) => isSecondaryFanout(fca.globalName)
-    case o => false
+    case _ => false
   })
 
   val channelPorts = IO(new SimWrapperChannels(outerConfig))
@@ -380,7 +381,7 @@ class SimWrapper(val config: SimWrapperConfig)(implicit val p: Parameters) exten
   })
 
   val pipeChannelFCCAs  = chAnnos.collect {
-    case ch @ FAMEChannelConnectionAnnotation(name, fame.PipeChannel(_),_,_,_) => ch
+    case ch @ FAMEChannelConnectionAnnotation(_, fame.PipeChannel(_),_,_,_) => ch
   }
 
   // Pipe channels can have multiple sinks for each source. Group FCCAs that

@@ -33,8 +33,8 @@ firesim_rocket_quadcore_nic_l2_llc4mb_ddr3:
     PLATFORM: f1
     TARGET_PROJECT: firesim
     DESIGN: FireSim
-    TARGET_CONFIG: WithNIC_DDR3FRFCFSLLC4MB_WithDefaultFireSimBridges_WithFireSimHighPerfConfigTweaks_chipyard.QuadRocketConfig
-    PLATFORM_CONFIG: WithAutoILA_BaseF1Config
+    TARGET_CONFIG: WithNIC_WithDefaultFireSimBridges_WithFireSimHighPerfConfigTweaks_chipyard.QuadRocketConfig
+    PLATFORM_CONFIG: WithAutoILA_FRFCFS16GBQuadRankLLC4MB_BaseF1Config
     deploy_quintuplet: null
     platform_config_args:
         fpga_frequency: 90
@@ -49,8 +49,8 @@ firesim_rocket_quadcore_no_nic_l2_llc4mb_ddr3:
     PLATFORM: f1
     TARGET_PROJECT: firesim
     DESIGN: FireSim
-    TARGET_CONFIG: DDR3FRFCFSLLC4MB_WithDefaultFireSimBridges_WithFireSimTestChipConfigTweaks_chipyard.QuadRocketConfig
-    PLATFORM_CONFIG: WithAutoILA_BaseF1Config
+    TARGET_CONFIG: WithDefaultFireSimBridges_WithFireSimTestChipConfigTweaks_chipyard.QuadRocketConfig
+    PLATFORM_CONFIG: WithAutoILA_FRFCFS16GBQuadRankLLC4MB_BaseF1Config
     deploy_quintuplet: null
     platform_config_args:
         fpga_frequency: 140
@@ -65,8 +65,8 @@ firesim_boom_singlecore_nic_l2_llc4mb_ddr3:
     PLATFORM: f1
     TARGET_PROJECT: firesim
     DESIGN: FireSim
-    TARGET_CONFIG: WithNIC_DDR3FRFCFSLLC4MB_WithDefaultFireSimBridges_WithFireSimHighPerfConfigTweaks_chipyard.LargeBoomV3Config
-    PLATFORM_CONFIG: WithAutoILA_BaseF1Config
+    TARGET_CONFIG: WithNIC_WithDefaultFireSimBridges_WithFireSimHighPerfConfigTweaks_chipyard.LargeBoomV3Config
+    PLATFORM_CONFIG: WithAutoILA_FRFCFS16GBQuadRankLLC4MB_BaseF1Config
     deploy_quintuplet: null
     platform_config_args:
         fpga_frequency: 65
@@ -81,8 +81,8 @@ firesim_boom_singlecore_no_nic_l2_llc4mb_ddr3:
     PLATFORM: f1
     TARGET_PROJECT: firesim
     DESIGN: FireSim
-    TARGET_CONFIG: DDR3FRFCFSLLC4MB_WithDefaultFireSimBridges_WithFireSimTestChipConfigTweaks_chipyard.LargeBoomV3Config
-    PLATFORM_CONFIG: WithAutoILA_BaseF1Config
+    TARGET_CONFIG: WithDefaultFireSimBridges_WithFireSimTestChipConfigTweaks_chipyard.LargeBoomV3Config
+    PLATFORM_CONFIG: WithAutoILA_FRFCFS16GBQuadRankLLC4MB_BaseF1Config
     deploy_quintuplet: null
     platform_config_args:
         fpga_frequency: 65
@@ -96,8 +96,8 @@ firesim_cva6_singlecore_no_nic_l2_llc4mb_ddr3:
     PLATFORM: f1
     TARGET_PROJECT: firesim
     DESIGN: FireSim
-    TARGET_CONFIG: DDR3FRFCFSLLC4MB_WithDefaultFireSimBridges_WithFireSimConfigTweaks_chipyard.CVA6Config
-    PLATFORM_CONFIG: WithAutoILA_BaseF1Config
+    TARGET_CONFIG: WithDefaultFireSimBridges_WithFireSimConfigTweaks_chipyard.CVA6Config
+    PLATFORM_CONFIG: WithAutoILA_FRFCFS16GBQuadRankLLC4MB_BaseF1Config
     deploy_quintuplet: null
     platform_config_args:
         fpga_frequency: 90
@@ -111,8 +111,8 @@ firesim_rocket_singlecore_gemmini_no_nic_l2_llc4mb_ddr3:
     PLATFORM: f1
     TARGET_PROJECT: firesim
     DESIGN: FireSim
-    TARGET_CONFIG: DDR3FRFCFSLLC4MB_WithDefaultFireSimBridges_WithFireSimConfigTweaks_chipyard.GemminiRocketConfig
-    PLATFORM_CONFIG: WithAutoILA_BaseF1Config
+    TARGET_CONFIG: WithDefaultFireSimBridges_WithFireSimConfigTweaks_chipyard.GemminiRocketConfig
+    PLATFORM_CONFIG: WithAutoILA_FRFCFS16GBQuadRankLLC4MB_BaseF1Config
     deploy_quintuplet: null
     platform_config_args:
         fpga_frequency: 110
@@ -126,8 +126,8 @@ firesim_boom_singlecore_no_nic_l2_llc4mb_ddr3_ramopts:
     PLATFORM: f1
     TARGET_PROJECT: firesim
     DESIGN: FireSim
-    TARGET_CONFIG: DDR3FRFCFSLLC4MB_WithDefaultFireSimBridges_WithFireSimTestChipConfigTweaks_chipyard.LargeBoomV3Config
-    PLATFORM_CONFIG: WithAutoILA_MCRams_BaseF1Config
+    TARGET_CONFIG: WithDefaultFireSimBridges_WithFireSimTestChipConfigTweaks_chipyard.LargeBoomV3Config
+    PLATFORM_CONFIG: WithAutoILA_MCRams_FRFCFS16GBQuadRankLLC4MB_BaseF1Config
     deploy_quintuplet: null
     platform_config_args:
         fpga_frequency: 90
@@ -186,8 +186,8 @@ firesim_rocket_singlecore_sha3_nic_l2_llc4mb_ddr3:
     PLATFORM: f1
     TARGET_PROJECT: firesim
     DESIGN: FireSim
-    TARGET_CONFIG: WithNIC_DDR3FRFCFSLLC4MB_WithDefaultFireSimBridges_WithFireSimHighPerfConfigTweaks_chipyard.Sha3RocketConfig
-    PLATFORM_CONFIG: BaseF1Config
+    TARGET_CONFIG: WithNIC_WithDefaultFireSimBridges_WithFireSimHighPerfConfigTweaks_chipyard.Sha3RocketConfig
+    PLATFORM_CONFIG: FRFCFS16GBQuadRankLLC4MB_BaseF1Config
     deploy_quintuplet: null
     platform_config_args:
         fpga_frequency: 65
@@ -201,8 +201,8 @@ firesim_rocket_singlecore_sha3_no_nic_l2_llc4mb_ddr3:
     PLATFORM: f1
     TARGET_PROJECT: firesim
     DESIGN: FireSim
-    TARGET_CONFIG: DDR3FRFCFSLLC4MB_WithDefaultFireSimBridges_WithFireSimHighPerfConfigTweaks_chipyard.Sha3RocketConfig
-    PLATFORM_CONFIG: BaseF1Config
+    TARGET_CONFIG: WithDefaultFireSimBridges_WithFireSimHighPerfConfigTweaks_chipyard.Sha3RocketConfig
+    PLATFORM_CONFIG: FRFCFS16GBQuadRankLLC4MB_BaseF1Config
     deploy_quintuplet: null
     platform_config_args:
         fpga_frequency: 65
@@ -216,8 +216,8 @@ firesim_rocket_singlecore_sha3_no_nic_l2_llc4mb_ddr3_printf:
     PLATFORM: f1
     TARGET_PROJECT: firesim
     DESIGN: FireSim
-    TARGET_CONFIG: DDR3FRFCFSLLC4MB_WithDefaultFireSimBridges_WithFireSimHighPerfConfigTweaks_chipyard.Sha3RocketPrintfConfig
-    PLATFORM_CONFIG: WithPrintfSynthesis_BaseF1Config
+    TARGET_CONFIG: WithDefaultFireSimBridges_WithFireSimHighPerfConfigTweaks_chipyard.Sha3RocketPrintfConfig
+    PLATFORM_CONFIG: WithPrintfSynthesis_FRFCFS16GBQuadRankLLC4MB_BaseF1Config
     deploy_quintuplet: null
     platform_config_args:
         fpga_frequency: 30

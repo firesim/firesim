@@ -1,13 +1,13 @@
 package midas
 package models
 
-import org.chipsalliance.cde.config.Parameters
-
 import chisel3._
 import chisel3.util._
 
-import midas.widgets._
+import org.chipsalliance.cde.config.Parameters
 
+import junctions.{NastiKey}
+import midas.widgets._
 
 case class FirstReadyFCFSConfig(
     dramKey: DramOrganizationParams,
@@ -37,7 +37,7 @@ class FirstReadyFCFSMMRegIO(val cfg: FirstReadyFCFSConfig) extends BaseDRAMMMReg
         max     = Some(cfg.transactionQueueDepth)))
 
   def requestSettings(): Unit = {
-    Console.println(s"Configuring First-Ready First-Come First Serve Model")
+    Console.println("Configuring First-Ready First-Come First Serve Model")
     setBaseDRAMSettings()
   }
 }
@@ -58,8 +58,8 @@ class FirstReadyFCFSModel(cfg: FirstReadyFCFSConfig)(implicit p: Parameters) ext
 
   val timings = io.mmReg.dramTimings
 
-  val backend = Module(new DRAMBackend(cfg.backendKey))
-  val xactionScheduler = Module(new UnifiedFIFOXactionScheduler(cfg.transactionQueueDepth, cfg))
+  val backend = Module(new DRAMBackend(p(NastiKey), cfg.backendKey))
+  val xactionScheduler = Module(new UnifiedFIFOXactionScheduler(p(NastiKey), cfg.transactionQueueDepth, cfg))
   xactionScheduler.io.req <> nastiReq
   xactionScheduler.io.pendingAWReq := pendingAWReq.value
   xactionScheduler.io.pendingWReq := pendingWReq.value
@@ -83,7 +83,7 @@ class FirstReadyFCFSModel(cfg: FirstReadyFCFSConfig)(implicit p: Parameters) ext
   val bankHasReadyEntries = RegInit(VecInit(Seq.fill(cfg.dramKey.maxRanks * cfg.dramKey.maxBanks)(false.B)))
 
   // State for the collapsing buffer of pending memory references
-  val newReference = Wire(Decoupled(new FirstReadyFCFSEntry(cfg)))
+  val newReference = Wire(Decoupled(new FirstReadyFCFSEntry(p(NastiKey), cfg)))
   newReference.valid := xactionScheduler.io.nextXaction.valid
   newReference.bits.decode(xactionScheduler.io.nextXaction.bits, io.mmReg)
 
@@ -226,7 +226,7 @@ class FirstReadyFCFSModel(cfg: FirstReadyFCFSConfig)(implicit p: Parameters) ext
       // 1:The last ready request has been made to the bank
       newReference.bits.addrMatch(cmdRank, cmdBank) && memReqDone && !otherReadyEntries ||
       // 2: There are no ready references, and a precharge is not being issued to the bank this cycle
-      !bankHasReadyEntries(Cat(newReference.bits.rankAddr, newReference.bits.bankAddr)) && 
+      !bankHasReadyEntries(Cat(newReference.bits.rankAddr, newReference.bits.bankAddr)) &&
       !(selectedCmd === cmd_pre && newRefBankAddrMatch),
       false.B)
 
@@ -254,12 +254,12 @@ class FirstReadyFCFSModel(cfg: FirstReadyFCFSConfig)(implicit p: Parameters) ext
   cmdBusBusy.io.set.valid := selectedCmd =/= cmd_nop
 
   backend.io.tCycle := tCycle
-  backend.io.newRead.bits  := ReadResponseMetaData(columnArbiter.io.out.bits.xaction)
+  backend.io.newRead.bits  := ReadResponseMetaData(p(NastiKey), columnArbiter.io.out.bits.xaction)
   backend.io.newRead.valid := memReqDone && !columnArbiter.io.out.bits.xaction.isWrite
   backend.io.readLatency := timings.tCAS + timings.tAL + io.mmReg.backendLatency
 
   // For writes we send out the acknowledge immediately
-  backend.io.newWrite.bits := WriteResponseMetaData(columnArbiter.io.out.bits.xaction)
+  backend.io.newWrite.bits := WriteResponseMetaData(p(NastiKey), columnArbiter.io.out.bits.xaction)
   backend.io.newWrite.valid := memReqDone && columnArbiter.io.out.bits.xaction.isWrite
   backend.io.writeLatency := 1.U
 

@@ -3,9 +3,13 @@
 package midas.widgets
 
 import chisel3._
-import junctions._
+
 import freechips.rocketchip.amba.axi4.AXI4Bundle
 import org.chipsalliance.cde.config.Parameters
+
+import junctions._
+
+import firesim.lib.nasti._
 
 object AXI4Printf {
   def apply(io: AXI4Bundle, name: String): Unit = {

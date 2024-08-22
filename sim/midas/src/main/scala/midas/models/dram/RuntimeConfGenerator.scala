@@ -28,11 +28,11 @@ trait HasConsoleUtils {
           inner()
         }
       } catch {
-        case e: java.lang.NumberFormatException => {
+        case _: java.lang.NumberFormatException => {
           Console.println("Please give me an integer!")
           value = inner()
         }
-        case e: java.io.EOFException => { value = default }
+        case _: java.io.EOFException => { value = default }
       }
       value
     }
@@ -112,7 +112,7 @@ trait HasProgrammableRegisters extends Bundle {
 
   def getName(dat: Data): String = {
     val name = elements.find(_._2 == dat) match {
-      case Some((name, elem)) => name
+      case Some((name, _)) => name
       case None => throw new RuntimeException("Could not look up register leaf name")
     }
     name
@@ -151,7 +151,7 @@ trait HasProgrammableRegisters extends Bundle {
     }
     // Traverse into leaf bundles and set them
     elements foreach {
-      case (name, elem: HasProgrammableRegisters) => elem.setUnboundSettings()
+      case (_, elem: HasProgrammableRegisters) => elem.setUnboundSettings()
       case _ => None
     }
   }

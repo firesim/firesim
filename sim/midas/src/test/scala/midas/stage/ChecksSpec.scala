@@ -39,7 +39,7 @@ class ChecksSpec extends AnyFlatSpec {
     }
 
     val filteredAnnos = baselineAnnos.filterNot {
-      case a: T => true
+      case _: T => true
       case _ => false
     }
 

@@ -27,7 +27,6 @@ class InferModelPorts extends Transform {
 
   override def execute(state: CircuitState): CircuitState = {
     val analysis = new FAMEChannelAnalysis(state)
-    val cTarget = CircuitTarget(state.circuit.main)
     val modelChannelPortsAnnos = analysis.modulePortDedupers.flatMap {
       case deduper => deduper.completePortMap.flatMap {
         case (cName, (clk, ports)) => portAnnos(deduper.mTarget, cName, clk, ports)

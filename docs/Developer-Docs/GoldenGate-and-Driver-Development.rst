@@ -144,9 +144,7 @@ Key Files & Locations
 ---------------------
 
 - :gh-file-ref:`sim/midas/src/test/scala/midas`
-   Location of GoldenGate ScalaTests
-- :gh-file-ref:`sim/midas/targetutils/src/test/scala`
-   Location of targetutils ScalaTests
+   Location of GoldenGate and targetutils ScalaTests (targetutils is moved here to reduce Chisel 3.6 and 6+ APIs)
 
 Defining A New Test
 ---------------------

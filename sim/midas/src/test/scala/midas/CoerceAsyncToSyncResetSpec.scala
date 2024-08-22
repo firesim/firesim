@@ -4,16 +4,12 @@ package goldengate.tests
 
 import midas.passes._
 
-import firrtl._
-import firrtl.ir._
-import firrtl.annotations._
 import firrtl.testutils._
-import logger._
 
 class CoerceAsyncToSyncResetSpec extends LowTransformSpec with FirrtlRunners  {
 
    def transform = CoerceAsyncToSyncReset
-   "Async reset ports" should s"be swapped with Bools" in {
+   "Async reset ports" should "be swapped with Bools" in {
       val input =
          """circuit Top :
            |  module Top :
@@ -31,7 +27,7 @@ class CoerceAsyncToSyncResetSpec extends LowTransformSpec with FirrtlRunners  {
       execute(input, check, Nil)
    }
 
-   "Abstract reset ports" should s"be swapped with Bools, should they exist" in {
+   "Abstract reset ports" should "be swapped with Bools, should they exist" in {
       val input =
          """circuit Top :
            |  module Top :

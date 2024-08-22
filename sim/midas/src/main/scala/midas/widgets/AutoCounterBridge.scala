@@ -1,12 +1,16 @@
+// See LICENSE for license details.
+
 package midas
 package widgets
 
 import chisel3._
 import chisel3.util._
+
 import org.chipsalliance.cde.config.Parameters
 import freechips.rocketchip.util._
 
 import midas.targetutils.{PerfCounterOpType, PerfCounterOps}
+import firesim.lib.bridgeutils._
 
 trait AutoCounterConsts {
   val counterWidth = 64
@@ -72,15 +76,12 @@ class AutoCounterBridgeModule(key: AutoCounterParameters)(implicit p: Parameters
     val hPort = IO(HostPort(new AutoCounterBundle(eventMetadata, triggerName, resetPortName)))
     val trigger = hPort.hBits.triggerEnable
     val cycles = RegInit(0.U(counterWidth.W))
-    val acc_cycles = RegInit(0.U(counterWidth.W))
 
     val hostCyclesWidthOffset = 64 - p(CtrlNastiKey).dataBits
     val hostCyclesLowWidth = if (hostCyclesWidthOffset > 0) p(CtrlNastiKey).dataBits else 64
-    val hostCyclesHighWidth = if (hostCyclesWidthOffset > 0) hostCyclesWidthOffset else 0
 
     val hostCounterWidthOffset = 64 - p(CtrlNastiKey).dataBits
     val hostCounterLowWidth = if (hostCounterWidthOffset > 0) p(CtrlNastiKey).dataBits else 64
-    val hostCounterHighWidth = if (hostCounterWidthOffset > 0) hostCounterWidthOffset else 0
 
     val hostReadrateWidthOffset = 64 - p(CtrlNastiKey).dataBits
     val hostReadrateLowWidth = if (hostReadrateWidthOffset > 0) p(CtrlNastiKey).dataBits else 64

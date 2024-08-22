@@ -98,7 +98,7 @@ class GenerateCutBridgeInGroupedWrapper extends Transform with DependencyAPIMigr
       val connection = p.name match {
         case "clock" => Some(Connect(NoInfo, WSubField(WRef(lhsBridgeInst), "clock"), WRef(p.name)))
         case "reset" => Some(Connect(NoInfo, WSubField(WRef(lhsBridgeInst), "reset"), WRef(p.name)))
-        case o       => None
+        case _       => None
       }
       connection
     }.flatten
@@ -134,7 +134,7 @@ class GenerateCutBridgeInGroupedWrapper extends Transform with DependencyAPIMigr
       val connection = p.name match {
         case "clock" => Some(Connect(NoInfo, WSubField(WRef(rhsBridgeInst), "clock"), WRef(p.name)))
         case "reset" => Some(Connect(NoInfo, WSubField(WRef(rhsBridgeInst), "reset"), WRef(p.name)))
-        case o       => None
+        case _       => None
       }
       connection
     }.flatten
@@ -211,7 +211,7 @@ class GenerateCutBridgeInGroupedWrapper extends Transform with DependencyAPIMigr
       val connection = p.name match {
         case "clock" => Some(Connect(NoInfo, WSubField(WRef(bridgeInstance), "clock"), WRef(p.name)))
         case "reset" => Some(Connect(NoInfo, WSubField(WRef(bridgeInstance), "reset"), WRef(p.name)))
-        case o       => None
+        case _       => None
       }
       connection
     }.flatten
@@ -289,7 +289,7 @@ class GenerateCutBridgeInGroupedWrapper extends Transform with DependencyAPIMigr
       val connection = p.name match {
         case "clock" => Some(Connect(NoInfo, WSubField(WRef(srcBridgeInst), "clock"), WRef(p.name)))
         case "reset" => Some(Connect(NoInfo, WSubField(WRef(srcBridgeInst), "reset"), WRef(p.name)))
-        case o       => None
+        case _       => None
       }
       connection
     }.flatten
@@ -311,7 +311,7 @@ class GenerateCutBridgeInGroupedWrapper extends Transform with DependencyAPIMigr
         val connection = p.name match {
           case "clock" => Some(Connect(NoInfo, WSubField(WRef(sinkBridgeInst), "clock"), WRef(p.name)))
           case "reset" => Some(Connect(NoInfo, WSubField(WRef(sinkBridgeInst), "reset"), WRef(p.name)))
-          case o       => None
+          case _       => None
         }
         connection
       }.flatten

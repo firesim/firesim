@@ -1,4 +1,3 @@
-
 //See LICENSE for license details
 package firesim.midasexamples
 
@@ -21,10 +20,10 @@ class TerminationModuleDUT extends Module {
   val io = IO(new TerminationModuleIO(params))
   val counter = RegInit(0.U(16.W))
 
-  counter := counter + 1.U 
+  counter := counter + 1.U
   val valid = (io.doneErrCode.asBools).map { _ && (counter >= io.validInCycle)}
 
-  TerminationBridge(valid, params) 
+  TerminationBridge(valid, params)
 
 }
 
@@ -41,4 +40,4 @@ class TerminationModuleAssertDUT extends Module {
   TerminationBridge.assert(io.shouldBeTrue, TerminationModuleConstants.assertMessage)
 }
 
-class TerminationModuleAssert(implicit p: Parameters) extends PeekPokeMidasExampleHarness(() => new TerminationModuleAssertDUT)
+class TerminationModuleAssert(implicit p: Parameters) extends firesim.lib.testutils.PeekPokeHarness(() => new TerminationModuleAssertDUT)

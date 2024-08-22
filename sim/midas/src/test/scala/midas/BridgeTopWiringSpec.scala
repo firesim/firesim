@@ -4,8 +4,6 @@ package goldengate.tests
 
 import midas.passes._
 
-import firrtl._
-import firrtl.ir._
 import firrtl.annotations._
 import firrtl.testutils._
 
@@ -13,7 +11,7 @@ class BridgeTopWiringSpec extends MiddleTransformSpec with FirrtlRunners  {
 
    def transform = new BridgeTopWiring("t_")
 
-   "The signal x in module A" should s"should be wired to Top with the correct clocks" in {
+   "The signal x in module A" should "should be wired to Top with the correct clocks" in {
       val input =
          """circuit Top :
            |  module Top :

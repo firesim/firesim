@@ -4,6 +4,7 @@ package midas.core
 
 import chisel3._
 import chisel3.util._
+
 import freechips.rocketchip.amba.axi4._
 import org.chipsalliance.cde.config.Parameters
 import freechips.rocketchip.diplomacy._
@@ -11,6 +12,8 @@ import freechips.rocketchip.diplomacy._
 import midas.widgets._
 import midas.targetutils.FireSimQueueHelper
 import midas.F1ShimHasPCIMPorts
+
+import firesim.lib.bridgeutils._
 
 class WriteMetadata(val numBeatsWidth: Int) extends Bundle {
   val numBeats = Output(UInt(numBeatsWidth.W))
@@ -75,7 +78,7 @@ class FPGAManagedStreamEngine(p: Parameters, val params: StreamEngineParameters)
 
       require(
         BridgeStreamConstants.streamWidthBits == axi4.params.dataBits,
-        s"FPGAManagedStreamEngine requires stream widths to match FPGA-managed AXI4 data width",
+        "FPGAManagedStreamEngine requires stream widths to match FPGA-managed AXI4 data width",
       )
       val cpuBufferDepthBeats = chParams.fpgaBufferDepth
       require(cpuBufferDepthBeats > pageBeats)

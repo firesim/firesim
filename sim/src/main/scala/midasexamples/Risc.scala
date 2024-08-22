@@ -54,4 +54,4 @@ class RiscDUT extends Module {
   }
 }
 
-class Risc(implicit p: Parameters) extends PeekPokeMidasExampleHarness(() => new RiscDUT)
+class Risc(implicit p: Parameters) extends firesim.lib.testutils.PeekPokeHarness(() => new RiscDUT)

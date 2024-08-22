@@ -45,4 +45,4 @@ class NestedModelsDUT extends Module {
   midB.io <> io.b
 }
 
-class NestedModels(implicit p: Parameters) extends PeekPokeMidasExampleHarness(() => new NestedModelsDUT)
+class NestedModels(implicit p: Parameters) extends firesim.lib.testutils.PeekPokeHarness(() => new NestedModelsDUT)

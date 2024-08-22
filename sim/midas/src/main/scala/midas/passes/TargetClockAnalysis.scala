@@ -3,7 +3,7 @@
 package midas.passes
 
 import midas.passes.fame.{FAMEChannelConnectionAnnotation, TargetClockChannel}
-import midas.widgets.{RationalClock}
+import firesim.lib.bridgeutils.{RationalClock}
 
 import firrtl._
 import firrtl.annotations._
@@ -38,7 +38,7 @@ object ChannelClockInfoAnalysis extends Transform {
     }).toMap
 
     val finder = new ClockSourceFinder(state)
-    val clockSourceMap = channelClocks.map({ case (k, v) => v -> finder.findRootDriver(v) }).toMap
+    val clockSourceMap = channelClocks.map({ case (_, v) => v -> finder.findRootDriver(v) }).toMap
     channelClocks.map { case (channelName, sinkClock) =>
       val source = clockSourceMap(sinkClock).getOrElse(throw new Exception(
         s"""|Could not find source clock for channel ${channelName}.

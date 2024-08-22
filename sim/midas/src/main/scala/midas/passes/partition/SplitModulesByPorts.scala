@@ -187,24 +187,6 @@ class SplitModulesByPortsStandalone extends Transform with DependencyAPIMigratio
     }
   }
 
-  private def baseStmtRef(stmt: Statement): Option[String] = {
-    val ret = stmt match {
-      case s @ DefWire(_, name, _)                        =>
-        Some(name)
-      case s @ DefRegister(_, name, _, _, _, _)           =>
-        Some(name)
-      case s @ DefMemory(_, name, _, _, _, _, _, _, _, _) =>
-        Some(name)
-      case s @ DefNode(_, name, _)                        =>
-        Some(name)
-      case s @ Stop(_, _, clk, en)                        =>
-        None
-      case s @ Print(_)                                   => None
-      case _                                              => None
-    }
-    ret
-  }
-
   // Ignore clock and reset
   private def getRefsInStmt(stmt: Statement): Seq[String] = {
     val refs = mutable.ArrayBuffer[String]()
@@ -288,11 +270,11 @@ class SplitModulesByPortsStandalone extends Transform with DependencyAPIMigratio
           val ref = baseRef(expr)._2
           assert(ref.isDefined, s"BaseRef of IsInvalid is not defined yet ${s}")
           childStmts(ref.get).add(s)
-        case s @ Verification(_, _, _, _, _, _)             =>
+        case Verification(_, _, _, _, _, _)                 =>
           ()
-        case s @ Stop(_, _, _, _)                           =>
+        case Stop(_, _, _, _)                               =>
           ()
-        case s @ Print(_)                                   =>
+        case Print(_)                                       =>
           ()
         case Block(s)                                       =>
           s.foreach(onStmt(_))
@@ -563,7 +545,7 @@ class SplitModulesByPortsStandalone extends Transform with DependencyAPIMigratio
       op.name -> op
     }.toMap
     val opToUIdx        = refToUnionIdx
-      .filter { case (k, v) =>
+      .filter { case (k, _) =>
         oportNames.contains(k)
       }
       .map { case (k, v) =>
@@ -589,8 +571,8 @@ class SplitModulesByPortsStandalone extends Transform with DependencyAPIMigratio
     val portToMod     = mutable.Map[String, Module]()
     val modules       = sortedStmts.zipWithIndex.map { case (lineStmts, idx) =>
       val stmts  = lineStmts.map(_._2)
-      val ip     = ipToUIdx.filter { case (ip, gidx) => gidx == idx }.map(_._1).toSeq
-      val op     = opToUIdx.filter { case (op, gidx) => gidx == idx }.map(_._1).toSeq
+      val ip     = ipToUIdx.filter { case (_, gidx) => gidx == idx }.map(_._1).toSeq
+      val op     = opToUIdx.filter { case (_, gidx) => gidx == idx }.map(_._1).toSeq
       val crpOpt = Seq(clockPort, resetPort)
       val crp    = crpOpt.flatten
 
@@ -682,7 +664,7 @@ class SplitModulesByPortsStandalone extends Transform with DependencyAPIMigratio
     val newbdy = mutable.ArrayBuffer[Statement]()
     m.body.foreachStmt(stmt =>
       stmt match {
-        case s @ Connect(_, WSubField(WRef(li), lref, _, _), rxpr) =>
+        case s @ Connect(_, WSubField(WRef(li), lref, _, _), _) =>
           val sfx = getClockResetSfx(lref)
           if (sfx == "clock") {
             val nc = Connect(NoInfo, WSubField(WRef(li._1), lref), WRef(clk))
@@ -693,7 +675,7 @@ class SplitModulesByPortsStandalone extends Transform with DependencyAPIMigratio
           } else {
             newbdy.append(s)
           }
-        case s                                                     => newbdy.append(s)
+        case s                                                  => newbdy.append(s)
       }
     )
     m.copy(body = Block(newbdy.toSeq))
@@ -728,7 +710,7 @@ class SplitModulesByPortsStandalone extends Transform with DependencyAPIMigratio
       inst
     }
 
-    Logger.critical(s"replaceBodyWithSplitMods")
+    Logger.critical("replaceBodyWithSplitMods")
 
     val newbdy         = mutable.ArrayBuffer[Statement]()
     val orig_inst2mod  = mutable.Map[String, String]()

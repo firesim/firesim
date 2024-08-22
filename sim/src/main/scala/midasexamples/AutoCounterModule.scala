@@ -71,7 +71,7 @@ class AutoCounterModuleChild(val instName: String = "child")(implicit val v: Aut
  * @see AutoCounterF1Test
  * @see PerfCounter
  */
-class AutoCounterModule(implicit p: Parameters) extends PeekPokeMidasExampleHarness(() =>
+class AutoCounterModule(implicit p: Parameters) extends firesim.lib.testutils.PeekPokeHarness(() =>
   new AutoCounterModuleDUT()(new AutoCounterValidator))
 
 class AutoCounterCoverModuleDUT(val instName: String = "dut")(implicit val v: AutoCounterValidator = new AutoCounterValidator) extends Module with AutoCounterTestContext {
@@ -102,7 +102,7 @@ class AutoCounterCoverModuleDUT(val instName: String = "dut")(implicit val v: Au
  * @see https://docs.fires.im/en/latest/Advanced-Usage/Generating-Different-Targets.html
  * @see AutoCounterCoverModuleF1Test
  */
-class AutoCounterCoverModule(implicit p: Parameters) extends PeekPokeMidasExampleHarness(() => new AutoCounterCoverModuleDUT)
+class AutoCounterCoverModule(implicit p: Parameters) extends firesim.lib.testutils.PeekPokeHarness(() => new AutoCounterCoverModuleDUT)
 
 class AutoCounterPrintfDUT extends Module {
   val io = IO(new Bundle {
@@ -133,5 +133,4 @@ class AutoCounterPrintfDUT extends Module {
  * @see https://docs.fires.im/en/latest/Advanced-Usage/Generating-Different-Targets.html
  * @see AutoCounterPrintfF1Test
  */
-class AutoCounterPrintfModule(implicit p: Parameters) extends PeekPokeMidasExampleHarness(() => new AutoCounterPrintfDUT)
-
+class AutoCounterPrintfModule(implicit p: Parameters) extends firesim.lib.testutils.PeekPokeHarness(() => new AutoCounterPrintfDUT)

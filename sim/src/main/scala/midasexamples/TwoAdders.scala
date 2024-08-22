@@ -54,4 +54,4 @@ class TwoAddersDUT extends Module {
   io.o1 := a1.io.z
 }
 
-class TwoAdders(implicit p: Parameters) extends PeekPokeMidasExampleHarness(() => new TwoAddersDUT)
+class TwoAdders(implicit p: Parameters) extends firesim.lib.testutils.PeekPokeHarness(() => new TwoAddersDUT)

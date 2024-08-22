@@ -22,3 +22,15 @@
 [submodule "sim/toolchain-utilities/riscv-tests"]
 	path = sim/toolchain-utilities/riscv-tests
 	url = https://github.com/riscv-software-src/riscv-tests
+[submodule "sim/rocket-chip"]
+	path = sim/rocket-chip
+	url = https://github.com/chipsalliance/rocket-chip.git
+[submodule "sim/berkeley-hardfloat"]
+	path = sim/berkeley-hardfloat
+	url = https://github.com/ucb-bar/berkeley-hardfloat.git
+[submodule "sim/diplomacy"]
+	path = sim/diplomacy
+	url = https://github.com/chipsalliance/diplomacy.git
+[submodule "sim/cde"]
+	path = sim/cde
+	url = https://github.com/chipsalliance/cde.git

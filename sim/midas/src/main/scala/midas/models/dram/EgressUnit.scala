@@ -3,9 +3,11 @@ package models
 
 import chisel3._
 import chisel3.util._
-import org.chipsalliance.cde.config.Parameters
+
 import junctions._
 import midas.widgets._
+
+import firesim.lib.nasti._
 
 /** A simple freelist
   * @param entries The number of IDS to be managed by the free list
@@ -163,33 +165,34 @@ class ReorderBuffer(val numVIds: Int, val numPIds: Int) extends Module {
 
 
 // Read response staging units only buffer data and last fields of a B payload
-class StoredBeat(implicit p: Parameters) extends NastiBundle()(p) with HasNastiData
+class StoredBeat(nastiParams: NastiParameters) extends NastiBundle(nastiParams)
+  with HasNastiData
 
 // Buffers read reponses from the host-memory system in a structure that maintains
 // their per-transaction ID ordering.
-class ReadEgressResponseIO(implicit p: Parameters) extends NastiBundle()(p) {
-  val tBits = Output(new NastiReadDataChannel)
+class ReadEgressResponseIO(nastiParams: NastiParameters) extends NastiBundle(nastiParams) {
+  val tBits = Output(new NastiReadDataChannel(nastiParams))
   val tReady = Input(Bool()) // Really this is part of the input token to the egress unit...
   val hValid = Output(Bool())
 }
 
-class ReadEgressReqIO(implicit p: Parameters) extends NastiBundle()(p) {
-  val t = Output(Valid(UInt(p(NastiKey).idBits.W)))
+class ReadEgressReqIO(nastiParams: NastiParameters) extends NastiBundle(nastiParams) {
+  val t = Output(Valid(UInt(nastiParams.idBits.W)))
   val hValid = Output(Bool())
 }
 
-class ReadEgress(maxRequests: Int, maxReqLength: Int, maxReqsPerId: Int)
-    (implicit val p: Parameters) extends Module {
+class ReadEgress(nastiParams: NastiParameters, maxRequests: Int, maxReqLength: Int, maxReqsPerId: Int)
+    extends Module {
   val io = IO(new Bundle {
-    val enq = Flipped(Decoupled(new NastiReadDataChannel))
-    val resp = new ReadEgressResponseIO
-    val req = Flipped(new ReadEgressReqIO)
+    val enq = Flipped(Decoupled(new NastiReadDataChannel(nastiParams)))
+    val resp = new ReadEgressResponseIO(nastiParams)
+    val req = Flipped(new ReadEgressReqIO(nastiParams))
   })
 
   // The total BRAM state required to implement a maximum length queue for each AXI transaction ID
-  val virtualState = (maxReqsPerId * (1 << p(NastiKey).idBits) * maxReqLength * p(NastiKey).dataBits)
+  val virtualState = (maxReqsPerId * (1 << nastiParams.idBits) * maxReqLength * nastiParams.dataBits)
   // The total BRAM state required to dynamically allocate a entres to responses
-  val physicalState = (maxRequests  * maxReqLength * p(NastiKey).dataBits)
+  val physicalState = (maxRequests  * maxReqLength * nastiParams.dataBits)
   // 0x20000 = 4 32 Kb BRAMs
   val generateTranslation = (virtualState > 0x20000) && (virtualState > physicalState + 0x10000)
 
@@ -216,7 +219,7 @@ class ReadEgress(maxRequests: Int, maxReqLength: Int, maxReqsPerId: Int)
   val enqPId = Wire(Valid(UInt()))
   // Queue address from which to dequeue the response
   val (deqPId: UInt, deqPIdReg: ValidIO[UInt]) = if (generateTranslation) {
-    val rob = Module(new ReorderBuffer(1 << p(NastiKey).idBits, maxRequests))
+    val rob = Module(new ReorderBuffer(1 << nastiParams.idBits, maxRequests))
     val enqPIdReg = RegInit({val i = Wire(Valid(UInt(log2Up(maxRequests).W)))
                               i.valid := false.B;
                               i.bits := DontCare;
@@ -268,8 +271,8 @@ class ReadEgress(maxRequests: Int, maxReqLength: Int, maxReqsPerId: Int)
   }
 
   val mQDepth = if (generateTranslation) maxReqLength else maxReqLength * maxReqsPerId
-  val mQWidth = if (generateTranslation) maxRequests else 1 << p(NastiKey).idBits
-  val multiQueue = Module(new MultiQueue(new StoredBeat, mQWidth, mQDepth))
+  val mQWidth = if (generateTranslation) maxRequests else 1 << nastiParams.idBits
+  val multiQueue = Module(new MultiQueue(new StoredBeat(nastiParams), mQWidth, mQDepth))
 
   multiQueue.io.enq.bits.data := io.enq.bits.data
   multiQueue.io.enq.bits.last := io.enq.bits.last
@@ -280,32 +283,32 @@ class ReadEgress(maxRequests: Int, maxReqLength: Int, maxReqsPerId: Int)
   xactionDone := targetFire && currReqReg.valid && deqPIdReg.valid &&
                  io.resp.tReady && io.resp.tBits.last
 
-  io.resp.tBits := NastiReadDataChannel(currReqReg.bits,
+  io.resp.tBits := NastiReadDataChannel(nastiParams, currReqReg.bits,
     multiQueue.io.deq.bits.data, multiQueue.io.deq.bits.last)
   io.resp.hValid := ~currReqReg.valid || (deqPIdReg.valid && multiQueue.io.deq.valid)
   multiQueue.io.deq.ready := targetFire && currReqReg.valid &&
     deqPIdReg.valid && io.resp.tReady
 }
 
-class WriteEgressResponseIO(implicit p: Parameters) extends NastiBundle()(p) {
-  val tBits = Output(new NastiWriteResponseChannel)
+class WriteEgressResponseIO(nastiParams: NastiParameters) extends NastiBundle(nastiParams) {
+  val tBits = Output(new NastiWriteResponseChannel(nastiParams))
   val tReady = Input(Bool())
   val hValid = Output(Bool())
 }
 
-class WriteEgressReqIO(implicit p: Parameters) extends NastiBundle()(p) {
-  val t = Output(Valid(UInt(p(NastiKey).idBits.W)))
+class WriteEgressReqIO(nastiParams: NastiParameters) extends NastiBundle(nastiParams) {
+  val t = Output(Valid(UInt(nastiParams.idBits.W)))
   val hValid = Output(Bool())
 }
 // Maintains a series of incrementer/decrementers to track the number of
 // write acknowledgements returned by the host memory system. No other
 // response metadata is stored.
-class WriteEgress(maxRequests: Int, maxReqLength: Int, maxReqsPerId: Int)
-    (implicit val p: Parameters) extends Module {
+class WriteEgress(nastiParams: NastiParameters, maxRequests: Int, maxReqLength: Int, maxReqsPerId: Int)
+    extends Module {
   val io = IO(new Bundle {
-    val enq = Flipped(Decoupled(new NastiWriteResponseChannel))
-    val resp = new WriteEgressResponseIO
-    val req = Flipped(new WriteEgressReqIO)
+    val enq = Flipped(Decoupled(new NastiWriteResponseChannel(nastiParams)))
+    val resp = new WriteEgressResponseIO(nastiParams)
+    val req = Flipped(new WriteEgressReqIO(nastiParams))
   })
 
   // This module fires whenever there is a token available on the request port.
@@ -325,7 +328,7 @@ class WriteEgress(maxRequests: Int, maxReqLength: Int, maxReqsPerId: Int)
     currReqReg.valid := false.B
   }
 
-  val ackCounters = Seq.fill(1 << p(NastiKey).idBits)(RegInit(0.U(log2Up(maxReqsPerId + 1).W)))
+  val ackCounters = Seq.fill(1 << nastiParams.idBits)(RegInit(0.U(log2Up(maxReqsPerId + 1).W)))
   val notEmpty = VecInit(ackCounters map {_ =/= 0.U})
   val retry = currReqReg.valid && !haveAck
   val deqId = Mux(retry, currReqReg.bits, io.req.t.bits)
@@ -346,7 +349,7 @@ class WriteEgress(maxRequests: Int, maxReqLength: Int, maxReqsPerId: Int)
     }
   }
 
-  io.resp.tBits := NastiWriteResponseChannel(currReqReg.bits)
+  io.resp.tBits := NastiWriteResponseChannel(nastiParams, currReqReg.bits)
   io.resp.hValid := !currReqReg.valid || haveAck
   io.enq.ready := true.B
 }
@@ -354,4 +357,3 @@ class WriteEgress(maxRequests: Int, maxReqLength: Int, maxReqsPerId: Int)
 trait EgressUnitParameters {
   val egressUnitDelay = 1
 }
-

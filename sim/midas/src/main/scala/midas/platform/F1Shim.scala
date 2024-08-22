@@ -3,14 +3,17 @@ package platform
 
 import chisel3._
 import chisel3.util._
-import junctions._
+
 import org.chipsalliance.cde.config.{Field, Parameters}
 import freechips.rocketchip.diplomacy.LazyModuleImp
 import freechips.rocketchip.amba.axi4.AXI4Bundle
 
+import junctions._
 import midas.core.{CPUManagedAXI4Key, FPGAManagedAXI4Key, HostMemChannelKey, HostMemNumChannels}
 import midas.widgets.{AXI4Printf, CtrlNastiKey}
 import midas.stage.GoldenGateOutputFileAnnotation
+
+import firesim.lib.nasti._
 
 case object AXIDebugPrint extends Field[Boolean]
 
@@ -38,10 +41,8 @@ class F1Shim(implicit p: Parameters) extends PlatformShim {
       }
     }
 
-    val io_master = IO(Flipped(new NastiIO()(p.alterPartial { case NastiKey => p(CtrlNastiKey) })))
-    val io_pcis   = IO(Flipped(new NastiIO()(p.alterPartial { case NastiKey =>
-      NastiParameters(p(CPUManagedAXI4Key).get.axi4BundleParams)
-    })))
+    val io_master = IO(Flipped(new NastiIO(p(CtrlNastiKey))))
+    val io_pcis   = IO(Flipped(new NastiIO(CreateNastiParameters(p(CPUManagedAXI4Key).get.axi4BundleParams))))
     val io_slave  = IO(Vec(p(HostMemNumChannels), AXI4Bundle(p(HostMemChannelKey).axi4BundleParams)))
 
     if (p(AXIDebugPrint)) {
@@ -67,9 +68,7 @@ class F1Shim(implicit p: Parameters) extends PlatformShim {
     }
 
     if (p(F1ShimHasPCIMPorts)) {
-      val io_pcim = IO(new NastiIO()(p.alterPartial { case NastiKey =>
-        NastiParameters(p(FPGAManagedAXI4Key).get.axi4BundleParams)
-      }))
+      val io_pcim = IO(new NastiIO(CreateNastiParameters(p(FPGAManagedAXI4Key).get.axi4BundleParams)))
 
       if (p(AXIDebugPrint)) {
         AXI4Printf(io_pcim, "pcim")

@@ -59,7 +59,7 @@ class SimplifyMems extends Transform {
     }
   
     def canSimplify(mem: DefMemory) = mem.dataType match {
-      case at: AggregateType =>
+      case _: AggregateType =>
         val wMasks = mem.writers.map(w => getMaskBits(connects, memPortField(mem, w, "en"), memPortField(mem, w, "mask")))
         val rwMasks = mem.readwriters.map(w => getMaskBits(connects, memPortField(mem, w, "wmode"), memPortField(mem, w, "wmask")))
         (wMasks ++ rwMasks).flatten.isEmpty

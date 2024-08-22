@@ -12,10 +12,11 @@ import firrtl.Utils.{zero, BoolType}
 
 
 import midas.passes.Utils.cat
-import midas.widgets.{BridgeIOAnnotation, AssertBridgeModule, AssertBridgeParameters}
+import midas.widgets.{AssertBridgeModule, AssertBridgeParameters}
 import midas.passes.fame.{FAMEChannelConnectionAnnotation, WireChannel}
 import midas.stage.phases.ConfigParametersAnnotation
 import midas.targetutils.{ExcludeInstanceAssertsAnnotation, GlobalResetConditionSink}
+import firesim.lib.bridgeutils.{BridgeIOAnnotation}
 
 private[passes] class AssertionSynthesis extends firrtl.Transform {
   def inputForm = LowForm
@@ -30,7 +31,7 @@ private[passes] class AssertionSynthesis extends firrtl.Transform {
   private val assertPorts = collection.mutable.HashMap[String, (Port, Seq[ReferenceTarget])]()
   private val excludeInstAsserts = collection.mutable.HashSet[(String, String)]()
 
-  private def getNameOrCroak(ns: Namespace, name: String): String = { assert(ns.tryName(name)); name }
+
 
   // Helper method to filter out module instances
   private def excludeInst(excludes: Seq[(String, String)])
@@ -48,13 +49,13 @@ private[passes] class AssertionSynthesis extends firrtl.Transform {
         val name = namespace newName s"assert_$idx"
         val clockName = clk match {
           case Reference(name, _, _, _) => name
-          case o => throw new RuntimeException(s"$clk")
+          case _ => throw new RuntimeException(s"$clk")
         }
         asserts(mname)(en.serialize) = (idx, name, clockName)
         DefNode(info, name, en)
-      case firrtl.ir.Verification(Formal.Assert,_,_,_,en,_) =>
+      case firrtl.ir.Verification(Formal.Assert,_,_,_,_,_) =>
         throw new RuntimeException(
-          s"""|New Verification.Assert IR nodes cannot currently be synthesized.
+          """|New Verification.Assert IR nodes cannot currently be synthesized.
               |EnsureConvert asserts run early in lowering translate them into a synthesizable form.
               |See midas.passes.RunConvertAssertsEarly.""".stripMargin)
       case s => s
@@ -69,7 +70,7 @@ private[passes] class AssertionSynthesis extends firrtl.Transform {
       //case s: Print if s.args.isEmpty =>
       case s: Print =>
         asserts(mname) get s.en.serialize match {
-          case Some((idx, str, _)) =>
+          case Some((idx, _, _)) =>
             messages(mname)(idx) = s.string.serialize
             EmptyStmt
           case _ => s
@@ -101,7 +102,6 @@ private[passes] class AssertionSynthesis extends firrtl.Transform {
     // Get references to assertion ports on all child instances
     lazy val (childAsserts, childAssertClocksRTs): (Seq[WSubField], Seq[Seq[ReferenceTarget]])  =
     (for ((childInstName, (assertPort, clockRTs)) <- assertChildren) yield {
-      val childWidth = firrtl.bitWidth(assertPort.tpe).toInt
       val assertRef = WSubField(WRef(childInstName), assertPort.name)
       val clockRefs = clockRTs.map(_.addHierarchy(m.name, childInstName))
       (assertRef, clockRefs)

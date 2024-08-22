@@ -61,24 +61,26 @@ class BitBuilder(metaclass=abc.ABCMeta):
         """Generate Verilog from build config. Should run on the manager host."""
         rootLogger.info(f"Building Verilog for {self.build_config.get_chisel_quintuplet()}")
 
+        deploy_dir = get_deploy_dir()
         with InfoStreamLogger('stdout'), \
-            prefix(f'cd {get_deploy_dir()}/../'), \
+            prefix(f'cd {deploy_dir}/../'), \
             prefix(create_export_string({'RISCV', 'PATH', 'LD_LIBRARY_PATH'})), \
             prefix('source sourceme-manager.sh --skip-ssh-setup'), \
             InfoStreamLogger('stdout'), \
             prefix('cd sim/'):
-            run(self.build_config.make_recipe("replace-rtl"))
+            run(self.build_config.make_recipe("replace-rtl", deploy_dir))
 
     def build_driver(self) -> None:
         """Build FireSim FPGA driver from build config. Should run on the manager host."""
         rootLogger.info(f"Building FPGA driver for {self.build_config.get_chisel_quintuplet()}")
 
+        deploy_dir = get_deploy_dir()
         with InfoStreamLogger('stdout'), \
-            prefix(f'cd {get_deploy_dir()}/../'), \
+            prefix(f'cd {deploy_dir}/../'), \
             prefix(create_export_string({'RISCV', 'PATH', 'LD_LIBRARY_PATH'})), \
             prefix('source sourceme-manager.sh --skip-ssh-setup'), \
             prefix('cd sim/'):
-            run(self.build_config.make_recipe("driver"))
+            run(self.build_config.make_recipe("driver", deploy_dir))
 
     @abc.abstractmethod
     def build_bitstream(self, bypass: bool = False) -> bool:

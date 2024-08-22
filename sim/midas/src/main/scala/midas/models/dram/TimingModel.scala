@@ -1,15 +1,17 @@
 package midas
 package models
 
-import org.chipsalliance.cde.config.Parameters
-import junctions._
+import Console.{UNDERLINED, RESET}
 
 import chisel3._
 import chisel3.util._
 
+import org.chipsalliance.cde.config.Parameters
+
+import junctions._
 import midas.widgets._
 
-import Console.{UNDERLINED, RESET}
+import firesim.lib.nasti._
 
 // Automatically bound to simulation-memory-mapped. registers Extends this
 // bundle to add additional programmable values and instrumentation
@@ -56,15 +58,15 @@ abstract class MMRegIO(cfg: BaseConfig) extends Bundle with HasProgrammableRegis
 }
 
 abstract class TimingModelIO(implicit val p: Parameters) extends Bundle {
-  val tNasti = Flipped(new NastiIO)
-  val egressReq = new EgressReq
-  val egressResp = Flipped(new EgressResp)
+  val tNasti = Flipped(new NastiIO(p(NastiKey)))
+  val egressReq = new EgressReq(p(NastiKey))
+  val egressResp = Flipped(new EgressResp(p(NastiKey)))
   // This sub-bundle contains all the programmable fields of the model
   val mmReg: MMRegIO
 }
 
 abstract class TimingModel(val cfg: BaseConfig)(implicit val p: Parameters) extends Module
-    with IngressModuleParameters with EgressUnitParameters with HasNastiParameters {
+    with IngressModuleParameters with EgressUnitParameters {
 
   // Concrete timing models must implement io with the MMRegIO sub-bundle
   // containing all of the requisite runtime-settings and instrumentation brought
@@ -84,12 +86,12 @@ abstract class TimingModel(val cfg: BaseConfig)(implicit val p: Parameters) exte
   // Regulates the return of beats to the target memory system
   val tNasti = io.tNasti
   // Request channels presented to DRAM models
-  val nastiReqIden = Module(new IdentityModule(new NastiReqChannels))
+  val nastiReqIden = Module(new IdentityModule(new NastiReqChannels(p(NastiKey))))
   val nastiReq = nastiReqIden.io.out
-  val wResp = Wire(Decoupled(new WriteResponseMetaData))
-  val rResp = Wire(Decoupled(new ReadResponseMetaData))
+  val wResp = Wire(Decoupled(new WriteResponseMetaData(p(NastiKey))))
+  val rResp = Wire(Decoupled(new ReadResponseMetaData(p(NastiKey))))
 
-  val monitor = Module(new MemoryModelMonitor(cfg))
+  val monitor = Module(new MemoryModelMonitor(p(NastiKey), cfg))
   monitor.axi4 := io.tNasti
 
   val tCycle = RegInit(0.U(64.W))
@@ -118,7 +120,7 @@ abstract class TimingModel(val cfg: BaseConfig)(implicit val p: Parameters) exte
     "Illegal aw request: memory model only supports incrementing or fixed (len=0) bursts")
 
   // Release; returns responses to target
-  val xactionRelease = Module(new AXI4Releaser)
+  val xactionRelease = Module(new AXI4Releaser(p(NastiKey)))
   tNasti.b <> xactionRelease.io.b
   tNasti.r <> xactionRelease.io.r
   io.egressReq <> xactionRelease.io.egressReq
@@ -126,7 +128,7 @@ abstract class TimingModel(val cfg: BaseConfig)(implicit val p: Parameters) exte
 
   if (cfg.useLLCModel) {
     // Drop the LLC model inline
-    val llc_model = Module(new LLCModel(cfg))
+    val llc_model = Module(new LLCModel(p(NastiKey), cfg))
     llc_model.io.settings <> io.mmReg.llc.get
     llc_model.io.memRResp <> rResp
     llc_model.io.memWResp <> wResp
@@ -176,7 +178,6 @@ abstract class TimingModel(val cfg: BaseConfig)(implicit val p: Parameters) exte
       }
 
       // Append the largest UInt representable to the end of the Seq to catch remaining cases
-      val allBinMaximums = binMaximums :+ -1
       bindHistograms(readOutstandingHistogram, binMaximums, pendingReads.value)
       bindHistograms(writeOutstandingHistogram, binMaximums, pendingAWReq.value)
       io.mmReg.readOutstandingHistogram := readOutstandingHistogram
@@ -203,7 +204,7 @@ abstract class SplitTransactionMMRegIO(cfg: BaseConfig)(implicit p: Parameters) 
   )
 }
 
-abstract class SplitTransactionModelIO(implicit p: Parameters)
+abstract class SplitTransactionModelIO()(implicit p: Parameters)
     extends TimingModelIO()(p) {
   // This sub-bundle contains all the programmable fields of the model
   val mmReg: SplitTransactionMMRegIO
@@ -221,7 +222,7 @@ abstract class SplitTransactionModel(cfg: BaseConfig)(implicit p: Parameters)
   nastiReq.w.ready  := ~pendingWReq.full
 
   //recombines AW and W transactions before passing them onto the rest of the model
-  val awQueue = Module(new Queue(new NastiWriteAddressChannel, cfg.maxWrites, flow = true))
+  val awQueue = Module(new Queue(new NastiWriteAddressChannel(p(NastiKey)), cfg.maxWrites, flow = true))
 
   val newWReq = if (!cfg.useLLCModel) {
     ((pendingWReq.value > pendingAWReq.value) && pendingAWReq.inc) ||

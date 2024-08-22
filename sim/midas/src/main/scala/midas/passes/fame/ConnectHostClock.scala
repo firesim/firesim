@@ -18,7 +18,6 @@ private[passes] object ConnectHostClock extends firrtl.Transform {
   def outputForm = HighForm
 
   def execute(state: CircuitState): CircuitState = {
-    val c = state.circuit
     val topName = state.circuit.main
     val topModule = state.circuit.modules.find(_.name == topName).get
     val hostClock = WRef(topModule.ports.find(_.name == "clock").get)

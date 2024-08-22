@@ -117,7 +117,7 @@ private[fame] class FAMEChannelAnalysis(val state: CircuitState) {
   val channelsByPort = new LinkedHashMap[ReferenceTarget, mutable.Set[String]] with MultiMap[ReferenceTarget, String]
   val transformedModules = new LinkedHashSet[ModuleTarget]
   state.annotations.collect({
-    case fta @ FAMETransformAnnotation(mt) =>
+    case FAMETransformAnnotation(mt) =>
       transformedModules += mt
     case fca: FAMEChannelConnectionAnnotation =>
       channels += fca.globalName
@@ -265,7 +265,7 @@ private[fame] class FAMEChannelAnalysis(val state: CircuitState) {
   lazy val modelPorts = {
     val mPorts = new LinkedHashMap[ModuleTarget, mutable.Set[FAMEChannelPortsAnnotation]] with MultiMap[ModuleTarget, FAMEChannelPortsAnnotation]
     state.annotations.collect({
-      case fcp @ FAMEChannelPortsAnnotation(_, _, port :: ps) => mPorts.addBinding(port.moduleTarget, fcp)
+      case fcp @ FAMEChannelPortsAnnotation(_, _, port :: _) => mPorts.addBinding(port.moduleTarget, fcp)
     })
     mPorts
   }
@@ -322,14 +322,14 @@ private[fame] class FAMEChannelAnalysis(val state: CircuitState) {
 
     private def channelIsDuplicate(ps: (Option[Port], Seq[Port])): Boolean = visitedChannelPort.contains(ps)
     private def channelSharesPorts(ps: (Option[Port], Seq[Port])): Boolean = ps match {
-      case (clk, ports) => ports.exists(visitedLeafPort(_)) // clock can be shared
+      case (_, ports) => ports.exists(visitedLeafPort(_)) // clock can be shared
     }
 
     private def dedupPortLists(
         dedups: LinkedHashMap[String, String],
         pList: Map[String, (Option[Port], Seq[Port])]): Map[String, (Option[Port], Seq[Port])] = pList.flatMap({
       case (cName, (_, Nil)) => throw new RuntimeException(s"Channel ${cName} is empty (has no associated ports)")
-      case (cName, clockAndPorts) if channelSharesPorts(clockAndPorts) && !channelIsDuplicate(clockAndPorts) =>
+      case (_, clockAndPorts) if channelSharesPorts(clockAndPorts) && !channelIsDuplicate(clockAndPorts) =>
         throw new RuntimeException("Channel definition has partially overlapping ports with existing channel definition")
       case (cName, clockAndPorts) if channelIsDuplicate(clockAndPorts) =>
         dedups(cName) = visitedChannelPort(clockAndPorts)
@@ -343,7 +343,7 @@ private[fame] class FAMEChannelAnalysis(val state: CircuitState) {
           case port :: Nil => port.name
           // Multi-element channels are only emitted by bridges; their channel
           // names are good candidates.
-          case ports => cName
+          case _ => cName
         }
         visitedChannelPort((clock, ports)) = chPortName
         visitedLeafPort ++= clock
@@ -369,8 +369,8 @@ private[fame] class FAMEChannelAnalysis(val state: CircuitState) {
 
     def prettyPrint(): String = {
       val modulePreamble = s"Deduper for module ${mTarget.module}"
-      val outputPreamble = s"  Output Ports"
-      val inputPreamble = s"  Input Ports"
+      val outputPreamble = "  Output Ports"
+      val inputPreamble = "  Input Ports"
       val outputs = outputChannelDedups.groupBy(_._2).map { case (pName, channels) => 
         Seq(s"    Port ${pName} drives channels:") ++: channels.map { case (ch, _) =>  s"      ${ch}" }
       }

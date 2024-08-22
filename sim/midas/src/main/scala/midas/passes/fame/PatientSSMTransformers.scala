@@ -16,7 +16,7 @@ object PatientMemTransformer {
     val shim = DefWire(NoInfo, mem.name, MemPortUtils.memType(mem))
     val newMem = mem.copy(name = ns.newName(mem.name))
     val defaultConnect = Connect(NoInfo, WRef(shim), WRef(newMem.name, shim.tpe, MemKind))
-    val syncReadPorts = (newMem.readers ++ newMem.readwriters).filter(rp => mem.readLatency > 0)
+    val syncReadPorts = (newMem.readers ++ newMem.readwriters).filter(_ => mem.readLatency > 0)
     val preserveReads = syncReadPorts.flatMap {
       case rpName =>
         val addrWidth = IntWidth(log2Ceil(mem.depth) max 1)

@@ -3,7 +3,7 @@
 
 package junctions
 
-import Chisel._
+import chisel3._
 import scala.collection.mutable.HashMap
 
 case class MemAttr(prot: Int, cacheable: Boolean = false)
@@ -14,7 +14,7 @@ sealed abstract class MemRegion {
   def numSlaves: Int
   def attr: MemAttr
 
-  def containsAddress(x: UInt) = UInt(start) <= x && x < UInt(start + size)
+  def containsAddress(x: UInt) = start.U <= x && x < (start + size).U
 }
 
 case class MemSize(size: BigInt, attr: MemAttr) extends MemRegion {
@@ -136,9 +136,9 @@ class AddrMap(
   def getProt(addr: UInt): AddrMapProt = {
     val protForRegion = flatten.map { entry =>
       Mux(entry.region.containsAddress(addr),
-        UInt(entry.region.attr.prot, AddrMapProt.SZ), UInt(0))
+        entry.region.attr.prot.U(AddrMapProt.SZ.W), 0.U)
     }
-    new AddrMapProt().fromBits(protForRegion.reduce(_|_))
+    protForRegion.reduce(_|_).asTypeOf(new AddrMapProt())
   }
 
   override def containsAddress(x: UInt) = {

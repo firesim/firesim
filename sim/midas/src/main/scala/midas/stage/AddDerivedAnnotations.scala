@@ -23,10 +23,10 @@ object AddDerivedAnnotations extends Phase {
 
     val obfAnnos = mutable.ListBuffer[OutputBaseFilenameAnnotation]()
     val filteredAnnos = annotations.flatMap {
-      case o: firrtl.stage.OutputFileAnnotation =>
+      case _: firrtl.stage.OutputFileAnnotation =>
         logger.warn("firrtl.stage.OutputFileAnnotation found but ignored. Output names are derived from the OutputBaseFilenameAnnotation.")
         None
-      case e: firrtl.EmitCircuitAnnotation =>
+      case _: firrtl.EmitCircuitAnnotation =>
         logger.warn("firrtl.EmitCircuitAnnotation found but ignored. Output emission is fixed to SystemVerilog.")
         None
       case obf: OutputBaseFilenameAnnotation =>

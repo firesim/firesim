@@ -4,10 +4,10 @@ package firesim.midasexamples
 
 import chisel3._
 import org.chipsalliance.cde.config.{Parameters, Field, Config}
-import midas.widgets.{RationalClockBridge, PeekPokeBridge, ResetPulseBridge, ResetPulseBridgeParameters}
+import firesim.lib.bridges.{ResetPulseBridge, ResetPulseBridgeParameters, RationalClockBridge, PeekPokeBridge}
 
 case object ResetPulseBridgeActiveHighKey extends Field[Boolean](true)
-class ResetPulseBridgeActiveLowConfig extends Config((site, here, up) => {
+class ResetPulseBridgeActiveLowConfig extends Config((_, _, _) => {
   case ResetPulseBridgeActiveHighKey => false
 })
 

@@ -3,13 +3,16 @@
 package midas
 package widgets
 
-import junctions._
+import scala.collection.mutable.{ArrayBuffer, LinkedHashMap}
 
 import chisel3._
 import chisel3.util._
 import chisel3.experimental.DataMirror
-import org.chipsalliance.cde.config.Parameters
-import scala.collection.mutable.{ArrayBuffer, LinkedHashMap}
+
+import junctions._
+
+import firesim.lib.bridgeutils.CStrLit
+import firesim.lib.nasti._
 
 /** Takes an arbtirary Data type, and flattens it (akin to .flatten()). Returns a Seq of the leaf nodes with their
   * absolute direction.
@@ -249,14 +252,14 @@ class MCRFileMap(bytesPerAddress: Int) {
     val readRegs  = regAddrs.filter(_._1.permissions.readable)
     val writeRegs = regAddrs.filter(_._1.permissions.writeable)
 
-    sb.append(s"  AddressMap{\n")
-    sb.append(s"    std::vector<std::pair<std::string, uint32_t>>{\n")
+    sb.append("  AddressMap{\n")
+    sb.append("    std::vector<std::pair<std::string, uint32_t>>{\n")
     emitArrays(readRegs.toSeq)
-    sb.append(s"    },\n")
-    sb.append(s"    std::vector<std::pair<std::string, uint32_t>>{\n")
+    sb.append("    },\n")
+    sb.append("    std::vector<std::pair<std::string, uint32_t>>{\n")
     emitArrays(writeRegs.toSeq)
-    sb.append(s"    }\n")
-    sb.append(s"  }")
+    sb.append("    }\n")
+    sb.append("  }")
   }
 
   def printCRs: Unit = {
@@ -264,7 +267,7 @@ class MCRFileMap(bytesPerAddress: Int) {
   }
 }
 
-class MCRIO(numCRs: Int)(implicit p: Parameters) extends NastiBundle()(p) {
+class MCRIO(nastiParams: NastiParameters, numCRs: Int) extends NastiBundle(nastiParams) {
   val read  = Vec(numCRs, Flipped(Decoupled(UInt(nastiXDataBits.W))))
   val write = Vec(numCRs, Decoupled(UInt(nastiXDataBits.W)))
   val wstrb = Output(UInt(nastiWStrobeBits.W))
@@ -303,13 +306,12 @@ class MCRIO(numCRs: Int)(implicit p: Parameters) extends NastiBundle()(p) {
     read(index) <> channel.node
     assert(write(index).valid =/= true.B, "Can only read from this decoupled source")
   }
-
 }
 
-class MCRFile(numRegs: Int)(implicit p: Parameters) extends NastiModule()(p) {
+class MCRFile(nastiParams: NastiParameters, numRegs: Int) extends NastiModule(nastiParams) {
   val io = IO(new Bundle {
-    val nasti = Flipped(new NastiIO)
-    val mcr   = new MCRIO(numRegs)
+    val nasti = Flipped(new NastiIO(nastiParams))
+    val mcr   = new MCRIO(nastiParams, numRegs)
   })
 
   //TODO: Just use a damn state machine.
@@ -318,8 +320,8 @@ class MCRFile(numRegs: Int)(implicit p: Parameters) extends NastiModule()(p) {
   val awFired   = RegInit(false.B)
   val wFired    = RegInit(false.B)
   val wCommited = RegInit(false.B)
-  val bId       = Reg(UInt(p(NastiKey).idBits.W))
-  val rId       = Reg(UInt(p(NastiKey).idBits.W))
+  val bId       = Reg(UInt(nastiParams.idBits.W))
+  val rId       = Reg(UInt(nastiParams.idBits.W))
   val rData     = Reg(UInt(nastiXDataBits.W))
   val wData     = Reg(UInt(nastiXDataBits.W))
   val wIndex    = Reg(UInt(log2Up(numRegs).W))
@@ -365,11 +367,13 @@ class MCRFile(numRegs: Int)(implicit p: Parameters) extends NastiModule()(p) {
   io.mcr.read.zipWithIndex.foreach { case (decoupled, idx: Int) =>
     decoupled.ready := (rIndex === idx.U) && arFired && io.nasti.r.ready
   }
+  // TODO: set to wStrb?
+  io.mcr.wstrb               := 0.U
 
-  io.nasti.r.bits  := NastiReadDataChannel(rId, io.mcr.read(rIndex).bits)
+  io.nasti.r.bits  := NastiReadDataChannel(nastiParams, rId, io.mcr.read(rIndex).bits)
   io.nasti.r.valid := arFired && io.mcr.read(rIndex).valid
 
-  io.nasti.b.bits  := NastiWriteResponseChannel(bId)
+  io.nasti.b.bits  := NastiWriteResponseChannel(nastiParams, bId)
   io.nasti.b.valid := awFired && wFired && wCommited
 
   io.nasti.ar.ready := ~arFired

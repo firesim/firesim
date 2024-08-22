@@ -123,8 +123,8 @@ object ImplementThreadedMems {
       val (tIdxPipe, tIdxPipedRef) = pipeline(bramToBufferPipeDepth + bufferReadLatency + 1, tIdxLastRef)
       val (edgeStatusPipe, edgeStatusPipedRef) = pipeline(bramToBufferPipeDepth, WRef(edgeStatus))
 
-      val rdMems = rdMemNames.map { case (k, v) => DefMemory(info, v, mem.dataType, tMem.nThreads, 1, bufferReadLatency, Seq("r"), Seq("w"), Nil) }
-      val rwdMems = rwdMemNames.map { case (k, v) => DefMemory(info, v, mem.dataType, tMem.nThreads, 1, bufferReadLatency, Seq("r"), Seq("w"), Nil) }
+      val rdMems = rdMemNames.map { case (_, v) => DefMemory(info, v, mem.dataType, tMem.nThreads, 1, bufferReadLatency, Seq("r"), Seq("w"), Nil) }
+      val rwdMems = rwdMemNames.map { case (_, v) => DefMemory(info, v, mem.dataType, tMem.nThreads, 1, bufferReadLatency, Seq("r"), Seq("w"), Nil) }
 
       val defaultConns = accessors.map(p => Connect(info, wsf(WRef(mem), p), WRef(p)))
 
@@ -173,7 +173,7 @@ object ImplementThreadedMems {
       case m: Module => m.copy(body = onStmt(moduleNS, tMemImplementations, useTargetClock)(m.body))
       case m => m
     }
-    val tMemMods = tMemImplementations.map { case (k, v) => v }
+    val tMemMods = tMemImplementations.map { case (_, v) => v }
     circuit.copy(modules = modulesX ++ tMemMods)
   }
 }

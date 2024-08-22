@@ -5,7 +5,8 @@ package firesim.midasexamples
 import chisel3._
 import org.chipsalliance.cde.config.Parameters
 
-import midas.widgets.{RationalClockBridge, PeekPokeBridge, RationalClock}
+import firesim.lib.bridges.{RationalClockBridge, PeekPokeBridge}
+import firesim.lib.bridgeutils.{RationalClock}
 
 class RegisterModule extends Module {
   def dataType = UInt(32.W)
@@ -55,7 +56,7 @@ class TrivialMulticlock(implicit p: Parameters) extends RawModule {
     //threeSeventhsRateInst.in := halfRateInst.in
 
     // TODO: Remove reset
-    val peekPokeBridge = PeekPokeBridge(fullRate,
+    PeekPokeBridge(fullRate,
                                         reset,
                                         ("in", halfRateInst.in),
                                         ("halfOut",halfRateInst.out),

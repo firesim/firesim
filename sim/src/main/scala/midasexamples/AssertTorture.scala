@@ -5,7 +5,8 @@ package firesim.midasexamples
 import chisel3._
 import freechips.rocketchip.util.ResetCatchAndSync
 import org.chipsalliance.cde.config.{Parameters, Field}
-import midas.widgets.{RationalClockBridge, PeekPokeBridge, RationalClock}
+import firesim.lib.bridges.{RationalClockBridge, PeekPokeBridge}
+import firesim.lib.bridgeutils.{RationalClock}
 
 import scala.util.Random
 
@@ -87,7 +88,7 @@ class AssertTorture(implicit p: Parameters) extends RawModule {
   val baseClock = clockBridge.io.clocks.head
   val reset = WireInit(false.B)
   withClockAndReset(baseClock, reset) {
-    val peekPokeBridge = PeekPokeBridge(baseClock, reset)
+    PeekPokeBridge(baseClock, reset)
   }
   val resets = clockBridge.io.clocks.map(clock => ResetCatchAndSync(clock, reset.asBool))
 

@@ -2,16 +2,18 @@
 
 package midas
 
-import core._
-import widgets._
-import platform._
+import java.io.{File}
+
 import firrtl.stage.TransformManager.TransformDependency
-import junctions.NastiParameters
+
 import org.chipsalliance.cde.config.{Parameters, Config, Field}
 import freechips.rocketchip.diplomacy.{TransferSizes}
 
+import core._
+import widgets._
+import platform._
 
-import java.io.{File}
+import firesim.lib.nasti._
 
 case object FPGATopQSFPBitWidth extends Field[Int](256)
 case object QSFPStreamBitWidth extends Field[Int](QSFPBridgeStreamConstants.streamWidthBits)
@@ -89,7 +91,7 @@ case object PostLinkCircuitPath extends Field[Option[String]](None)
 // Alias WithoutTLMonitors into this package so that it can be used in config strings
 class WithoutTLMonitors extends freechips.rocketchip.subsystem.WithoutTLMonitors
 
-class SimConfig extends Config (new Config((site, here, up) => {
+class SimConfig extends Config (new Config((site, _, _) => {
   case SynthAsserts     => false
   case SynthPrints      => false
   case AXIDebugPrint    => false
@@ -104,7 +106,7 @@ class SimConfig extends Config (new Config((site, here, up) => {
   }
 }) ++ new WithoutTLMonitors)
 
-class F1Config extends Config(new Config((site, here, up) => {
+class F1Config extends Config(new Config((_, _, _) => {
   case Platform       => (p: Parameters) => new F1Shim()(p)
   case HasDMAChannel  => true
   case StreamEngineInstantiatorKey => (e: StreamEngineParameters, p: Parameters) => new CPUManagedStreamEngine(p, e)
@@ -124,14 +126,14 @@ class F1Config extends Config(new Config((site, here, up) => {
   case PostLinkCircuitPath => Some("WRAPPER_INST/CL/firesim_top")
 }) ++ new SimConfig)
 
-class XilinxAlveoU250Config extends Config(new Config((site, here, up) => {
+class XilinxAlveoU250Config extends Config(new Config((_, _, _) => {
   case F1ShimHasQSFPPorts => true
   case HostMemNumChannels => 1
   case PreLinkCircuitPath => Some("firesim_top")
   case PostLinkCircuitPath => Some("firesim_top")
 }) ++ new F1Config ++ new SimConfig)
 
-class XilinxAlveoU200Config extends Config(new Config((site, here, up) => {
+class XilinxAlveoU200Config extends Config(new Config((_, _, _) => {
   case HostMemNumChannels => 1
   case PreLinkCircuitPath => Some("design_1_i/firesim_wrapper_0/inst/firesim_top")
   case PostLinkCircuitPath => Some("design_1_i/firesim_wrapper_0/inst/firesim_top")
@@ -139,7 +141,7 @@ class XilinxAlveoU200Config extends Config(new Config((site, here, up) => {
 
 class XilinxAlveoU280Config extends XilinxAlveoU200Config
 
-class NitefuryConfig extends Config(new Config((site, here, up) => {
+class NitefuryConfig extends Config(new Config((_, _, _) => {
   case Platform       => (p: Parameters) => new F1Shim()(p)
   case HasDMAChannel  => true
   case StreamEngineInstantiatorKey => (e: StreamEngineParameters, p: Parameters) => new CPUManagedStreamEngine(p, e)
@@ -159,7 +161,7 @@ class NitefuryConfig extends Config(new Config((site, here, up) => {
   case PostLinkCircuitPath => Some("Top_i/firesim_wrapper_0/inst/firesim_top")
 }) ++ new SimConfig)
 
-class XilinxVCU118Config extends Config(new Config((site, here, up) => {
+class XilinxVCU118Config extends Config(new Config((_, _, _) => {
   case Platform       => (p: Parameters) => new F1Shim()(p)
   case HasDMAChannel  => true
   case StreamEngineInstantiatorKey => (e: StreamEngineParameters, p: Parameters) => new CPUManagedStreamEngine(p, e)
@@ -179,7 +181,7 @@ class XilinxVCU118Config extends Config(new Config((site, here, up) => {
   case PostLinkCircuitPath => Some("partition_wrapper/partition/firesim_top")
 }) ++ new SimConfig)
 
-class VitisConfig extends Config(new Config((site, here, up) => {
+class VitisConfig extends Config(new Config((_, _, _) => {
   case Platform       => (p: Parameters) => new VitisShim()(p)
   case CPUManagedAXI4Key => None
   case FPGAManagedAXI4Key   =>
@@ -218,11 +220,11 @@ class VitisConfig extends Config(new Config((site, here, up) => {
 
 // Turns on all additional synthesizable debug features for checking the
 // implementation of the simulator.
-class HostDebugFeatures extends Config((site, here, up) => {
+class HostDebugFeatures extends Config((_, _, _) => {
   case GenerateTokenIrrevocabilityAssertions => true
 })
 
-class WithPCIMPorts extends Config((site, here, up) => {
+class WithPCIMPorts extends Config((_, _, _) => {
   case F1ShimHasPCIMPorts => true
   case FPGAStreamEngineInstantiatorKey =>
     (e: StreamEngineParameters, p: Parameters) =>
@@ -250,41 +252,41 @@ case object FireAxePreserveTarget   extends Field[Boolean](false)
 case object FireAxePartitionGlobalInfo extends Field[Option[Seq[Seq[String]]]](None)
 case object FireAxePartitionIndex extends Field[Option[Int]](None)
 
-class WithFireAxePreserveTarget extends Config((site, here, up) => {
+class WithFireAxePreserveTarget extends Config((_, _, _) => {
   case midas.FireAxePreserveTarget => true
 })
 
-class WithFireAxeNoCPart extends Config((site, here, up) => {
+class WithFireAxeNoCPart extends Config((_, _, _) => {
   case midas.FireAxeNoCPartitionPass => true
 })
 
-class WithQSFP extends Config((site, here, up) => {
+class WithQSFP extends Config((_, _, _) => {
   case midas.FireAxeQSFPConnections => true
   case midas.FireAxePCIMConnections => false
   case midas.FireAxePCISConnections => false
 })
 
-class WithPCIS extends Config((site, here, up) => {
+class WithPCIS extends Config((_, _, _) => {
   case midas.FireAxeQSFPConnections => false
   case midas.FireAxePCIMConnections => false
   case midas.FireAxePCISConnections => true
 })
 
-class WithPCIM extends Config((site, here, up) => {
+class WithPCIM extends Config((_, _, _) => {
   case midas.FireAxeQSFPConnections => false
   case midas.FireAxePCIMConnections => true
   case midas.FireAxePCISConnections => false
 })
 
-class WithPartitionGlobalInfo(info: Seq[Seq[String]]) extends Config((site, here, up) => {
+class WithPartitionGlobalInfo(info: Seq[Seq[String]]) extends Config((_, _, _) => {
   case midas.FireAxePartitionGlobalInfo => Some(info)
 })
 
-class WithPartitionBase extends Config((site, here, up) => {
+class WithPartitionBase extends Config((_, _, _) => {
   case midas.FireAxePartitionIndex => None
 })
 
-class WithPartitionIndex(index: Int) extends Config((site, here, up) => {
+class WithPartitionIndex(index: Int) extends Config((_, _, _) => {
   case midas.FireAxePartitionIndex => Some(index)
 })
 

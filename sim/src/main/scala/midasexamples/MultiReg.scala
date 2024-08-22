@@ -32,4 +32,4 @@ class MultiRegDUT extends Module {
   }
 }
 
-class MultiReg(implicit p: Parameters) extends PeekPokeMidasExampleHarness(() => new MultiRegDUT)
+class MultiReg(implicit p: Parameters) extends firesim.lib.testutils.PeekPokeHarness(() => new MultiRegDUT)

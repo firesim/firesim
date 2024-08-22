@@ -5,7 +5,7 @@ package firrtl.testutils
 import java.io._
 import java.security.Permission
 
-import logger.{LazyLogging, LogLevel, LogLevelAnnotation}
+import logger.{LazyLogging}
 
 import org.scalatest._
 import org.scalatestplus.scalacheck._
@@ -174,7 +174,7 @@ trait FirrtlRunners {
     annotations:      AnnotationSeq = Seq.empty
   ) = {
     val testDir = compileFirrtlTest(prefix, srcDir, customTransforms, annotations)
-    val harness = new File(testDir, s"top.cpp")
+    val harness = new File(testDir, "top.cpp")
     copyResourceToFile(cppHarnessResourceName, harness)
 
     // Note file copying side effect
@@ -344,9 +344,9 @@ class TestFirrtlFlatSpec extends FirrtlFlatSpec {
   behavior.of("ScalaTest helpers")
 
   they should "work for lines of emitted text" in {
-    compiled should containLine(s"input in : UInt<8>")
-    compiled should containLine(s"output out : UInt<8>")
-    compiled should containLine(s"out <= in")
+    compiled should containLine("input in : UInt<8>")
+    compiled should containLine("output out : UInt<8>")
+    compiled should containLine("out <= in")
   }
 
   they should "work for partial functions matching on subtrees" in {

@@ -10,9 +10,9 @@ import freechips.rocketchip.tilelink._
 import org.chipsalliance.cde.config.Parameters
 import freechips.rocketchip.diplomacy.AddressSet
 
-import junctions.NastiParameters
-import midas.models.{AXI4EdgeSummary, BaseParams, CompleteConfig, FASEDBridge, LatencyPipeConfig}
-import midas.widgets.{PeekPokeBridge, RationalClockBridge}
+import midas.models.AXI4EdgeSummary
+import firesim.lib.bridges.{CompleteConfig, FASEDBridge, PeekPokeBridge, RationalClockBridge}
+import firesim.lib.nasti.{NastiIO, NastiParameters}
 
 class ReaderIO extends Bundle {
   val addr    = Input(UInt(16.W))
@@ -124,16 +124,15 @@ class LoadMemDUT(implicit p: Parameters) extends LazyModule {
 
     for ((axi4, edge) <- slave.in) {
       val nastiKey = NastiParameters(axi4.r.bits.data.getWidth, axi4.ar.bits.addr.getWidth, axi4.ar.bits.id.getWidth)
+      val nastiIo  = Wire(new NastiIO(nastiKey))
+      junctions.AXI4NastiAssigner.toNasti(nastiIo, axi4)
       FASEDBridge(
         clock,
-        axi4,
+        nastiIo,
         reset.asBool,
         CompleteConfig(
-          new LatencyPipeConfig(
-            BaseParams(maxReads = 16, maxWrites = 16, beatCounters = true, llcKey = None)
-          ),
           nastiKey,
-          Some(AXI4EdgeSummary(edge)),
+          Some(AXI4EdgeSummary.createCompatEdgeSummary(edge)),
           Some("DefaultMemoryRegion"),
         ),
       )

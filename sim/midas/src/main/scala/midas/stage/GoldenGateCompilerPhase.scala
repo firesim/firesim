@@ -65,7 +65,7 @@ class GoldenGateCompilerPhase extends Phase {
       currentState = Forms.LowForm)
     logger.info("Post-GG Host Transformation Ordering\n")
     logger.info(loweringCompiler.prettyPrint("  "))
-    val loweredSimulator = loweringCompiler.execute(simulator)
+    loweringCompiler.execute(simulator)
 
     // Ensure FPGA backend passes run after all user-provided + ILA transforms, but before final emission
     val fpgaBackendCompiler = new Compiler(

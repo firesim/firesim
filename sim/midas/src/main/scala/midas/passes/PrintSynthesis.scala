@@ -11,8 +11,9 @@ import firrtl.Utils.{zero, BoolType}
 
 
 import midas.passes.fame.{FAMEChannelConnectionAnnotation, WireChannel}
-import midas.widgets.{BridgeIOAnnotation, PrintBridgeModule, PrintBridgeParameters, PrintPort}
+import midas.widgets.{PrintBridgeModule, PrintBridgeParameters, PrintPort}
 import midas.targetutils.{SynthPrintfAnnotation, GlobalResetConditionSink}
+import firesim.lib.bridgeutils.{BridgeIOAnnotation}
 
 private[passes] class PrintSynthesis extends firrtl.Transform {
   def inputForm = MidForm
@@ -40,7 +41,7 @@ private[passes] class PrintSynthesis extends firrtl.Transform {
             Seq(portRT.field(field.name))
           )
         )
-      case other => ???
+      case _ => ???
     }
   }
 
@@ -49,7 +50,7 @@ private[passes] class PrintSynthesis extends firrtl.Transform {
 
     def mTarget(m: Module): ModuleTarget = ModuleTarget(c.main, m.name)
     def portRT(p: Port): ReferenceTarget = ModuleTarget(c.main, c.main).ref(p.name)
-    def portClockRT(p: Port): ReferenceTarget = portRT(p).field("clock")
+    
 
     val modToAnnos = printfAnnos.groupBy(_.target.moduleTarget)
     val topWiringAnnos = mutable.ArrayBuffer[Annotation]()
@@ -76,7 +77,7 @@ private[passes] class PrintSynthesis extends firrtl.Transform {
         val printBundleTarget = associatedAnno.target.copy(ref = wireName)
         val clockTarget = p.clk match {
           case WRef(name,_,_,_) => associatedAnno.target.copy(ref = name)
-          case o => ???
+          case _ => ???
         }
         topWiringAnnos += BridgeTopWiringAnnotation(printBundleTarget, clockTarget)
         formatStringMap(printBundleTarget) = p.string.serialize

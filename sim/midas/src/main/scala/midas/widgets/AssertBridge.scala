@@ -2,13 +2,15 @@
 
 package midas.widgets
 
+import scala.collection.immutable.ListMap
+
 import chisel3._
 import chisel3.util._
 
-import scala.collection.immutable.ListMap
-
 import org.chipsalliance.cde.config.{Parameters}
 import freechips.rocketchip.util.{DecoupledHelper}
+
+import firesim.lib.bridgeutils._
 
 class AssertBridgeRecord(assertPortName: String, resetPortName: String, numAsserts: Int) extends Record {
   val asserts = Output(UInt(numAsserts.W))

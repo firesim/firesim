@@ -17,7 +17,7 @@ class PrintAllPass extends Transform with DependencyAPIMigration {
       case Module(_, _, _, b)             =>
         b.foreachStmt(s => println(s"statement ${s}"))
       case ExtModule(_, _, _, dn, params) =>
-        params.foreach(param => println("param ${param}"))
+        params.foreach(_ => println("param ${param}"))
         println(s"defName ${dn}")
     }
     m

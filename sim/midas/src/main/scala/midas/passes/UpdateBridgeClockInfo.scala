@@ -2,7 +2,7 @@
 
 package midas.passes
 
-import midas.widgets.BridgeIOAnnotation
+import firesim.lib.bridgeutils.BridgeIOAnnotation
 
 import firrtl._
 

@@ -2,16 +2,15 @@
 
 package midas.passes
 
-import midas.widgets.{BridgeAnnotation, ClockBridgeModule}
-import midas.widgets.{PipeBridgeChannel, ClockBridgeChannel, ReadyValidBridgeChannel}
+import midas.widgets.{ClockBridgeModule}
 import midas.passes.fame.{PromoteSubmodule, PromoteSubmoduleAnnotation, FAMEChannelConnectionAnnotation, RTRenamer}
 import midas.passes.fame.{PipeChannel, TargetClockChannel, DecoupledReverseChannel, DecoupledForwardChannel}
+import firesim.lib.bridgeutils.{BridgeAnnotation, PipeBridgeChannel, ClockBridgeChannel, ReadyValidBridgeChannel}
 
 import firrtl._
 import firrtl.ir._
 import firrtl.passes.{InferTypes, ResolveKinds}
 import firrtl.traversals.Foreachers._
-import firrtl.passes.wiring.WiringInfo
 import firrtl.annotations._
 
 import scala.collection.mutable
@@ -28,8 +27,6 @@ private[passes] class BridgeExtraction extends firrtl.Transform {
   def outputForm = MidForm
 
   private val bridgeMods = new mutable.HashSet[String]()
-  private val wiringAnnos  = mutable.ArrayBuffer[WiringInfo]()
-  private val topPorts     = mutable.ArrayBuffer[Port]()
 
   // Taken from extract model -- recursively calls PromoteSubmodule until all
   // bridges live at the top of the module hierarchy
@@ -57,7 +54,7 @@ private[passes] class BridgeExtraction extends firrtl.Transform {
     val bridgeInsts: Seq[Seq[WDefInstance]] = bridgeModules.flatMap(e => iGraph.findInstancesInHierarchy(e).map(_.reverse))
 
     // Generate instance annotations to drive promoteBridges()
-    val instAnnos = bridgeInsts.collect({ case bridge :: parent :: restOfPath =>
+    val instAnnos = bridgeInsts.collect({ case bridge :: parent :: _ =>
       BridgeInstance(InstanceTarget(c.main, parent.module, Nil, bridge.name, bridge.module))
     })
     state.copy(annotations = state.annotations ++ instAnnos)
@@ -67,12 +64,12 @@ private[passes] class BridgeExtraction extends firrtl.Transform {
                               insts: mutable.ArrayBuffer[(String, String)])
                              (stmt: Statement): Unit = {
     stmt match {
-      case c @ Connect(_, WSubField(WRef(topName, _, InstanceKind, _), portName, _, _), 
+      case Connect(_, WSubField(WRef(_, _, InstanceKind, _), portName, _, _),
                           WRef(bridgeInstName, _, InstanceKind, _)) =>
         portInstMapping += (portName -> bridgeInstName)
-      case i @ WDefInstance(_, name, module, _) if name != "realTopInst" =>
+      case WDefInstance(_, name, module, _) if name != "realTopInst" =>
         insts += (name -> module)
-      case o => Nil
+      case _ => Nil
     }
     stmt.foreach(getBridgeConnectivity(portInstMapping, insts))
   }

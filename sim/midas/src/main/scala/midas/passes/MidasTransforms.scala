@@ -14,7 +14,7 @@ private[midas] class MidasTransforms extends Transform {
   def outputForm = HighForm
 
   def execute(state: CircuitState) = {
-    println(s"Starting MidasTransforms")
+    println("Starting MidasTransforms")
 
     // Optionally run if the GenerateMultiCycleRamModels parameter is set
     val p = state.annotations.collectFirst({ case midas.stage.phases.ConfigParametersAnnotation(p)  => p }).get

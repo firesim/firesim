@@ -4,7 +4,8 @@ package firesim.midasexamples
 
 import chisel3._
 import org.chipsalliance.cde.config.Parameters
-import midas.widgets.{RationalClockBridge, PeekPokeBridge, RationalClock}
+import firesim.lib.bridges.{RationalClockBridge, PeekPokeBridge}
+import firesim.lib.bridgeutils.{RationalClock}
 
 class ChildModule extends Module {
   val io = IO(new Bundle {
@@ -31,7 +32,7 @@ class AssertModuleDUT extends Module {
   cMod.io.pred := io.c && io.cycleToFail === cycle
 }
 
-class AssertModule(implicit p: Parameters) extends PeekPokeMidasExampleHarness(() => new AssertModuleDUT)
+class AssertModule(implicit p: Parameters) extends firesim.lib.testutils.PeekPokeHarness(() => new AssertModuleDUT)
 
 class RegisteredAssertModule extends Module {
   val io = IO(new Bundle {
@@ -95,7 +96,7 @@ class MulticlockAssertModule(implicit p: Parameters) extends RawModule {
     val halfRatePulseGen = Module(new StimulusGenerator)
     halfRateMod.io.pred := halfRatePulseGen.pred
 
-    val peekPokeBridge = PeekPokeBridge(refClock, reset,
+    PeekPokeBridge(refClock, reset,
                                         ("fullrate", fullRatePulseGen.input),
                                         ("halfrate", halfRatePulseGen.input))
   }

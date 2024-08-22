@@ -3,9 +3,9 @@
 package goldengate.tests
 
 import midas.passes.fame._
-import midas.widgets.RationalClock
+import firesim.lib.bridgeutils.{RationalClock}
 
-import firrtl.annotations.{NoTargetAnnotation, JsonProtocol, InvalidAnnotationJSONException, HasSerializationHints, Annotation}
+import firrtl.annotations.{JsonProtocol, Annotation}
 import org.json4s._
 import org.scalatest.flatspec.AnyFlatSpec
 

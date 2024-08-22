@@ -2,14 +2,13 @@
 
 package midas.targetutils
 
-import chisel3._
+import chisel3.{Module, Output, Input, Bool, fromBooleanToLiteral}
 import chisel3.experimental.{ChiselAnnotation, annotate}
-
-import firrtl.annotations._
-import firrtl.transforms.DontTouchAllTargets
+import firrtl.annotations.{ReferenceTarget, SingleTargetAnnotation}
+import firrtl.transforms.{DontTouchAllTargets}
 
 /**
-  * Masks off assertions, printfs, and autocounter events when the target bool is deasserted. 
+  * Masks off assertions, printfs, and autocounter events when the target bool is deasserted.
   *
   * Users typically wish to disable many forms instrumentation (e.g.,
   * synthesized assertions and printfs, autocounters) while the target is

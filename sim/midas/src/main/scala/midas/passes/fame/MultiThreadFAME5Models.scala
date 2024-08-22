@@ -108,7 +108,7 @@ object MultiThreadFAME5Models extends Transform {
         processChannelConn(Instance(iName), ipName, wr)
       case Connect(_, WSubField(WRef(iName, _, InstanceKind, _), _, _, _), _) if fame5InstMap.contains(Instance(iName)) =>
         EmptyStmt // prune non-channel connections
-      case WDefInstance(_, iName, mName, _) if fame5InstMap.contains(Instance(iName)) =>
+      case WDefInstance(_, iName, _, _) if fame5InstMap.contains(Instance(iName)) =>
         EmptyStmt
       case s =>
         s.map(analyzeAndPruneTopo(fame5InstMap, topo))
@@ -154,14 +154,14 @@ object MultiThreadFAME5Models extends Transform {
     top.body.foreach(findFAME5(fame5RawInstances))
 
     // filter models with one instance to avoid needless multithreading
-    val fame5InstancesByModule = fame5RawInstances.filter { case (k, v) => v.size > 1 }
+    val fame5InstancesByModule = fame5RawInstances.filter { case (_, v) => v.size > 1 }
     val fame5ModulesByInstance = fame5InstancesByModule.flatMap({ case (k, v) => v.map(vv => vv -> k) }).toMap
 
     // Maps from an (OfModule, PortName) pair
     // It's actually nested (rather than indexed by tuple) for convenience
     // We don't track the direction in this map, since we can just find it later
     val fame5Topo: TopoMap = fame5InstancesByModule.map({
-      case (m, iSet) => m -> moduleDefs(m).ports.collect({
+      case (m, _) => m -> moduleDefs(m).ports.collect({
         case Port(_, name, _, BundleType(_)) => name -> new mutable.HashMap[Instance, WRef]
       }).toMap
     }).toMap
@@ -179,7 +179,7 @@ object MultiThreadFAME5Models extends Transform {
     }).toMap
 
     val threadedInstances = fame5InstancesByModule.map({
-      case (m, insts) => m -> WDefInstance(FAME5Info.info, ns.newName(s"${m.value}_threaded"), threadedModuleNames(m.value), UnknownType)
+      case (m, _) => m -> WDefInstance(FAME5Info.info, ns.newName(s"${m.value}_threaded"), threadedModuleNames(m.value), UnknownType)
     }).toMap
 
     val threadCounters = fame5InstancesByModule.map { case (m, insts) => m -> Counter(insts.size, hostClock, hostReset) }
@@ -219,8 +219,8 @@ object MultiThreadFAME5Models extends Transform {
         }
     }
 
-    val insts = threadedInstances.toSeq.map { case (k, v) => v } // keep ordering
-    val counters = threadCounters.toSeq.map { case (k, v) => v } // keep ordering
+    val insts = threadedInstances.toSeq.map { case (_, v) => v } // keep ordering
+    val counters = threadCounters.toSeq.map { case (_, v) => v } // keep ordering
     val clockConns = insts.map(i => Connect(FAME5Info.info, WSubField(WRef(i), WrapTop.hostClockName), WRef(WrapTop.hostClockName)))
     val resetConns = insts.map(i => Connect(FAME5Info.info, WSubField(WRef(i), WrapTop.hostResetName), WRef(WrapTop.hostResetName)))
 

@@ -5,6 +5,7 @@ package midas.core
 import chisel3._
 import chisel3.util._
 import chisel3.experimental.prefix
+
 import freechips.rocketchip.amba.axi4._
 import org.chipsalliance.cde.config.Parameters
 import freechips.rocketchip.diplomacy._
@@ -14,11 +15,13 @@ import midas.targetutils.xdc
 import midas.targetutils.{FireSimQueueHelper}
 import midas.widgets._
 
+import firesim.lib.bridgeutils._
+
 class StreamAdapterIO(val w: Int) extends Bundle {
   val in = Flipped(Decoupled(UInt(w.W)))
   val out = Decoupled(UInt(w.W))
 
-  def flipConnect(other: StreamAdapterIO) {
+  def flipConnect(other: StreamAdapterIO): Unit = {
     in <> other.out
     other.in <> out
   }
@@ -131,7 +134,6 @@ class CPUManagedStreamEngine(p: Parameters, val params: StreamEngineParameters) 
       ser_des.io.wide.in.valid := false.B
       ser_des.io.narrow.out.ready := false.B
 
-      val streamName = chParams.name
       val grant = (axi4.aw.bits.addr >> addressSpaceBits) === idx.U
 
       val incomingQueueIO = FireSimQueueHelper.makeIO(UInt(BridgeStreamConstants.streamWidthBits.W), chParams.fpgaBufferDepth, isFireSim=true, overrideStyle=Some(xdc.RAMStyles.ULTRA))

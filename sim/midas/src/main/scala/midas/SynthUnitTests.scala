@@ -12,7 +12,7 @@ import midas.models.{CounterTableUnitTest, LatencyHistogramUnitTest, AddressRang
 
 
 // Unittests
-class WithAllUnitTests extends Config((site, here, up) => {
+class WithAllUnitTests extends Config((_, _, _) => {
   case UnitTests => (q: Parameters) => {
     implicit val p = q
     val timeout = 2000000
@@ -28,7 +28,7 @@ class WithAllUnitTests extends Config((site, here, up) => {
 })
 
 // Failing tests
-class WithTimeOutCheck extends Config((site, here, up) => {
+class WithTimeOutCheck extends Config((_, _, _) => {
   case UnitTests => (q: Parameters) => {
     implicit val p = q
     Seq(

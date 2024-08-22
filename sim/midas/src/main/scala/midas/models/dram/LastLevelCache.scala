@@ -1,24 +1,24 @@
 package midas
 package models
 
-// NOTE: This LLC model is *very* crude model of a cache that simple forwards
-// misses onto the DRAM model, while short-circuiting hits.
-import junctions._
-
-
-import org.chipsalliance.cde.config.Parameters
-import freechips.rocketchip.util.{MaskGen, UIntToOH1}
+import Console.{UNDERLINED, RESET}
 
 import chisel3._
 import chisel3.util._
 
-import Console.{UNDERLINED, RESET}
+import org.chipsalliance.cde.config.Parameters
+import freechips.rocketchip.util.{MaskGen, UIntToOH1}
 
+// NOTE: This LLC model is *very* crude model of a cache that simple forwards
+// misses onto the DRAM model, while short-circuiting hits.
+import junctions._
+
+import firesim.lib.nasti._
 
 // State to track reads to DRAM, ~loosely an MSHR
-class MSHR(llcKey: LLCParams)(implicit p: Parameters) extends NastiBundle()(p) {
+class MSHR(nastiParams: NastiParameters, llcKey: LLCParams)(implicit p: Parameters) extends NastiBundle(nastiParams) {
   val set_addr = UInt(llcKey.sets.maxBits.W)
-  val xaction = new TransactionMetaData
+  val xaction = new TransactionMetaData(nastiParams)
   val wb_in_flight =  Bool()
   val acq_in_flight = Bool()
   val enabled       = Bool() // Set by a runtime configuration register
@@ -41,8 +41,8 @@ class MSHR(llcKey: LLCParams)(implicit p: Parameters) extends NastiBundle()(p) {
 }
 
 object MSHR {
-  def apply(llcKey: LLCParams)(implicit p: Parameters): MSHR = {
-    val w = Wire(new MSHR(llcKey))
+  def apply(nastiParams: NastiParameters, llcKey: LLCParams)(implicit p: Parameters): MSHR = {
+    val w = Wire(new MSHR(nastiParams, llcKey))
     w.wb_in_flight := false.B
     w.acq_in_flight := false.B
     // Initialize to enabled to play nice with assertions
@@ -128,21 +128,21 @@ case class LLCParams(
   }
 }
 
-class LLCModelIO(val key: LLCParams)(implicit val p: Parameters) extends Bundle {
-  val req = Flipped(new NastiReqChannels)
-  val wResp = Decoupled(new WriteResponseMetaData) // to backend
-  val rResp = Decoupled(new ReadResponseMetaData)
-  val memReq = new NastiReqChannels                  // to backing DRAM model
-  val memRResp = Flipped(Decoupled(new ReadResponseMetaData)) // from backing DRAM model
-  val memWResp = Flipped(Decoupled(new WriteResponseMetaData))
+class LLCModelIO(nastiParams: NastiParameters, val key: LLCParams)(implicit val p: Parameters) extends Bundle {
+  val req = Flipped(new NastiReqChannels(nastiParams))
+  val wResp = Decoupled(new WriteResponseMetaData(nastiParams)) // to backend
+  val rResp = Decoupled(new ReadResponseMetaData(nastiParams))
+  val memReq = new NastiReqChannels(nastiParams)                  // to backing DRAM model
+  val memRResp = Flipped(Decoupled(new ReadResponseMetaData(nastiParams))) // from backing DRAM model
+  val memWResp = Flipped(Decoupled(new WriteResponseMetaData(nastiParams)))
 
   // LLC runtime configuration
   val settings = new LLCProgrammableSettings(key)
 }
 
-class LLCModel(cfg: BaseConfig)(implicit p: Parameters) extends NastiModule()(p) {
+class LLCModel(nastiParams: NastiParameters, cfg: BaseConfig)(implicit p: Parameters) extends NastiModule(nastiParams) {
   val llcKey = cfg.params.llcKey.get
-  val io = IO(new LLCModelIO(llcKey))
+  val io = IO(new LLCModelIO(nastiParams, llcKey))
 
   require(log2Ceil(llcKey.mshrs.max) <= nastiXIdBits, "Can have at most one MSHR per AXI ID")
 
@@ -157,7 +157,7 @@ class LLCModel(cfg: BaseConfig)(implicit p: Parameters) extends NastiModule()(p)
   d_array_busy.io.decr := false.B
 
   val mshr_mask_vec = UIntToOH1(io.settings.activeMSHRs, llcKey.mshrs.max).asBools
-  val mshrs =  RegInit(VecInit(Seq.fill(llcKey.mshrs.max)(MSHR(llcKey))))
+  val mshrs =  RegInit(VecInit(Seq.fill(llcKey.mshrs.max)(MSHR(nastiParams, llcKey))))
   // Enable only active MSHRs as requested in the runtime configuration
   mshrs.zipWithIndex.foreach({ case (m, idx) => m.enabled := mshr_mask_vec(idx) })
 
@@ -171,8 +171,8 @@ class LLCModel(cfg: BaseConfig)(implicit p: Parameters) extends NastiModule()(p)
   assert((mshrs_allocated === RegNext(io.settings.activeMSHRs)) || mshr_available,
     "Too few runtime MSHRs exposed given runtime programmable limit.")
 
-  val s2_ar_mem = Module(new Queue(new NastiReadAddressChannel, 2))
-  val s2_aw_mem = Module(new Queue(new NastiWriteAddressChannel, 2))
+  val s2_ar_mem = Module(new Queue(new NastiReadAddressChannel(nastiParams), 2))
+  val s2_aw_mem = Module(new Queue(new NastiWriteAddressChannel(nastiParams), 2))
   val miss_resource_hazard = !mshr_available || !s2_aw_mem.io.enq.ready || !s2_ar_mem.io.enq.ready
 
   val reads = Queue(io.req.ar)
@@ -267,8 +267,8 @@ class LLCModel(cfg: BaseConfig)(implicit p: Parameters) extends NastiModule()(p)
   when(allocate_mshr) {
     mshrs(mshr_next_idx).allocate(
       new_xaction  = Mux(state === llc_r_mdaccess,
-                     TransactionMetaData(reads.bits),
-                     TransactionMetaData(writes.bits)),
+                     TransactionMetaData(nastiParams, reads.bits),
+                     TransactionMetaData(nastiParams, writes.bits)),
       new_set_addr = s1_set_addr,
       do_acq   = need_refill,
       do_wb    = need_writeback)
@@ -280,6 +280,7 @@ class LLCModel(cfg: BaseConfig)(implicit p: Parameters) extends NastiModule()(p)
   // a write-triggered refill
   val current_line_addr = io.settings.regenPhysicalAddress(s1_set_addr, s1_tag_addr)
   s2_ar_mem.io.enq.bits := NastiReadAddressChannel(
+                            nastiParams,
                             addr = current_line_addr,
                             id   = mshr_next_idx,
                             size = log2Ceil(nastiXDataBits/8).U,
@@ -290,6 +291,7 @@ class LLCModel(cfg: BaseConfig)(implicit p: Parameters) extends NastiModule()(p)
 
   // Writeback Issue
   s2_aw_mem.io.enq.bits := NastiWriteAddressChannel(
+                            nastiParams,
                             addr = dirty_line_addr,
                             id   = mshr_next_idx,
                             size = log2Ceil(nastiXDataBits/8).U,
@@ -302,6 +304,10 @@ class LLCModel(cfg: BaseConfig)(implicit p: Parameters) extends NastiModule()(p)
   io.memReq.aw <> s2_aw_mem.io.deq
   io.memReq.w.valid := (state === llc_r_wb || state === llc_w_wb)
   io.memReq.w.bits.last := d_array_busy.io.idle
+  io.memReq.w.bits.user := 0.U
+  io.memReq.w.bits.data := 0.U
+  io.memReq.w.bits.id := 0.U
+  io.memReq.w.bits.strb := 0.U
 
   // Handle responses from DRAM
   when (io.memWResp.valid) {
@@ -339,12 +345,12 @@ class LLCModel(cfg: BaseConfig)(implicit p: Parameters) extends NastiModule()(p)
   io.rResp.valid := (refill_start && !mshrs(io.memRResp.bits.id).xaction.isWrite) ||
                     (state === llc_r_mdaccess && hit_valid)
   io.rResp.bits := Mux(refill_start,
-                       ReadResponseMetaData(mshrs(io.memRResp.bits.id).xaction),
-                       ReadResponseMetaData(reads.bits))
+                       ReadResponseMetaData(nastiParams, mshrs(io.memRResp.bits.id).xaction),
+                       ReadResponseMetaData(nastiParams, reads.bits))
 
   io.wResp.valid := (state === llc_w_mdaccess || state === llc_w_daccess) &&
     io.req.w.fire && io.req.w.bits.last
-  io.wResp.bits := WriteResponseMetaData(writes.bits)
+  io.wResp.bits := WriteResponseMetaData(nastiParams, writes.bits)
 
   switch (state) {
     is (llc_idle) {

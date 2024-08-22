@@ -23,7 +23,7 @@ Also, note that we added the ``WithFireAxeNoCPart``.
 This tells the compiler to perform the NoC-partition pass by grouping router nodes and modules connected to those router nodes.
 The indices in ``WithPartitionGlobalInfo`` now indicates the router node indices.
 
-.. literalinclude:: ../../../sim/firesim-lib/src/main/scala/configs/FireAxeTargetConfigs.scala
+.. literalinclude:: ../../../sim/midas/src/main/scala/configs/FireAxeTargetConfigs.scala
    :language: scala
    :start-after: DOC include start: Xilinx U250 Ring NoC Partition
    :end-before: DOC include end: Xilinx U250 Ring NoC Partition

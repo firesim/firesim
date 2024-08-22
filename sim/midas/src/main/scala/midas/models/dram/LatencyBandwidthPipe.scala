@@ -1,11 +1,16 @@
 package midas
 package models
 
+import Console.{UNDERLINED, RESET}
+
 import chisel3._
 import chisel3.util._
+
 import org.chipsalliance.cde.config.Parameters
 
-import Console.{UNDERLINED, RESET}
+import junctions.{NastiKey}
+
+import firesim.lib.nasti._
 
 case class LatencyPipeConfig(params: BaseParams) extends BaseConfig {
   def elaborate()(implicit p: Parameters): LatencyPipe = Module(new LatencyPipe(this))
@@ -29,14 +34,14 @@ class LatencyPipeIO(val cfg: LatencyPipeConfig)(implicit p: Parameters) extends 
   val mmReg = new LatencyPipeMMRegIO(cfg)
 }
 
-class WritePipeEntry(implicit val p: Parameters) extends Bundle {
+class WritePipeEntry(nastiParams: NastiParameters) extends Bundle {
   val releaseCycle = UInt(64.W)
-  val xaction = new WriteResponseMetaData
+  val xaction = new WriteResponseMetaData(nastiParams)
 }
 
-class ReadPipeEntry(implicit val p: Parameters) extends Bundle {
+class ReadPipeEntry(nastiParams: NastiParameters) extends Bundle {
   val releaseCycle = UInt(64.W)
-  val xaction = new ReadResponseMetaData
+  val xaction = new ReadResponseMetaData(nastiParams)
 }
 
 class LatencyPipe(cfg: LatencyPipeConfig)(implicit p: Parameters) extends SplitTransactionModel(cfg)(p) {
@@ -53,10 +58,10 @@ class LatencyPipe(cfg: LatencyPipeConfig)(implicit p: Parameters) extends SplitT
   // Write delays are applied to the cycle upon which both the AW and W
   // transactions have completed. Since multiple AW packets may arrive
   // before the associated W packet, we queue them up.
-  val writePipe = Module(new Queue(new WritePipeEntry, cfg.maxWrites, flow = true))
+  val writePipe = Module(new Queue(new WritePipeEntry(p(NastiKey)), cfg.maxWrites, flow = true))
 
   writePipe.io.enq.valid := newWReq
-  writePipe.io.enq.bits.xaction := WriteResponseMetaData(awQueue.io.deq.bits)
+  writePipe.io.enq.bits.xaction := WriteResponseMetaData(p(NastiKey), awQueue.io.deq.bits)
   writePipe.io.enq.bits.releaseCycle := writeLatency + tCycle - egressUnitDelay.U
 
   val writeDone = writePipe.io.deq.bits.releaseCycle <= tCycle
@@ -67,10 +72,10 @@ class LatencyPipe(cfg: LatencyPipeConfig)(implicit p: Parameters) extends SplitT
   assert(writePipe.io.enq.ready || !newWReq, "LBP write latency pipe would overflow.")
 
   // ***** Read Latency Pipe *****
-  val readPipe = Module(new Queue(new ReadPipeEntry, cfg.maxReads, flow = true))
+  val readPipe = Module(new Queue(new ReadPipeEntry(p(NastiKey)), cfg.maxReads, flow = true))
 
   readPipe.io.enq.valid := nastiReq.ar.fire
-  readPipe.io.enq.bits.xaction := ReadResponseMetaData(nastiReq.ar.bits)
+  readPipe.io.enq.bits.xaction := ReadResponseMetaData(p(NastiKey), nastiReq.ar.bits)
   readPipe.io.enq.bits.releaseCycle := readLatency + tCycle - egressUnitDelay.U
   // Release read responses on the appropriate cycle
   val readDone = readPipe.io.deq.bits.releaseCycle <= tCycle
@@ -80,4 +85,3 @@ class LatencyPipe(cfg: LatencyPipeConfig)(implicit p: Parameters) extends SplitT
 
   assert(readPipe.io.enq.ready || !nastiReq.ar.fire, "LBP read latency pipe would overflow.")
 }
-

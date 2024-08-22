@@ -97,8 +97,8 @@ private[midas] object WriteXDCFile extends Transform with DependencyAPIMigration
     }
 
     val cleanedAnnotations = state.annotations.filterNot {
-      case a: XDCAnnotation => true
-      case a: XDCPathToCircuitAnnotation => true
+      case _: XDCAnnotation => true
+      case _: XDCPathToCircuitAnnotation => true
       case _ => false
     }
     state.copy(annotations = outputAnnos ++: cleanedAnnotations)

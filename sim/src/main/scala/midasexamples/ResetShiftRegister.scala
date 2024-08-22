@@ -25,4 +25,4 @@ class ResetShiftRegisterDUT extends Module {
   io.out := r3
 }
 
-class ResetShiftRegister(implicit p: Parameters) extends PeekPokeMidasExampleHarness(() => new ResetShiftRegisterDUT)
+class ResetShiftRegister(implicit p: Parameters) extends firesim.lib.testutils.PeekPokeHarness(() => new ResetShiftRegisterDUT)

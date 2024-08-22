@@ -30,7 +30,7 @@ object RemoveNonWirePrimitives {
       case sa: WSubAccess => sa
       case si: WSubIndex => si
       case r: WRef => r
-      case o => EmptyExpression
+      case _ => EmptyExpression
     }
     def onStmt(s: Statement): Statement = s.map(onStmt).map(onExpr) match {
       // Break paths through memories by forcing them to have non-zero latency.
@@ -74,7 +74,6 @@ object PromotePassthroughConnections extends Transform with DependencyAPIMigrati
 
     val modelInstances = new mutable.ArrayBuffer[WDefInstance]()
     topModule.foreach(collectInstances(modelInstances))
-    val instanceNames = modelInstances.map(_.name).toSet
 
     val modelNodes = modelInstances.flatMap { case WDefInstance(_, instName, modName, _) =>
       moduleMap(modName).ports
@@ -111,7 +110,7 @@ object PromotePassthroughConnections extends Transform with DependencyAPIMigrati
           case WSubField(WRef(instName,_,InstanceKind,_), portName, tpe, _) if tpe != ClockType =>
             Some(LogicNode(portName, Some(instName)))
           case WRef(name, tpe, _, _) if tpe != ClockType => Some(LogicNode(name))
-          case o => None
+          case _ => None
         }
         sinkNode match {
           case Some(sinkNode) =>
@@ -119,7 +118,7 @@ object PromotePassthroughConnections extends Transform with DependencyAPIMigrati
             val newRHS = sourceNode match {
               case LogicNode(portName, Some(instName), None) => WSubField(WRef(instName), portName)
               case LogicNode(portName, None, None) => WRef(portName)
-              case o => throw new Exception(s"memport field of source LogicNode should be unset.") 
+              case _ => throw new Exception("memport field of source LogicNode should be unset.")
             }
             c.copy(expr = newRHS)
           case None => c

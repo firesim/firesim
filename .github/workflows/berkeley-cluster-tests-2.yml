@@ -186,24 +186,6 @@ jobs:
       - name: Run CIGroupB Scala tests
         run: ./.github/scripts/invoke-make.py "SCALA_TEST=firesim.midasexamples.CIGroupB testOnly"
 
-  run-bridges-scala-tests:
-    name: run-bridges-scala-tests
-    needs: [start-scalatests]
-    runs-on: local-fpga-2
-    steps:
-      - uses: actions/checkout@v4
-      - name: Run firesim-lib Scala tests
-        run: ./.github/scripts/invoke-make.py "SCALA_TEST=firesim.bridges.BridgeTests testOnly"
-
-  run-firesim-scala-tests:
-    name: run-firesim-scala-tests
-    needs: [start-scalatests]
-    runs-on: local-fpga-shared # since this is a longer lived job, can run on either runner
-    steps:
-      - uses: actions/checkout@v4
-      - name: Run other (CITests) Scala tests
-        run: ./.github/scripts/invoke-make.py "SCALA_TEST=firesim.firesim.CITests testOnly"
-
   cleanup-local-fpga-repo:
     name: cleanup-local-fpga-repo
     needs: [
@@ -211,9 +193,7 @@ jobs:
       run-firesimlib-scala-tests,
       run-midas-scala-tests,
       run-midasexamples-scala-tests-groupA,
-      run-midasexamples-scala-tests-groupB,
-      run-bridges-scala-tests,
-      run-firesim-scala-tests]
+      run-midasexamples-scala-tests-groupB]
     # uses a separate runner to cleanup (irrespective, of other jobs cancelled, running, etc)
     runs-on: local-fpga-cleanup
     if: ${{ always() }}
