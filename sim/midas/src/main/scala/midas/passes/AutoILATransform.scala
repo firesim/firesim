@@ -3,7 +3,7 @@
 package midas.passes
 
 import midas.{EnableAutoILA, ILADepthKey, ILAProbeTriggersKey}
-import midas.targetutils.FirrtlFpgaDebugAnnotation
+import midas.InternalFirrtlFpgaDebugAnnotation
 import midas.stage.GoldenGateOutputFileAnnotation
 import midas.stage.phases.ConfigParametersAnnotation
 
@@ -99,14 +99,14 @@ object AutoILATransform extends Transform with DependencyAPIMigration {
 
   private def runTransform(
     state:         CircuitState,
-    ilaAnnos:      Seq[FirrtlFpgaDebugAnnotation],
+    ilaAnnos:      Seq[InternalFirrtlFpgaDebugAnnotation],
     dataDepth:     Int,
     probeTriggers: Int,
   ): CircuitState = {
 
     // Map debug annotations to top wiring annotations
     val targetAnnos = ilaAnnos match {
-      case p => p.map { case FirrtlFpgaDebugAnnotation(target) => TopWiringAnnotation(target, "ila_") }
+      case p => p.map { case InternalFirrtlFpgaDebugAnnotation(target) => TopWiringAnnotation(target, "ila_") }
     }
 
     // Sneak out mapping, which has information about port widths needed for
@@ -253,7 +253,7 @@ object AutoILATransform extends Transform with DependencyAPIMigration {
   }
 
   def execute(state: CircuitState): CircuitState = {
-    val ilaAnnos      = state.annotations.collect { case a: FirrtlFpgaDebugAnnotation => a }
+    val ilaAnnos      = state.annotations.collect { case a: InternalFirrtlFpgaDebugAnnotation => a }
     val p             = state.annotations.collectFirst({ case ConfigParametersAnnotation(p) => p }).get
     val dataDepth     = p(ILADepthKey)
     val probeTriggers = p(ILAProbeTriggersKey)
@@ -269,10 +269,10 @@ object AutoILATransform extends Transform with DependencyAPIMigration {
     }
 
     val cleanedAnnos = newState.annotations.filter {
-      case _: TopWiringAnnotation            => false
-      case _: TopWiringOutputFilesAnnotation => false
-      case _: FirrtlFpgaDebugAnnotation      => false
-      case _                                 => true
+      case _: TopWiringAnnotation               => false
+      case _: TopWiringOutputFilesAnnotation    => false
+      case _: InternalFirrtlFpgaDebugAnnotation => false
+      case _                                    => true
     }
     newState.copy(annotations = cleanedAnnos)
   }

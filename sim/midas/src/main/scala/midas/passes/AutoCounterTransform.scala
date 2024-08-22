@@ -7,9 +7,10 @@ import firrtl.ir._
 import firrtl.Utils.{BoolType, one, zero}
 import firrtl.annotations._
 import freechips.rocketchip.util.property
-import midas.{EnableAutoCounter, AutoCounterUsePrintfImpl}
+import midas.{EnableAutoCounter, AutoCounterUsePrintfImpl, InternalGlobalResetConditionSink}
 import midas.widgets._
 import midas.targetutils._
+import midas.{InternalAutoCounterFirrtlAnnotation, InternalTriggerSinkAnnotation}
 import midas.passes.fame.{WireChannel, FAMEChannelConnectionAnnotation, And, Neq}
 import firesim.lib.bridgeutils.{BridgeIOAnnotation}
 
@@ -25,7 +26,7 @@ class FireSimPropertyLibrary extends property.BasePropertyLibrary {
       annotate(new ChiselAnnotation {
         val implicitClock = chisel3.Module.clock
         val implicitReset = chisel3.Module.reset
-        def toFirrtl = AutoCounterFirrtlAnnotation(prop_param.cond.toNamed,
+        def toFirrtl = InternalAutoCounterFirrtlAnnotation(prop_param.cond.toNamed,
                                                    implicitClock.toNamed.toTarget,
                                                    implicitReset.toNamed.toTarget,
                                                    prop_param.label,
@@ -49,8 +50,8 @@ class AutoCounterTransform extends Transform with AutoCounterConsts {
   // Gates each auto-counter event with the associated reset, moving the
   // annotation's target to point at the new boolean (updatedAnnos).
   // This is used in both implementation strategies.
-  private def gateEventsWithReset(coverTupleAnnoMap: Map[String, Seq[AutoCounterFirrtlAnnotation]],
-                                  updatedAnnos: mutable.ArrayBuffer[AutoCounterFirrtlAnnotation])
+  private def gateEventsWithReset(coverTupleAnnoMap: Map[String, Seq[InternalAutoCounterFirrtlAnnotation]],
+                                  updatedAnnos: mutable.ArrayBuffer[InternalAutoCounterFirrtlAnnotation])
                                  (mod: DefModule): DefModule = mod match {
     case m: Module if coverTupleAnnoMap.isDefinedAt(m.name) =>
       val coverAnnos = coverTupleAnnoMap(m.name)
@@ -66,7 +67,7 @@ class AutoCounterTransform extends Transform with AutoCounterConsts {
       case o => o
   }
 
-  private def onModulePrintfImpl(coverTupleAnnoMap: Map[String, Seq[AutoCounterFirrtlAnnotation]],
+  private def onModulePrintfImpl(coverTupleAnnoMap: Map[String, Seq[InternalAutoCounterFirrtlAnnotation]],
                                  addedAnnos: mutable.ArrayBuffer[Annotation])
                                 (mod: DefModule): DefModule = mod match {
     case m: Module if coverTupleAnnoMap.isDefinedAt(m.name) =>
@@ -83,7 +84,7 @@ class AutoCounterTransform extends Transform with AutoCounterConsts {
         val triggerName = moduleNS.newName("trigger")
         val trigger = DefWire(NoInfo, triggerName, BoolType)
         addedStmts ++= Seq(trigger, Connect(NoInfo, WRef(trigger), one))
-        addedAnnos += TriggerSinkAnnotation(mT.ref(triggerName), clock)
+        addedAnnos += InternalTriggerSinkAnnotation(mT.ref(triggerName), clock)
 
         // Now emit a printf using all the generated hardware
         val printFormat = StringLit(s"""[AutoCounter] $label: %d\n""")
@@ -95,7 +96,7 @@ class AutoCounterTransform extends Transform with AutoCounterConsts {
       }
 
       coverAnnos.foreach {
-        case AutoCounterFirrtlAnnotation(target, clock, reset, label, _, PerfCounterOps.Accumulate, _) =>
+        case InternalAutoCounterFirrtlAnnotation(target, clock, reset, label, _, PerfCounterOps.Accumulate, _) =>
           val countName = moduleNS.newName(label + "_counter")
           val count = DefRegister(NoInfo, countName, countType, WRef(clock.ref), WRef(reset.ref), zeroLit)
           val nextName = moduleNS.newName(label + "_next")
@@ -107,7 +108,7 @@ class AutoCounterTransform extends Transform with AutoCounterConsts {
           generatePrintf(label, clock, WRef(count), printEnable, target.ref + "_print")
 
         // Under the Identity mode, print whenever the value changes.
-        case AutoCounterFirrtlAnnotation(target, clock, reset, label, _, PerfCounterOps.Identity, _) =>
+        case InternalAutoCounterFirrtlAnnotation(target, clock, reset, label, _, PerfCounterOps.Identity, _) =>
           val regName = moduleNS.newName(label + "_reg")
           val reg = DefRegister(NoInfo, regName, UIntType(UnknownWidth), WRef(clock.ref), WRef(reset.ref), zeroLit)
           val regUpdate = Connect(NoInfo, WRef(reg), WRef(target.ref))
@@ -122,7 +123,7 @@ class AutoCounterTransform extends Transform with AutoCounterConsts {
 
   private def implementViaPrintf(
       state: CircuitState,
-      eventModuleMap: Map[String, Seq[AutoCounterFirrtlAnnotation]]): CircuitState = {
+      eventModuleMap: Map[String, Seq[InternalAutoCounterFirrtlAnnotation]]): CircuitState = {
 
     val addedAnnos = new mutable.ArrayBuffer[Annotation]()
     val updatedModules = state.circuit.modules.map(
@@ -133,7 +134,7 @@ class AutoCounterTransform extends Transform with AutoCounterConsts {
 
   private def implementViaBridge(
       state: CircuitState,
-      eventModuleMap: Map[String, Seq[AutoCounterFirrtlAnnotation]]): CircuitState = {
+      eventModuleMap: Map[String, Seq[InternalAutoCounterFirrtlAnnotation]]): CircuitState = {
 
     val sourceToAutoCounterAnnoMap = eventModuleMap.values.flatten.map(anno => anno.target -> anno).toMap
     val bridgeTopWiringAnnos = eventModuleMap.values.flatten.map(
@@ -202,9 +203,9 @@ class AutoCounterTransform extends Transform with AutoCounterConsts {
         FAMEChannelConnectionAnnotation.source(name, WireChannel, Some(sinkClockRT), Seq(topMT.ref(name)))
 
       val triggerFCCA = predicateFCCA(triggerPortName)
-      val triggerSinkAnno = TriggerSinkAnnotation(topMT.ref(triggerPortNode), sinkClockRT)
+      val triggerSinkAnno = InternalTriggerSinkAnnotation(topMT.ref(triggerPortNode), sinkClockRT)
       val globalResetFCCA = predicateFCCA(globalResetName)
-      val globalResetSink = GlobalResetConditionSink(topMT.ref(globalResetName))
+      val globalResetSink = InternalGlobalResetConditionSink(topMT.ref(globalResetName))
 
       val bridgeAnno = BridgeIOAnnotation(
         target = topMT.ref(topWiringPrefix),
@@ -235,7 +236,7 @@ class AutoCounterTransform extends Transform with AutoCounterConsts {
     //   of the form AutoCounterModuleAnnotation("ModuleName")
     val modulesfile = new File(dir,"autocounter-covermodules.txt")
     val moduleAnnos     = new mutable.ArrayBuffer[AutoCounterCoverModuleFirrtlAnnotation]()
-    val counterAnnos    = new mutable.ArrayBuffer[AutoCounterFirrtlAnnotation]()
+    val counterAnnos    = new mutable.ArrayBuffer[InternalAutoCounterFirrtlAnnotation]()
     val remainingAnnos  = new mutable.ArrayBuffer[Annotation]()
     if (modulesfile.exists()) {
       println("[AutoCounter] Reading " + modulesfile.getPath())
@@ -246,7 +247,7 @@ class AutoCounterTransform extends Transform with AutoCounterConsts {
     }
     state.annotations.foreach {
       case a: AutoCounterCoverModuleFirrtlAnnotation => moduleAnnos += a
-      case a: AutoCounterFirrtlAnnotation => counterAnnos += a
+      case a: InternalAutoCounterFirrtlAnnotation => counterAnnos += a
       case o => remainingAnnos += o
     }
 
@@ -274,7 +275,7 @@ class AutoCounterTransform extends Transform with AutoCounterConsts {
       })
 
       // Common preprocessing: gate all annotated events with their associated reset
-      val updatedAnnos = new mutable.ArrayBuffer[AutoCounterFirrtlAnnotation]()
+      val updatedAnnos = new mutable.ArrayBuffer[InternalAutoCounterFirrtlAnnotation]()
       val updatedModules = state.circuit.modules.map((gateEventsWithReset(selectedsignals, updatedAnnos)))
       val eventModuleMap = updatedAnnos.groupBy(_.enclosingModule()).map { case (k, v) => k -> v.toSeq}
       val gatedState = state.copy(circuit = state.circuit.copy(modules = updatedModules), annotations = remainingAnnos.toSeq)
@@ -300,7 +301,7 @@ class AutoCounterTransform extends Transform with AutoCounterConsts {
     updatedState.copy(
       annotations = updatedState.annotations.filter {
         case AutoCounterCoverModuleFirrtlAnnotation(_) => false
-        case AutoCounterFirrtlAnnotation(_,_,_,_,_,_,_) => false
+        case InternalAutoCounterFirrtlAnnotation(_,_,_,_,_,_,_) => false
         case _ => true
       })
   }

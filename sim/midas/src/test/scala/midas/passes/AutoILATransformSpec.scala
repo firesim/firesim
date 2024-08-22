@@ -2,7 +2,7 @@
 
 package midas.tests
 
-import midas.EnableAutoILA
+import midas.{ConvertExternalToInternalAnnotations, EnableAutoILA}
 import midas.targetutils.FirrtlFpgaDebugAnnotation
 import midas.passes._
 import midas.stage.phases.ConfigParametersAnnotation
@@ -127,7 +127,7 @@ class AutoILATransformSpec extends MiddleTransformSpec with FirrtlRunners {
 
     val referenceAnnos = Seq(bbAnno, ipgenAnno)
     it should "wire out the correct ILA when a variety of targets are labelled" in {
-      executeWithAnnos(input, output, fpgaDebugAnnos ++ baseAnnos, referenceAnnos)
+      executeWithAnnos(input, output, ConvertExternalToInternalAnnotations(fpgaDebugAnnos) ++ baseAnnos, referenceAnnos)
     }
   }
 }

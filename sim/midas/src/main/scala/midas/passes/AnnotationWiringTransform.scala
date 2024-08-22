@@ -1,8 +1,6 @@
 //See LICENSE for license details.
 package midas.passes
 
-import midas.targetutils._
-
 import scala.reflect.{ClassTag, classTag}
 import scala.collection.mutable
 import scala.util.{Try, Success, Failure}
@@ -12,6 +10,9 @@ import firrtl.annotations._
 import firrtl.options.{Dependency}
 import firrtl.stage.{Forms}
 import firrtl.passes.wiring.{SinkAnnotation, SourceAnnotation, WiringTransform}
+
+import midas.{InternalGlobalResetCondition, InternalGlobalResetConditionSink}
+
 
 /**
   * A type-parameterized wrapper for the WiringTransform that accepts a
@@ -92,4 +93,4 @@ class AnnotationParameterizedWiringTransform[
   }
 }
 
-object GlobalResetConditionWiring extends AnnotationParameterizedWiringTransform[GlobalResetCondition, GlobalResetConditionSink](false, false)
+object GlobalResetConditionWiring extends AnnotationParameterizedWiringTransform[InternalGlobalResetCondition, InternalGlobalResetConditionSink](false, false)

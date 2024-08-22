@@ -420,15 +420,15 @@ class PruneUnrelatedAnnoPass extends Transform with DependencyAPIMigration {
 
     val prunedAnnos = annos.filter(a =>
       a match {
-        case AutoCounterFirrtlAnnotation(target, _, _, _, _, _, _) =>
+        case InternalAutoCounterFirrtlAnnotation(target, _, _, _, _, _, _) =>
           if (igraph.findInstancesInHierarchy(target.module).size > 0) true else false
-        case AutoCounterCoverModuleFirrtlAnnotation(target)        =>
+        case AutoCounterCoverModuleFirrtlAnnotation(target)                =>
           if (igraph.findInstancesInHierarchy(target.module).size > 0) true else false
-        case TriggerSinkAnnotation(target, _)                      =>
+        case InternalTriggerSinkAnnotation(target, _)                      =>
           if (igraph.findInstancesInHierarchy(target.module).size > 0) true else false
-        case TriggerSourceAnnotation(target, _, _, _)              =>
+        case InternalTriggerSourceAnnotation(target, _, _, _)              =>
           if (igraph.findInstancesInHierarchy(target.module).size > 0) true else false
-        case _                                                     => true
+        case _                                                             => true
       }
     )
     state.copy(annotations = prunedAnnos)

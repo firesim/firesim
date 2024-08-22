@@ -19,15 +19,10 @@ fame_annos := $(GENERATED_DIR)/post-bridge-extraction.json
 verilog: $(simulator_verilog)
 compile: $(simulator_verilog)
 
-# empty recipe to help make understand multiple targets come from single recipe invocation
-# without using the new (4.3) '&:' grouped targets see https://stackoverflow.com/a/41710495
-.SECONDARY: $(simulator_verilog).intermediate
-$(simulator_verilog) $(simulator_xdc) $(header) $(fame_annos): $(simulator_verilog).intermediate ;
-
 # Disable FIRRTL 1.4 deduplication because it creates multiple failures
 # Run the 1.3 version instead (checked-in). If dedup must be completely disabled,
 # pass --no-legacy-dedup as well
-$(simulator_verilog).intermediate: $(FIRRTL_FILE) $(ANNO_FILE) $(FIRESIM_MAIN_CP)
+$(simulator_verilog) $(simulator_xdc) $(header) $(fame_annos) &: $(FIRRTL_FILE) $(ANNO_FILE) $(FIRESIM_MAIN_CP)
 	$(call run_jar_scala_main,$(firesim_base_dir),$(FIRESIM_MAIN_CP),midas.stage.GoldenGateMain,\
 		-i $(FIRRTL_FILE) \
 		-td $(GENERATED_DIR) \
@@ -35,6 +30,7 @@ $(simulator_verilog).intermediate: $(FIRRTL_FILE) $(ANNO_FILE) $(FIRESIM_MAIN_CP
 		-ggcp $(PLATFORM_CONFIG_PACKAGE) \
 		-ggcs $(PLATFORM_CONFIG) \
 		--output-filename-base $(BASE_FILE_NAME) \
+		--allow-unrecognized-annotations \
 		--no-dedup)
 	grep -sh ^ $(GENERATED_DIR)/firrtl_black_box_resource_files.f | \
 		xargs cat >> $(simulator_verilog) # Append blackboxes to FPGA wrapper, if any

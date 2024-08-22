@@ -12,7 +12,8 @@ import firrtl.Utils.{zero, BoolType}
 
 import midas.passes.fame.{FAMEChannelConnectionAnnotation, WireChannel}
 import midas.widgets.{PrintBridgeModule, PrintBridgeParameters, PrintPort}
-import midas.targetutils.{SynthPrintfAnnotation, GlobalResetConditionSink}
+import midas.targetutils.{SynthPrintfAnnotation}
+import midas.InternalGlobalResetConditionSink
 import firesim.lib.bridgeutils.{BridgeIOAnnotation}
 
 private[passes] class PrintSynthesis extends firrtl.Transform {
@@ -50,7 +51,7 @@ private[passes] class PrintSynthesis extends firrtl.Transform {
 
     def mTarget(m: Module): ModuleTarget = ModuleTarget(c.main, m.name)
     def portRT(p: Port): ReferenceTarget = ModuleTarget(c.main, c.main).ref(p.name)
-    
+
 
     val modToAnnos = printfAnnos.groupBy(_.target.moduleTarget)
     val topWiringAnnos = mutable.ArrayBuffer[Annotation]()
@@ -133,7 +134,7 @@ private[passes] class PrintSynthesis extends firrtl.Transform {
         WireChannel,
         clock = printFCCAs.head.clock,
         Seq(resetPortRT))
-      val resetConditionAnno = GlobalResetConditionSink(resetPortRT)
+      val resetConditionAnno = InternalGlobalResetConditionSink(resetPortRT)
 
       val fccaAnnos = resetFCCA +: printFCCAs
       val bridgeAnno = BridgeIOAnnotation(

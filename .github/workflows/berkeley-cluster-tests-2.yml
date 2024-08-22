@@ -141,15 +141,6 @@ jobs:
       - name: Precompile scala sources needed for tests
         run: ./.github/scripts/invoke-make.py "FIRESIM_SBT_PROJECT=firesim SBT_COMMAND=test:compile sbt"
 
-  run-targetutils-scala-tests:
-    name: run-targetutils-scala-tests
-    needs: [start-scalatests]
-    runs-on: local-fpga-2
-    steps:
-      - uses: actions/checkout@v4
-      - name: Run targetutils scala tests
-        run: ./.github/scripts/invoke-make.py "FIRESIM_SBT_PROJECT=targetutils test"
-
   run-firesimlib-scala-tests:
     name: run-firesimlib-scala-tests
     needs: [start-scalatests]
@@ -165,7 +156,7 @@ jobs:
     runs-on: local-fpga-2
     steps:
       - uses: actions/checkout@v4
-      - name: Run targetutils scala tests
+      - name: Run midas and midas-targetutils scala tests
         run: ./.github/scripts/invoke-make.py "FIRESIM_SBT_PROJECT=midas test"
 
   run-midasexamples-scala-tests-groupA:
@@ -189,7 +180,6 @@ jobs:
   cleanup-local-fpga-repo:
     name: cleanup-local-fpga-repo
     needs: [
-      run-targetutils-scala-tests,
       run-firesimlib-scala-tests,
       run-midas-scala-tests,
       run-midasexamples-scala-tests-groupA,

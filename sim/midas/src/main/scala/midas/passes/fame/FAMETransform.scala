@@ -13,7 +13,8 @@ import scala.collection.mutable
 import mutable.{LinkedHashSet, LinkedHashMap}
 
 import midas.passes._
-import midas.targetutils.xdc.{XDCFiles, XDCAnnotation}
+import midas.targetutils.xdc.{XDCFiles}
+import midas.InternalXDCAnnotation
 import firesim.lib.bridgeutils.{RationalClock}
 
 /**************
@@ -217,7 +218,7 @@ object FAMEModuleTransformer {
         // back-to-back host-cycles (tokens 2->3).
         //
         // Note: "host_clock" is defined statically in the shell XDC.
-        val xdcAnno = XDCAnnotation(
+        val xdcAnno = InternalXDCAnnotation(
           XDCFiles.Implementation,
           s"""|create_generated_clock -name ${clockName} -source [get_pins -of [get_clocks host_clock]] [get_pins -hierarchical -regexp .*{}.*] -divide_by 1
               |set_multicycle_path $clockMFMR -setup -from [get_clocks $clockName] -to [get_clocks $clockName]

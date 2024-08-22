@@ -16,8 +16,12 @@ private[midas] class MidasTransforms extends Transform {
   def execute(state: CircuitState) = {
     println("Starting MidasTransforms")
 
+    // First convert all external annotations to internal ones
+    val newAnnos = midas.ConvertExternalToInternalAnnotations(state.annotations)
+    val internalState = state.copy(annotations = newAnnos)
+
     // Optionally run if the GenerateMultiCycleRamModels parameter is set
-    val p = state.annotations.collectFirst({ case midas.stage.phases.ConfigParametersAnnotation(p)  => p }).get
+    val p = internalState.annotations.collectFirst({ case midas.stage.phases.ConfigParametersAnnotation(p)  => p }).get
     val optionalTargetTransforms = if (p(GenerateMultiCycleRamModels)) Seq(
       new fame.LabelSRAMModels,
       new ResolveAndCheck,
@@ -223,10 +227,10 @@ private[midas] class MidasTransforms extends Transform {
       new ResolveAndCheck,
       new EmitFirrtl("post-gen-sram-models.fir"),
       new fame.EmitFAMEAnnotations("post-gen-sram-models.json"),
-      new SimulationMapping(state.circuit.main),
+      new SimulationMapping(internalState.circuit.main),
       xilinx.HostSpecialization,
       new ResolveAndCheck)
-      (xforms foldLeft state)((in, xform) =>
+      (xforms foldLeft internalState)((in, xform) =>
       xform runTransform in).copy(form=outputForm)
   }
 }
