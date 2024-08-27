@@ -100,6 +100,9 @@ else:
 
 logger.info(f"Setting |version| to {version}.")
 
+# set chipyard docs version
+cy_docs_version = "a800cd0df8b64db6a5a5fe31e8c7b44447e0f745"
+
 # for now make these match
 release = version
 
@@ -191,9 +194,10 @@ html_context = {
 
 # add rst to beginning of each rst source file
 # can put custom strings here that are generated from this file
-# you can use these in .. code-block:: directives if you give the :substitutions: option underneath
+# you can use these in .. code-block:: directives with :substitutions: added underneath
 rst_prolog = f"""
 .. |overall_version| replace:: {version}
+.. |cy_docs_version| replace:: {cy_docs_version}
 """
 
 # -- Options for LaTeX output ------------------------------------------------
@@ -260,32 +264,29 @@ def copy_legacy_redirects(app, docname): # Sphinx expects two arguments
             if os.path.isfile(src_path):
                 shutil.copyfile(src_path, target_path)
 
-def gh_file_ref_role(name, rawtext, text, lineno, inliner, options={}, content=[]):
-    """
-    Produces a github.com reference to a blob or tree at path {text}.
+def gh_file_ref_role_impl(url, text_prefix, name, rawtext, text, lineno, inliner, options={}, content=[]):
+    """Produces a github.com reference to a blob or tree at path {text}.
 
     Example:
 
     :gh-file-ref:`my/path`
 
-    Produces a hyperlink with the text "my/path" that refers the url:
-    https://www.github.com/firesim/firesim/blob/<version>/my/path.
+    Produces a hyperlink with the text "my/path" that refers to the url given.
 
-    Where version is the same as would be substituted by using |version| in
-    html text, and is resolved in conf.py.
+    Where version is the same as would be substituted by using |version| in html text,
+    and is resolved in conf.py.
 
     This is based off custom role sphinx plugins like
-    https://github.com/tdi/sphinxcontrib-manpage. I've inlined this here for
-    now, but we could just as well make it a module and register it under
-    `extensions` in conf.py
+    https://github.com/tdi/sphinxcontrib-manpage. I've inlined this here for now, but we
+    could just as well make it a module and register it under `extensions` in conf.py
+
     """
 
     import docutils
     import requests
 
-    # Note GitHub permits referring to a tree as a 'blob' in these URLs without returning a 404.
-    # So I've unconditionally chosen to use blob.
-    url = f"https://www.github.com/firesim/firesim/blob/{version}/{text}"
+    if text_prefix is not None:
+        text = text_prefix + text
 
     logger.info(f"Testing GitHub URL {url} exists...")
     status_code = requests.get(url).status_code
@@ -299,7 +300,20 @@ def gh_file_ref_role(name, rawtext, text, lineno, inliner, options={}, content=[
     node = docutils.nodes.reference(rawtext, text, refuri=url, **options)
     return [node], []
 
+def fs_gh_file_ref_role(name, rawtext, text, lineno, inliner, options={}, content=[]):
+    # Note GitHub permits referring to a tree as a 'blob' in these URLs without returning a 404.
+    # So I've unconditionally chosen to use blob.
+    url = f"https://www.github.com/firesim/firesim/blob/{version}/{text}"
+    return gh_file_ref_role_impl(url, None, name, rawtext, text, lineno, inliner, options, content)
+
+def cy_gh_file_ref_role(name, rawtext, text, lineno, inliner, options={}, content=[]):
+    # Note GitHub permits referring to a tree as a 'blob' in these URLs without returning a 404.
+    # So I've unconditionally chosen to use blob.
+    url = f"https://www.github.com/ucb-bar/chipyard/blob/{cy_docs_version}/{text}"
+    return gh_file_ref_role_impl(url, "${CY_DIR}/", name, rawtext, text, lineno, inliner, options, content)
+
 def setup(app):
     # Add roles to simplify github reference generation
-    app.add_role('gh-file-ref', gh_file_ref_role)
+    app.add_role('gh-file-ref', fs_gh_file_ref_role)
+    app.add_role('cy-gh-file-ref', cy_gh_file_ref_role)
     app.connect('build-finished', copy_legacy_redirects)

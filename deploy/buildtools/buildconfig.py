@@ -12,7 +12,7 @@ from awstools.awstools import valid_aws_configure_creds, aws_resource_names
 from buildtools.bitbuilder import BitBuilder
 import buildtools
 from util.deepmerge import deep_merge
-from util.targetprojectutils import extra_target_project_make_args
+from util.targetprojectutils import extra_target_project_make_args, resolve_path
 
 # imports needed for python type checking
 from typing import Set, Any, Optional, Dict, TYPE_CHECKING
@@ -99,17 +99,12 @@ class BuildConfig:
         # resolve the path as an absolute path if set
         self.TARGET_PROJECT_MAKEFRAG = recipe_config_dict.get('TARGET_PROJECT_MAKEFRAG')
         if self.TARGET_PROJECT_MAKEFRAG:
-            tpm_relpath = Path(self.TARGET_PROJECT_MAKEFRAG)
-            if tpm_relpath.exists():
-                self.TARGET_PROJECT_MAKEFRAG = str(tpm_relpath.absolute())
+            base = build_config_file.build_config_recipes_file_path
+            abs_deploy_makefrag = resolve_path(self.TARGET_PROJECT_MAKEFRAG, base)
+            if abs_deploy_makefrag is None:
+                raise Exception(f"Unable to find TARGET_PROJECT_MAKEFRAG ({self.TARGET_PROJECT_MAKEFRAG}) either as an absolute path or relative to {base}")
             else:
-                # search for the file relative to the build config file path
-                bcf_parent_path = Path(build_config_file.path).absolute().parent
-                tpm_path: Path = bcf_parent_path / tpm_path
-                if tpm_path.exists():
-                    self.TARGET_PROJECT_MAKEFRAG = str(tpm_path.absolute())
-                else:
-                    raise Exception(f"Unable to find TARGET_PROJECT_MAKEFRAG ({self.TARGET_PROJECT_MAKEFRAG}) either as an absolute path or relative to {bcf_parent_path}")
+                self.TARGET_PROJECT_MAKEFRAG = abs_deploy_makefrag
 
         self.DESIGN = recipe_config_dict['DESIGN']
         self.TARGET_CONFIG = recipe_config_dict['TARGET_CONFIG']

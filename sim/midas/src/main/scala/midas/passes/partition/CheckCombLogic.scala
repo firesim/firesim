@@ -22,18 +22,10 @@ object LogicGraphTypes {
 object CheckCombLogger {
   import firrtl.transforms.CheckCombLoops._
 
-  val debugFile   = if (sys.env.get("FIRESIM_STANDALONE") == None) {
-    new File("sims/firesim/sim/midas/test-outputs/debug.log")
-  } else {
-    new File("midas/test-outputs/debug.log")
-  }
+  val debugFile   = new File("midas/test-outputs/debug.log")
   val debugWriter = new java.io.FileWriter(debugFile)
 
-  val debugFile2   = if (sys.env.get("FIRESIM_STANDALONE") == None) {
-    new File("sims/firesim/sim/midas/test-outputs/debug-2.log")
-  } else {
-    new File("midas/test-outputs/debug-2.log")
-  }
+  val debugFile2   = new File("midas/test-outputs/debug-2.log")
   val debugWriter2 = new java.io.FileWriter(debugFile2)
 
   def writeLine(s: String, writer: FileWriter): Unit = {
