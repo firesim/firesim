@@ -34,7 +34,7 @@ from util.inheritors import inheritors
 from util.deepmerge import deep_merge
 from util.streamlogger import InfoStreamLogger
 from util.export import create_export_string
-from util.targetprojectutils import extra_target_project_make_args
+from util.targetprojectutils import extra_target_project_make_args, resolve_path
 from buildtools.bitbuilder import get_deploy_dir
 from util.io import downloadURI
 
@@ -160,6 +160,8 @@ class RuntimeHWConfig:
     name: str
     platform: Optional[str]
 
+    hwdb_file: str
+
     # TODO: should be abstracted out between platforms with a URI
     agfi: Optional[str]
     """User-specified, URI path to bitstream tar file"""
@@ -183,8 +185,10 @@ class RuntimeHWConfig:
 
     # Members that are initialized here also need to be initialized in
     # RuntimeBuildRecipeConfig.__init__
-    def __init__(self, name: str, hwconfig_dict: Dict[str, Any]) -> None:
+    def __init__(self, name: str, hwconfig_dict: Dict[str, Any], hwdb_file: str) -> None:
         self.name = name
+
+        self.hwdb_file = hwdb_file
 
         if sum(['agfi' in hwconfig_dict, 'bitstream_tar' in hwconfig_dict]) > 1:
             raise Exception(f"Must only have 'agfi' or 'bitstream_tar' HWDB entry {name}.")
@@ -303,6 +307,14 @@ class RuntimeHWConfig:
         return self.get_deployquintuplet_for_config().split("-")
 
     def get_deploymakefrag_for_config(self) -> Optional[str]:
+        if self.deploy_makefrag:
+            base = self.hwdb_file
+            abs_deploy_makefrag = resolve_path(self.deploy_makefrag, base)
+            if abs_deploy_makefrag is None:
+                raise Exception(f"Unable to find deploy_makefrag ({self.deploy_makefrag}) either as an absolute path or relative to {base}")
+            else:
+                self.deploy_makefrag = abs_deploy_makefrag
+
         return self.deploy_makefrag
 
     def get_design_name(self) -> str:
@@ -646,17 +658,12 @@ class RuntimeBuildRecipeConfig(RuntimeHWConfig):
         # resolve the path as an absolute path if set
         self.deploy_makefrag = build_recipe_dict.get('TARGET_PROJECT_MAKEFRAG')
         if self.deploy_makefrag:
-            tpm_relpath = Path(self.deploy_makefrag)
-            if tpm_relpath.exists():
-                self.deploy_makefrag = str(tpm_relpath.absolute())
+            base = build_recipes_config_file
+            abs_deploy_makefrag = resolve_path(self.deploy_makefrag, base)
+            if abs_deploy_makefrag is None:
+                raise Exception(f"Unable to find TARGET_PROJECT_MAKEFRAG ({self.deploy_makefrag}) either as an absolute path or relative to {base}")
             else:
-                # search for the file relative to the build config file path
-                bcrf_parent_path = Path(build_recipes_config_file).absolute().parent
-                tpm_path: Path = bcrf_parent_path / tpm_relpath
-                if tpm_path.exists():
-                    self.deploy_makefrag = str(tpm_path.absolute())
-                else:
-                    raise Exception(f"Unable to find TARGET_PROJECT_MAKEFRAG ({self.deploy_makefrag}) either as an absolute path or relative to {bcrf_parent_path}")
+                self.deploy_makefrag = abs_deploy_makefrag
 
         self.customruntimeconfig = build_recipe_dict['metasim_customruntimeconfig']
         # note whether we've built a copy of the simulation driver for this hwconf
@@ -752,7 +759,7 @@ class RuntimeHWDB:
 
         agfidb_dict = agfidb_configfile
 
-        self.hwconf_dict = {s: RuntimeHWConfig(s, v) for s, v in agfidb_dict.items()}
+        self.hwconf_dict = {s: RuntimeHWConfig(s, v, hardwaredbconfigfile) for s, v in agfidb_dict.items()}
 
     def keyerror_message(self, name: str) -> str:
         """ Return the error message for lookup errors."""
