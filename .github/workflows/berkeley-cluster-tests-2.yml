@@ -26,8 +26,6 @@ env:
   # only run VCS tests for scala tests
   TEST_DISABLE_VERILATOR: "true"
   TEST_DISABLE_VIVADO: "true"
-  # disable running full benchmarks on target designs
-  TEST_DISABLE_BENCHMARKS: "true"
 
 jobs:
   cancel-prior-workflows:

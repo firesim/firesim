@@ -54,4 +54,5 @@ class CIGroupB
       new firesim.AllMidasUnitTests,
       new firesim.FailingUnitTests,
       new FMRCITests,
+      new PointerChaserTests,
     )
