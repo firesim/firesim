@@ -5,6 +5,7 @@ from dataclasses import dataclass
 from typing import Dict, Any, List, Optional, Tuple
 from enum import Enum
 
+
 @dataclass
 class TracerVConfig:
     enable: bool
@@ -14,18 +15,20 @@ class TracerVConfig:
     output_format: str
 
     def __init__(self, args: Dict[str, Any]) -> None:
-        self.enable = args.get('enable', False) == True
-        self.select = args.get('selector', "0")
-        self.start = args.get('start', "0")
-        self.end = args.get('end', "-1")
-        self.output_format = args.get('output_format', "0")
+        self.enable = args.get("enable", False) == True
+        self.select = args.get("selector", "0")
+        self.start = args.get("start", "0")
+        self.end = args.get("end", "-1")
+        self.output_format = args.get("output_format", "0")
+
 
 @dataclass
 class AutoCounterConfig:
     readrate: int
 
     def __init__(self, args: Dict[str, Any]) -> None:
-        self.readrate = int(args.get('read_rate', "0"))
+        self.readrate = int(args.get("read_rate", "0"))
+
 
 @dataclass
 class HostDebugConfig:
@@ -33,8 +36,9 @@ class HostDebugConfig:
     disable_synth_asserts: bool
 
     def __init__(self, args: Dict[str, Any]) -> None:
-        self.zero_out_dram = args.get('zero_out_dram', False) == True
-        self.disable_synth_asserts = args.get('disable_synth_asserts', False) == True
+        self.zero_out_dram = args.get("zero_out_dram", False) == True
+        self.disable_synth_asserts = args.get("disable_synth_asserts", False) == True
+
 
 @dataclass
 class SynthPrintConfig:
@@ -47,11 +51,13 @@ class SynthPrintConfig:
         self.end = args.get("end", "-1")
         self.cycle_prefix = args.get("cycle_prefix", True) == True
 
+
 class FireAxeNodeBridgePair:
     """
     pidx : partition index of the node
     bidx : bridge index
     """
+
     pidx: int
     bidx: int
 
@@ -59,10 +65,12 @@ class FireAxeNodeBridgePair:
         self.pidx = pidx
         self.bidx = bidx
 
+
 class FireAxeEdge:
     """
     Connects two `FireAxeNodeBridgePair`s u, v
     """
+
     u: FireAxeNodeBridgePair
     v: FireAxeNodeBridgePair
 
@@ -70,10 +78,12 @@ class FireAxeEdge:
         self.u = u
         self.v = v
 
+
 class PartitionMode(Enum):
-    FAST_MODE     = 0
-    EXACT_MODE    = 1
-    NOC_MODE      = 2
+    FAST_MODE = 0
+    EXACT_MODE = 1
+    NOC_MODE = 2
+
 
 class PartitionNode:
     """
@@ -82,6 +92,7 @@ class PartitionNode:
     pidx  : partition index
     edges : my_bridge -> (neighbor_bridge, neighbor_node)
     """
+
     hwdb: str
     pidx: int
     edges: Dict[int, Tuple[int, PartitionNode]]
@@ -98,21 +109,25 @@ class PartitionNode:
         self.edges[bidx] = (nbidx, node)
         self.sort_edges_by_bridge_idx()
 
+
 @dataclass
 class PartitionConfig:
     """
     Provides information to a FireSimServerNode about the global partitioning topology
     """
+
     node: Optional[PartitionNode]
     fpga_cnt: int
     pidx_to_slotid: Dict[int, int]
-    pcim_slot_offset: List[Tuple[int, int]] # slotid, bridge offset of neighbor
+    pcim_slot_offset: List[Tuple[int, int]]  # slotid, bridge offset of neighbor
     mode: PartitionMode
 
-    def __init__(self,
-                 node: Optional[PartitionNode] = None,
-                 pidx_to_slotid: Dict[int, int] = dict(),
-                 mode: PartitionMode = PartitionMode.FAST_MODE) -> None:
+    def __init__(
+        self,
+        node: Optional[PartitionNode] = None,
+        pidx_to_slotid: Dict[int, int] = dict(),
+        mode: PartitionMode = PartitionMode.FAST_MODE,
+    ) -> None:
         self.node = node
         self.fpga_cnt = max(len(pidx_to_slotid.keys()), 1)
         self.pidx_to_slotid = pidx_to_slotid
@@ -134,24 +149,28 @@ class PartitionConfig:
         if self.node is None:
             return True
         else:
-          return self.node.pidx == (self.fpga_cnt - 1)
+            return self.node.pidx == (self.fpga_cnt - 1)
 
     def is_partitioned(self) -> bool:
         return self.fpga_cnt > 1
 
     def batch_size(self) -> int:
         if self.mode == PartitionMode.FAST_MODE:
-          return 1
-        elif (self.mode == PartitionMode.EXACT_MODE) or (self.mode == PartitionMode.NOC_MODE):
-          return 0
+            return 1
+        elif (self.mode == PartitionMode.EXACT_MODE) or (
+            self.mode == PartitionMode.NOC_MODE
+        ):
+            return 0
         else:
-          print(f'Unrecognized partition mode {self.mode}')
-          exit(1)
+            print(f"Unrecognized partition mode {self.mode}")
+            exit(1)
 
     def metasim_partition_topo_args(self) -> int:
-        if (self.mode == PartitionMode.FAST_MODE) or \
-           (self.mode == PartitionMode.EXACT_MODE) or \
-           (self.mode == PartitionMode.NOC_MODE):
+        if (
+            (self.mode == PartitionMode.FAST_MODE)
+            or (self.mode == PartitionMode.EXACT_MODE)
+            or (self.mode == PartitionMode.NOC_MODE)
+        ):
             return self.mode.value
         else:
             print("Unrecognized topology")
@@ -164,4 +183,7 @@ class PartitionConfig:
         return self.is_partitioned() and (not self.is_base())
 
     def get_pcim_slot_and_bridge_offsets(self) -> List[str]:
-        return [f'{slotid},{bridgeoffset}' for (slotid, bridgeoffset) in self.pcim_slot_offset]
+        return [
+            f"{slotid},{bridgeoffset}"
+            for (slotid, bridgeoffset) in self.pcim_slot_offset
+        ]

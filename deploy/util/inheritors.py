@@ -3,6 +3,7 @@ from __future__ import annotations
 # imports needed for python type checking
 from typing import Set, Type, Any
 
+
 def inheritors(klass: Type[Any]) -> Set[Type[Any]]:
     """Determine the subclasses that inherit from the input class.
     This is taken from https://stackoverflow.com/questions/5881873/python-find-all-classes-which-inherit-from-this-one.
