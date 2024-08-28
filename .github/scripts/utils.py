@@ -20,7 +20,6 @@ def setup_shell_env_vars():
     shell_env_vars = {
         "TEST_DISABLE_VERILATOR",
         "TEST_DISABLE_VIVADO",
-        "TEST_DISABLE_BENCHMARKS",
     }
     export_shell_env_vars = set()
     for v in shell_env_vars:
