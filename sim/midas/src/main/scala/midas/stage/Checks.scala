@@ -4,18 +4,18 @@ package midas.stage
 
 import firrtl.AnnotationSeq
 import firrtl.annotations.Annotation
-import firrtl.options.{OptionsException, Phase, HasShellOptions}
+import firrtl.options.{HasShellOptions, OptionsException, Phase}
 
-import scala.reflect.{ClassTag, classTag}
+import scala.reflect.{classTag, ClassTag}
 import scala.collection.mutable
 
-/** Sanity checks an [[firrtl.AnnotationSeq]] before running the main [[firrtl.options.Phase]]s of
+/** Sanity checks an [[firrtl.AnnotationSeq]] before running the main [[firrtl.options.Phase]] s of
   * [[chisel3.stage.ChiselStage]].
   */
 object Checks extends Phase {
 
-  override def prerequisites = Seq.empty
-  override def optionalPrerequisites = Seq.empty
+  override def prerequisites          = Seq.empty
+  override def optionalPrerequisites  = Seq.empty
   override def optionalPrerequisiteOf = Seq.empty
   override def invalidates(a: Phase) = false
 
@@ -33,15 +33,18 @@ object Checks extends Phase {
 
     def stringOfOptions(annoName: String, shellOption: HasShellOptions): String = {
       assert(shellOption.options.size == 1)
-      val option = shellOption.options.head
+      val option     = shellOption.options.head
       val allOptions =
         option.shortOption.map { "-" + _ } ++:
-        Seq("--" + option.longOption, annoName)
+          Seq("--" + option.longOption, annoName)
       allOptions.mkString(", ")
     }
 
-    def assertExactlyOne[A <: Annotation : ClassTag, B <: HasShellOptions](list: mutable.ListBuffer[A], shellOption: B): Unit = {
-      val annoName = classTag[A].runtimeClass.getName
+    def assertExactlyOne[A <: Annotation: ClassTag, B <: HasShellOptions](
+      list:        mutable.ListBuffer[A],
+      shellOption: B,
+    ): Unit = {
+      val annoName  = classTag[A].runtimeClass.getName
       val optionStr = stringOfOptions(annoName, shellOption)
 
       if (list.isEmpty) {
@@ -55,10 +58,10 @@ object Checks extends Phase {
     val csa = mutable.ListBuffer[ConfigStringAnnotation]()
     val obf = mutable.ListBuffer[OutputBaseFilenameAnnotation]()
     annotations.foreach {
-      case a: ConfigPackageAnnotation => a +=: cpa
-      case a: ConfigStringAnnotation => a +=: csa
+      case a: ConfigPackageAnnotation      => a +=: cpa
+      case a: ConfigStringAnnotation       => a +=: csa
       case a: OutputBaseFilenameAnnotation => a +=: obf
-      case _ =>
+      case _                               =>
     }
 
     assertExactlyOne(cpa, ConfigPackageAnnotation)

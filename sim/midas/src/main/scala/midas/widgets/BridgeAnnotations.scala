@@ -15,13 +15,13 @@ object BridgeIOAnnotationToElaboration {
   def apply(anno: BridgeIOAnnotation)(implicit p: Parameters): BridgeModule[_ <: Record with HasChannels] = {
     println(s"Instantiating bridge ${anno.target.ref} of type ${anno.widgetClass}")
 
-    val px = p alterPartial { case TargetClockInfo => anno.clockInfo }
+    val px          = p.alterPartial { case TargetClockInfo => anno.clockInfo }
     val constructor = Class.forName(anno.widgetClass).getConstructors()(0)
     (anno.widgetConstructorKey match {
       case Some(key) =>
         println(s"  With constructor arguments: $key")
         constructor.newInstance(key, px)
-      case None => constructor.newInstance(px)
+      case None      => constructor.newInstance(px)
     }).asInstanceOf[BridgeModule[_ <: Record with HasChannels]]
   }
 }

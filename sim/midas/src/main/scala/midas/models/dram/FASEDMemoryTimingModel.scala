@@ -3,15 +3,15 @@ package midas
 package models
 
 import scala.math.min
-import Console.{UNDERLINED, RESET}
+import Console.{RESET, UNDERLINED}
 
 import chisel3._
 import chisel3.util._
 
 // From RC
-import org.chipsalliance.cde.config.{Parameters, Field}
-import freechips.rocketchip.util.{DecoupledHelper}
-import freechips.rocketchip.diplomacy.{IdRange, LazyModule, AddressSet, TransferSizes}
+import org.chipsalliance.cde.config.{Field, Parameters}
+import freechips.rocketchip.util.DecoupledHelper
+import freechips.rocketchip.diplomacy.{AddressSet, IdRange, LazyModule, TransferSizes}
 import freechips.rocketchip.amba.axi4._
 import freechips.rocketchip.tilelink._
 import freechips.rocketchip.devices.tilelink._
@@ -22,7 +22,7 @@ import midas.widgets._
 
 import firesim.lib.nasti._
 import firesim.lib.bridgeutils._
-import firesim.lib.bridges.{FASEDTargetIO}
+import firesim.lib.bridges.FASEDTargetIO
 
 // Note: NASTI -> legacy rocket chip implementation of AXI4
 case object FasedAXI4Edge extends Field[Option[AXI4EdgeSummary]](None)
@@ -31,22 +31,22 @@ case class BaseParams(
   // Pessimistically provisions the functional model. Don't be cheap:
   // underprovisioning will force functional model to assert backpressure on
   // target AW. W or R channels, which may lead to unexpected bandwidth throttling.
-  maxReads: Int,
+  maxReads:  Int,
   maxWrites: Int,
-  nastiKey: Option[NastiParameters] = None,
-  edge: Option[AXI4EdgeParameters] = None,
+  nastiKey:  Option[NastiParameters]    = None,
+  edge:      Option[AXI4EdgeParameters] = None,
 
   // If not providing an AXI4 edge, use these to constrain the amount of FPGA DRAM
   // used by the memory model
-  targetAddressOffset: Option[BigInt]    = None,
+  targetAddressOffset:    Option[BigInt] = None,
   targetAddressSpaceSize: Option[BigInt] = None,
 
   // AREA OPTIMIZATIONS:
   // AXI4 bursts(INCR) can be 256 beats in length -- some
   // area can be saved if the target design only issues smaller requests
-  maxReadLength: Int = 256,
-  maxReadsPerID: Option[Int] = None,
-  maxWriteLength: Int = 256,
+  maxReadLength:  Int         = 256,
+  maxReadsPerID:  Option[Int] = None,
+  maxWriteLength: Int         = 256,
   maxWritesPerID: Option[Int] = None,
 
   // DEBUG FEATURES
@@ -56,44 +56,46 @@ case class BaseParams(
 
   // HOST INSTRUMENTATION
   stallEventCounters: Boolean = false, // To track causes of target-time stalls
-  localHCycleCount: Boolean = false, // Host Cycle Counter
-  latencyHistograms: Boolean = false, // Creates a BRAM histogram of various system latencies
+  localHCycleCount:   Boolean = false, // Host Cycle Counter
+  latencyHistograms:  Boolean = false, // Creates a BRAM histogram of various system latencies
 
   // BASE TIMING-MODEL SETTINGS
   // Some(key) instantiates an LLC model in front of the DRAM timing model
   llcKey: Option[LLCParams] = None,
 
   // BASE TIMING-MODEL INSTRUMENTATION
-  xactionCounters: Boolean = true, // Numbers of read and write AXI4 xactions
-  beatCounters: Boolean = false, // Numbers of read and write beats in AXI4 xactions
+  xactionCounters:    Boolean = true,  // Numbers of read and write AXI4 xactions
+  beatCounters:       Boolean = false, // Numbers of read and write beats in AXI4 xactions
   targetCycleCounter: Boolean = false, // Redundant in a full simulator; useful for testing
 
   // Number of xactions in flight in a given cycle. Bin N contains the range
   // (occupancyHistograms[N-1], occupancyHistograms[N]]
   occupancyHistograms: Seq[Int] = Seq(0, 2, 4, 8),
-  addrRangeCounters: BigInt = BigInt(0)
+  addrRangeCounters:   BigInt   = BigInt(0),
 )
 
 // A serializable summary of the diplomatic edge
 case class AXI4EdgeSummary(
-  maxReadTransfer: Int,
+  maxReadTransfer:  Int,
   maxWriteTransfer: Int,
-  idReuse: Option[Int],
-  maxFlight: Option[Int],
-  address: Seq[AddressSet]
+  idReuse:          Option[Int],
+  maxFlight:        Option[Int],
+  address:          Seq[AddressSet],
 ) {
   def targetAddressOffset(): BigInt = address.map(_.base).min
 }
 
 object ConvertToFireSimFasedAXI4Edge {
   def apply(axi4Edge: Option[firesim.lib.bridges.AXI4EdgeSummary]): Option[AXI4EdgeSummary] = {
-    axi4Edge.map(e => AXI4EdgeSummary(
-      e.maxReadTransfer,
-      e.maxWriteTransfer,
-      e.idReuse,
-      e.maxFlight,
-      e.address.map(as => AddressSet(as.base, as.mask))
-    ))
+    axi4Edge.map(e =>
+      AXI4EdgeSummary(
+        e.maxReadTransfer,
+        e.maxWriteTransfer,
+        e.idReuse,
+        e.maxFlight,
+        e.address.map(as => AddressSet(as.base, as.mask)),
+      )
+    )
   }
 }
 
@@ -101,14 +103,14 @@ object AXI4EdgeSummary {
   // Returns max ID reuse; None -> unbounded
   private def getIDReuseFromEdge(e: AXI4EdgeParameters): Option[Int] = {
     val maxFlightPerMaster = e.master.masters.map(_.maxFlight)
-    maxFlightPerMaster.reduce( (_,_) match {
+    maxFlightPerMaster.reduce((_, _) match {
       case (Some(prev), Some(cur)) => Some(scala.math.max(prev, cur))
-      case _ => None
+      case _                       => None
     })
   }
   // Returns (maxReadLength, maxWriteLength)
   private def getMaxTransferFromEdge(e: AXI4EdgeParameters): (Int, Int) = {
-    val beatBytes = e.slave.beatBytes
+    val beatBytes     = e.slave.beatBytes
     val readXferSize  = e.slave.slaves.head.supportsRead.max
     val writeXferSize = e.slave.slaves.head.supportsWrite.max
     ((readXferSize + beatBytes - 1) / beatBytes, (writeXferSize + beatBytes - 1) / beatBytes)
@@ -118,9 +120,9 @@ object AXI4EdgeSummary {
   // None -> unbounded
   private def getMaxTotalFlightFromEdge(e: AXI4EdgeParameters): Option[Int] = {
     val maxFlightPerMaster = e.master.masters.map(_.maxFlight)
-    maxFlightPerMaster.reduce( (_,_) match {
+    maxFlightPerMaster.reduce((_, _) match {
       case (Some(prev), Some(cur)) => Some(prev + cur)
-      case _ => None
+      case _                       => None
     })
   }
 
@@ -131,7 +133,8 @@ object AXI4EdgeSummary {
       getMaxTransferFromEdge(e)._2,
       getIDReuseFromEdge(e),
       getMaxTotalFlightFromEdge(e),
-      slave.address)
+      slave.address,
+    )
   }
 
   def createCompatEdgeSummary(e: AXI4EdgeParameters, idx: Int = 0): firesim.lib.bridges.AXI4EdgeSummary = {
@@ -141,7 +144,8 @@ object AXI4EdgeSummary {
       getMaxTransferFromEdge(e)._2,
       getIDReuseFromEdge(e),
       getMaxTotalFlightFromEdge(e),
-      slave.address.map(as => firesim.lib.bridges.AddressSet(as.base, as.mask)))
+      slave.address.map(as => firesim.lib.bridges.AddressSet(as.base, as.mask)),
+    )
   }
 }
 
@@ -154,16 +158,16 @@ abstract class BaseConfig {
 
   def maxReadLength(implicit p: Parameters) = p(FasedAXI4Edge) match {
     case Some(e) => e.maxReadTransfer
-    case _ => params.maxReadLength
+    case _       => params.maxReadLength
   }
 
   def maxWriteLength(implicit p: Parameters) = p(FasedAXI4Edge) match {
     case Some(e) => e.maxWriteTransfer
-    case _ => params.maxWriteLength
+    case _       => params.maxWriteLength
   }
 
   def maxWritesPerID(implicit p: Parameters) = getMaxPerID(p(FasedAXI4Edge), params.maxWrites, params.maxWritesPerID)
-  def maxReadsPerID(implicit p: Parameters) = getMaxPerID(p(FasedAXI4Edge), params.maxReads, params.maxReadsPerID)
+  def maxReadsPerID(implicit p:  Parameters) = getMaxPerID(p(FasedAXI4Edge), params.maxReads, params.maxReadsPerID)
 
   def maxWrites(implicit p: Parameters) = {
     val maxFromEdge = p(FasedAXI4Edge).flatMap(_.maxFlight).getOrElse(params.maxWrites)
@@ -181,18 +185,23 @@ abstract class BaseConfig {
   def elaborate()(implicit p: Parameters): TimingModel
 
   def maxWritesBits(implicit p: Parameters) = log2Up(maxWrites)
-  def maxReadsBits(implicit p: Parameters) = log2Up(maxReads)
+  def maxReadsBits(implicit p:  Parameters) = log2Up(maxReads)
 
   def targetAddressSpace(implicit p: Parameters): Seq[AddressSet] =
-    p(FasedAXI4Edge).map(_.address)
-                    .getOrElse(AddressSet.misaligned(params.targetAddressOffset.getOrElse(0),
-                                                     params.targetAddressSpaceSize.getOrElse(BigInt(1) << p(NastiKey).addrBits)))
+    p(FasedAXI4Edge)
+      .map(_.address)
+      .getOrElse(
+        AddressSet.misaligned(
+          params.targetAddressOffset.getOrElse(0),
+          params.targetAddressSpaceSize.getOrElse(BigInt(1) << p(NastiKey).addrBits),
+        )
+      )
 
   def targetWTransfer(implicit p: Parameters): TransferSizes =
-    TransferSizes(1, maxWriteLength * p(NastiKey).dataBits/8)
+    TransferSizes(1, maxWriteLength * p(NastiKey).dataBits / 8)
 
   def targetRTransfer(implicit p: Parameters): TransferSizes =
-    TransferSizes(1, maxReadLength * p(NastiKey).dataBits/8)
+    TransferSizes(1, maxReadLength * p(NastiKey).dataBits / 8)
 }
 
 // A wrapper bundle around all of the programmable settings in the functional model (!timing model).
@@ -210,69 +219,81 @@ class FuncModelProgrammableRegs extends Bundle with HasProgrammableRegisters {
   }
 }
 
-class FASEDMemoryTimingModel(completeConfig: firesim.lib.bridges.CompleteConfig, hostParams: Parameters) extends BridgeModule[HostPortIO[FASEDTargetIO]]()(hostParams)
+class FASEDMemoryTimingModel(completeConfig: firesim.lib.bridges.CompleteConfig, hostParams: Parameters)
+    extends BridgeModule[HostPortIO[FASEDTargetIO]]()(hostParams)
     with UsesHostDRAM {
 
   val cfg = hostParams(firesim.configs.MemModelKey)
 
   // Reconstitute the parameters object
   implicit override val p = hostParams.alterPartial({
-    case NastiKey => completeConfig.axi4Widths
+    case NastiKey      => completeConfig.axi4Widths
     case FasedAXI4Edge => ConvertToFireSimFasedAXI4Edge(completeConfig.axi4Edge)
   })
 
   val toHostDRAMNode = AXI4MasterNode(
-    Seq(AXI4MasterPortParameters(
-      masters = Seq(AXI4MasterParameters(
-        name = "fased-memory-timing-model",
-        id   = IdRange(0, 1 << p(NastiKey).idBits),
-        aligned = true, // This must be the case for the TL-based width adapter to work
-        maxFlight = Some(math.max(cfg.maxReadsPerID, cfg.maxWritesPerID))
-      )))))
+    Seq(
+      AXI4MasterPortParameters(
+        masters = Seq(
+          AXI4MasterParameters(
+            name      = "fased-memory-timing-model",
+            id        = IdRange(0, 1 << p(NastiKey).idBits),
+            aligned   = true, // This must be the case for the TL-based width adapter to work
+            maxFlight = Some(math.max(cfg.maxReadsPerID, cfg.maxWritesPerID)),
+          )
+        )
+      )
+    )
+  )
 
   // Begin: Implementation of UsesHostDRAM
-  val hostWidthBytes = p(MemNastiKey).dataBits / 8
+  val hostWidthBytes   = p(MemNastiKey).dataBits / 8
   val targetWidthBytes = p(NastiKey).dataBits / 8
   val memoryMasterNode = if (hostWidthBytes == targetWidthBytes) {
     toHostDRAMNode
   } else {
     // Since there is no diplomatic AXI4 width converter, use the TL one
-    val xbar = LazyModule(new TLXbar)
-    val error = LazyModule(new TLError(DevNullParams(
-        Seq(AddressSet(BigInt(1) << p(NastiKey).addrBits, 0xff)),
-        maxAtomic = 1,
-        maxTransfer = p(HostMemChannelKey).maxXferBytes),
-      beatBytes = hostWidthBytes))
+    val xbar  = LazyModule(new TLXbar)
+    val error = LazyModule(
+      new TLError(
+        DevNullParams(
+          Seq(AddressSet(BigInt(1) << p(NastiKey).addrBits, 0xff)),
+          maxAtomic   = 1,
+          maxTransfer = p(HostMemChannelKey).maxXferBytes,
+        ),
+        beatBytes = hostWidthBytes,
+      )
+    )
 
     (xbar.node
       := TLWidthWidget(targetWidthBytes)
       := TLFIFOFixer()
       := AXI4ToTL()
       := AXI4Buffer()
-      := toHostDRAMNode )
+      := toHostDRAMNode)
     error.node := xbar.node
     (AXI4Buffer()
-       := AXI4UserYanker()
-       := TLToAXI4()
-       := xbar.node)
+      := AXI4UserYanker()
+      := TLToAXI4()
+      := xbar.node)
   }
 
   val memorySlaveConstraints = MemorySlaveConstraints(cfg.targetAddressSpace, cfg.targetRTransfer, cfg.targetWTransfer)
-  val memoryRegionName = completeConfig.memoryRegionName.getOrElse(getWName)
+  val memoryRegionName       = completeConfig.memoryRegionName.getOrElse(getWName)
   // End: Implementation of UsesHostDRAM
 
   lazy val module = new Impl
   class Impl extends BridgeModuleImp(this) {
-    val io = IO(new WidgetIO)
-    val hPort = IO(HostPort(new FASEDTargetIO(p(NastiKey))))
+    val io                     = IO(new WidgetIO)
+    val hPort                  = IO(HostPort(new FASEDTargetIO(p(NastiKey))))
     val toHostDRAM: AXI4Bundle = toHostDRAMNode.out.head._1
-    val tNasti = hPort.hBits.axi4
-    val tReset = hPort.hBits.reset
+    val tNasti                 = hPort.hBits.axi4
+    val tReset                 = hPort.hBits.reset
 
     // Debug: Put an optional bound on the number of memory requests we can make
     // to the host memory system
     val funcModelRegs = Wire(new FuncModelProgrammableRegs)
-    val ingress = Module(new IngressModule(p(NastiKey), cfg))
+    val ingress       = Module(new IngressModule(p(NastiKey), cfg))
 
     val nastiToHostDRAM = Wire(new NastiIO(p(NastiKey)))
     AXI4NastiAssigner.toAXI4Slave(toHostDRAM, nastiToHostDRAM)
@@ -280,22 +301,28 @@ class FASEDMemoryTimingModel(completeConfig: firesim.lib.bridges.CompleteConfig,
     nastiToHostDRAM.ar <> ingress.io.nastiOutputs.ar
     nastiToHostDRAM.w  <> ingress.io.nastiOutputs.w
 
-    val readEgress = Module(new ReadEgress(
-      p(NastiKey),
-      maxRequests = cfg.maxReads,
-      maxReqLength = cfg.maxReadLength,
-      maxReqsPerId = cfg.maxReadsPerID))
+    val readEgress = Module(
+      new ReadEgress(
+        p(NastiKey),
+        maxRequests  = cfg.maxReads,
+        maxReqLength = cfg.maxReadLength,
+        maxReqsPerId = cfg.maxReadsPerID,
+      )
+    )
 
-    readEgress.io.enq <> nastiToHostDRAM.r
+    readEgress.io.enq           <> nastiToHostDRAM.r
     readEgress.io.enq.bits.user := DontCare
 
-    val writeEgress = Module(new WriteEgress(
-      p(NastiKey),
-      maxRequests = cfg.maxWrites,
-      maxReqLength = cfg.maxWriteLength,
-      maxReqsPerId = cfg.maxWritesPerID))
+    val writeEgress = Module(
+      new WriteEgress(
+        p(NastiKey),
+        maxRequests  = cfg.maxWrites,
+        maxReqLength = cfg.maxWriteLength,
+        maxReqsPerId = cfg.maxWritesPerID,
+      )
+    )
 
-    writeEgress.io.enq <> nastiToHostDRAM.b
+    writeEgress.io.enq           <> nastiToHostDRAM.b
     writeEgress.io.enq.bits.user := DontCare
 
     // Track outstanding requests to the host memory system
@@ -311,30 +338,29 @@ class FASEDMemoryTimingModel(completeConfig: firesim.lib.bridges.CompleteConfig,
     val host_mem_idle = hOutstandingReads.empty && hOutstandingWrites.empty
     // By default, disallow all R->W, W->R, and W->W reorderings in host memory
     // system. see IngressUnit.scala for more detail
-    ingress.io.host_mem_idle := host_mem_idle
+    ingress.io.host_mem_idle      := host_mem_idle
     ingress.io.host_read_inflight := !hOutstandingReads.empty
-    ingress.io.relaxed := funcModelRegs.relaxFunctionalModel
+    ingress.io.relaxed            := funcModelRegs.relaxFunctionalModel
 
     // Five conditions to execute a target cycle:
     // 1: AXI4 tokens are available, and there is space to enqueue a new input token
     // 2: Ingress has space for requests snooped in token
     val ingressReady = ingress.io.nastiInputs.hReady
     // 3: Egress unit has produced the payloads for read response channel
-    val rReady = readEgress.io.resp.hValid
+    val rReady       = readEgress.io.resp.hValid
     // 4: Egress unit has produced the payloads for write response channel
-    val bReady = writeEgress.io.resp.hValid
+    val bReady       = writeEgress.io.resp.hValid
     // 5: If targetReset is asserted the host-memory system must first settle
-    val tResetReady = (!tReset || host_mem_idle)
+    val tResetReady  = (!tReset || host_mem_idle)
 
     // decoupled helper fire currently doesn't support directly passing true/false.B as exclude
-    val tFireHelper = DecoupledHelper(hPort.toHost.hValid,
-                                      hPort.fromHost.hReady,
-                                      ingressReady, bReady, rReady, tResetReady)
+    val tFireHelper =
+      DecoupledHelper(hPort.toHost.hValid, hPort.fromHost.hReady, ingressReady, bReady, rReady, tResetReady)
 
     val targetFire = tFireHelper.fire()
 
     val gate = Module(new AbstractClockGate)
-    gate.I := clock
+    gate.I  := clock
     gate.CE := targetFire
 
     val model = withClock(gate.O)(cfg.elaborate())
@@ -342,39 +368,38 @@ class FASEDMemoryTimingModel(completeConfig: firesim.lib.bridges.CompleteConfig,
 
     // HACK: Feeding valid back on ready and ready back on valid until we figure out
     // channel tokenization
-    hPort.toHost.hReady := tFireHelper.fire()
-    hPort.fromHost.hValid := tFireHelper.fire()
+    hPort.toHost.hReady           := tFireHelper.fire()
+    hPort.fromHost.hValid         := tFireHelper.fire()
     ingress.io.nastiInputs.hValid := tFireHelper.fire(ingressReady)
 
-    model.tNasti <> tNasti
-    model.reset := tReset
+    model.tNasti                          <> tNasti
+    model.reset                           := tReset
     // Connect up aw to ingress and model
     ingress.io.nastiInputs.hBits.aw.valid := tNasti.aw.fire
-    ingress.io.nastiInputs.hBits.aw.bits := tNasti.aw.bits
+    ingress.io.nastiInputs.hBits.aw.bits  := tNasti.aw.bits
 
     // Connect ar to ingress and model
     ingress.io.nastiInputs.hBits.ar.valid := tNasti.ar.fire
-    ingress.io.nastiInputs.hBits.ar.bits := tNasti.ar.bits
+    ingress.io.nastiInputs.hBits.ar.bits  := tNasti.ar.bits
 
     // Connect w to ingress and model
     ingress.io.nastiInputs.hBits.w.valid := tNasti.w.fire
-    ingress.io.nastiInputs.hBits.w.bits := tNasti.w.bits
+    ingress.io.nastiInputs.hBits.w.bits  := tNasti.w.bits
 
     // Connect target-level signals between egress and model
-    readEgress.io.req.t := model.io.egressReq.r
-    readEgress.io.req.hValid := targetFire
+    readEgress.io.req.t       := model.io.egressReq.r
+    readEgress.io.req.hValid  := targetFire
     readEgress.io.resp.tReady := model.io.egressResp.rReady
     model.io.egressResp.rBits := readEgress.io.resp.tBits
 
-    writeEgress.io.req.t := model.io.egressReq.b
-    writeEgress.io.req.hValid := targetFire
+    writeEgress.io.req.t       := model.io.egressReq.b
+    writeEgress.io.req.hValid  := targetFire
     writeEgress.io.resp.tReady := model.io.egressResp.bReady
-    model.io.egressResp.bBits := writeEgress.io.resp.tBits
+    model.io.egressResp.bBits  := writeEgress.io.resp.tBits
 
     ingress.reset     := reset.asBool || tReset && tFireHelper.fire(ingressReady)
     readEgress.reset  := reset.asBool || tReset && targetFire
     writeEgress.reset := reset.asBool || tReset && targetFire
-
 
     if (cfg.params.localHCycleCount) {
       val hCycle = RegInit(0.U(32.W))
@@ -403,10 +428,10 @@ class FASEDMemoryTimingModel(completeConfig: firesim.lib.bridges.CompleteConfig,
         hostMemoryIdleCycles := hostMemoryIdleCycles + 1.U
       }
 
-      when (targetFire) {
+      when(targetFire) {
         writeEgressStalls := 0.U
-        readEgressStalls := 0.U
-        tokenStalls := 0.U
+        readEgressStalls  := 0.U
+        tokenStalls       := 0.U
       }
       attach(writeEgressStalls, "writeStalled", ReadOnly)
       attach(readEgressStalls, "readStalled", ReadOnly)
@@ -417,23 +442,23 @@ class FASEDMemoryTimingModel(completeConfig: firesim.lib.bridges.CompleteConfig,
     }
 
     if (cfg.params.detectAddressCollisions) {
-      val discardedMSBs = 6
-      val collision_checker = Module(new AddressCollisionChecker(
-        p(NastiKey),
-        cfg.maxReads, cfg.maxWrites, p(NastiKey).addrBits - discardedMSBs))
-      collision_checker.io.read_req.valid  := targetFire && tNasti.ar.fire
-      collision_checker.io.read_req.bits   := tNasti.ar.bits.addr >> discardedMSBs
-      collision_checker.io.read_done       := toHostDRAM.r.fire && toHostDRAM.r.bits.last
+      val discardedMSBs     = 6
+      val collision_checker = Module(
+        new AddressCollisionChecker(p(NastiKey), cfg.maxReads, cfg.maxWrites, p(NastiKey).addrBits - discardedMSBs)
+      )
+      collision_checker.io.read_req.valid := targetFire && tNasti.ar.fire
+      collision_checker.io.read_req.bits  := tNasti.ar.bits.addr >> discardedMSBs
+      collision_checker.io.read_done      := toHostDRAM.r.fire && toHostDRAM.r.bits.last
 
       collision_checker.io.write_req.valid := targetFire && tNasti.aw.fire
       collision_checker.io.write_req.bits  := tNasti.aw.bits.addr >> discardedMSBs
       collision_checker.io.write_done      := toHostDRAM.b.fire
 
-      val collision_addr = RegEnable(collision_checker.io.collision_addr.bits,
-                                     targetFire & collision_checker.io.collision_addr.valid)
+      val collision_addr =
+        RegEnable(collision_checker.io.collision_addr.bits, targetFire & collision_checker.io.collision_addr.valid)
 
       val num_collisions = RegInit(0.U(32.W))
-      when (targetFire && collision_checker.io.collision_addr.valid) {
+      when(targetFire && collision_checker.io.collision_addr.valid) {
         num_collisions := num_collisions + 1.U
       }
 
@@ -445,10 +470,10 @@ class FASEDMemoryTimingModel(completeConfig: firesim.lib.bridges.CompleteConfig,
 
       // Measure latency from reception of first read data beat; need
       // some state to track when a beat corresponds to the start of a new xaction
-      val newHRead = RegInit(true.B)
-      when (readEgress.io.enq.fire && readEgress.io.enq.bits.last) {
+      val newHRead         = RegInit(true.B)
+      when(readEgress.io.enq.fire && readEgress.io.enq.bits.last) {
         newHRead := true.B
-      }.elsewhen (readEgress.io.enq.fire) {
+      }.elsewhen(readEgress.io.enq.fire) {
         newHRead := false.B
       }
       // Latencies of host xactions
@@ -457,7 +482,7 @@ class FASEDMemoryTimingModel(completeConfig: firesim.lib.bridges.CompleteConfig,
         ingress.io.nastiOutputs.ar.bits.id,
         readEgress.io.enq.fire && newHRead,
         readEgress.io.enq.bits.id,
-        cfg.maxReadsPerID
+        cfg.maxReadsPerID,
       )
       attachIO(hReadLatencyHist, "hostReadLatencyHist_")
 
@@ -466,7 +491,7 @@ class FASEDMemoryTimingModel(completeConfig: firesim.lib.bridges.CompleteConfig,
         ingress.io.nastiOutputs.aw.bits.id,
         writeEgress.io.enq.fire,
         writeEgress.io.enq.bits.id,
-        cfg.maxWritesPerID
+        cfg.maxWritesPerID,
       )
       attachIO(hWriteLatencyHist, "hostWriteLatencyHist_")
 
@@ -474,10 +499,10 @@ class FASEDMemoryTimingModel(completeConfig: firesim.lib.bridges.CompleteConfig,
       val newTRead = RegInit(true.B)
       // Measure latency from reception of first read data beat; need
       // some state to track when a beat corresponds to the start of a new xaction
-      when (targetFire) {
-        when (model.tNasti.r.fire && model.tNasti.r.bits.last) {
+      when(targetFire) {
+        when(model.tNasti.r.fire && model.tNasti.r.bits.last) {
           newTRead := true.B
-        }.elsewhen (model.tNasti.r.fire) {
+        }.elsewhen(model.tNasti.r.fire) {
           newTRead := false.B
         }
       }
@@ -487,8 +512,8 @@ class FASEDMemoryTimingModel(completeConfig: firesim.lib.bridges.CompleteConfig,
         model.tNasti.ar.bits.id,
         model.tNasti.r.fire && targetFire && newTRead,
         model.tNasti.r.bits.id,
-        maxFlight = cfg.maxReadsPerID,
-        cycleCountEnable = targetFire
+        maxFlight        = cfg.maxReadsPerID,
+        cycleCountEnable = targetFire,
       )
       attachIO(tReadLatencyHist, "targetReadLatencyHist_")
 
@@ -497,8 +522,8 @@ class FASEDMemoryTimingModel(completeConfig: firesim.lib.bridges.CompleteConfig,
         model.tNasti.aw.bits.id,
         model.tNasti.b.fire && targetFire,
         model.tNasti.b.bits.id,
-        maxFlight = cfg.maxWritesPerID,
-        cycleCountEnable = targetFire
+        maxFlight        = cfg.maxWritesPerID,
+        cycleCountEnable = targetFire,
       )
       attachIO(tWriteLatencyHist, "targetWriteLatencyHist_")
 
@@ -508,7 +533,7 @@ class FASEDMemoryTimingModel(completeConfig: firesim.lib.bridges.CompleteConfig,
         model.tNasti.ar.bits.id,
         model.tNasti.r.fire && targetFire && newTRead,
         model.tNasti.r.bits.id,
-        maxFlight = cfg.maxReadsPerID
+        maxFlight = cfg.maxReadsPerID,
       )
       attachIO(totalReadLatencyHist, "totalReadLatencyHist_")
 
@@ -517,7 +542,7 @@ class FASEDMemoryTimingModel(completeConfig: firesim.lib.bridges.CompleteConfig,
         model.tNasti.aw.bits.id,
         model.tNasti.b.fire && targetFire,
         model.tNasti.b.bits.id,
-        maxFlight = cfg.maxWritesPerID
+        maxFlight = cfg.maxWritesPerID,
       )
       attachIO(totalWriteLatencyHist, "totalWriteLatencyHist_")
 
@@ -542,20 +567,18 @@ class FASEDMemoryTimingModel(completeConfig: firesim.lib.bridges.CompleteConfig,
     }
 
     if (cfg.params.addrRangeCounters > 0) {
-      val n = cfg.params.addrRangeCounters
-      val readRanges = AddressRangeCounter(p(NastiKey), n, model.tNasti.ar, targetFire)
+      val n           = cfg.params.addrRangeCounters
+      val readRanges  = AddressRangeCounter(p(NastiKey), n, model.tNasti.ar, targetFire)
       val writeRanges = AddressRangeCounter(p(NastiKey), n, model.tNasti.aw, targetFire)
-      val numRanges = n.U(32.W)
+      val numRanges   = n.U(32.W)
 
       attachIO(readRanges, "readRanges_")
       attachIO(writeRanges, "writeRanges_")
       attach(numRanges, "numRanges", ReadOnly)
     }
 
-    val rrespError = RegEnable(toHostDRAM.r.bits.resp, 0.U,
-      toHostDRAM.r.bits.resp =/= 0.U && toHostDRAM.r.fire)
-    val brespError = RegEnable(toHostDRAM.r.bits.resp, 0.U,
-      toHostDRAM.b.bits.resp =/= 0.U && toHostDRAM.b.fire)
+    val rrespError = RegEnable(toHostDRAM.r.bits.resp, 0.U, toHostDRAM.r.bits.resp =/= 0.U && toHostDRAM.r.fire)
+    val brespError = RegEnable(toHostDRAM.r.bits.resp, 0.U, toHostDRAM.b.bits.resp =/= 0.U && toHostDRAM.b.fire)
 
     // Generate the configuration registers and tie them to the ctrl bus
     attachIO(model.io.mmReg)
@@ -567,15 +590,15 @@ class FASEDMemoryTimingModel(completeConfig: firesim.lib.bridges.CompleteConfig,
 
     override def genHeader(base: BigInt, memoryRegions: Map[String, BigInt], sb: StringBuilder): Unit = {
       genConstructor(
-          base,
-          sb,
-          "FASEDMemoryTimingModel",
-          "fased_memory_timing_model",
-          Seq(
-            CStrLit(s"memory_stats${getWId}.csv"),
-            Verbatim(s"1L << ${UInt32(p(NastiKey).addrBits).toC}")
-          ),
-          hasMMIOAddrMap = true
+        base,
+        sb,
+        "FASEDMemoryTimingModel",
+        "fased_memory_timing_model",
+        Seq(
+          CStrLit(s"memory_stats${getWId}.csv"),
+          Verbatim(s"1L << ${UInt32(p(NastiKey).addrBits).toC}"),
+        ),
+        hasMMIOAddrMap = true,
       )
     }
 
@@ -593,12 +616,12 @@ class FASEDMemoryTimingModel(completeConfig: firesim.lib.bridges.CompleteConfig,
       model.printGenerationConfig
       cfg.params.llcKey match {
         case Some(key) => key.print()
-        case None => println("  No LLC Model Instantiated\n")
+        case None      => println("  No LLC Model Instantiated\n")
       }
 
       println("\nDefault Settings")
       val functionalModelSettings = funcModelRegs.getDefaults()
-      val timingModelSettings = model.io.mmReg.getDefaults()
+      val timingModelSettings     = model.io.mmReg.getDefaults()
       for (setting <- settingsToString(functionalModelSettings ++ timingModelSettings)) {
         println(s"  ${setting}")
       }
@@ -606,21 +629,18 @@ class FASEDMemoryTimingModel(completeConfig: firesim.lib.bridges.CompleteConfig,
     }
   }
 
-  /**
-    * Disambiguates between multiple fased instances by using wId (this
-    * increments for each instantion of widgets of the same class), which
-    * is defined in Widget
+  /** Disambiguates between multiple fased instances by using wId (this increments for each instantion of widgets of the
+    * same class), which is defined in Widget
     */
   def settingsToString(settings: Seq[(String, BigInt)]): Seq[String] =
     settings.map { case (field, value) => s"+mm_${field}_${wId}=${value}" }
 
-  /**
-    * Used by the runtime configuration generator, and not the main GG flow.
+  /** Used by the runtime configuration generator, and not the main GG flow.
     */
   def getSettings: String = {
     println("\nGenerating a Midas Memory Model Configuration File")
     val functionalModelSettings = module.funcModelRegs.getFuncModelSettings()
-    val timingModelSettings = module.model.io.mmReg.getTimingModelSettings()
+    val timingModelSettings     = module.model.io.mmReg.getTimingModelSettings()
     settingsToString(functionalModelSettings ++ timingModelSettings).mkString("\n")
   }
 }

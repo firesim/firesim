@@ -11,12 +11,14 @@ case class RemoveModuleNameAnnotation(name: String) extends NoTargetAnnotation w
 
 trait GoldenGateCli { this: Shell =>
   parser.note("Golden Gate Compiler Options")
-  Seq(ConfigPackageAnnotation,
-      ConfigStringAnnotation,
-      OutputBaseFilenameAnnotation,
-      firrtl.stage.FirrtlFileAnnotation,
-      firrtl.stage.FirrtlSourceAnnotation,
-      firrtl.transforms.NoCircuitDedupAnnotation,
-      firrtl.stage.AllowUnrecognizedAnnotations)
+  Seq(
+    ConfigPackageAnnotation,
+    ConfigStringAnnotation,
+    OutputBaseFilenameAnnotation,
+    firrtl.stage.FirrtlFileAnnotation,
+    firrtl.stage.FirrtlSourceAnnotation,
+    firrtl.transforms.NoCircuitDedupAnnotation,
+    firrtl.stage.AllowUnrecognizedAnnotations,
+  )
     .map(_.addOptions(parser))
 }
