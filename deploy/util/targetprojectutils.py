@@ -6,7 +6,10 @@ from typing import Optional
 
 rootLogger = logging.getLogger()
 
-def extra_target_project_make_args(targetproject: str, targetprojectmakefrag: Optional[str], deploydir: str) -> str:
+
+def extra_target_project_make_args(
+    targetproject: str, targetprojectmakefrag: Optional[str], deploydir: str
+) -> str:
     """Create extra make args for target projects that live outside FireSim.
     Eventually will be replaced by using YAML hooks.
 
@@ -26,13 +29,18 @@ def extra_target_project_make_args(targetproject: str, targetprojectmakefrag: Op
         else:
             raise Exception(f"Invalid makefrag path given: {targetprojectmakefrag}")
     else:
-        chipyard_dir = f"{deploydir}/../../.." # assumes firesim is a library inside of chipyard
-        rootLogger.debug(f"Having manager assume makefrag path from hardcoded Chipyard dir: {chipyard_dir}")
+        chipyard_dir = (
+            f"{deploydir}/../../.."  # assumes firesim is a library inside of chipyard
+        )
+        rootLogger.debug(
+            f"Having manager assume makefrag path from hardcoded Chipyard dir: {chipyard_dir}"
+        )
         if targetproject == "firesim":
             return f"TARGET_PROJECT_MAKEFRAG={chipyard_dir}/generators/firechip/chip/src/main/makefrag/{targetproject}"
         if targetproject == "bridges":
             return f"TARGET_PROJECT_MAKEFRAG={chipyard_dir}/generators/firechip/bridgestubs/src/main/makefrag/{targetproject}"
         return ""
+
 
 def resolve_path(path: str, base_file: str) -> Optional[str]:
     """Given a path (absolute or relative) and a base file, determine if the path can be found by itself.

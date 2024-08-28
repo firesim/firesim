@@ -1,10 +1,11 @@
 import logging
 from os import PathLike, fspath
-from fsspec.core import url_to_fs, open_local # type: ignore
+from fsspec.core import url_to_fs, open_local  # type: ignore
 from pathlib import Path
-from fabric.api import local # type: ignore
+from fabric.api import local  # type: ignore
 from typing import Optional
 import time
+
 
 def firesim_input(prompt: object = None) -> str:
     """wrap builtins.input() understanding the idiocyncracies of firesim+fabric+logging
@@ -26,7 +27,9 @@ def firesim_input(prompt: object = None) -> str:
 
     return res
 
+
 rootLogger = logging.getLogger()
+
 
 def downloadURI(uri: str, local_dest_path: str, tries: int = 4) -> None:
     """Uses the fsspec library to fetch a file specified in the uri to the local file system. Will throw if
@@ -50,14 +53,18 @@ def downloadURI(uri: str, local_dest_path: str, tries: int = 4) -> None:
 
     assert tries > 0, "tries argument must be larger than 0"
     for attempt in range(tries):
-        rootLogger.debug(f"Download attempt {attempt+1} of {tries}: '{uri}' to '{lpath}'")
+        rootLogger.debug(
+            f"Download attempt {attempt+1} of {tries}: '{uri}' to '{lpath}'"
+        )
         try:
-            fs.get_file(rpath, fspath(lpath)) # fspath() b.c. fsspec deals in strings, not PathLike
+            fs.get_file(
+                rpath, fspath(lpath)
+            )  # fspath() b.c. fsspec deals in strings, not PathLike
         except Exception as e:
-            if attempt < tries -1:
-                time.sleep(1) # Sleep only after a failure
+            if attempt < tries - 1:
+                time.sleep(1)  # Sleep only after a failure
                 continue
             else:
-                raise # tries have been exhausted, raise the last exception
+                raise  # tries have been exhausted, raise the last exception
         rootLogger.debug(f"Successfully fetched '{uri}' to '{lpath}'")
         break

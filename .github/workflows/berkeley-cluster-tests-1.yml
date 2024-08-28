@@ -194,25 +194,29 @@ jobs:
       #- name: Run clang-tidy
       #  run: ./.github/scripts/invoke-make.py "clang-tidy"
 
-  run-typecheck:
-    name: run-typecheck
-    needs: [setup-persistent-repo]
-    runs-on: local-fpga
-    steps:
-      - uses: actions/checkout@v4
-      - name: CI typecheck
-        run: ./.github/scripts/python-typecheck-ci.py
-      - name: Manager typecheck
-        run: ./.github/scripts/python-typecheck-manager.py
-
   run-scala-lint:
     name: run-scala-lint
     needs: [setup-persistent-repo]
     runs-on: local-fpga
     steps:
       - uses: actions/checkout@v4
-      - name: Scalafmt
+      - name: Scala fix + format check
         run: ./.github/scripts/invoke-make.py "scala-lint-check"
+
+  run-python-lint:
+    name: run-scala-lint
+    needs: [setup-persistent-repo]
+    runs-on: local-fpga
+    steps:
+      - uses: actions/checkout@v4
+      - name: Manager Python formatting check using 'black'
+        run: ./.github/scripts/invoke-script.py "./scripts/run-manager-python-reformat.sh --check"
+      - name: CI Python typecheck
+        if: ${{ failure() }} # always run all checks here
+        run: ./.github/scripts/invoke-script.py "./scripts/run-ci-python-typecheck.sh"
+      - name: Manager Python typecheck
+        if: ${{ failure() }} # always run all checks here
+        run: ./.github/scripts/invoke-script.py "./scripts/run-manager-python-typecheck.sh"
 
   check-docs-generated-components-xilinx_alveo_u250:
     name: check-docs-generated-components-xilinx_alveo_u250
