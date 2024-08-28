@@ -7,15 +7,15 @@ import midas.stage._
 
 class AddDerivedAnnotationsSpec extends AnyFlatSpec {
 
-  behavior of "AddDerivedAnnotations Phase"
+  behavior.of("AddDerivedAnnotations Phase")
 
   def baseFilename = "a"
-  def obfAnno = OutputBaseFilenameAnnotation(baseFilename)
+  def obfAnno      = OutputBaseFilenameAnnotation(baseFilename)
 
   def checkAnnos(extraAnnos: Seq[firrtl.annotations.Annotation]): Unit = {
-    val annos = midas.stage.AddDerivedAnnotations.transform(obfAnno +: extraAnnos)
+    val annos   = midas.stage.AddDerivedAnnotations.transform(obfAnno +: extraAnnos)
     val ofAnnos = annos.collect { case a: firrtl.stage.OutputFileAnnotation => a }
-    val ecAnnos = annos.collect { case a: firrtl.EmitCircuitAnnotation => a}
+    val ecAnnos = annos.collect { case a: firrtl.EmitCircuitAnnotation => a }
     assert(ofAnnos.size == 1)
     assert(ofAnnos.head == firrtl.stage.OutputFileAnnotation(s"${baseFilename}.sv"))
     assert(ecAnnos.size == 1)

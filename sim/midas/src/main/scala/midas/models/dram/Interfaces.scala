@@ -4,7 +4,6 @@ package models
 import chisel3._
 import chisel3.util._
 
-
 import firesim.lib.nasti._
 
 class NastiReqChannels(nastiParams: NastiParameters) extends Bundle {
@@ -36,8 +35,8 @@ class ValidNastiReqChannels(nastiParams: NastiParameters) extends Bundle {
 }
 
 class NastiRespChannels(nastiParams: NastiParameters) extends Bundle {
-  val b  = Decoupled(new NastiWriteResponseChannel(nastiParams))
-  val r  = Decoupled(new NastiReadDataChannel(nastiParams))
+  val b = Decoupled(new NastiWriteResponseChannel(nastiParams))
+  val r = Decoupled(new NastiReadDataChannel(nastiParams))
 }
 
 // Target-level interface
@@ -48,15 +47,15 @@ class EgressReq(nastiParams: NastiParameters) extends NastiBundle(nastiParams) {
 
 // Target-level interface
 class EgressResp(nastiParams: NastiParameters) extends Bundle {
-  val bBits = Output(new NastiWriteResponseChannel(nastiParams))
+  val bBits  = Output(new NastiWriteResponseChannel(nastiParams))
   val bReady = Input(Bool())
-  val rBits = Output(new NastiReadDataChannel(nastiParams))
+  val rBits  = Output(new NastiReadDataChannel(nastiParams))
   val rReady = Input(Bool())
 }
 
 // Contains the metadata required to track a transaction as it it requested from the egress unit
 class CurrentReadResp(nastiParams: NastiParameters) extends NastiBundle(nastiParams) {
-  val id = UInt(nastiRIdBits.W)
+  val id  = UInt(nastiRIdBits.W)
   val len = UInt(nastiXLenBits.W)
 }
 class CurrentWriteResp(nastiParams: NastiParameters) extends NastiBundle(nastiParams) {

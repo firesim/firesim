@@ -2,11 +2,11 @@
 
 package midas.widgets
 
-import org.chipsalliance.cde.config.{Parameters, Field}
+import org.chipsalliance.cde.config.{Field, Parameters}
 
 import chisel3._
 
-import firesim.lib.bridgeutils.{RationalClock, HasChannels}
+import firesim.lib.bridgeutils.{HasChannels, RationalClock}
 
 /* Bridge
  *
@@ -22,9 +22,10 @@ abstract class BridgeModule[HostPortType <: Record with HasChannels]()(implicit 
   def module: BridgeModuleImp[HostPortType]
 }
 
-abstract class BridgeModuleImp[HostPortType <: Record with HasChannels]
-    (wrapper: BridgeModule[_ <: HostPortType])
-    (implicit p: Parameters) extends WidgetImp(wrapper) {
+abstract class BridgeModuleImp[HostPortType <: Record with HasChannels](
+  wrapper:    BridgeModule[_ <: HostPortType]
+)(implicit p: Parameters
+) extends WidgetImp(wrapper) {
   def hPort: HostPortType
   def clockDomainInfo: RationalClock = p(TargetClockInfo).get
 }

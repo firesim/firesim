@@ -1,14 +1,14 @@
 package midas
 package models
 
-import Console.{UNDERLINED, RESET}
+import Console.{RESET, UNDERLINED}
 
 import chisel3._
 import chisel3.util._
 
 import org.chipsalliance.cde.config.Parameters
 
-import junctions.{NastiKey}
+import junctions.NastiKey
 
 import firesim.lib.nasti._
 
@@ -16,13 +16,13 @@ case class LatencyPipeConfig(params: BaseParams) extends BaseConfig {
   def elaborate()(implicit p: Parameters): LatencyPipe = Module(new LatencyPipe(this))
 }
 
-class LatencyPipeMMRegIO(cfg: BaseConfig)(implicit p: Parameters) extends SplitTransactionMMRegIO(cfg){
-  val readLatency = Input(UInt(32.W))
+class LatencyPipeMMRegIO(cfg: BaseConfig)(implicit p: Parameters) extends SplitTransactionMMRegIO(cfg) {
+  val readLatency  = Input(UInt(32.W))
   val writeLatency = Input(UInt(32.W))
 
   val registers = maxReqRegisters ++ Seq(
     (writeLatency -> RuntimeSetting(30, "Write latency", min = 1)),
-    (readLatency  -> RuntimeSetting(30,"Read latency", min = 1))
+    (readLatency  -> RuntimeSetting(30, "Read latency", min = 1)),
   )
 
   def requestSettings(): Unit = {
@@ -36,22 +36,24 @@ class LatencyPipeIO(val cfg: LatencyPipeConfig)(implicit p: Parameters) extends 
 
 class WritePipeEntry(nastiParams: NastiParameters) extends Bundle {
   val releaseCycle = UInt(64.W)
-  val xaction = new WriteResponseMetaData(nastiParams)
+  val xaction      = new WriteResponseMetaData(nastiParams)
 }
 
 class ReadPipeEntry(nastiParams: NastiParameters) extends Bundle {
   val releaseCycle = UInt(64.W)
-  val xaction = new ReadResponseMetaData(nastiParams)
+  val xaction      = new ReadResponseMetaData(nastiParams)
 }
 
 class LatencyPipe(cfg: LatencyPipeConfig)(implicit p: Parameters) extends SplitTransactionModel(cfg)(p) {
   lazy val io = IO(new LatencyPipeIO(cfg))
 
-  val longName = "Latency Bandwidth Pipe"
+  val longName     = "Latency Bandwidth Pipe"
   def printTimingModelGenerationConfig: Unit = {}
-  /**************************** CHISEL BEGINS *********************************/
+
+  /** ************************** CHISEL BEGINS ********************************
+    */
   // Configuration values
-  val readLatency = io.mmReg.readLatency
+  val readLatency  = io.mmReg.readLatency
   val writeLatency = io.mmReg.writeLatency
 
   // ***** Write Latency Pipe *****
@@ -60,13 +62,13 @@ class LatencyPipe(cfg: LatencyPipeConfig)(implicit p: Parameters) extends SplitT
   // before the associated W packet, we queue them up.
   val writePipe = Module(new Queue(new WritePipeEntry(p(NastiKey)), cfg.maxWrites, flow = true))
 
-  writePipe.io.enq.valid := newWReq
-  writePipe.io.enq.bits.xaction := WriteResponseMetaData(p(NastiKey), awQueue.io.deq.bits)
+  writePipe.io.enq.valid             := newWReq
+  writePipe.io.enq.bits.xaction      := WriteResponseMetaData(p(NastiKey), awQueue.io.deq.bits)
   writePipe.io.enq.bits.releaseCycle := writeLatency + tCycle - egressUnitDelay.U
 
   val writeDone = writePipe.io.deq.bits.releaseCycle <= tCycle
-  wResp.valid := writePipe.io.deq.valid && writeDone
-  wResp.bits := writePipe.io.deq.bits.xaction
+  wResp.valid            := writePipe.io.deq.valid && writeDone
+  wResp.bits             := writePipe.io.deq.bits.xaction
   writePipe.io.deq.ready := wResp.ready && writeDone
 
   assert(writePipe.io.enq.ready || !newWReq, "LBP write latency pipe would overflow.")
@@ -74,13 +76,13 @@ class LatencyPipe(cfg: LatencyPipeConfig)(implicit p: Parameters) extends SplitT
   // ***** Read Latency Pipe *****
   val readPipe = Module(new Queue(new ReadPipeEntry(p(NastiKey)), cfg.maxReads, flow = true))
 
-  readPipe.io.enq.valid := nastiReq.ar.fire
-  readPipe.io.enq.bits.xaction := ReadResponseMetaData(p(NastiKey), nastiReq.ar.bits)
+  readPipe.io.enq.valid             := nastiReq.ar.fire
+  readPipe.io.enq.bits.xaction      := ReadResponseMetaData(p(NastiKey), nastiReq.ar.bits)
   readPipe.io.enq.bits.releaseCycle := readLatency + tCycle - egressUnitDelay.U
   // Release read responses on the appropriate cycle
   val readDone = readPipe.io.deq.bits.releaseCycle <= tCycle
-  rResp.valid := readPipe.io.deq.valid && readDone
-  rResp.bits := readPipe.io.deq.bits.xaction
+  rResp.valid           := readPipe.io.deq.valid && readDone
+  rResp.bits            := readPipe.io.deq.bits.xaction
   readPipe.io.deq.ready := rResp.ready && readDone
 
   assert(readPipe.io.enq.ready || !nastiReq.ar.fire, "LBP read latency pipe would overflow.")
