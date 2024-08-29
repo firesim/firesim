@@ -12,6 +12,7 @@ import io
 
 from typing import Any, Optional, Tuple
 
+
 class StreamLogger:
     """
     A helper which intercepts what's written to an output stream
@@ -24,6 +25,7 @@ class StreamLogger:
             with StreamLogger('stdout'):
                 print 'foo'
     """
+
     __name: str
     __stream: Any
     __logger: Optional[logging.Logger]
@@ -31,8 +33,13 @@ class StreamLogger:
     __unbuffered: bool
     __flush_on_new_line: bool
 
-    def __init__(self, name: str, logger: Optional[logging.Logger] = None, unbuffered: bool = False,
-            flush_on_new_line: bool = True) -> None:
+    def __init__(
+        self,
+        name: str,
+        logger: Optional[logging.Logger] = None,
+        unbuffered: bool = False,
+        flush_on_new_line: bool = True,
+    ) -> None:
         """
         ``name``: The stream name to incercept ('stdout' or 'stderr')
         ``logger``: The logger that will receive what's written to the stream.
@@ -50,21 +57,20 @@ class StreamLogger:
         self.__flush_on_new_line = flush_on_new_line
 
     def write(self, data: str) -> None:
-        """Write data to the stream.
-        """
+        """Write data to the stream."""
         self.__buffer.write(data)
-        if self.__unbuffered is True or \
-           (self.__flush_on_new_line is True and '\n' in data):
+        if self.__unbuffered is True or (
+            self.__flush_on_new_line is True and "\n" in data
+        ):
             self.flush()
 
     def flush(self) -> None:
-        """Flush the stream.
-        """
+        """Flush the stream."""
         self.__buffer.seek(0)
         while True:
             line = self.__buffer.readline()
             if line:
-                if line[-1] == '\n':
+                if line[-1] == "\n":
                     line = line[:-1]
                     if line:
                         level, line = self.parse(line)
@@ -81,28 +87,24 @@ class StreamLogger:
                 break
 
     def parse(self, data: str) -> Tuple[str, str]:
-        """Override me!
-        """
-        return 'debug', data
+        """Override me!"""
+        return "debug", data
 
     def isatty(self) -> bool:
-        """I'm not a tty.
-        """
+        """I'm not a tty."""
         return False
 
     def __enter__(self) -> None:
-        """Enter the context manager.
-        """
+        """Enter the context manager."""
         setattr(sys, self.__name, self)
 
     def __exit__(self, exc_type: Any, exc_value: Any, traceback: Any) -> None:
-        """Leave the context manager.
-        """
+        """Leave the context manager."""
         setattr(sys, self.__name, self.__stream)
 
 
 class InfoStreamLogger(StreamLogger):
-    """ StreamLogger, but write to info log instead of debug. """
+    """StreamLogger, but write to info log instead of debug."""
 
     def parse(self, data: str) -> Tuple[str, str]:
-        return 'info', data
+        return "info", data

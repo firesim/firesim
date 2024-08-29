@@ -15,7 +15,7 @@ object RemoveTrivialPartialConnects extends Pass with PreservesAll[Transform] {
 
   private def onStmt(stmt: Statement): Statement = stmt match {
     case PartialConnect(i, l, e) if (l.tpe == e.tpe) => Connect(i, l, e)
-    case s => s.map(onStmt)
+    case s                                           => s.map(onStmt)
   }
 
   private def onModule(m: DefModule): DefModule = m.map(onStmt)

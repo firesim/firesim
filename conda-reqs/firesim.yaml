@@ -93,6 +93,9 @@ dependencies:
     - clang-tools
     - parallel
 
+    # black for manager python coding style enforcement
+    - black
+
     # python packages
     # While it is possible to install using pip after creating the
     # conda environment, pip's dependency resolution can conflict with

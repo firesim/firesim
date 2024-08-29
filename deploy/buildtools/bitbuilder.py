@@ -8,21 +8,31 @@ import random
 import string
 import logging
 import os
-from fabric.api import prefix, local, run, env, lcd, parallel, settings # type: ignore
-from fabric.contrib.console import confirm # type: ignore
-from fabric.contrib.project import rsync_project # type: ignore
+from fabric.api import prefix, local, run, env, lcd, parallel, settings  # type: ignore
+from fabric.contrib.console import confirm  # type: ignore
+from fabric.contrib.project import rsync_project  # type: ignore
 
 from util.streamlogger import InfoStreamLogger
 from util.export import create_export_string
 from awstools.afitools import firesim_tags_to_description, copy_afi_to_all_regions
-from awstools.awstools import send_firesim_notification, get_aws_userid, get_aws_region, auto_create_bucket, valid_aws_configure_creds, aws_resource_names, get_snsname_arn
+from awstools.awstools import (
+    send_firesim_notification,
+    get_aws_userid,
+    get_aws_region,
+    auto_create_bucket,
+    valid_aws_configure_creds,
+    aws_resource_names,
+    get_snsname_arn,
+)
 
 # imports needed for python type checking
 from typing import Optional, Dict, Any, TYPE_CHECKING
+
 if TYPE_CHECKING:
     from buildtools.buildconfig import BuildConfig
 
 rootLogger = logging.getLogger()
+
 
 def get_deploy_dir() -> str:
     """Determine where the firesim/deploy directory is and return its path.
@@ -33,6 +43,7 @@ def get_deploy_dir() -> str:
     deploydir = local("pwd", capture=True)
     return deploydir
 
+
 class BitBuilder(metaclass=abc.ABCMeta):
     """Abstract class to manage how to build a bitstream for a build config.
 
@@ -40,6 +51,7 @@ class BitBuilder(metaclass=abc.ABCMeta):
         build_config: Build config to build a bitstream for.
         args: Args (i.e. options) passed to the bitbuilder.
     """
+
     build_config: BuildConfig
     args: Dict[str, Any]
 
@@ -59,27 +71,30 @@ class BitBuilder(metaclass=abc.ABCMeta):
 
     def replace_rtl(self) -> None:
         """Generate Verilog from build config. Should run on the manager host."""
-        rootLogger.info(f"Building Verilog for {self.build_config.get_chisel_quintuplet()}")
+        rootLogger.info(
+            f"Building Verilog for {self.build_config.get_chisel_quintuplet()}"
+        )
 
         deploy_dir = get_deploy_dir()
-        with InfoStreamLogger('stdout'), \
-            prefix(f'cd {deploy_dir}/../'), \
-            prefix(create_export_string({'RISCV', 'PATH', 'LD_LIBRARY_PATH'})), \
-            prefix('source sourceme-manager.sh --skip-ssh-setup'), \
-            InfoStreamLogger('stdout'), \
-            prefix('cd sim/'):
+        with InfoStreamLogger("stdout"), prefix(f"cd {deploy_dir}/../"), prefix(
+            create_export_string({"RISCV", "PATH", "LD_LIBRARY_PATH"})
+        ), prefix("source sourceme-manager.sh --skip-ssh-setup"), InfoStreamLogger(
+            "stdout"
+        ), prefix(
+            "cd sim/"
+        ):
             run(self.build_config.make_recipe("replace-rtl", deploy_dir))
 
     def build_driver(self) -> None:
         """Build FireSim FPGA driver from build config. Should run on the manager host."""
-        rootLogger.info(f"Building FPGA driver for {self.build_config.get_chisel_quintuplet()}")
+        rootLogger.info(
+            f"Building FPGA driver for {self.build_config.get_chisel_quintuplet()}"
+        )
 
         deploy_dir = get_deploy_dir()
-        with InfoStreamLogger('stdout'), \
-            prefix(f'cd {deploy_dir}/../'), \
-            prefix(create_export_string({'RISCV', 'PATH', 'LD_LIBRARY_PATH'})), \
-            prefix('source sourceme-manager.sh --skip-ssh-setup'), \
-            prefix('cd sim/'):
+        with InfoStreamLogger("stdout"), prefix(f"cd {deploy_dir}/../"), prefix(
+            create_export_string({"RISCV", "PATH", "LD_LIBRARY_PATH"})
+        ), prefix("source sourceme-manager.sh --skip-ssh-setup"), prefix("cd sim/"):
             run(self.build_config.make_recipe("driver", deploy_dir))
 
     @abc.abstractmethod
@@ -96,8 +111,7 @@ class BitBuilder(metaclass=abc.ABCMeta):
         raise NotImplementedError
 
     def get_metadata_string(self) -> str:
-        """Standardized metadata format used across different FPGA platforms
-        """
+        """Standardized metadata format used across different FPGA platforms"""
         # construct the "tags" we store in the metadata description
         tag_build_quintuplet = self.build_config.get_chisel_quintuplet()
         tag_deploy_quintuplet = self.build_config.get_effective_deploy_quintuplet()
@@ -112,23 +126,48 @@ class BitBuilder(metaclass=abc.ABCMeta):
         # - technically I don't know how long these descriptions are allowed to be,
         # but it's at least 2048 chars, so I'll leave these here for now as sanity
         # checks.
-        assert len(tag_build_quintuplet) <= 255, "ERR: does not support tags longer than 256 chars for build_quintuplet"
-        assert len(tag_deploy_quintuplet) <= 255, "ERR: does not support tags longer than 256 chars for deploy_quintuplet"
-        assert len(tag_build_triplet) <= 255, "ERR: does not support tags longer than 256 chars for build_triplet"
-        assert len(tag_deploy_triplet) <= 255, "ERR: does not support tags longer than 256 chars for deploy_triplet"
+        assert (
+            len(tag_build_quintuplet) <= 255
+        ), "ERR: does not support tags longer than 256 chars for build_quintuplet"
+        assert (
+            len(tag_deploy_quintuplet) <= 255
+        ), "ERR: does not support tags longer than 256 chars for deploy_quintuplet"
+        assert (
+            len(tag_build_triplet) <= 255
+        ), "ERR: does not support tags longer than 256 chars for build_triplet"
+        assert (
+            len(tag_deploy_triplet) <= 255
+        ), "ERR: does not support tags longer than 256 chars for deploy_triplet"
         if tag_build_makefrag:
-            assert len(tag_build_makefrag) <= 255, "ERR: does not support tags longer than 256 chars for build_makefrag"
+            assert (
+                len(tag_build_makefrag) <= 255
+            ), "ERR: does not support tags longer than 256 chars for build_makefrag"
         if tag_deploy_makefrag:
-            assert len(tag_deploy_makefrag) <= 255, "ERR: does not support tags longer than 256 chars for deploy_makefrag"
+            assert (
+                len(tag_deploy_makefrag) <= 255
+            ), "ERR: does not support tags longer than 256 chars for deploy_makefrag"
 
-        is_dirty_str = local("if [[ $(git status --porcelain) ]]; then echo '-dirty'; fi", capture=True)
+        is_dirty_str = local(
+            "if [[ $(git status --porcelain) ]]; then echo '-dirty'; fi", capture=True
+        )
         hash = local("git rev-parse HEAD", capture=True)
         tag_fsimcommit = hash + is_dirty_str
 
-        assert len(tag_fsimcommit) <= 255, "ERR: aws does not support tags longer than 256 chars for fsimcommit"
+        assert (
+            len(tag_fsimcommit) <= 255
+        ), "ERR: aws does not support tags longer than 256 chars for fsimcommit"
 
         # construct the serialized description from these tags.
-        return firesim_tags_to_description(tag_build_quintuplet, tag_deploy_quintuplet, tag_build_triplet, tag_deploy_triplet, tag_fsimcommit, tag_build_makefrag, tag_deploy_makefrag)
+        return firesim_tags_to_description(
+            tag_build_quintuplet,
+            tag_deploy_quintuplet,
+            tag_build_triplet,
+            tag_deploy_triplet,
+            tag_fsimcommit,
+            tag_build_makefrag,
+            tag_deploy_makefrag,
+        )
+
 
 class F1BitBuilder(BitBuilder):
     """Bit builder class that builds a AWS EC2 F1 AGFI (bitstream) from the build config.
@@ -136,6 +175,7 @@ class F1BitBuilder(BitBuilder):
     Attributes:
         s3_bucketname: S3 bucketname for AFI builds.
     """
+
     s3_bucketname: str
 
     def __init__(self, build_config: BuildConfig, args: Dict[str, Any]) -> None:
@@ -150,9 +190,9 @@ class F1BitBuilder(BitBuilder):
                 self.s3_bucketname += "-" + get_aws_userid() + "-" + get_aws_region()
 
             aws_resource_names_dict = aws_resource_names()
-            if aws_resource_names_dict['s3bucketname'] is not None:
+            if aws_resource_names_dict["s3bucketname"] is not None:
                 # in tutorial mode, special s3 bucket name
-                self.s3_bucketname = aws_resource_names_dict['s3bucketname']
+                self.s3_bucketname = aws_resource_names_dict["s3bucketname"]
 
     def setup(self) -> None:
         auto_create_bucket(self.s3_bucketname)
@@ -182,21 +222,25 @@ class F1BitBuilder(BitBuilder):
         # do the rsync, but ignore any checkpoints that might exist on this machine
         # (in case builds were run locally)
         # extra_opts -l preserves symlinks
-        run(f'mkdir -p {dest_f1_platform_dir}')
+        run(f"mkdir -p {dest_f1_platform_dir}")
         rsync_cap = rsync_project(
             local_dir=local_awsfpga_dir,
             remote_dir=dest_f1_platform_dir,
             ssh_opts="-o StrictHostKeyChecking=no",
             exclude=["hdk/cl/developer_designs/cl_*"],
-            extra_opts="-l", capture=True)
+            extra_opts="-l",
+            capture=True,
+        )
         rootLogger.debug(rsync_cap)
         rootLogger.debug(rsync_cap.stderr)
         rsync_cap = rsync_project(
             local_dir=f"{local_awsfpga_dir}/{fpga_build_postfix}/*",
-            remote_dir=f'{dest_awsfpga_dir}/{fpga_build_postfix}',
+            remote_dir=f"{dest_awsfpga_dir}/{fpga_build_postfix}",
             exclude=["build/checkpoints"],
             ssh_opts="-o StrictHostKeyChecking=no",
-            extra_opts="-l", capture=True)
+            extra_opts="-l",
+            capture=True,
+        )
         rootLogger.debug(rsync_cap)
         rootLogger.debug(rsync_cap.stderr)
 
@@ -219,11 +263,14 @@ class F1BitBuilder(BitBuilder):
 
         # The default error-handling procedure. Send an email and teardown instance
         def on_build_failure():
-            """ Terminate build host and notify user that build failed """
+            """Terminate build host and notify user that build failed"""
 
             message_title = "FireSim FPGA Build Failed"
 
-            message_body = "Your FPGA build failed for quintuplet: " + self.build_config.get_chisel_quintuplet()
+            message_body = (
+                "Your FPGA build failed for quintuplet: "
+                + self.build_config.get_chisel_quintuplet()
+            )
 
             send_firesim_notification(message_title, message_body)
 
@@ -235,11 +282,18 @@ class F1BitBuilder(BitBuilder):
         rootLogger.info("Building AWS F1 AGFI from Verilog")
 
         local_deploy_dir = get_deploy_dir()
-        fpga_build_postfix = f"hdk/cl/developer_designs/cl_{self.build_config.get_chisel_quintuplet()}"
-        local_results_dir = f"{local_deploy_dir}/results-build/{self.build_config.get_build_dir_name()}"
+        fpga_build_postfix = (
+            f"hdk/cl/developer_designs/cl_{self.build_config.get_chisel_quintuplet()}"
+        )
+        local_results_dir = (
+            f"{local_deploy_dir}/results-build/{self.build_config.get_build_dir_name()}"
+        )
 
         # 'cl_dir' holds the eventual directory in which vivado will run.
-        cl_dir = self.cl_dir_setup(self.build_config.get_chisel_quintuplet(), build_farm.get_build_host(self.build_config).dest_build_dir)
+        cl_dir = self.cl_dir_setup(
+            self.build_config.get_chisel_quintuplet(),
+            build_farm.get_build_host(self.build_config).dest_build_dir,
+        )
 
         vivado_rc = 0
 
@@ -248,7 +302,9 @@ class F1BitBuilder(BitBuilder):
             local_dir=f"{local_deploy_dir}/../platforms/f1/build-bitstream.sh",
             remote_dir=f"{cl_dir}/",
             ssh_opts="-o StrictHostKeyChecking=no",
-            extra_opts="-l", capture=True)
+            extra_opts="-l",
+            capture=True,
+        )
         rootLogger.debug(rsync_cap)
         rootLogger.debug(rsync_cap.stderr)
 
@@ -256,8 +312,10 @@ class F1BitBuilder(BitBuilder):
         fpga_frequency = self.build_config.get_frequency()
         build_strategy = self.build_config.get_strategy().name
 
-        with InfoStreamLogger('stdout'), settings(warn_only=True):
-            vivado_result = run(f"{cl_dir}/build-bitstream.sh --cl_dir {cl_dir} --frequency {fpga_frequency} --strategy {build_strategy}")
+        with InfoStreamLogger("stdout"), settings(warn_only=True):
+            vivado_result = run(
+                f"{cl_dir}/build-bitstream.sh --cl_dir {cl_dir} --frequency {fpga_frequency} --strategy {build_strategy}"
+            )
             vivado_rc = vivado_result.return_code
 
             if vivado_result != 0:
@@ -270,8 +328,11 @@ class F1BitBuilder(BitBuilder):
         rsync_cap = rsync_project(
             local_dir=f"{local_results_dir}/",
             remote_dir=cl_dir,
-            ssh_opts="-o StrictHostKeyChecking=no", upload=False, extra_opts="-l",
-            capture=True)
+            ssh_opts="-o StrictHostKeyChecking=no",
+            upload=False,
+            extra_opts="-l",
+            capture=True,
+        )
         rootLogger.debug(rsync_cap)
         rootLogger.debug(rsync_cap.stderr)
 
@@ -297,7 +358,9 @@ class F1BitBuilder(BitBuilder):
             `True` on success, `None` on error.
         """
         local_deploy_dir = get_deploy_dir()
-        local_results_dir = f"{local_deploy_dir}/results-build/{self.build_config.get_build_dir_name()}"
+        local_results_dir = (
+            f"{local_deploy_dir}/results-build/{self.build_config.get_build_dir_name()}"
+        )
 
         afi = None
         agfi = None
@@ -308,18 +371,35 @@ class F1BitBuilder(BitBuilder):
 
         # if we're unlucky, multiple vivado builds may launch at the same time. so we
         # append the build node IP + a random string to diff them in s3
-        global_append = "-" + str(env.host_string) + "-" + ''.join(random.SystemRandom().choice(string.ascii_uppercase + string.digits) for _ in range(10)) + ".tar"
+        global_append = (
+            "-"
+            + str(env.host_string)
+            + "-"
+            + "".join(
+                random.SystemRandom().choice(string.ascii_uppercase + string.digits)
+                for _ in range(10)
+            )
+            + ".tar"
+        )
 
-        with lcd(f"{local_results_dir}/cl_{self.build_config.get_chisel_quintuplet()}/build/checkpoints/to_aws/"):
-            files = local('ls *.tar', capture=True)
+        with lcd(
+            f"{local_results_dir}/cl_{self.build_config.get_chisel_quintuplet()}/build/checkpoints/to_aws/"
+        ):
+            files = local("ls *.tar", capture=True)
             rootLogger.debug(files)
             rootLogger.debug(files.stderr)
             tarfile = files.split()[-1]
             s3_tarfile = tarfile + global_append
-            localcap = local('aws s3 cp ' + tarfile + ' s3://' + s3bucket + '/dcp/' + s3_tarfile, capture=True)
+            localcap = local(
+                "aws s3 cp " + tarfile + " s3://" + s3bucket + "/dcp/" + s3_tarfile,
+                capture=True,
+            )
             rootLogger.debug(localcap)
             rootLogger.debug(localcap.stderr)
-            agfi_afi_ids = local(f"""aws ec2 create-fpga-image --input-storage-location Bucket={s3bucket},Key={"dcp/" + s3_tarfile} --logs-storage-location Bucket={s3bucket},Key={"logs/"} --name "{afiname}" --description "{description}" """, capture=True)
+            agfi_afi_ids = local(
+                f"""aws ec2 create-fpga-image --input-storage-location Bucket={s3bucket},Key={"dcp/" + s3_tarfile} --logs-storage-location Bucket={s3bucket},Key={"logs/"} --name "{afiname}" --description "{description}" """,
+                capture=True,
+            )
             rootLogger.debug(agfi_afi_ids)
             rootLogger.debug(agfi_afi_ids.stderr)
             rootLogger.debug("create-fpge-image result: " + str(agfi_afi_ids))
@@ -333,12 +413,14 @@ class F1BitBuilder(BitBuilder):
         checkstate = "pending"
         with lcd(local_results_dir):
             while checkstate == "pending":
-                imagestate = local(f"aws ec2 describe-fpga-images --fpga-image-id {afi} | tee AGFI_INFO", capture=True)
+                imagestate = local(
+                    f"aws ec2 describe-fpga-images --fpga-image-id {afi} | tee AGFI_INFO",
+                    capture=True,
+                )
                 state_as_dict = json.loads(imagestate)
                 checkstate = state_as_dict["FpgaImages"][0]["State"]["Code"]
                 rootLogger.info("Current state: " + str(checkstate))
                 time.sleep(10)
-
 
         if checkstate == "available":
             # copy the image to all regions for the current user
@@ -349,7 +431,11 @@ class F1BitBuilder(BitBuilder):
             agfi_entry += "    agfi: " + agfi + "\n"
             agfi_entry += "    deploy_quintuplet_override: null\n"
             agfi_entry += "    custom_runtime_config: null\n"
-            message_body = "Your AGFI has been created!\nAdd\n\n" + agfi_entry + "\nto your config_hwdb.yaml to use this hardware configuration."
+            message_body = (
+                "Your AGFI has been created!\nAdd\n\n"
+                + agfi_entry
+                + "\nto your config_hwdb.yaml to use this hardware configuration."
+            )
 
             send_firesim_notification(message_title, message_body)
 
@@ -365,14 +451,20 @@ class F1BitBuilder(BitBuilder):
                 outputfile.write(agfi_entry)
 
             if self.build_config.post_build_hook:
-                localcap = local(f"{self.build_config.post_build_hook} {local_results_dir}", capture=True)
+                localcap = local(
+                    f"{self.build_config.post_build_hook} {local_results_dir}",
+                    capture=True,
+                )
                 rootLogger.debug("[localhost] " + str(localcap))
                 rootLogger.debug("[localhost] " + str(localcap.stderr))
 
-            rootLogger.info(f"Build complete! AFI ready. See {os.path.join(hwdb_entry_file_location,afiname)}.")
+            rootLogger.info(
+                f"Build complete! AFI ready. See {os.path.join(hwdb_entry_file_location,afiname)}."
+            )
             return True
         else:
             return None
+
 
 class VitisBitBuilder(BitBuilder):
     """Bit builder class that builds a Vitis bitstream from the build config.
@@ -380,6 +472,7 @@ class VitisBitBuilder(BitBuilder):
     Attributes:
         device: vitis fpga platform string to use for building the bitstream
     """
+
     device: str
 
     def __init__(self, build_config: BuildConfig, args: Dict[str, Any]) -> None:
@@ -415,28 +508,32 @@ class VitisBitBuilder(BitBuilder):
         # (in case builds were run locally)
         # extra_opts -l preserves symlinks
 
-        run('mkdir -p {}'.format(dest_vitis_dir))
-        run('rm -rf {}/{}'.format(dest_vitis_dir, fpga_build_postfix))
+        run("mkdir -p {}".format(dest_vitis_dir))
+        run("rm -rf {}/{}".format(dest_vitis_dir, fpga_build_postfix))
         rsync_cap = rsync_project(
             local_dir=local_vitis_dir,
             remote_dir=dest_vitis_dir,
             ssh_opts="-o StrictHostKeyChecking=no",
             exclude="cl_*",
-            extra_opts="-l", capture=True)
+            extra_opts="-l",
+            capture=True,
+        )
         rootLogger.debug(rsync_cap)
         rootLogger.debug(rsync_cap.stderr)
         rsync_cap = rsync_project(
             local_dir="{}/{}/".format(local_vitis_dir, fpga_build_postfix),
-            remote_dir='{}/{}'.format(dest_vitis_dir, fpga_build_postfix),
+            remote_dir="{}/{}".format(dest_vitis_dir, fpga_build_postfix),
             ssh_opts="-o StrictHostKeyChecking=no",
-            extra_opts="-l", capture=True)
+            extra_opts="-l",
+            capture=True,
+        )
         rootLogger.debug(rsync_cap)
         rootLogger.debug(rsync_cap.stderr)
 
         return f"{dest_vitis_dir}/{fpga_build_postfix}"
 
     def build_bitstream(self, bypass: bool = False) -> bool:
-        """ Run Vitis to generate an xclbin. Then terminate the instance at the end.
+        """Run Vitis to generate an xclbin. Then terminate the instance at the end.
 
         Args:
             bypass: If true, immediately return and terminate build host. Used for testing purposes.
@@ -452,11 +549,14 @@ class VitisBitBuilder(BitBuilder):
 
         # The default error-handling procedure. Send an email and teardown instance
         def on_build_failure():
-            """ Terminate build host and notify user that build failed """
+            """Terminate build host and notify user that build failed"""
 
             message_title = "FireSim Vitis FPGA Build Failed"
 
-            message_body = "Your FPGA build failed for quintuplet: " + self.build_config.get_chisel_quintuplet()
+            message_body = (
+                "Your FPGA build failed for quintuplet: "
+                + self.build_config.get_chisel_quintuplet()
+            )
 
             rootLogger.info(message_title)
             rootLogger.info(message_body)
@@ -467,10 +567,15 @@ class VitisBitBuilder(BitBuilder):
 
         local_deploy_dir = get_deploy_dir()
         fpga_build_postfix = f"cl_{self.build_config.get_chisel_quintuplet()}"
-        local_results_dir = f"{local_deploy_dir}/results-build/{self.build_config.get_build_dir_name()}"
+        local_results_dir = (
+            f"{local_deploy_dir}/results-build/{self.build_config.get_build_dir_name()}"
+        )
 
         # 'cl_dir' holds the eventual directory in which vivado will run.
-        cl_dir = self.cl_dir_setup(self.build_config.get_chisel_quintuplet(), build_farm.get_build_host(self.build_config).dest_build_dir)
+        cl_dir = self.cl_dir_setup(
+            self.build_config.get_chisel_quintuplet(),
+            build_farm.get_build_host(self.build_config).dest_build_dir,
+        )
 
         vitis_rc = 0
         # copy script to the cl_dir and execute
@@ -478,15 +583,19 @@ class VitisBitBuilder(BitBuilder):
             local_dir=f"{local_deploy_dir}/../platforms/vitis/build-bitstream.sh",
             remote_dir=f"{cl_dir}/",
             ssh_opts="-o StrictHostKeyChecking=no",
-            extra_opts="-l", capture=True)
+            extra_opts="-l",
+            capture=True,
+        )
         rootLogger.debug(rsync_cap)
         rootLogger.debug(rsync_cap.stderr)
 
         fpga_frequency = self.build_config.get_frequency()
         build_strategy = self.build_config.get_strategy().name
 
-        with InfoStreamLogger('stdout'), settings(warn_only=True):
-            vitis_result = run(f"{cl_dir}/build-bitstream.sh --build_dir {cl_dir} --device {self.device} --frequency {fpga_frequency} --strategy {build_strategy}")
+        with InfoStreamLogger("stdout"), settings(warn_only=True):
+            vitis_result = run(
+                f"{cl_dir}/build-bitstream.sh --build_dir {cl_dir} --device {self.device} --frequency {fpga_frequency} --strategy {build_strategy}"
+            )
             vitis_rc = vitis_result.return_code
 
             if vitis_rc != 0:
@@ -499,8 +608,11 @@ class VitisBitBuilder(BitBuilder):
         rsync_cap = rsync_project(
             local_dir=f"{local_results_dir}/",
             remote_dir=cl_dir,
-            ssh_opts="-o StrictHostKeyChecking=no", upload=False, extra_opts="-l",
-            capture=True)
+            ssh_opts="-o StrictHostKeyChecking=no",
+            upload=False,
+            extra_opts="-l",
+            capture=True,
+        )
         rootLogger.debug(rsync_cap)
         rootLogger.debug(rsync_cap.stderr)
 
@@ -532,10 +644,14 @@ class VitisBitBuilder(BitBuilder):
         hwdb_entry = hwdb_entry_name + ":\n"
         hwdb_entry += f"    bitstream_tar: file://{local_cl_dir}/{tar_name}\n"
         hwdb_entry += f"    deploy_quintuplet_override: null\n"
-        hwdb_entry +=  "    custom_runtime_config: null\n"
+        hwdb_entry += "    custom_runtime_config: null\n"
 
         message_title = "FireSim FPGA Build Completed"
-        message_body = "Your bitstream has been created!\nAdd\n\n" + hwdb_entry + "\nto your config_hwdb.yaml to use this hardware configuration."
+        message_body = (
+            "Your bitstream has been created!\nAdd\n\n"
+            + hwdb_entry
+            + "\nto your config_hwdb.yaml to use this hardware configuration."
+        )
 
         rootLogger.info(message_title)
         rootLogger.info(message_body)
@@ -549,18 +665,24 @@ class VitisBitBuilder(BitBuilder):
             outputfile.write(hwdb_entry)
 
         if self.build_config.post_build_hook:
-            localcap = local(f"{self.build_config.post_build_hook} {local_results_dir}", capture=True)
+            localcap = local(
+                f"{self.build_config.post_build_hook} {local_results_dir}", capture=True
+            )
             rootLogger.debug("[localhost] " + str(localcap))
             rootLogger.debug("[localhost] " + str(localcap.stderr))
 
-        rootLogger.info(f"Build complete! Vitis bitstream ready. See {os.path.join(hwdb_entry_file_location,hwdb_entry_name)}.")
+        rootLogger.info(
+            f"Build complete! Vitis bitstream ready. See {os.path.join(hwdb_entry_file_location,hwdb_entry_name)}."
+        )
 
         build_farm.release_build_host(self.build_config)
 
         return True
 
+
 class XilinxAlveoBitBuilder(BitBuilder):
     """Bit builder class that builds a Xilinx Alveo bitstream from the build config."""
+
     BOARD_NAME: Optional[str]
 
     def __init__(self, build_config: BuildConfig, args: Dict[str, Any]) -> None:
@@ -583,7 +705,9 @@ class XilinxAlveoBitBuilder(BitBuilder):
         fpga_build_postfix = f"cl_{chisel_quintuplet}"
 
         # local paths
-        local_alveo_dir = f"{get_deploy_dir()}/../platforms/{self.build_config.PLATFORM}"
+        local_alveo_dir = (
+            f"{get_deploy_dir()}/../platforms/{self.build_config.PLATFORM}"
+        )
 
         dest_alveo_dir = f"{dest_build_dir}/platforms/{self.build_config.PLATFORM}"
 
@@ -592,28 +716,32 @@ class XilinxAlveoBitBuilder(BitBuilder):
         # (in case builds were run locally)
         # extra_opts -L resolves symlinks
 
-        run(f'mkdir -p {dest_alveo_dir}')
-        run('rm -rf {}/{}'.format(dest_alveo_dir, fpga_build_postfix))
+        run(f"mkdir -p {dest_alveo_dir}")
+        run("rm -rf {}/{}".format(dest_alveo_dir, fpga_build_postfix))
         rsync_cap = rsync_project(
             local_dir=local_alveo_dir,
             remote_dir=dest_alveo_dir,
             ssh_opts="-o StrictHostKeyChecking=no",
             exclude="cl_*",
-            extra_opts="-L", capture=True)
+            extra_opts="-L",
+            capture=True,
+        )
         rootLogger.debug(rsync_cap)
         rootLogger.debug(rsync_cap.stderr)
         rsync_cap = rsync_project(
             local_dir=f"{local_alveo_dir}/{fpga_build_postfix}/",
-            remote_dir=f'{dest_alveo_dir}/{fpga_build_postfix}',
+            remote_dir=f"{dest_alveo_dir}/{fpga_build_postfix}",
             ssh_opts="-o StrictHostKeyChecking=no",
-            extra_opts="-L", capture=True)
+            extra_opts="-L",
+            capture=True,
+        )
         rootLogger.debug(rsync_cap)
         rootLogger.debug(rsync_cap.stderr)
 
         return f"{dest_alveo_dir}/{fpga_build_postfix}"
 
     def build_bitstream(self, bypass: bool = False) -> bool:
-        """ Run Vivado to generate an bit file. Then terminate the instance at the end.
+        """Run Vivado to generate an bit file. Then terminate the instance at the end.
 
         Args:
             bypass: If true, immediately return and terminate build host. Used for testing purposes.
@@ -629,25 +757,37 @@ class XilinxAlveoBitBuilder(BitBuilder):
 
         # The default error-handling procedure. Send an email and teardown instance
         def on_build_failure():
-            """ Terminate build host and notify user that build failed """
+            """Terminate build host and notify user that build failed"""
 
-            message_title = f"FireSim Xilinx Alveo {self.build_config.PLATFORM} FPGA Build Failed"
+            message_title = (
+                f"FireSim Xilinx Alveo {self.build_config.PLATFORM} FPGA Build Failed"
+            )
 
-            message_body = "Your FPGA build failed for quintuplet: " + self.build_config.get_chisel_quintuplet()
+            message_body = (
+                "Your FPGA build failed for quintuplet: "
+                + self.build_config.get_chisel_quintuplet()
+            )
 
             rootLogger.info(message_title)
             rootLogger.info(message_body)
 
             build_farm.release_build_host(self.build_config)
 
-        rootLogger.info(f"Building Xilinx Alveo {self.build_config.PLATFORM} Bitstream from Verilog")
+        rootLogger.info(
+            f"Building Xilinx Alveo {self.build_config.PLATFORM} Bitstream from Verilog"
+        )
 
         local_deploy_dir = get_deploy_dir()
         fpga_build_postfix = f"cl_{self.build_config.get_chisel_quintuplet()}"
-        local_results_dir = f"{local_deploy_dir}/results-build/{self.build_config.get_build_dir_name()}"
+        local_results_dir = (
+            f"{local_deploy_dir}/results-build/{self.build_config.get_build_dir_name()}"
+        )
 
         # 'cl_dir' holds the eventual directory in which vivado will run.
-        cl_dir = self.cl_dir_setup(self.build_config.get_chisel_quintuplet(), build_farm.get_build_host(self.build_config).dest_build_dir)
+        cl_dir = self.cl_dir_setup(
+            self.build_config.get_chisel_quintuplet(),
+            build_farm.get_build_host(self.build_config).dest_build_dir,
+        )
 
         alveo_rc = 0
         # copy script to the cl_dir and execute
@@ -655,15 +795,19 @@ class XilinxAlveoBitBuilder(BitBuilder):
             local_dir=f"{local_deploy_dir}/../platforms/{self.build_config.PLATFORM}/build-bitstream.sh",
             remote_dir=f"{cl_dir}/",
             ssh_opts="-o StrictHostKeyChecking=no",
-            extra_opts="-L", capture=True)
+            extra_opts="-L",
+            capture=True,
+        )
         rootLogger.debug(rsync_cap)
         rootLogger.debug(rsync_cap.stderr)
 
         fpga_frequency = self.build_config.get_frequency()
         build_strategy = self.build_config.get_strategy().name
 
-        with InfoStreamLogger('stdout'), settings(warn_only=True):
-            alveo_result = run(f"{cl_dir}/build-bitstream.sh --cl_dir {cl_dir} --frequency {fpga_frequency} --strategy {build_strategy} --board {self.BOARD_NAME}")
+        with InfoStreamLogger("stdout"), settings(warn_only=True):
+            alveo_result = run(
+                f"{cl_dir}/build-bitstream.sh --cl_dir {cl_dir} --frequency {fpga_frequency} --strategy {build_strategy} --board {self.BOARD_NAME}"
+            )
             alveo_rc = alveo_result.return_code
 
             if alveo_rc != 0:
@@ -676,8 +820,11 @@ class XilinxAlveoBitBuilder(BitBuilder):
         rsync_cap = rsync_project(
             local_dir=f"{local_results_dir}/",
             remote_dir=cl_dir,
-            ssh_opts="-o StrictHostKeyChecking=no", upload=False, extra_opts="-l",
-            capture=True)
+            ssh_opts="-o StrictHostKeyChecking=no",
+            upload=False,
+            extra_opts="-l",
+            capture=True,
+        )
         rootLogger.debug(rsync_cap)
         rootLogger.debug(rsync_cap.stderr)
 
@@ -715,7 +862,7 @@ class XilinxAlveoBitBuilder(BitBuilder):
         hwdb_entry = hwdb_entry_name + ":\n"
         hwdb_entry += f"    bitstream_tar: file://{local_cl_dir}/{tar_name}\n"
         hwdb_entry += f"    deploy_quintuplet_override: null\n"
-        hwdb_entry +=  "    custom_runtime_config: null\n"
+        hwdb_entry += "    custom_runtime_config: null\n"
 
         message_title = "FireSim FPGA Build Completed"
         message_body = f"Your bitstream has been created!\nAdd\n\n{hwdb_entry}\nto your config_hwdb.yaml to use this hardware configuration."
@@ -732,33 +879,42 @@ class XilinxAlveoBitBuilder(BitBuilder):
             outputfile.write(hwdb_entry)
 
         if self.build_config.post_build_hook:
-            localcap = local(f"{self.build_config.post_build_hook} {local_results_dir}", capture=True)
+            localcap = local(
+                f"{self.build_config.post_build_hook} {local_results_dir}", capture=True
+            )
             rootLogger.debug("[localhost] " + str(localcap))
             rootLogger.debug("[localhost] " + str(localcap.stderr))
 
-        rootLogger.info(f"Build complete! Xilinx Alveo {self.build_config.PLATFORM} bitstream ready. See {os.path.join(hwdb_entry_file_location,hwdb_entry_name)}.")
+        rootLogger.info(
+            f"Build complete! Xilinx Alveo {self.build_config.PLATFORM} bitstream ready. See {os.path.join(hwdb_entry_file_location,hwdb_entry_name)}."
+        )
 
         build_farm.release_build_host(self.build_config)
 
         return True
+
 
 class XilinxAlveoU200BitBuilder(XilinxAlveoBitBuilder):
     def __init__(self, build_config: BuildConfig, args: Dict[str, Any]) -> None:
         super().__init__(build_config, args)
         self.BOARD_NAME = "au200"
 
+
 class XilinxAlveoU280BitBuilder(XilinxAlveoBitBuilder):
     def __init__(self, build_config: BuildConfig, args: Dict[str, Any]) -> None:
         super().__init__(build_config, args)
         self.BOARD_NAME = "au280"
+
 
 class XilinxAlveoU250BitBuilder(XilinxAlveoBitBuilder):
     def __init__(self, build_config: BuildConfig, args: Dict[str, Any]) -> None:
         super().__init__(build_config, args)
         self.BOARD_NAME = "au250"
 
+
 class XilinxVCU118BitBuilder(XilinxAlveoBitBuilder):
     """Bit builder class that builds a Xilinx VCU118 bitstream from the build config."""
+
     BOARD_NAME: Optional[str]
 
     def __init__(self, build_config: BuildConfig, args: Dict[str, Any]) -> None:
@@ -780,35 +936,43 @@ class XilinxVCU118BitBuilder(XilinxAlveoBitBuilder):
         # local paths
         local_alveo_dir = f"{get_deploy_dir()}/../platforms/{self.build_config.PLATFORM}/garnet-firesim"
 
-        dest_alveo_dir = f"{dest_build_dir}/platforms/{self.build_config.PLATFORM}/garnet-firesim"
+        dest_alveo_dir = (
+            f"{dest_build_dir}/platforms/{self.build_config.PLATFORM}/garnet-firesim"
+        )
 
         # copy alveo files to the build instance.
         # do the rsync, but ignore any checkpoints that might exist on this machine
         # (in case builds were run locally)
         # extra_opts -L resolves symlinks
 
-        run(f'mkdir -p {dest_alveo_dir}')
-        run('rm -rf {}/{}'.format(dest_alveo_dir, fpga_build_postfix))
+        run(f"mkdir -p {dest_alveo_dir}")
+        run("rm -rf {}/{}".format(dest_alveo_dir, fpga_build_postfix))
         rsync_cap = rsync_project(
             local_dir=local_alveo_dir + "/",
             remote_dir=dest_alveo_dir,
             ssh_opts="-o StrictHostKeyChecking=no",
             exclude="cl_*",
-            extra_opts="-L", capture=True)
+            extra_opts="-L",
+            capture=True,
+        )
         rootLogger.debug(rsync_cap)
         rootLogger.debug(rsync_cap.stderr)
         rsync_cap = rsync_project(
             local_dir=f"{local_alveo_dir}/{fpga_build_postfix}/",
-            remote_dir=f'{dest_alveo_dir}/{fpga_build_postfix}',
+            remote_dir=f"{dest_alveo_dir}/{fpga_build_postfix}",
             ssh_opts="-o StrictHostKeyChecking=no",
-            extra_opts="-L", capture=True)
+            extra_opts="-L",
+            capture=True,
+        )
         rootLogger.debug(rsync_cap)
         rootLogger.debug(rsync_cap.stderr)
 
         return f"{dest_alveo_dir}/{fpga_build_postfix}"
 
+
 class RHSResearchNitefuryIIBitBuilder(XilinxAlveoBitBuilder):
     """Bit builder class that builds an RHS Research Nitefury II bitstream from the build config."""
+
     BOARD_NAME: Optional[str]
 
     def __init__(self, build_config: BuildConfig, args: Dict[str, Any]) -> None:
@@ -837,21 +1001,25 @@ class RHSResearchNitefuryIIBitBuilder(XilinxAlveoBitBuilder):
         # (in case builds were run locally)
         # extra_opts -L resolves symlinks
 
-        run(f'mkdir -p {dest_alveo_dir}')
-        run('rm -rf {}/{}'.format(dest_alveo_dir, fpga_build_postfix))
+        run(f"mkdir -p {dest_alveo_dir}")
+        run("rm -rf {}/{}".format(dest_alveo_dir, fpga_build_postfix))
         rsync_cap = rsync_project(
             local_dir=local_alveo_dir + "/",
             remote_dir=dest_alveo_dir,
             ssh_opts="-o StrictHostKeyChecking=no",
             exclude="cl_*",
-            extra_opts="-L", capture=True)
+            extra_opts="-L",
+            capture=True,
+        )
         rootLogger.debug(rsync_cap)
         rootLogger.debug(rsync_cap.stderr)
         rsync_cap = rsync_project(
             local_dir=f"{local_alveo_dir}/{fpga_build_postfix}/",
-            remote_dir=f'{dest_alveo_dir}/{fpga_build_postfix}',
+            remote_dir=f"{dest_alveo_dir}/{fpga_build_postfix}",
             ssh_opts="-o StrictHostKeyChecking=no",
-            extra_opts="-L", capture=True)
+            extra_opts="-L",
+            capture=True,
+        )
         rootLogger.debug(rsync_cap)
         rootLogger.debug(rsync_cap.stderr)
 

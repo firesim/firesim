@@ -7,11 +7,10 @@ import org.chipsalliance.cde.config.Parameters
 import freechips.rocketchip.diplomacy._
 import freechips.rocketchip.amba.axi4._
 
-/**
-  * Ties off an AXI4 edge by spoofing a master that drives no requests.
+/** Ties off an AXI4 edge by spoofing a master that drives no requests.
   */
 class AXI4TieOff(implicit p: Parameters) extends LazyModule {
-  val node = AXI4MasterNode(Seq(AXI4MasterPortParameters(Seq(AXI4MasterParameters(name = "TiedOff")))))
+  val node        = AXI4MasterNode(Seq(AXI4MasterPortParameters(Seq(AXI4MasterParameters(name = "TiedOff")))))
   lazy val module = new LazyModuleImp(this) {
     for ((axi4out, _) <- node.out) {
       axi4out.ar.valid := false.B

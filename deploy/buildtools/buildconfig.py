@@ -16,33 +16,37 @@ from util.targetprojectutils import extra_target_project_make_args, resolve_path
 
 # imports needed for python type checking
 from typing import Set, Any, Optional, Dict, TYPE_CHECKING
+
 if TYPE_CHECKING:
     from buildtools.buildconfigfile import BuildConfigFile
 
 rootLogger = logging.getLogger()
 
+
 class InvalidBuildConfigSetting(Exception):
     pass
 
+
 # All known strategy strings. A given platform may not implement all of them.
 class BuildStrategy(Enum):
-    BASIC      = auto()
-    AREA       = auto()
-    TIMING     = auto()
-    EXPLORE    = auto()
+    BASIC = auto()
+    AREA = auto()
+    TIMING = auto()
+    EXPLORE = auto()
     CONGESTION = auto()
     NORETIMING = auto()
-    DEFAULT    = auto()
+    DEFAULT = auto()
 
     @staticmethod
     def from_string(input: str) -> BuildStrategy:
-        """ Constructs an instance of this enum from an input string """
+        """Constructs an instance of this enum from an input string"""
         try:
             return BuildStrategy[input]
         except KeyError:
             all_names = [name for name, _ in BuildStrategy.__members__.items()]
-            raise InvalidBuildConfigSetting(f"Invalid buildstrategy name '{input}'. \n Valid options: {all_names}")
-
+            raise InvalidBuildConfigSetting(
+                f"Invalid buildstrategy name '{input}'. \n Valid options: {all_names}"
+            )
 
 
 class BuildConfig:
@@ -63,6 +67,7 @@ class BuildConfig:
         post_build_hook: Post build hook script.
         bitbuilder: bitstream configuration class.
     """
+
     name: str
     build_config_file: BuildConfigFile
     TARGET_PROJECT: str
@@ -77,11 +82,13 @@ class BuildConfig:
     post_build_hook: str
     bitbuilder: BitBuilder
 
-    def __init__(self,
-            name: str,
-            recipe_config_dict: Dict[str, Any],
-            build_config_file: BuildConfigFile,
-            launch_time: str) -> None:
+    def __init__(
+        self,
+        name: str,
+        recipe_config_dict: Dict[str, Any],
+        build_config_file: BuildConfigFile,
+        launch_time: str,
+    ) -> None:
         """
         Args:
             name: Name of config i.e. name of `config_build_recipe.yaml` section.
@@ -93,71 +100,93 @@ class BuildConfig:
         self.build_config_file = build_config_file
 
         # default provided for old build recipes that don't specify TARGET_PROJECT, PLATFORM
-        self.PLATFORM = recipe_config_dict.get('PLATFORM', 'f1')
-        self.TARGET_PROJECT = recipe_config_dict.get('TARGET_PROJECT', 'firesim')
+        self.PLATFORM = recipe_config_dict.get("PLATFORM", "f1")
+        self.TARGET_PROJECT = recipe_config_dict.get("TARGET_PROJECT", "firesim")
 
         # resolve the path as an absolute path if set
-        self.TARGET_PROJECT_MAKEFRAG = recipe_config_dict.get('TARGET_PROJECT_MAKEFRAG')
+        self.TARGET_PROJECT_MAKEFRAG = recipe_config_dict.get("TARGET_PROJECT_MAKEFRAG")
         if self.TARGET_PROJECT_MAKEFRAG:
             base = build_config_file.build_config_recipes_file_path
             abs_deploy_makefrag = resolve_path(self.TARGET_PROJECT_MAKEFRAG, base)
             if abs_deploy_makefrag is None:
-                raise Exception(f"Unable to find TARGET_PROJECT_MAKEFRAG ({self.TARGET_PROJECT_MAKEFRAG}) either as an absolute path or relative to {base}")
+                raise Exception(
+                    f"Unable to find TARGET_PROJECT_MAKEFRAG ({self.TARGET_PROJECT_MAKEFRAG}) either as an absolute path or relative to {base}"
+                )
             else:
                 self.TARGET_PROJECT_MAKEFRAG = abs_deploy_makefrag
 
-        self.DESIGN = recipe_config_dict['DESIGN']
-        self.TARGET_CONFIG = recipe_config_dict['TARGET_CONFIG']
+        self.DESIGN = recipe_config_dict["DESIGN"]
+        self.TARGET_CONFIG = recipe_config_dict["TARGET_CONFIG"]
 
-        if 'deploy_triplet' in recipe_config_dict.keys() and 'deploy_quintuplet' in recipe_config_dict.keys():
-            rootLogger.error("Cannot have both 'deploy_quintuplet' and 'deploy_triplet' in build config. Define only 'deploy_quintuplet'.")
+        if (
+            "deploy_triplet" in recipe_config_dict.keys()
+            and "deploy_quintuplet" in recipe_config_dict.keys()
+        ):
+            rootLogger.error(
+                "Cannot have both 'deploy_quintuplet' and 'deploy_triplet' in build config. Define only 'deploy_quintuplet'."
+            )
             sys.exit(1)
-        elif 'deploy_triplet' in recipe_config_dict.keys():
-            rootLogger.warning("Please rename your 'deploy_triplet' key in your build config to 'deploy_quintuplet'. Support for 'deploy_triplet' will be removed in the future.")
+        elif "deploy_triplet" in recipe_config_dict.keys():
+            rootLogger.warning(
+                "Please rename your 'deploy_triplet' key in your build config to 'deploy_quintuplet'. Support for 'deploy_triplet' will be removed in the future."
+            )
 
-        self.deploy_quintuplet = recipe_config_dict.get('deploy_quintuplet')
+        self.deploy_quintuplet = recipe_config_dict.get("deploy_quintuplet")
         if self.deploy_quintuplet is None:
             # temporarily support backwards compat
-            self.deploy_quintuplet = recipe_config_dict.get('deploy_triplet')
+            self.deploy_quintuplet = recipe_config_dict.get("deploy_triplet")
 
-        if self.deploy_quintuplet is not None and len(self.deploy_quintuplet.split("-")) == 3:
-            self.deploy_quintuplet = 'f1-firesim-' + self.deploy_quintuplet
+        if (
+            self.deploy_quintuplet is not None
+            and len(self.deploy_quintuplet.split("-")) == 3
+        ):
+            self.deploy_quintuplet = "f1-firesim-" + self.deploy_quintuplet
 
         self.launch_time = launch_time
 
         # run platform specific options
-        self.PLATFORM_CONFIG = recipe_config_dict['PLATFORM_CONFIG']
-        self.post_build_hook = recipe_config_dict['post_build_hook']
+        self.PLATFORM_CONFIG = recipe_config_dict["PLATFORM_CONFIG"]
+        self.post_build_hook = recipe_config_dict["post_build_hook"]
 
         # retrieve frequency and strategy selections
-        bitstream_build_args = recipe_config_dict['platform_config_args']
-        self.fpga_frequency = bitstream_build_args['fpga_frequency']
-        self.build_strategy = BuildStrategy.from_string(bitstream_build_args['build_strategy'])
+        bitstream_build_args = recipe_config_dict["platform_config_args"]
+        self.fpga_frequency = bitstream_build_args["fpga_frequency"]
+        self.build_strategy = BuildStrategy.from_string(
+            bitstream_build_args["build_strategy"]
+        )
 
         # retrieve the bitbuilder section
         bitbuilder_conf_dict = None
-        with open(recipe_config_dict['bit_builder_recipe'], "r") as yaml_file:
+        with open(recipe_config_dict["bit_builder_recipe"], "r") as yaml_file:
             bitbuilder_conf_dict = yaml.safe_load(yaml_file)
 
         bitbuilder_type_name = bitbuilder_conf_dict["bit_builder_type"]
         bitbuilder_args = bitbuilder_conf_dict["args"]
 
         # add the overrides if it exists
-        override_args = recipe_config_dict.get('bit_builder_arg_overrides')
+        override_args = recipe_config_dict.get("bit_builder_arg_overrides")
         if override_args:
             bitbuilder_args = deep_merge(bitbuilder_args, override_args)
 
-        bitbuilder_dispatch_dict = dict([(x.__name__, x) for x in buildtools.buildconfigfile.inheritors(BitBuilder)])
+        bitbuilder_dispatch_dict = dict(
+            [(x.__name__, x) for x in buildtools.buildconfigfile.inheritors(BitBuilder)]
+        )
 
         if not bitbuilder_type_name in bitbuilder_dispatch_dict:
-            raise Exception(f"Unable to find {bitbuilder_type_name} in available bitbuilder classes: {bitbuilder_dispatch_dict.keys()}")
+            raise Exception(
+                f"Unable to find {bitbuilder_type_name} in available bitbuilder classes: {bitbuilder_dispatch_dict.keys()}"
+            )
 
         # validate the frequency
         if (self.fpga_frequency is None) or not (0 < self.fpga_frequency <= 300.0):
-            raise Exception(f"{self.fpga_frequency} is not a valid build frequency. Valid frequencies are between 0.0-300.0 (MHz)")
+            raise Exception(
+                f"{self.fpga_frequency} is not a valid build frequency. Valid frequencies are between 0.0-300.0 (MHz)"
+            )
 
         # create dispatcher object using class given and pass args to it
-        self.bitbuilder = bitbuilder_dispatch_dict[bitbuilder_type_name](self, bitbuilder_args)
+        self.bitbuilder = bitbuilder_dispatch_dict[bitbuilder_type_name](
+            self, bitbuilder_args
+        )
 
     def get_chisel_triplet(self) -> str:
         """Get the unique build-specific '-' deliminated triplet.

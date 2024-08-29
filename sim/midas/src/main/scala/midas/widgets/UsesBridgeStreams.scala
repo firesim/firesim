@@ -8,38 +8,32 @@ import chisel3.experimental.IO
 import freechips.rocketchip.diplomacy.InModuleBody
 
 import midas.core.{
-  ToCPUStreamAllocatorKey,
   FromCPUStreamAllocatorKey,
-  ToQSFPStreamAllocatorKey,
-  FromQSFPStreamAllocatorKey, 
-  ToPeerFPGAStreamAllocatorKey,
+  FromQSFPStreamAllocatorKey,
   StreamSinkParameters,
   StreamSourceParameters,
+  ToCPUStreamAllocatorKey,
+  ToPeerFPGAStreamAllocatorKey,
+  ToQSFPStreamAllocatorKey,
 }
 
-/**
-  * Bridge Streams serve as means to do bulk transport from BridgeDriver to
-  * BridgeModule and vice versa.  Abstractly, they can be thought of as a 512b
-  * wide latency-insensitive channel (i.e., a queue with some unknown latency).
+/** Bridge Streams serve as means to do bulk transport from BridgeDriver to BridgeModule and vice versa. Abstractly,
+  * they can be thought of as a 512b wide latency-insensitive channel (i.e., a queue with some unknown latency).
   *
-  * The two mixins in this file implement the two directions of
-  * producer-consumer relationships: [[StreamFromHostCPU]] add a stream in
-  * which the driver is the producer and the BridgeModule is the consumer,
-  * [[StreamToHostCPU]] does the converse. BridgeModules can mix in one or both
-  * of these traits, to implement streams in either direction.
+  * The two mixins in this file implement the two directions of producer-consumer relationships: [[StreamFromHostCPU]]
+  * add a stream in which the driver is the producer and the BridgeModule is the consumer, [[StreamToHostCPU]] does the
+  * converse. BridgeModules can mix in one or both of these traits, to implement streams in either direction.
   *
   * Limitations:
-  * - Streams are 512b wide. Bridge modules and drivers must manually handle
-  *   width adaptations
-  * - Bridges are limited to one stream in each direction. Bridge designers
-  *   must multiplex streams onto a single physical stream themselves.
+  *   - Streams are 512b wide. Bridge modules and drivers must manually handle width adaptations
+  *   - Bridges are limited to one stream in each direction. Bridge designers must multiplex streams onto a single
+  *     physical stream themselves.
   */
 
-/**
-  * Constants defined here apply to interfaces exposed directly to the bridges
-  * and thus users and bridge designers.
+/** Constants defined here apply to interfaces exposed directly to the bridges and thus users and bridge designers.
   */
 object BridgeStreamConstants {
+
   /** The width, in bits, of the decoupled UInt payload presented to the bridge. */
   val streamWidthBits = 512
 
@@ -47,20 +41,17 @@ object BridgeStreamConstants {
   def streamChiselType = DecoupledIO(UInt(streamWidthBits.W))
 }
 
-
-
-abstract trait StreamFrom { self: Widget => 
-  def streamDeq : chisel3.Data
-  def fromHostStreamWidthBits : Int
+abstract trait StreamFrom { self: Widget =>
+  def streamDeq:               chisel3.Data
+  def fromHostStreamWidthBits: Int
 }
 
-abstract trait StreamTo { self: Widget => 
-  def streamEnq : chisel3.Data
-  def toHostStreamWidthBits : Int
+abstract trait StreamTo { self: Widget =>
+  def streamEnq:             chisel3.Data
+  def toHostStreamWidthBits: Int
 }
 
-/**
-  *  Adds a stream interface that will be dequeued from by the BridgeModule.
+/** Adds a stream interface that will be dequeued from by the BridgeModule.
   */
 trait StreamFromHostCPU extends StreamFrom { self: Widget =>
   // It may not make sense to keep this common under all stream engine
@@ -74,8 +65,8 @@ trait StreamFromHostCPU extends StreamFrom { self: Widget =>
     fromHostStreamName,
     fromHostStreamIdx,
     fromHostCPUQueueDepth,
-    BridgeStreamConstants.streamWidthBits/8)
-
+    BridgeStreamConstants.streamWidthBits / 8,
+  )
 
   private val _streamDeq = InModuleBody {
     val streamFromHostCPU = IO(Flipped(BridgeStreamConstants.streamChiselType))
@@ -89,8 +80,7 @@ trait StreamFromHostCPU extends StreamFrom { self: Widget =>
   override def fromHostStreamWidthBits = BridgeStreamConstants.streamWidthBits
 }
 
-/**
-  *  Adds a stream interface that will be enqueued to by the BridgeModule.
+/** Adds a stream interface that will be enqueued to by the BridgeModule.
   */
 trait StreamToHostCPU extends StreamTo { self: Widget =>
   def toHostCPUQueueDepth: Int
@@ -102,7 +92,8 @@ trait StreamToHostCPU extends StreamTo { self: Widget =>
     toHostStreamName,
     toHostStreamIdx,
     toHostCPUQueueDepth,
-    BridgeStreamConstants.streamWidthBits/8)
+    BridgeStreamConstants.streamWidthBits / 8,
+  )
 
   private val _streamEnq = InModuleBody {
     val streamToHostCPU = IO(BridgeStreamConstants.streamChiselType)
@@ -113,11 +104,12 @@ trait StreamToHostCPU extends StreamTo { self: Widget =>
   // This hides some diplomacy complexity from the user in cases where the
   // implicit conversion from the wrapped value to the decoupled does not work.
   override def streamEnq = _streamEnq.getWrappedValue
-  
+
   override def toHostStreamWidthBits = BridgeStreamConstants.streamWidthBits
 }
 
 object QSFPBridgeStreamConstants {
+
   /** The width, in bits, of the decoupled UInt payload presented to the bridge. */
   val streamWidthBits = 256
 
@@ -125,8 +117,7 @@ object QSFPBridgeStreamConstants {
   def streamChiselType = DecoupledIO(UInt(streamWidthBits.W))
 }
 
-/**
-  *  Adds a stream interface that will be dequeued from by the BridgeModule.
+/** Adds a stream interface that will be dequeued from by the BridgeModule.
   */
 trait StreamFromQSFP extends StreamFrom { self: Widget =>
   // It may not make sense to keep this common under all stream engine
@@ -140,8 +131,8 @@ trait StreamFromQSFP extends StreamFrom { self: Widget =>
     fromQSFPStreamName,
     fromQSFPStreamIdx,
     fromQSFPQueueDepth,
-    QSFPBridgeStreamConstants.streamWidthBits/8)
-
+    QSFPBridgeStreamConstants.streamWidthBits / 8,
+  )
 
   private val _streamDeq = InModuleBody {
     val streamFromQSFP = IO(Flipped(QSFPBridgeStreamConstants.streamChiselType))
@@ -155,8 +146,7 @@ trait StreamFromQSFP extends StreamFrom { self: Widget =>
   override def fromHostStreamWidthBits = QSFPBridgeStreamConstants.streamWidthBits
 }
 
-/**
-  *  Adds a stream interface that will be enqueued to by the BridgeModule.
+/** Adds a stream interface that will be enqueued to by the BridgeModule.
   */
 trait StreamToQSFP extends StreamTo { self: Widget =>
   def toQSFPQueueDepth: Int
@@ -168,7 +158,8 @@ trait StreamToQSFP extends StreamTo { self: Widget =>
     toQSFPStreamName,
     toQSFPStreamIdx,
     toQSFPQueueDepth,
-    QSFPBridgeStreamConstants.streamWidthBits/8)
+    QSFPBridgeStreamConstants.streamWidthBits / 8,
+  )
 
   private val _streamEnq = InModuleBody {
     val streamToQSFP = IO(QSFPBridgeStreamConstants.streamChiselType)
@@ -182,8 +173,7 @@ trait StreamToQSFP extends StreamTo { self: Widget =>
   override def toHostStreamWidthBits = QSFPBridgeStreamConstants.streamWidthBits
 }
 
-/**
-  *  Adds a stream interface that will be enqueued to by the BridgeModule.
+/** Adds a stream interface that will be enqueued to by the BridgeModule.
   */
 trait StreamToPeerFPGA extends StreamTo { self: Widget =>
   def peerFPGAMaxAddrRangeInBeats: Int
@@ -195,10 +185,11 @@ trait StreamToPeerFPGA extends StreamTo { self: Widget =>
     toPeerFPGAStreamName,
     toPeerFPGAStreamIdx,
     peerFPGAMaxAddrRangeInBeats,
-    BridgeStreamConstants.streamWidthBits/8)
+    BridgeStreamConstants.streamWidthBits / 8,
+  )
 
   private val _streamEnq = InModuleBody {
-    val streamToPeerFPGA= IO(BridgeStreamConstants.streamChiselType)
+    val streamToPeerFPGA = IO(BridgeStreamConstants.streamChiselType)
     streamToPeerFPGA
   }
 
