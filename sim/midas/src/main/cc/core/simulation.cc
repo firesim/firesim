@@ -2,6 +2,7 @@
 
 #include "simulation.h"
 #include "bridges/clock.h"
+#include "bridges/justl2.h"
 #include "bridges/loadmem.h"
 #include "bridges/master.h"
 #include "core/bridge_driver.h"
@@ -84,7 +85,24 @@ void simulation_t::print_simulation_performance_summary() {
   fprintf(stderr, "FMR: %.2f\n", fmr);
   fprintf(stderr,
           "Note: The latter three figures are based on the fastest "
-          "target clock.\n");
+          "target clock.\n");      
+  
+  // DN: Use an optional or pointer to check if it exists
+  if (auto *justl2_ptr = registry.get_widget_opt<justl2_t>()) {  // Check if the pointer is not null
+      //auto &justl2 = *justl2_ptr;  // Dereference the pointer to use the object
+      int l2_accesses = justl2_ptr->read_l2_accesses();
+      int l2_misses = justl2_ptr->read_l2_misses();
+      
+      // Check for division by zero
+      if (l2_accesses != 0) {
+          fprintf(stderr,
+                  "DN: L2 accesses: %d, L2 misses: %d, Miss rate: %f \n",
+                  l2_accesses, l2_misses, (float)l2_misses / l2_accesses);
+      } else {
+          fprintf(stderr, "DN: L2 accesses: %d, L2 misses: %d, L2 Miss rate: undefined (division by zero)\n",
+                  l2_accesses, l2_misses);
+      }
+  }
 }
 
 void simulation_t::simulation_init() {

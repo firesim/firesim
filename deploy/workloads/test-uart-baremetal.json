@@ -1,0 +1,8 @@
+{
+	"benchmark_name": "test-uart-baremetal",
+	"common_simulation_outputs": [
+		"uartlog"
+	],
+	"common_bootbinary": "../../../target-design/chipyard/software/test/test-uart-baremetal",
+	"common_rootfs": "../../../target-design/chipyard/software/firemarshal/boards/default/installers/firesim/dummy.rootfs"
+}

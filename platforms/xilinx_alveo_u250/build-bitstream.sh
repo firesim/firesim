@@ -72,4 +72,4 @@ fi
 
 # run build
 cd $CL_DIR
-vivado -mode batch -source $CL_DIR/scripts/main.tcl -tclargs $FREQUENCY $STRATEGY $BOARD
+vivado -mode batch -source $CL_DIR/scripts/main.tcl -tclargs $FREQUENCY $STRATEGY $BOARD +define+SYNTHESIS

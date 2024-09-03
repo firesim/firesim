@@ -1,3 +1,5 @@
+set_property verilog_define SYNTHESIS [current_fileset]
+
 variable synth_run [get_runs synth_1]
 
 reset_runs ${synth_run}

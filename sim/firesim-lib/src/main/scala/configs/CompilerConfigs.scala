@@ -79,6 +79,7 @@ class BaseF1Config extends Config(
 class BaseXilinxAlveoConfig extends Config(
   new WithWiringTransform ++
   new WithAsyncResetReplacement ++
+  new WithAutoILA ++
   new midas.XilinxAlveoConfig
 )
 

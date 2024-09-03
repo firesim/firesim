@@ -256,7 +256,7 @@ fi
 
 cd "$RDIR"
 set +e
-./gen-tags.sh
+#./gen-tags.sh
 set -e
 
 read -r -d '\0' NDEBUG_CHECK <<'END_NDEBUG'
@@ -278,6 +278,5 @@ env_append "$NDEBUG_CHECK"
 # Write out the generated env.sh indicating successful completion.
 echo "$env_string" > env.sh
 
-echo "Setup complete!"
 echo "To get started, source sourceme-manager.sh to setup your environment."
 echo "For more information, see docs at https://docs.fires.im/."

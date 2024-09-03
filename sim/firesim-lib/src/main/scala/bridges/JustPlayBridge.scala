@@ -4,12 +4,13 @@ package firesim.bridges
 import midas.widgets._
 
 import chisel3._
-import chisel3.stage.ChiselStage
+//import chisel3.stage.ChiselStage
 import chisel3.util._
 import org.chipsalliance.cde.config.Parameters
-import freechips.rocketchip.subsystem.PeripheryBusKey
-import chipyard.example.{JustPlayParams, JustPlayTopIO} 
-import chipyard.example.JustPlayKey
+//import freechips.rocketchip.subsystem.PeripheryBusKey
+import chipyard.example.{JustPlayParams, JustPlayTopIO}
+import sifive.blocks.inclusivecache._
+//import chipyard.example.JustPlayKey
  
 
 class JustPlayBridgeTargetIO(val wParams: JustPlayParams)(implicit p: Parameters) extends Bundle {
@@ -19,6 +20,7 @@ class JustPlayBridgeTargetIO(val wParams: JustPlayParams)(implicit p: Parameters
   // in the bridge This reset just like any other Bool included in your target
   // interface, simply appears as another Bool in the input token.
   val reset = Input(Bool())
+  println(f"JUSTPLAY Module: InclusiveCacheParameters = ${InclusiveCacheParameters.L2ControlAddress}%h")
 }
 
 case class JustPlayKey(wParams: JustPlayParams)

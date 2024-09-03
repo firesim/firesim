@@ -55,33 +55,61 @@ class GoldenGateCompilerPhase extends Phase {
     // to avoid breakages that can emerge from "legal" but unsound pass orderings
     // due to underspecified pass constraints + invalidations
     // Shunt ILA passes to a seperate compiler to avoid invalidating downstream steps
-    val loweringCompiler = new Compiler(
-      targets = Seq(
-          Dependency(midas.passes.AutoILATransform),
-          Dependency(midas.passes.HostClockWiring)
-        ) ++
-        Forms.LowForm ++
-        p(HostTransforms),
-      currentState = Forms.LowForm)
+    // val loweringCompiler = new Compiler(
+    //   targets = Seq(
+    //       Dependency(midas.passes.AutoILATransform),
+    //       Dependency(midas.passes.HostClockWiring)
+    //     ) ++
+    //     Forms.LowForm ++
+    //     p(HostTransforms),
+    //   currentState = Forms.LowForm)
+    // logger.info("Post-GG Host Transformation Ordering\n")
+    // logger.info(loweringCompiler.prettyPrint("  "))
+    // val loweredSimulator = loweringCompiler.execute(simulator)
+
+    // // Ensure FPGA backend passes run after all user-provided + ILA transforms, but before final emission
+    // val fpgaBackendCompiler = new Compiler(
+    //   targets = Seq(
+    //       Dependency[firrtl.passes.memlib.SeparateWriteClocks],
+    //       Dependency[firrtl.passes.memlib.SetDefaultReadUnderWrite],
+    //       Dependency[firrtl.transforms.SimplifyMems]
+    //     ) ++
+    //     Forms.LowForm,
+    //   currentState = Forms.LowForm)
+    // logger.info("FPGA Backend Transformation Ordering\n")
+    // logger.info(fpgaBackendCompiler.prettyPrint("  "))
+    // val postLoweredSimulator = fpgaBackendCompiler.execute(simulator)
+
+    // // Workaround under-constrained transform dependencies by forcing the
+    // // emitter to run last in a separate compiler.
+    // val emitter = new Compiler(
+    //     Seq(Dependency(midas.passes.WriteXDCFile), Dependency[firrtl.SystemVerilogEmitter]),
+    //     Forms.LowForm)
+    // logger.info("Final Emission Transformation Ordering\n")
+    // logger.info(emitter.prettyPrint("  "))
+
+    // emitter
+    //   .execute(postLoweredSimulator)
+    //   .annotations
+
+
+    // Remove comment to enable ILA pass 
+    val loweringCompiler = new Compiler( 
+      targets = Seq( 
+        Dependency(midas.passes.AutoILATransform), 
+        Dependency(midas.passes.HostClockWiring), 
+        Dependency[firrtl.passes.memlib.SeparateWriteClocks], 
+        Dependency[firrtl.passes.memlib.SetDefaultReadUnderWrite], 
+        Dependency[firrtl.transforms.SimplifyMems] 
+      ) ++ 
+      Forms.LowForm ++ 
+      p(HostTransforms), 
+      currentState = Forms.LowForm)  
     logger.info("Post-GG Host Transformation Ordering\n")
     logger.info(loweringCompiler.prettyPrint("  "))
     val loweredSimulator = loweringCompiler.execute(simulator)
 
-    // Ensure FPGA backend passes run after all user-provided + ILA transforms, but before final emission
-    val fpgaBackendCompiler = new Compiler(
-      targets = Seq(
-          Dependency[firrtl.passes.memlib.SeparateWriteClocks],
-          Dependency[firrtl.passes.memlib.SetDefaultReadUnderWrite],
-          Dependency[firrtl.transforms.SimplifyMems]
-        ) ++
-        Forms.LowForm,
-      currentState = Forms.LowForm)
-    logger.info("FPGA Backend Transformation Ordering\n")
-    logger.info(fpgaBackendCompiler.prettyPrint("  "))
-    val postLoweredSimulator = fpgaBackendCompiler.execute(simulator)
-
-    // Workaround under-constrained transform dependencies by forcing the
-    // emitter to run last in a separate compiler.
+   
     val emitter = new Compiler(
         Seq(Dependency(midas.passes.WriteXDCFile), Dependency[firrtl.SystemVerilogEmitter]),
         Forms.LowForm)
@@ -89,7 +117,7 @@ class GoldenGateCompilerPhase extends Phase {
     logger.info(emitter.prettyPrint("  "))
 
     emitter
-      .execute(postLoweredSimulator)
+      .execute(loweredSimulator)
       .annotations
   }
 }

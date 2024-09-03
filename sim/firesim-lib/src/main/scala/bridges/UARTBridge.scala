@@ -80,7 +80,7 @@ object UARTBridge {
 // don't match, you'll only find out later when Golden Gate attempts to generate your module.
 class UARTBridgeModule(key: UARTKey)(implicit p: Parameters) extends BridgeModule[HostPortIO[UARTBridgeTargetIO]]()(p) {
   lazy val module = new BridgeModuleImp(this) {
-    println("======= DN: UARTBridgeModule lazy eval")
+    //println("======= DN: UARTBridgeModule lazy eval")
     val div = key.div
     // This creates the interfaces for all of the host-side transport
     // AXI4-lite for the simulation control bus, =

@@ -92,7 +92,8 @@ if { ${design_name} eq "" } {
    # USE CASES:
    #    8) No opened design, design_name not in project.
    #    9) Current opened design, has components, but diff names, design_name not in project.
-
+   
+   # DN: this is our exec path
    common::send_gid_msg -ssname BD::TCL -id 2003 -severity "INFO" "Currently there is no design <$design_name> in project, so creating one..."
 
    create_bd_design $design_name
@@ -183,7 +184,8 @@ if { $bCheckIPsPassed != 1 } {
 # Procedure to create entire design; Provide argument to make
 # procedure reusable. If parentCell is "", will use root.
 proc create_root_design { parentCell firesim_freq } {
-
+  set parentCell ""
+  set firesim_freq 60
   variable script_folder
   variable design_name
 
@@ -279,6 +281,12 @@ proc create_root_design { parentCell firesim_freq } {
    CONFIG.RESET_BOARD_INTERFACE {resetn} \
  ] $ddr4_0
 
+
+  #source /home/novo/Work/firesim/./platforms/xilinx_alveo_u200/cl_xilinx_alveo_u200-firesim-FireSim-FireSimRocketConfig-WithAutoILA_BaseXilinxAlveoConfig/design/FireSim-generated.ila_firesim.ipgen.tcl
+  #generate_target all [get_ips ila_firesim]
+  #synth_ip [get_ips ila_firesim]
+  #set_property generate_synth_checkpoint 0 [get_files ila_firesim.xci]
+  
   # Create instance: firesim_wrapper_0, and set properties
   set block_name firesim_wrapper
   set block_cell_name firesim_wrapper_0
@@ -334,6 +342,9 @@ proc create_root_design { parentCell firesim_freq } {
 
   set clk_wiz_0 [create_bd_cell -type ip -vlnv xilinx.com:ip:clk_wiz:6.0 clk_wiz_0]
   set_property -dict [list CONFIG.CLKOUT1_REQUESTED_OUT_FREQ $firesim_freq CONFIG.USE_LOCKED {false}] $clk_wiz_0
+
+  # DN: create ILA 
+  # source /home/novo/Work/firesim/./platforms/xilinx_alveo_u200/cl_xilinx_alveo_u200-firesim-FireSim-FireSimRocketConfig-WithAutoILA_BaseXilinxAlveoConfig/design/FireSim-generated.ila_firesim.ipgen.tcl
 
   # Create interface connections
   connect_bd_intf_net -intf_net axi_clock_converter_0_M_AXI [get_bd_intf_pins axi_clock_converter_0/M_AXI] [get_bd_intf_pins firesim_wrapper_0/S_AXI_DMA]
