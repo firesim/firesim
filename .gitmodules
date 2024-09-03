@@ -4,6 +4,7 @@
 [submodule "target-design/chipyard"]
 	path = target-design/chipyard
 	url = https://gite.lirmm.fr/novo/firesim-chipyard.git
+	branch = firesim-dev
 [submodule "sw/network-benchmarks"]
 	path = sw/network-benchmarks
 	url = https://github.com/firesim/network-benchmarks.git
