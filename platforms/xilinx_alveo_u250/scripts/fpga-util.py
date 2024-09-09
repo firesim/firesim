@@ -100,7 +100,7 @@ def main(args: List[str]) -> int:
     sudoUserId = os.getenv('SUDO_UID')
     isAdmin = (eUserId == 0) and (sudoUserId is None)
     userId = eUserId if sudoUserId is None else int(sudoUserId)
-
+    
     # if not sudoer, spawn w/ sudo
     if eUserId != 0:
         execvArgs  = ['/usr/bin/sudo', str(Path(__file__).absolute())] + sys.argv[1:]
@@ -124,11 +124,9 @@ def main(args: List[str]) -> int:
         return bus_ids
 
     def disconnect_bus_id(bus_id: str) -> None:
-        print("DN: disconnect_bus_id")
         pcielib.clear_serr_bits(bus_id)
         pcielib.clear_fatal_error_reporting_bits(bus_id)
         pcielib.remove(bus_id)
-        print("DN: disconnect_bus_id before assert")
         time.sleep(1)
         assert not pcielib.any_device_exists(bus_id), f"{bus_id} still visible. Check for proper removal."
 
@@ -177,7 +175,6 @@ def main(args: List[str]) -> int:
             print(":WARNING: Please warm reboot the machine")
 
     # disconnect bdfs
-    print("DN: disconnect bdfs")
     if parsed_args.disconnect_bdf:
         if is_bdf_arg(parsed_args):
             bus_ids = get_bus_ids_from_args(parsed_args)
@@ -187,7 +184,6 @@ def main(args: List[str]) -> int:
             sys.exit("Must provide a BDF-like argument to disconnect")
 
     # reconnect bdfs
-    print("DN: reconnect bdfs")
     if parsed_args.reconnect_bdf:
         if is_bdf_arg(parsed_args):
             bus_ids = get_bus_ids_from_args(parsed_args)
