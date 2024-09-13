@@ -808,6 +808,8 @@ class RuntimeBuildRecipeConfig(RuntimeHWConfig):
 
         # resolve the path as an absolute path if set
         self.deploy_makefrag = build_recipe_dict.get("TARGET_PROJECT_MAKEFRAG")
+        # TODO: rename this since this can either be the hwdb or the build recipes file (in metasim or normal fpga sim)
+        self.hwdb_file = build_recipes_config_file
         if self.deploy_makefrag:
             base = build_recipes_config_file
             abs_deploy_makefrag = resolve_path(self.deploy_makefrag, base)
