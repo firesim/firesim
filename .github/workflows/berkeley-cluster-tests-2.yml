@@ -175,13 +175,23 @@ jobs:
       - name: Run CIGroupB Scala tests
         run: ./.github/scripts/invoke-make.py "SCALA_TEST=firesim.midasexamples.CIGroupB testOnly"
 
+  run-simple-counter-example:
+    name: run-simple-counter-example
+    needs: [start-scalatests]
+    runs-on: local-fpga-2
+    steps:
+      - uses: actions/checkout@v4
+      - name: Run simple counter top-level example
+        run: ./.github/scripts/invoke-make.py "TARGET_PROJECT=examples run-vcs"
+
   cleanup-local-fpga-repo:
     name: cleanup-local-fpga-repo
     needs: [
       run-firesimlib-scala-tests,
       run-midas-scala-tests,
       run-midasexamples-scala-tests-groupA,
-      run-midasexamples-scala-tests-groupB]
+      run-midasexamples-scala-tests-groupB,
+      run-simple-counter-example]
     # uses a separate runner to cleanup (irrespective, of other jobs cancelled, running, etc)
     runs-on: local-fpga-cleanup
     if: ${{ always() }}
