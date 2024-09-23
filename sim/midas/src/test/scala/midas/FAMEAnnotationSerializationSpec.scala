@@ -3,9 +3,9 @@
 package goldengate.tests
 
 import midas.passes.fame._
-import midas.widgets.RationalClock
+import firesim.lib.bridgeutils.RationalClock
 
-import firrtl.annotations.{NoTargetAnnotation, JsonProtocol, InvalidAnnotationJSONException, HasSerializationHints, Annotation}
+import firrtl.annotations.{Annotation, JsonProtocol}
 import org.json4s._
 import org.scalatest.flatspec.AnyFlatSpec
 
@@ -16,11 +16,12 @@ class FAMEAnnotationSerialization extends AnyFlatSpec {
   }
 
   val baseFCCA = FAMEChannelConnectionAnnotation(
-    globalName = "test",
+    globalName  = "test",
     channelInfo = PipeChannel(1),
-    clock = None,
-    sources = None,
-    sinks = None)
+    clock       = None,
+    sources     = None,
+    sinks       = None,
+  )
 
   "PipeChannel FCCAs" should "serialize and deserialize correctly" in {
     val deserAnno = serializeAndDeserialize(baseFCCA)
@@ -28,14 +29,14 @@ class FAMEAnnotationSerialization extends AnyFlatSpec {
   }
 
   "ClockChannel FCCAs" should "serialize and deserialize correctly" in {
-    val clockInfo = TargetClockChannel(Seq(RationalClock("test",1,2)), Seq(1))
-    val anno = baseFCCA.copy(channelInfo = clockInfo)
+    val clockInfo = TargetClockChannel(Seq(RationalClock("test", 1, 2)), Seq(1))
+    val anno      = baseFCCA.copy(channelInfo = clockInfo)
     val deserAnno = serializeAndDeserialize(anno)
     assert(anno == deserAnno)
   }
 
   "DecoupledRevChannel FCCAs" should "serialize and deserialize correctly" in {
-    val anno = baseFCCA.copy(channelInfo = DecoupledReverseChannel)
+    val anno      = baseFCCA.copy(channelInfo = DecoupledReverseChannel)
     val deserAnno = serializeAndDeserialize(anno)
     assert(anno == deserAnno)
   }

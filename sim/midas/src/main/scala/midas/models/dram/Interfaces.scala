@@ -1,17 +1,15 @@
-
 package midas
 package models
 
 import chisel3._
 import chisel3.util._
-import org.chipsalliance.cde.config.Parameters
-import freechips.rocketchip.util.ParameterizedBundle
-import junctions._
 
-class NastiReqChannels(implicit val p: Parameters) extends ParameterizedBundle {
-  val aw = Decoupled(new NastiWriteAddressChannel)
-  val w  = Decoupled(new NastiWriteDataChannel)
-  val ar = Decoupled(new NastiReadAddressChannel)
+import firesim.lib.nasti._
+
+class NastiReqChannels(nastiParams: NastiParameters) extends Bundle {
+  val aw = Decoupled(new NastiWriteAddressChannel(nastiParams))
+  val w  = Decoupled(new NastiWriteDataChannel(nastiParams))
+  val ar = Decoupled(new NastiReadAddressChannel(nastiParams))
 
   def fromNasti(n: NastiIO): Unit = {
     aw <> n.aw
@@ -21,8 +19,8 @@ class NastiReqChannels(implicit val p: Parameters) extends ParameterizedBundle {
 }
 
 object NastiReqChannels {
-  def apply(nasti: NastiIO)(implicit p: Parameters): NastiReqChannels = {
-    val w = Wire(new NastiReqChannels)
+  def apply(nastiParams: NastiParameters, nasti: NastiIO): NastiReqChannels = {
+    val w = Wire(new NastiReqChannels(nastiParams))
     w.ar <> nasti.ar
     w.aw <> nasti.aw
     w.w  <> nasti.w
@@ -30,44 +28,41 @@ object NastiReqChannels {
   }
 }
 
-class ValidNastiReqChannels(implicit val p: Parameters) extends ParameterizedBundle {
-  val aw = Valid(new NastiWriteAddressChannel)
-  val w  = Valid(new NastiWriteDataChannel)
-  val ar = Valid(new NastiReadAddressChannel)
+class ValidNastiReqChannels(nastiParams: NastiParameters) extends Bundle {
+  val aw = Valid(new NastiWriteAddressChannel(nastiParams))
+  val w  = Valid(new NastiWriteDataChannel(nastiParams))
+  val ar = Valid(new NastiReadAddressChannel(nastiParams))
 }
 
-class NastiRespChannels(implicit val p: Parameters) extends ParameterizedBundle {
-  val b  = Decoupled(new NastiWriteResponseChannel)
-  val r  = Decoupled(new NastiReadDataChannel)
+class NastiRespChannels(nastiParams: NastiParameters) extends Bundle {
+  val b = Decoupled(new NastiWriteResponseChannel(nastiParams))
+  val r = Decoupled(new NastiReadDataChannel(nastiParams))
 }
 
 // Target-level interface
-class EgressReq(implicit val p: Parameters) extends ParameterizedBundle
-    with HasNastiParameters {
+class EgressReq(nastiParams: NastiParameters) extends NastiBundle(nastiParams) {
   val b = Valid(UInt(nastiWIdBits.W))
   val r = Valid(UInt(nastiRIdBits.W))
 }
 
 // Target-level interface
-class EgressResp(implicit val p: Parameters) extends ParameterizedBundle {
-  val bBits = Output(new NastiWriteResponseChannel)
+class EgressResp(nastiParams: NastiParameters) extends Bundle {
+  val bBits  = Output(new NastiWriteResponseChannel(nastiParams))
   val bReady = Input(Bool())
-  val rBits = Output(new NastiReadDataChannel)
+  val rBits  = Output(new NastiReadDataChannel(nastiParams))
   val rReady = Input(Bool())
 }
 
 // Contains the metadata required to track a transaction as it it requested from the egress unit
-class CurrentReadResp(implicit val p: Parameters) extends ParameterizedBundle
-    with HasNastiParameters {
-  val id = UInt(nastiRIdBits.W)
+class CurrentReadResp(nastiParams: NastiParameters) extends NastiBundle(nastiParams) {
+  val id  = UInt(nastiRIdBits.W)
   val len = UInt(nastiXLenBits.W)
 }
-class CurrentWriteResp(implicit val p: Parameters) extends ParameterizedBundle 
-    with HasNastiParameters {
+class CurrentWriteResp(nastiParams: NastiParameters) extends NastiBundle(nastiParams) {
   val id = UInt(nastiRIdBits.W)
 }
 
-class MemModelTargetIO(implicit val p: Parameters) extends ParameterizedBundle {
-  val nasti = new NastiIO
+class MemModelTargetIO(nastiParams: NastiParameters) extends Bundle {
+  val nasti = new NastiIO(nastiParams)
   val reset = Output(Bool())
 }

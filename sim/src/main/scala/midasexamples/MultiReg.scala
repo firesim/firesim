@@ -21,15 +21,14 @@ class RegPipe extends Module {
 
 class MultiRegDUT extends Module {
   val nCopies = 4
-  val io = IO(new Bundle {
+  val io      = IO(new Bundle {
     val pipeIOs = Vec(nCopies, new PipeIO)
   })
-  val pipes = Seq.fill(nCopies)(Module(new RegPipe))
-  (io.pipeIOs zip pipes).foreach {
-    case (pio, p) =>
-      p.io <> pio
-      annotate(EnableModelMultiThreadingAnnotation(p))
+  val pipes   = Seq.fill(nCopies)(Module(new RegPipe))
+  (io.pipeIOs.zip(pipes)).foreach { case (pio, p) =>
+    p.io <> pio
+    annotate(EnableModelMultiThreadingAnnotation(p))
   }
 }
 
-class MultiReg(implicit p: Parameters) extends PeekPokeMidasExampleHarness(() => new MultiRegDUT)
+class MultiReg(implicit p: Parameters) extends firesim.lib.testutils.PeekPokeHarness(() => new MultiRegDUT)

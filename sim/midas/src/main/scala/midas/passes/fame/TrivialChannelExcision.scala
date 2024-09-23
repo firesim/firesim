@@ -16,27 +16,37 @@ import collection.mutable
  */
 
 class TrivialChannelExcision extends Transform {
-  def inputForm = LowForm
+  def inputForm  = LowForm
   def outputForm = LowForm
 
   override def execute(state: CircuitState): CircuitState = {
-    val topName = state.circuit.main
-    val topModule = state.circuit.modules.find(_.name == topName).collect({
-      case m: Module => m
-    }).get
-    val topChildren = new mutable.HashSet[WDefInstance]
+    val topName          = state.circuit.main
+    val topModule        = state.circuit.modules
+      .find(_.name == topName)
+      .collect({ case m: Module =>
+        m
+      })
+      .get
+    val topChildren      = new mutable.HashSet[WDefInstance]
     topModule.body.foreach(InstanceGraph.collectInstances(topChildren))
     assert(topChildren.size == 1)
-    val specialSignals = state.annotations.collect({
-      case FAMEHostClock(rt) => rt.ref
-      case FAMEHostReset(rt) => rt.ref
-    }).toSet
-    val fame1Anno = FAMETransformAnnotation(ModuleTarget(topName, topChildren.head.module))
+    val specialSignals   = state.annotations
+      .collect({
+        case FAMEHostClock(rt) => rt.ref
+        case FAMEHostReset(rt) => rt.ref
+      })
+      .toSet
+    val fame1Anno        = FAMETransformAnnotation(ModuleTarget(topName, topChildren.head.module))
     val fameChannelAnnos = topModule.ports.collect({
-      case ip @ Port(_, name, Input, tpe) if !specialSignals.contains(name) =>
-        FAMEChannelConnectionAnnotation.implicitlyClockedSink(name, WireChannel, Seq(ReferenceTarget(topName, topName, Nil, name, Nil)))
-      case op @ Port(_, name, Output, tpe) =>
-        FAMEChannelConnectionAnnotation.implicitlyClockedSource(name, WireChannel, Seq(ReferenceTarget(topName, topName, Nil, name, Nil)))
+      case Port(_, name, Input, _) if !specialSignals.contains(name) =>
+        FAMEChannelConnectionAnnotation
+          .implicitlyClockedSink(name, WireChannel, Seq(ReferenceTarget(topName, topName, Nil, name, Nil)))
+      case Port(_, name, Output, _)                                  =>
+        FAMEChannelConnectionAnnotation.implicitlyClockedSource(
+          name,
+          WireChannel,
+          Seq(ReferenceTarget(topName, topName, Nil, name, Nil)),
+        )
     })
     state.copy(annotations = state.annotations ++ Seq(fame1Anno) ++ fameChannelAnnos)
   }

@@ -1,37 +1,36 @@
 Supernode - Multiple Simulated SoCs Per FPGA
 ============================================
 
-Supernode allows users to run multiple simulated SoCs per-FPGA in order to improve
-FPGA resource utilization and reduce cost. For example, in the case of using
-FireSim to simulate a datacenter scale system, supernode mode allows realistic
-rack topology simulation (32 simulated nodes) using a single ``f1.16xlarge``
-instance (8 FPGAs).
+Supernode allows users to run multiple simulated SoCs per-FPGA in order to improve FPGA
+resource utilization and reduce cost. For example, in the case of using FireSim to
+simulate a datacenter scale system, supernode mode allows realistic rack topology
+simulation (32 simulated nodes) using a single ``f1.16xlarge`` instance (8 FPGAs).
 
 Below, we outline the build and runtime configuration changes needed to utilize
-supernode designs. Supernode is currently only enabled for RocketChip designs
-with NICs. More details about supernode can be found in the `FireSim ISCA 2018
-Paper <https://sagark.org/assets/pubs/firesim-isca2018.pdf>`__.
+supernode designs. Supernode is currently only enabled for RocketChip designs with NICs.
+More details about supernode can be found in the `FireSim ISCA 2018 Paper
+<https://sagark.org/assets/pubs/firesim-isca2018.pdf>`__.
 
 Introduction
---------------
+------------
 
-By default, supernode packs 4 identical designs into a single FPGA, and
-utilizes all 4 DDR channels available on each FPGA on AWS F1 instances. It
-currently does so by generating a wrapper top level target which encapsualtes
-the four simulated target nodes. The packed nodes are treated as 4 separate
-nodes, are assigned their own individual MAC addresses, and can perform any
-action a single node could: run different programs, interact with each other
-over the network, utilize different block device images, etc. In the networked
-case, 4 separate network links are presented to the switch-side.
+By default, supernode packs 4 identical designs into a single FPGA, and utilizes all 4
+DDR channels available on each FPGA on AWS F1 instances. It currently does so by
+generating a wrapper top level target which encapsualtes the four simulated target
+nodes. The packed nodes are treated as 4 separate nodes, are assigned their own
+individual MAC addresses, and can perform any action a single node could: run different
+programs, interact with each other over the network, utilize different block device
+images, etc. In the networked case, 4 separate network links are presented to the
+switch-side.
 
 Building Supernode Designs
-----------------------------
+--------------------------
 
-Here, we outline some of the changes between supernode and regular simulations
-that are required to build supernode designs.
+Here, we outline some of the changes between supernode and regular simulations that are
+required to build supernode designs.
 
 The Supernode target configuration wrapper can be found in Chipyard in
-``chipyard/generators/firechip/src/main/scala/TargetConfigs.scala``.  An example wrapper
+``chipyard/generators/firechip/src/main/scala/TargetConfigs.scala``. An example wrapper
 configuration is:
 
 .. code-block:: scala
@@ -41,12 +40,10 @@ configuration is:
        new freechips.rocketchip.subsystem.WithExtMemSize((1 << 30) * 8L) ++ // 8 GB
        new FireSimRocketConfig)
 
-
 In this example, ``SupernodeFireSimRocketConfig`` is the wrapper, while
-``FireSimRocketConfig`` is the target node configuration. To simulate a
-different target configuration, we will generate a new supernode wrapper, with
-the new target configuration. For example, to simulate 4 quad-core nodes on one
-FPGA, you can use:
+``FireSimRocketConfig`` is the target node configuration. To simulate a different target
+configuration, we will generate a new supernode wrapper, with the new target
+configuration. For example, to simulate 4 quad-core nodes on one FPGA, you can use:
 
 .. code-block:: scala
 
@@ -55,14 +52,12 @@ FPGA, you can use:
        new freechips.rocketchip.subsystem.WithExtMemSize((1 << 30) * 8L) ++ // 8 GB
        new FireSimQuadRocketConfig)
 
-
 Next, when defining the build recipe, we must remember to use the supernode
-configuration: The ``DESIGN`` parameter should always be set to
-``FireSim``, while the ``TARGET_CONFIG`` parameter should be set to
-the wrapper configuration that was defined in
-``chipyard/generators/firechip/src/main/scala/TargetConfigs.scala``.  The
-``PLATFORM_CONFIG`` can be selected the same as in regular FireSim
-configurations.  For example:
+configuration: The ``DESIGN`` parameter should always be set to ``FireSim``, while the
+``TARGET_CONFIG`` parameter should be set to the wrapper configuration that was defined
+in ``chipyard/generators/firechip/src/main/scala/TargetConfigs.scala``. The
+``PLATFORM_CONFIG`` can be selected the same as in regular FireSim configurations. For
+example:
 
 .. code-block:: yaml
 
@@ -71,74 +66,80 @@ configurations.  For example:
     PLATFORM_CONFIG: BaseF1Config
     deploy_quintuplet: null
 
-
-We currently provide a single pre-built AGFI for supernode of 4 quad-core
-RocketChips with DDR3 memory models. You can build your own AGFI, using the supplied samples in
-``config_build_recipes.yaml``.  Importantly, in order to meet FPGA timing
-contraints, Supernode target may require lower host clock frequencies.
-Host clock frequencies can be configured as parts of the ``platform_config_args``
-(this must be done using ``PLATFORM_CONFIG`` if not using F1) in ``config_build_recipes.yaml``.
+We currently provide a single pre-built AGFI for supernode of 4 quad-core RocketChips
+with DDR3 memory models. You can build your own AGFI, using the supplied samples in
+``config_build_recipes.yaml``. Importantly, in order to meet FPGA timing contraints,
+Supernode target may require lower host clock frequencies. Host clock frequencies can be
+configured as parts of the ``platform_config_args`` (this must be done using
+``PLATFORM_CONFIG`` if not using F1) in ``config_build_recipes.yaml``.
 
 Running Supernode Simulations
 -----------------------------
 
-Running FireSim in supernode mode follows the same process as in
-"regular" mode. Currently, the only difference is that the main simulation
-screen remains with the name ``fsim0``, while the three other simulation screens
-can be accessed by attaching ``screen`` to ``uartpty1``, ``uartpty2``, ``uartpty3``
-respectively. All simulation screens will generate uart logs (``uartlog1``,
-``uartlog2``, ``uartlog3``). Notice that you must use ``sudo`` in order to
-attach to the uartpty or view the uart logs. The additional uart logs will not
-be copied back to the manager instance by default (as in a "regular" FireSim
-simulation). It is neccessary to specify the copying of the additional uartlogs
-(uartlog1, uartlog2, uartlog3) in the workload definition.
+Running FireSim in supernode mode follows the same process as in "regular" mode.
+Currently, the only difference is that the main simulation screen remains with the name
+``fsim0``, while the three other simulation screens can be accessed by attaching
+``screen`` to ``uartpty1``, ``uartpty2``, ``uartpty3`` respectively. All simulation
+screens will generate uart logs (``uartlog1``, ``uartlog2``, ``uartlog3``). Notice that
+you must use ``sudo`` in order to attach to the uartpty or view the uart logs. The
+additional uart logs will not be copied back to the manager instance by default (as in a
+"regular" FireSim simulation). It is neccessary to specify the copying of the additional
+uartlogs (uartlog1, uartlog2, uartlog3) in the workload definition.
 
 Supernode topologies utilize a ``FireSimSuperNodeServerNode`` class in order to
-represent one of the 4 simulated target nodes which also represents a single
-FPGA mapping, while using a ``FireSimDummyServerNode`` class which represent
-the other three simulated target nodes which do not represent an FPGA mapping.
-In supernode mode, topologies should always add nodes in pairs of 4, as one
-``FireSimSuperNodeServerNode`` and three ``FireSimDummyServerNode`` s.
+represent one of the 4 simulated target nodes which also represents a single FPGA
+mapping, while using a ``FireSimDummyServerNode`` class which represent the other three
+simulated target nodes which do not represent an FPGA mapping. In supernode mode,
+topologies should always add nodes in pairs of 4, as one ``FireSimSuperNodeServerNode``
+and three ``FireSimDummyServerNode`` s.
 
-Various example Supernode topologies are provided, ranging from 4 simulated
-target nodes to 1024 simulated target nodes.
+Various example Supernode topologies are provided, ranging from 4 simulated target nodes
+to 1024 simulated target nodes.
 
-Below are a couple of useful examples as templates for writing custom
-Supernode topologies.
+Below are a couple of useful examples as templates for writing custom Supernode
+topologies.
 
-
-A sample Supernode topology of 4 simulated target nodes which can fit on a
-single ``f1.2xlarge`` is:
+A sample Supernode topology of 4 simulated target nodes which can fit on a single
+``f1.2xlarge`` is:
 
 .. code-block:: python
 
     def supernode_example_4config(self):
         self.roots = [FireSimSwitchNode()]
-        servers = [FireSimSuperNodeServerNode()] + [FireSimDummyServerNode() for x in range(3)]
+        servers = [FireSimSuperNodeServerNode()] + [
+            FireSimDummyServerNode() for x in range(3)
+        ]
         self.roots[0].add_downlinks(servers)
 
-
-A sample Supernode topology of 32 simulated target nodes which can fit on a
-single ``f1.16xlarge`` is:
+A sample Supernode topology of 32 simulated target nodes which can fit on a single
+``f1.16xlarge`` is:
 
 .. code-block:: python
 
     def supernode_example_32config(self):
         self.roots = [FireSimSwitchNode()]
-        servers = UserTopologies.supernode_flatten([[FireSimSuperNodeServerNode(), FireSimDummyServerNode(), FireSimDummyServerNode(), FireSimDummyServerNode()] for y in range(8)])
+        servers = UserTopologies.supernode_flatten(
+            [
+                [
+                    FireSimSuperNodeServerNode(),
+                    FireSimDummyServerNode(),
+                    FireSimDummyServerNode(),
+                    FireSimDummyServerNode(),
+                ]
+                for y in range(8)
+            ]
+        )
         self.roots[0].add_downlinks(servers)
 
-
-Supernode ``config_runtime.yaml`` requires selecting a supernode agfi in conjunction with a defined supernode topology.
-
+Supernode ``config_runtime.yaml`` requires selecting a supernode agfi in conjunction
+with a defined supernode topology.
 
 Work in Progress!
---------------------
+-----------------
 
-We are currently working on restructuring supernode to support a
-wider-variety of use cases (including non-networked cases, and increased
-packing of nodes). More documentation will follow.
-Not all FireSim features are currently available on Supernode. As a
-rule-of-thumb, target-related features have a higher likelihood of being
-supported "out-of-the-box", while features which involve external interfaces
-(such as TracerV) has a lesser likelihood of being supported "out-of-the-box"
+We are currently working on restructuring supernode to support a wider-variety of use
+cases (including non-networked cases, and increased packing of nodes). More
+documentation will follow. Not all FireSim features are currently available on
+Supernode. As a rule-of-thumb, target-related features have a higher likelihood of being
+supported "out-of-the-box", while features which involve external interfaces (such as
+TracerV) has a lesser likelihood of being supported "out-of-the-box"

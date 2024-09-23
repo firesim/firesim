@@ -11,24 +11,24 @@ object Instantiate {
 }
 
 object Decouple {
-  def apply(t: Type): Type = BundleType(Seq(
-    Field("ready", Flip, Utils.BoolType),
-    Field("valid", Default, Utils.BoolType),
-    Field("bits", Default, t)))
+  def apply(t: Type): Type = BundleType(
+    Seq(Field("ready", Flip, Utils.BoolType), Field("valid", Default, Utils.BoolType), Field("bits", Default, t))
+  )
   def apply(p: Port): Port = p.copy(tpe = apply(p.tpe))
 }
 
 object IsDecoupled {
   def apply(t: BundleType): Boolean = {
     val sortedFields = t.fields.sortBy(_.name)
-    val tailPattern = Seq(
+    val tailPattern  = Seq(
       Field("ready", Utils.swap(sortedFields.head.flip), Utils.BoolType),
-      Field("valid", sortedFields.head.flip, Utils.BoolType))
+      Field("valid", sortedFields.head.flip, Utils.BoolType),
+    )
     sortedFields.head.name == "bits" && sortedFields.tail == tailPattern
   }
   def apply(t: Type): Boolean = t match {
     case bt: BundleType => apply(bt)
-    case _ => false
+    case _              => false
   }
 }
 
@@ -43,7 +43,6 @@ class Decoupled(inst: Expression) {
   }
 }
 
-
 object Negate {
   def apply(arg: Expression): Expression = DoPrim(PrimOps.Not, Seq(arg), Seq.empty, arg.tpe)
 }
@@ -53,7 +52,7 @@ sealed trait BinaryBooleanOp {
   def apply(l: Expression, r: Expression): DoPrim = DoPrim(op, Seq(l, r), Nil, BoolType)
   def reduce(args: Iterable[Expression]): Expression = {
     require(args.nonEmpty)
-    args.tail.foldLeft(args.head){ (l, r) => apply(l, r) }
+    args.tail.foldLeft(args.head) { (l, r) => apply(l, r) }
   }
 }
 
@@ -77,11 +76,10 @@ object Neq extends BinaryBooleanOp {
   val op = PrimOps.Neq
 }
 
-/** Generates a DefRegister with no reset, relying instead on FPGA programming
-  * to preset the register to 0
+/** Generates a DefRegister with no reset, relying instead on FPGA programming to preset the register to 0
   */
 object RegZeroPreset {
-  def apply(info: Info, name: String, tpe: Type, clock: Expression): DefRegister =
+  def apply(info: Info, name: String, tpe:   Type, clock: Expression): DefRegister =
     DefRegister(info, name, tpe, clock, zero, WRef(name))
   def apply(info: Info, name: String, clock: Expression): DefRegister =
     DefRegister(info, name, BoolType, clock, zero, WRef(name))

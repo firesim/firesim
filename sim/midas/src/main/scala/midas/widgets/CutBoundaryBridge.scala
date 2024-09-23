@@ -1,10 +1,16 @@
+// See LICENSE for license details.
+
 package midas.widgets
 
 import chisel3._
 import chisel3.util._
+
 import org.chipsalliance.cde.config._
 import freechips.rocketchip.util._
+
 import midas.{MetasimPrintfEnable, PrintfLogger}
+
+import firesim.lib.bridgeutils._
 
 object TokensBatchedAtOnceConsts {
   val TOKEN_QUEUE_DEPTH = 32 * 2
@@ -38,27 +44,30 @@ class CutBoundaryBridgeIO(cutParams: CutBoundaryParams) extends Bundle {
   val in    = Output(UInt(cutParams.inTokenBits.W))
 }
 
-class PCISCutBoundaryBridge(cutParams: CutBoundaryParams)(implicit p: Parameters)
+class PCISCutBoundaryBridge(cutParams: CutBoundaryParams)
     extends BlackBox
-    with Bridge[HostPortIO[CutBoundaryBridgeIO], PCISCutBoundaryBridgeModule] {
+    with Bridge[HostPortIO[CutBoundaryBridgeIO]] {
+  val moduleName     = "midas.widgets.PCISCutBoundaryBridgeModule"
   val io             = IO(new CutBoundaryBridgeIO(cutParams))
   val bridgeIO       = HostPort(io)
   val constructorArg = Some(CutBoundaryKey(cutParams))
   generateAnnotations()
 }
 
-class QSFPCutBoundaryBridge(cutParams: CutBoundaryParams)(implicit p: Parameters)
+class QSFPCutBoundaryBridge(cutParams: CutBoundaryParams)
     extends BlackBox
-    with Bridge[HostPortIO[CutBoundaryBridgeIO], QSFPCutBoundaryBridgeModule] {
+    with Bridge[HostPortIO[CutBoundaryBridgeIO]] {
+  val moduleName     = "midas.widgets.QSFPCutBoundaryBridgeModule"
   val io             = IO(new CutBoundaryBridgeIO(cutParams))
   val bridgeIO       = HostPort(io)
   val constructorArg = Some(CutBoundaryKey(cutParams))
   generateAnnotations()
 }
 
-class PCIMCutBoundaryBridge(cutParams: CutBoundaryParams)(implicit p: Parameters)
+class PCIMCutBoundaryBridge(cutParams: CutBoundaryParams)
     extends BlackBox
-    with Bridge[HostPortIO[CutBoundaryBridgeIO], PCIMCutBoundaryBridgeModule] {
+    with Bridge[HostPortIO[CutBoundaryBridgeIO]] {
+  val moduleName     = "midas.widgets.PCIMCutBoundaryBridgeModule"
   val io             = IO(new CutBoundaryBridgeIO(cutParams))
   val bridgeIO       = HostPort(io)
   val constructorArg = Some(CutBoundaryKey(cutParams))
@@ -70,7 +79,6 @@ class TokenSlicer(
   tagBits:    Int,
   tokenBits:  Int,
   tag:        BigInt,
-)(implicit p: Parameters
 ) extends Module {
   val streamBits         = toHostBits + tagBits
   val io                 = IO(new Bundle {
@@ -108,7 +116,6 @@ class TokenAggregator(
   fromHostBits: Int,
   tagBits:      Int,
   tokenBits:    Int,
-)(implicit p:   Parameters
 ) extends Module {
   val streamBits         = fromHostBits + tagBits
   val io                 = IO(new Bundle {
@@ -231,14 +238,14 @@ abstract class CutBoundaryBridgeModule(
     val deqTokenFire = DecoupledHelper(hPort.toHost.hValid, tokenOutQueue.io.enq.ready, initSimulatorDone)
 
     val metasimPrintfEnable = p(MetasimPrintfEnable)
-    when(deqTokenFire.fire) {
+    when(deqTokenFire.fire()) {
       outputTokens := outputTokens + 1.U
       if (metasimPrintfEnable) {
         PrintfLogger.logInfo("CutBoundaryBridge %d toHostTokenFire 0x%x\n", outTokenBits.U, hPort.hBits.out)
       }
     }
 
-    when(enqTokenFire.fire) {
+    when(enqTokenFire.fire()) {
       inputTokens := inputTokens + 1.U
       if (metasimPrintfEnable) {
         PrintfLogger.logInfo("CutBoundaryBridge %d fromHostTokenFire 0x%x\n", inTokenBits.U, hPort.hBits.in)
@@ -284,7 +291,7 @@ abstract class CutBoundaryBridgeModule(
     // For QSFP bridges, there are cases where we receive gargabe data
     // from the Aurora IP.
     val garbageCnt = RegInit(0.U(64.W))
-    when(rejectRxStreamFire.fire) {
+    when(rejectRxStreamFire.fire()) {
       garbageCnt := garbageCnt + 1.U
       if (metasimPrintfEnable) {
         PrintfLogger.logInfo("rejectToken(%d) 0x%x\n", garbageCnt, filterQueue.io.deq.bits)
@@ -311,10 +318,10 @@ abstract class CutBoundaryBridgeModule(
 
     tokenInQueue.io.enq.valid      := initTokenFire.fire(tokenInQueue.io.enq.ready) ||
       exchangeTokenFire.fire(tokenInQueue.io.enq.ready)
-    tokenInQueue.io.enq.bits       := Mux(initTokenFire.fire, initToken, tokenAggregator.io.token.bits)
+    tokenInQueue.io.enq.bits       := Mux(initTokenFire.fire(), initToken, tokenAggregator.io.token.bits)
     tokenAggregator.io.token.ready := exchangeTokenFire.fire(tokenAggregator.io.token.valid)
 
-    when(initTokenFire.fire) {
+    when(initTokenFire.fire()) {
       curInitTokens := curInitTokens + 1.U
       when(curInitTokens === initSimulatorTokens - 1.U) {
         initSimulatorDone := true.B

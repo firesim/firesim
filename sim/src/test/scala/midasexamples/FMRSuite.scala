@@ -3,7 +3,6 @@
 package firesim.midasexamples
 
 import java.io.File
-import org.chipsalliance.cde.config.Config
 import scala.io.Source
 import org.scalatest.Suites
 
@@ -12,13 +11,13 @@ import firesim.BasePlatformConfig
 abstract class FMRSuite(
   targetName:         String,
   expectedValue:      Double,
-  error:              Double                  = 0.0,
-  targetConfigs:      String                  = "NoConfig",
-  platformConfigs:    Seq[Class[_ <: Config]] = Seq(),
-  basePlatformConfig: BasePlatformConfig      = BaseConfigs.F1,
-  simulationArgs:     Seq[String]             = Seq(),
+  error:              Double             = 0.0,
+  targetConfigs:      String             = "NoConfig",
+  platformConfigs:    Seq[String]        = Seq(),
+  basePlatformConfig: BasePlatformConfig = BaseConfigs.F1,
+  simulationArgs:     Seq[String]        = Seq(),
 ) extends TutorialSuite(targetName, targetConfigs, platformConfigs, basePlatformConfig, simulationArgs) {
-  override def defineTests(backend: String, debug: Boolean) {
+  override def defineTests(backend: String, debug: Boolean): Unit = {
     it should "run in the simulator" in {
       assert(run(backend, debug, args = simulationArgs) == 0)
     }

@@ -11,7 +11,7 @@ class SplitModulesByPortTransforms extends Transform {
   def outputForm = LowForm
 
   def execute(state: CircuitState) = {
-    println(s"Starting SplitModules Transforms")
+    println("Starting SplitModules Transforms")
     val xforms = Seq(
       new ResolveAndCheck,
       HoistStopAndPrintfEnables,

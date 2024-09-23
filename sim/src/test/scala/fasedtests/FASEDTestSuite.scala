@@ -5,18 +5,9 @@ package firesim.fasedtests
 import java.io.File
 
 import scala.io.Source
-import scala.concurrent.{Await, ExecutionContext, Future}
-import scala.util.Random
 import org.scalatest.Suites
 
-import freechips.rocketchip.diplomacy._
-import freechips.rocketchip.system.{BenchmarkTestSuite, RocketTestSuite}
-import freechips.rocketchip.system.TestGeneration._
-import freechips.rocketchip.system.DefaultTestSuites._
-
-import firesim.configs.LlcKey
 import firesim.TestSuiteUtil._
-import firesim.BasePlatformConfig
 import firesim.midasexamples.BaseConfigs
 
 /** Different runtime-configuration modes extend this trait. See below. */
@@ -54,17 +45,14 @@ case class CustomRuntimeConfig(pathRelativeToSim: String) extends RuntimeConfig 
   *   Non-standard plusargs to add to runTest invocations by default
   */
 abstract class FASEDTest(
-  override val targetName:    String,
-  override val targetConfigs: String,
-  platformConfigs:            String        = "",
-  baseRuntimeConfig:          RuntimeConfig = DefaultRuntimeConfig,
-  additionalPlusArgs:         Seq[String]   = Seq(),
+  override val targetName:      String,
+  override val targetConfigs:   String,
+  override val platformConfigs: Seq[String]   = Seq(),
+  baseRuntimeConfig:            RuntimeConfig = DefaultRuntimeConfig,
+  additionalPlusArgs:           Seq[String]   = Seq(),
 ) extends firesim.TestSuiteCommon("fasedtests") {
 
   override def basePlatformConfig = BaseConfigs.F1
-
-  import scala.concurrent.duration._
-  import ExecutionContext.Implicits.global
 
   def invokeMlSimulator(backend: String, debug: Boolean, args: Seq[String]) = {
     make((s"run-${backend}%s".format(if (debug) "-debug" else "") +: args): _*)
@@ -81,7 +69,7 @@ abstract class FASEDTest(
   ) = {
     val runtimeConfArg: Option[String] = baseRuntimeConfig match {
       case DefaultRuntimeConfig      => None
-      case EmptyRuntimeConfig        => Some(s"COMMON_SIM_ARGS=")
+      case EmptyRuntimeConfig        => Some("COMMON_SIM_ARGS=")
       case CustomRuntimeConfig(path) => Some(s"COMMON_SIM_ARGS=${Source.fromFile(path).getLines.mkString(" ")}")
     }
     val plusArgs                       = Seq(s"""EXTRA_SIM_ARGS=${additionalPlusArgs.mkString(" ")}""")
@@ -93,7 +81,7 @@ abstract class FASEDTest(
         logArg ++:
         additionalMakeArgs
 
-    it should behaviorSpec.getOrElse(s"run") in {
+    it should behaviorSpec.getOrElse("run") in {
       assert(invokeMlSimulator(backend, debug, makeArgs) == 0)
     }
   }
@@ -106,7 +94,7 @@ class AXI4FuzzerLBPTest extends FASEDTest("AXI4Fuzzer", "DefaultConfig")
 // Sanity checks that target output is the same when using the default runtime
 // configuration and the hardwired values.
 class CheckHardwiredValuesTest extends FASEDTest("AXI4Fuzzer", "NT10e3_AddrBits16_DefaultConfig") {
-  override def defineTests(backend: String, debug: Boolean) {
+  override def defineTests(backend: String, debug: Boolean): Unit = {
     val logA = new File(s"$outDir/using-runtime-conf.out")
     runTest(backend, debug, logFile = Some(logA), behaviorSpec = Some("run using a runtime.conf"))
 
@@ -147,10 +135,10 @@ class AXI4FuzzerLLCDRAMTest      extends FASEDTest("AXI4Fuzzer", "LLCDRAMConfig"
 
 // Generate a target memory system that uses the whole host memory system.
 class BaselineMultichannelTest
-    extends FASEDTest("AXI4Fuzzer", "AddrBits22_QuadFuzzer_DefaultConfig", "AddrBits22_SmallQuadChannelHostConfig")
+    extends FASEDTest("AXI4Fuzzer", "AddrBits22_QuadFuzzer_DefaultConfig", Seq("AddrBits22_SmallQuadChannelHostConfig"))
 
 // Checks that id-reallocation works for platforms with limited ID space
-class NarrowIdConstraint extends FASEDTest("AXI4Fuzzer", "DefaultConfig", "ConstrainedIdHostConfig")
+class NarrowIdConstraint extends FASEDTest("AXI4Fuzzer", "DefaultConfig", Seq("ConstrainedIdHostConfig"))
 
 // Suite Collections for CI
 class CIGroupA

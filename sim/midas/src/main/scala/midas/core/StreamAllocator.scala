@@ -4,25 +4,19 @@ package midas.core
 
 import org.chipsalliance.cde.config.Field
 
-/**
-  * Does the dirty work of providing an index to each stream, and checking its
-  * requested name is unique.
+/** Does the dirty work of providing an index to each stream, and checking its requested name is unique.
   *
-  * Instead of making these truly global data structures, they are snuck in to
-  * the bridges via p, using the [[ToCPUStreamAllocatorKey]] and
-  * [[FromCPUStreamAllocatorKey]].
+  * Instead of making these truly global data structures, they are snuck in to the bridges via p, using the
+  * [[ToCPUStreamAllocatorKey]] and [[FromCPUStreamAllocatorKey]].
   *
-  * It's worth noting this is the sort of thing diplomacy would handle for us,
-  * if I put in the time to defined node types for these streams. That is probably
-  * worth doing in a future PR, but is a significant amount of boiler plate.
-  *
+  * It's worth noting this is the sort of thing diplomacy would handle for us, if I put in the time to defined node
+  * types for these streams. That is probably worth doing in a future PR, but is a significant amount of boiler plate.
   */
-private [midas] class StreamAllocator {
-  private var idx = 0;
+private[midas] class StreamAllocator {
+  private var idx       = 0;
   private val namespace = firrtl.Namespace()
 
-  /**
-    * Uniquifies the name for a stream, and returns its index
+  /** Uniquifies the name for a stream, and returns its index
     */
   def allocate(desiredName: String): (String, Int) = {
     val allocatedId = idx;
@@ -33,15 +27,17 @@ private [midas] class StreamAllocator {
     // own structs / protobuf), this can be relaxed.
     // In practice, this shouldn't trip since the names are prefixed with the
     // bridge names which are already uniquified.
-    require(!namespace.contains(desiredName),
-      s"Stream name ${desiredName}, already allocated. Requested stream names must be unique.")
+    require(
+      !namespace.contains(desiredName),
+      s"Stream name ${desiredName}, already allocated. Requested stream names must be unique.",
+    )
     (namespace.newName(desiredName), allocatedId)
   }
 }
 
-private [midas] case object ToCPUStreamAllocatorKey extends Field[StreamAllocator](new StreamAllocator)
-private [midas] case object FromCPUStreamAllocatorKey extends Field[StreamAllocator](new StreamAllocator)
+private[midas] case object ToCPUStreamAllocatorKey   extends Field[StreamAllocator](new StreamAllocator)
+private[midas] case object FromCPUStreamAllocatorKey extends Field[StreamAllocator](new StreamAllocator)
 
-private [midas] case object ToQSFPStreamAllocatorKey extends Field[StreamAllocator](new StreamAllocator)
-private [midas] case object FromQSFPStreamAllocatorKey extends Field[StreamAllocator](new StreamAllocator)
-private [midas] case object ToPeerFPGAStreamAllocatorKey extends Field[StreamAllocator](new StreamAllocator)
+private[midas] case object ToQSFPStreamAllocatorKey     extends Field[StreamAllocator](new StreamAllocator)
+private[midas] case object FromQSFPStreamAllocatorKey   extends Field[StreamAllocator](new StreamAllocator)
+private[midas] case object ToPeerFPGAStreamAllocatorKey extends Field[StreamAllocator](new StreamAllocator)

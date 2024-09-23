@@ -3,7 +3,14 @@ from __future__ import annotations
 # imports needed for python type checking
 from typing import List
 
-def file_line_swap(in_file: str, out_file: str, start_marker: str, end_marker: str, inject_lines: List[str]):
+
+def file_line_swap(
+    in_file: str,
+    out_file: str,
+    start_marker: str,
+    end_marker: str,
+    inject_lines: List[str],
+):
     """Inject a set of lines into a file given two markers. Output into a new file.
 
     Ex.
@@ -40,8 +47,12 @@ def file_line_swap(in_file: str, out_file: str, start_marker: str, end_marker: s
         if end_marker in og_line:
             end_count += 1
 
-    assert start_count == 1, f"""Found {start_count} occurrences of "{start_marker}" in {in_file}. Only 1 allowed."""
-    assert end_count == 1, f"""Found {end_count} occurrences of "{end_marker}" in {in_file}. Only 1 allowed."""
+    assert (
+        start_count == 1
+    ), f"""Found {start_count} occurrences of "{start_marker}" in {in_file}. Only 1 allowed."""
+    assert (
+        end_count == 1
+    ), f"""Found {end_count} occurrences of "{end_marker}" in {in_file}. Only 1 allowed."""
 
     with open(out_file, "w") as f:
         write_og = True

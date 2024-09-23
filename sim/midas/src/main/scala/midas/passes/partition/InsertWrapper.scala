@@ -161,7 +161,7 @@ trait GroupAndInsertWrapperPass {
       insts: mutable.ArrayBuffer[InstGroup],
     ): Statement = {
       stmt match {
-        case s @ DefInstance(_, iname, mname, _) if (moduleNames.map(s => s(mname)).reduce(_ || _)) =>
+        case s @ DefInstance(_, _, mname, _) if (moduleNames.map(s => s(mname)).reduce(_ || _)) =>
           val gidx = moduleNames.zipWithIndex
             .map { case (mn, idx) =>
               if (mn(mname)) Some(idx) else None
@@ -173,20 +173,20 @@ trait GroupAndInsertWrapperPass {
 
           insts(gidx).append(s)
           EmptyStmt
-        case s: DefInstance                                                                         => s
-        case s: DefWire                                                                             => s
-        case s: DefRegister                                                                         => s
-        case s: DefMemory                                                                           => s
-        case s: DefNode                                                                             => s
-        case s: Conditionally                                                                       => s
-        case s: PartialConnect                                                                      => s
-        case s: Connect                                                                             => s
-        case s: IsInvalid                                                                           => s
-        case s: Attach                                                                              => s
-        case s: Stop                                                                                => s
-        case s: Print                                                                               => s
-        case s: Verification                                                                        => s
-        case s                                                                                      => findAndRemoveModuleInstances(s, insts)
+        case s: DefInstance                                                                     => s
+        case s: DefWire                                                                         => s
+        case s: DefRegister                                                                     => s
+        case s: DefMemory                                                                       => s
+        case s: DefNode                                                                         => s
+        case s: Conditionally                                                                   => s
+        case s: PartialConnect                                                                  => s
+        case s: Connect                                                                         => s
+        case s: IsInvalid                                                                       => s
+        case s: Attach                                                                          => s
+        case s: Stop                                                                            => s
+        case s: Print                                                                           => s
+        case s: Verification                                                                    => s
+        case s                                                                                  => findAndRemoveModuleInstances(s, insts)
       }
     }
 
@@ -311,7 +311,7 @@ trait GroupAndInsertWrapperPass {
         group.foreach { dm => instToGroupWrapperMap(dm.name) = groupWrapperModuleName }
 
         println(s"Generating a wrapper (${groupWrapperModuleName})")
-        println(s"- Grouped Modules")
+        println("- Grouped Modules")
         group.foreach(inst => println(s"  - ${inst.name}"))
 
         generateWrapperForGroup(group, instPortMap, groupWrapperModuleName, igraph, modulePortToWrapperPortMap)

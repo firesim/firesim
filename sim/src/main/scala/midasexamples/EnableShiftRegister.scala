@@ -24,5 +24,5 @@ class EnableShiftRegisterDUT extends Module {
   io.out := r3
 }
 
-
-class EnableShiftRegister(implicit p: Parameters) extends PeekPokeMidasExampleHarness(() => new EnableShiftRegisterDUT)
+class EnableShiftRegister(implicit p: Parameters)
+    extends firesim.lib.testutils.PeekPokeHarness(() => new EnableShiftRegisterDUT)

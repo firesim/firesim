@@ -2,7 +2,6 @@
 
 package firrtl.testutils
 
-import org.scalatest.flatspec.AnyFlatSpec
 import firrtl.ir.Circuit
 import firrtl.options.{Dependency, IdentityLike}
 import firrtl.passes.{PassExceptions, RemoveEmpty}
@@ -22,8 +21,8 @@ abstract class SimpleTransformSpec extends AnyFlatSpec with FirrtlMatchers with 
   // annotations cannot have default value because scalatest trait Suite has a default value
   def execute(input: String, check: String, annotations: Seq[Annotation]): CircuitState = {
     val finalState = compileAndEmit(CircuitState(parse(input), ChirrtlForm, annotations))
-    val actual = RemoveEmpty.run(parse(finalState.getEmittedCircuit.value)).serialize
-    val expected = parse(check).serialize
+    val actual     = RemoveEmpty.run(parse(finalState.getEmittedCircuit.value)).serialize
+    val expected   = parse(check).serialize
     logger.debug(actual)
     logger.debug(expected)
     (actual) should be(expected)
@@ -34,11 +33,11 @@ abstract class SimpleTransformSpec extends AnyFlatSpec with FirrtlMatchers with 
     input:            String,
     check:            String,
     annotations:      Seq[Annotation],
-    checkAnnotations: Seq[Annotation]
+    checkAnnotations: Seq[Annotation],
   ): CircuitState = {
     val finalState = compileAndEmit(CircuitState(parse(input), ChirrtlForm, annotations))
-    val actual = RemoveEmpty.run(parse(finalState.getEmittedCircuit.value)).serialize
-    val expected = parse(check).serialize
+    val actual     = RemoveEmpty.run(parse(finalState.getEmittedCircuit.value)).serialize
+    val expected   = parse(check).serialize
     logger.debug(actual)
     logger.debug(expected)
     (actual) should be(expected)
@@ -66,18 +65,18 @@ abstract class SimpleTransformSpec extends AnyFlatSpec with FirrtlMatchers with 
 
 @deprecated(
   "Use a TransformManager including 'ReRunResolveAndCheck' as a target. This will be removed in 1.4.",
-  "FIRRTL 1.3"
+  "FIRRTL 1.3",
 )
 class CustomResolveAndCheck(form: CircuitForm) extends SeqTransform {
-  def inputForm = form
-  def outputForm = form
+  def inputForm                  = form
+  def outputForm                 = form
   def transforms: Seq[Transform] = Seq[Transform](new ResolveAndCheck)
 }
 
 /** Transform that re-runs resolve and check transforms as late as possible, but before any emitters. */
 object ReRunResolveAndCheck extends Transform with DependencyAPIMigration with IdentityLike[CircuitState] {
 
-  override val optionalPrerequisites = Forms.LowFormOptimized
+  override val optionalPrerequisites  = Forms.LowFormOptimized
   override val optionalPrerequisiteOf = Forms.ChirrtlEmitters
 
   override def invalidates(a: Transform) = {

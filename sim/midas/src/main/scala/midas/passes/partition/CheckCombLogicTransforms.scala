@@ -9,7 +9,7 @@ class CheckCombLogicTransforms extends Transform {
   def outputForm = LowForm
 
   def execute(state: CircuitState) = {
-    println(s"Starting CombLogic Transforms")
+    println("Starting CombLogic Transforms")
     val xforms = Seq(
       new ResolveAndCheck,
       HoistStopAndPrintfEnables,

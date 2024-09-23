@@ -98,7 +98,7 @@ class GenerateCutBridgeInGroupedWrapper extends Transform with DependencyAPIMigr
       val connection = p.name match {
         case "clock" => Some(Connect(NoInfo, WSubField(WRef(lhsBridgeInst), "clock"), WRef(p.name)))
         case "reset" => Some(Connect(NoInfo, WSubField(WRef(lhsBridgeInst), "reset"), WRef(p.name)))
-        case o       => None
+        case _       => None
       }
       connection
     }.flatten
@@ -134,7 +134,7 @@ class GenerateCutBridgeInGroupedWrapper extends Transform with DependencyAPIMigr
       val connection = p.name match {
         case "clock" => Some(Connect(NoInfo, WSubField(WRef(rhsBridgeInst), "clock"), WRef(p.name)))
         case "reset" => Some(Connect(NoInfo, WSubField(WRef(rhsBridgeInst), "reset"), WRef(p.name)))
-        case o       => None
+        case _       => None
       }
       connection
     }.flatten
@@ -211,7 +211,7 @@ class GenerateCutBridgeInGroupedWrapper extends Transform with DependencyAPIMigr
       val connection = p.name match {
         case "clock" => Some(Connect(NoInfo, WSubField(WRef(bridgeInstance), "clock"), WRef(p.name)))
         case "reset" => Some(Connect(NoInfo, WSubField(WRef(bridgeInstance), "reset"), WRef(p.name)))
-        case o       => None
+        case _       => None
       }
       connection
     }.flatten
@@ -289,7 +289,7 @@ class GenerateCutBridgeInGroupedWrapper extends Transform with DependencyAPIMigr
       val connection = p.name match {
         case "clock" => Some(Connect(NoInfo, WSubField(WRef(srcBridgeInst), "clock"), WRef(p.name)))
         case "reset" => Some(Connect(NoInfo, WSubField(WRef(srcBridgeInst), "reset"), WRef(p.name)))
-        case o       => None
+        case _       => None
       }
       connection
     }.flatten
@@ -311,7 +311,7 @@ class GenerateCutBridgeInGroupedWrapper extends Transform with DependencyAPIMigr
         val connection = p.name match {
           case "clock" => Some(Connect(NoInfo, WSubField(WRef(sinkBridgeInst), "clock"), WRef(p.name)))
           case "reset" => Some(Connect(NoInfo, WSubField(WRef(sinkBridgeInst), "reset"), WRef(p.name)))
-          case o       => None
+          case _       => None
         }
         connection
       }.flatten
@@ -420,15 +420,15 @@ class PruneUnrelatedAnnoPass extends Transform with DependencyAPIMigration {
 
     val prunedAnnos = annos.filter(a =>
       a match {
-        case AutoCounterFirrtlAnnotation(target, _, _, _, _, _, _) =>
+        case InternalAutoCounterFirrtlAnnotation(target, _, _, _, _, _, _) =>
           if (igraph.findInstancesInHierarchy(target.module).size > 0) true else false
-        case AutoCounterCoverModuleFirrtlAnnotation(target)        =>
+        case AutoCounterCoverModuleFirrtlAnnotation(target)                =>
           if (igraph.findInstancesInHierarchy(target.module).size > 0) true else false
-        case TriggerSinkAnnotation(target, _)                      =>
+        case InternalTriggerSinkAnnotation(target, _)                      =>
           if (igraph.findInstancesInHierarchy(target.module).size > 0) true else false
-        case TriggerSourceAnnotation(target, _, _, _)              =>
+        case InternalTriggerSourceAnnotation(target, _, _, _)              =>
           if (igraph.findInstancesInHierarchy(target.module).size > 0) true else false
-        case _                                                     => true
+        case _                                                             => true
       }
     )
     state.copy(annotations = prunedAnnos)

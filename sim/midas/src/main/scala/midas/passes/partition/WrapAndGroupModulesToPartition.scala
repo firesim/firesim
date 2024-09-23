@@ -38,7 +38,7 @@ class WrapAndGroupModulesToPartition
     println("- Lower to LowFIRRTL")
     val loweredState = toLowFirrtl(removePartial(promotedState))
 
-    println(s"- Wrap the individual modules to extract")
+    println("- Wrap the individual modules to extract")
     val modulesWrappedState = (partitionModules.flatten)
       .zip((partitionModuleWrappers.flatten))
       .foldLeft(loweredState)((st, mmw) => wrapModule(st, mmw._1, mmw._2))
@@ -46,7 +46,7 @@ class WrapAndGroupModulesToPartition
     println(s"- Wrap the modules to extract by groups of ${partitionModules.size}")
     val groupedState = wrapModulesByGroups(modulesWrappedState, partitionModuleWrappers.map(_.toSet), groupPfx)
 
-    println(s"- Deduplicate instances to multithread")
+    println("- Deduplicate instances to multithread")
     val dedupedState = deduplicateInstancesOnFAME5(groupedState)
 
     val (groups, groupWrappers) = getGroups(dedupedState)

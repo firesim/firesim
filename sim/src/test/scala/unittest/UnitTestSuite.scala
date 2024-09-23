@@ -11,17 +11,17 @@ abstract class MidasUnitTestSuite(
   shouldFail:              Boolean = false,
 ) extends TestSuiteBase {
 
-  // GENERATED_DIR & OUTPUT_DIR are only used to properly invoke `make clean`
-  val commonMakeArgs = Seq(s"UNITTEST_CONFIG=${targetName}", s"GENERATED_DIR=${genDir}", s"OUTPUT_DIR=${outDir}")
-
   // Use the default recipe which also will compile verilator since there's no
   // separate target for just elaboration
   override def elaborateMakeTarget = Seq("compile-midas-unittests")
 
-  lazy val genDir = new File(s"generated-src/unittests/${targetName}")
-  lazy val outDir = new File(s"output/unittests/${targetName}")
+  lazy val genDir = new File(firesimDir, s"generated-src/unittests/${targetName}")
+  lazy val outDir = new File(firesimDir, s"output/unittests/${targetName}")
 
-  def runUnitTestSuite(backend: String, debug: Boolean = false) {
+  // GENERATED_DIR & OUTPUT_DIR are only used to properly invoke `make clean`
+  def commonMakeArgs = Seq(s"UNITTEST_CONFIG=${targetName}", s"GENERATED_DIR=${genDir}", s"OUTPUT_DIR=${outDir}")
+
+  def runUnitTestSuite(backend: String, debug: Boolean = false): Unit = {
     val testSpecString = if (shouldFail) "fail" else "pass" + s" when running under ${backend}"
 
     if (isCmdAvailable(backend)) {
@@ -36,9 +36,8 @@ abstract class MidasUnitTestSuite(
 
   genDir.mkdirs
   outDir.mkdirs
-
   behavior.of(s"MIDAS unittest: ${targetName}")
-  elaborateAndCompile("elaborate sucessfully")
+  elaborateAndCompile("elaborate successfully")
   runUnitTestSuite("verilator")
 }
 

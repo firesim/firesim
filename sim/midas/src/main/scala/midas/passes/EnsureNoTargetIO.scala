@@ -10,15 +10,15 @@ import firrtl.ir._
 case class TargetMalformedException(message: String) extends RuntimeException(message)
 
 private[passes] object EnsureNoTargetIO extends firrtl.Transform {
-  def inputForm = HighForm
-  def outputForm = HighForm
+  def inputForm     = HighForm
+  def outputForm    = HighForm
   override def name = "[MIDAS] Ensure No Target IO"
 
   def execute(state: CircuitState): CircuitState = {
-    val topName = state.circuit.main
+    val topName   = state.circuit.main
     val topModule = state.circuit.modules.find(_.name == topName).get
 
-    val (clockPorts, nonClockPorts) = topModule.ports.partition(_.tpe ==  ClockType)
+    val (clockPorts, nonClockPorts) = topModule.ports.partition(_.tpe == ClockType)
 
     if (!clockPorts.isEmpty) {
       val exceptionMessage = "Your target design has the following unexpected clock ports:\n" +

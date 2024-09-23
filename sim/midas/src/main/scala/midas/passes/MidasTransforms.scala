@@ -5,24 +5,25 @@ package passes
 
 import midas.passes.partition._
 
-
 import firrtl._
 
-
 private[midas] class MidasTransforms extends Transform {
-  def inputForm = LowForm
+  def inputForm  = LowForm
   def outputForm = HighForm
 
   def execute(state: CircuitState) = {
-    println(s"Starting MidasTransforms")
+    println("Starting MidasTransforms")
+
+    // First convert all external annotations to internal ones
+    val newAnnos      = midas.ConvertExternalToInternalAnnotations(state.annotations)
+    val internalState = state.copy(annotations = newAnnos)
 
     // Optionally run if the GenerateMultiCycleRamModels parameter is set
-    val p = state.annotations.collectFirst({ case midas.stage.phases.ConfigParametersAnnotation(p)  => p }).get
-    val optionalTargetTransforms = if (p(GenerateMultiCycleRamModels)) Seq(
-      new fame.LabelSRAMModels,
-      new ResolveAndCheck,
-      new EmitFirrtl("post-wrap-sram-models.fir"))
-    else Seq()
+    val p                        = internalState.annotations.collectFirst({ case midas.stage.phases.ConfigParametersAnnotation(p) => p }).get
+    val optionalTargetTransforms =
+      if (p(GenerateMultiCycleRamModels))
+        Seq(new fame.LabelSRAMModels, new ResolveAndCheck, new EmitFirrtl("post-wrap-sram-models.fir"))
+      else Seq()
 
     val partition = p(FireAxePartitionGlobalInfo).isDefined
     val extract   = p(FireAxePartitionIndex).isDefined
@@ -49,7 +50,7 @@ private[midas] class MidasTransforms extends Transform {
         new fame.EmitFAMEAnnotations("post-modify-boundary.json"),
         new ResolveAndCheck,
         new EmitFirrtl("post-modify-boundary-and-resolve.fir"),
-        )
+      )
     } else {
       Seq()
     }
@@ -80,7 +81,7 @@ private[midas] class MidasTransforms extends Transform {
       Seq()
     }
 
-    val nocPartitionPass = if(p(FireAxeNoCPartitionPass)) {
+    val nocPartitionPass = if (p(FireAxeNoCPartitionPass)) {
       println("PerformNoCPass")
       Seq(
         new LowerStatePass,
@@ -104,7 +105,7 @@ private[midas] class MidasTransforms extends Transform {
         new EmitFirrtl("post-dedup-clock-and-reset.fir"),
         new NoCConnectInterruptsPass,
         new ResolveAndCheck,
-        new EmitFirrtl("post-connect-interrupts-and-resolve.fir")
+        new EmitFirrtl("post-connect-interrupts-and-resolve.fir"),
       )
     } else {
       Seq()
@@ -136,97 +137,99 @@ private[midas] class MidasTransforms extends Transform {
       new MiddleFirrtlToLowFirrtl,
       new EmitFirrtl("pre-partition.fir"),
       new fame.EmitFAMEAnnotations("pre-partition.json"),
-      new fame.EmitAllAnnotations("pre-partition-all.json")) ++
-    fireAxePasses ++
-    Seq(
-      new EmitFirrtl("post-partition.fir"),
-      new fame.EmitFAMEAnnotations("post-partition.json"),
-      new fame.EmitAllAnnotations("post-partition-all.json"),
-      PlusArgsWiringTransform,
-      new EmitFirrtl("post-plusargs-wiring.fir"),
-      new fame.EmitFAMEAnnotations("post-plusargs-wiring.json"),
-      CoerceAsyncToSyncReset,
-      EnsureNoTargetIO,     // Simple checking pass
-      new BridgeExtraction, // Promote all the bridges to the top level / Add FAMEChannelConnectionAnnotation (which indicates the top level connections for FAMETop)
-      new ResolveAndCheck,
-      new EmitFirrtl("post-bridge-extraction.fir"),
-      new fame.EmitFAMEAnnotations("post-bridge-extraction.json"),
-      new HighFirrtlToMiddleFirrtl,
-      new MiddleFirrtlToLowFirrtl,
-      new AutoCounterTransform,
-      new EmitFirrtl("post-autocounter.fir"),
-      new fame.EmitFAMEAnnotations("post-autocounter.json"),
-      new ResolveAndCheck,
-      new AssertionSynthesis,
-      new PrintSynthesis,
-      new ResolveAndCheck,
-      new EmitFirrtl("post-debug-synthesis.fir"),
-      new fame.EmitFAMEAnnotations("post-debug-synthesis.json"),
-      // All trigger sources and sinks must exist in the target RTL before this pass runs
-      // As its naming suggests, it wires up all the trigger sources
-      TriggerWiring,
-      new EmitFirrtl("post-trigger-wiring.fir"),
-      new fame.EmitFAMEAnnotations("post-trigger-wiring.json"),
-      GlobalResetConditionWiring,
-      // We should consider moving these lower
-      ChannelClockInfoAnalysis, // Adds annotations containing info about clocks for each channel
-      UpdateBridgeClockInfo, // Determines each bridges clock domain & adds annotations about it
-      fame.WrapTop, // Wrap FireSim with FAMETop
-      fame.LabelMultiThreadedInstances,
-      new ResolveAndCheck,
-      new EmitFirrtl("post-wrap-top.fir"),
-      new fame.EmitAllAnnotations("post-wrap-top-all.json")) ++
-    optionalTargetTransforms ++
-    Seq(
-      new EmitFirrtl("pre-extract-model.fir"),
-      new fame.EmitAllAnnotations("pre-extract-model-all.json"),
-      new fame.ExtractModel,
-      new ResolveAndCheck,
-      new EmitFirrtl("post-extract-model.fir"),
-      new fame.EmitAllAnnotations("post-extract-model-all.json"),
-      new HighFirrtlToMiddleFirrtl,
-      new MiddleFirrtlToLowFirrtl
+      new fame.EmitAllAnnotations("pre-partition-all.json"),
+    ) ++
+      fireAxePasses ++
+      Seq(
+        new EmitFirrtl("post-partition.fir"),
+        new fame.EmitFAMEAnnotations("post-partition.json"),
+        new fame.EmitAllAnnotations("post-partition-all.json"),
+        PlusArgsWiringTransform,
+        new EmitFirrtl("post-plusargs-wiring.fir"),
+        new fame.EmitFAMEAnnotations("post-plusargs-wiring.json"),
+        CoerceAsyncToSyncReset,
+        EnsureNoTargetIO,         // Simple checking pass
+        new BridgeExtraction,     // Promote all the bridges to the top level / Add FAMEChannelConnectionAnnotation (which indicates the top level connections for FAMETop)
+        new ResolveAndCheck,
+        new EmitFirrtl("post-bridge-extraction.fir"),
+        new fame.EmitFAMEAnnotations("post-bridge-extraction.json"),
+        new HighFirrtlToMiddleFirrtl,
+        new MiddleFirrtlToLowFirrtl,
+        new AutoCounterTransform,
+        new EmitFirrtl("post-autocounter.fir"),
+        new fame.EmitFAMEAnnotations("post-autocounter.json"),
+        new ResolveAndCheck,
+        new AssertionSynthesis,
+        new PrintSynthesis,
+        new ResolveAndCheck,
+        new EmitFirrtl("post-debug-synthesis.fir"),
+        new fame.EmitFAMEAnnotations("post-debug-synthesis.json"),
+        // All trigger sources and sinks must exist in the target RTL before this pass runs
+        // As its naming suggests, it wires up all the trigger sources
+        TriggerWiring,
+        new EmitFirrtl("post-trigger-wiring.fir"),
+        new fame.EmitFAMEAnnotations("post-trigger-wiring.json"),
+        GlobalResetConditionWiring,
+        // We should consider moving these lower
+        ChannelClockInfoAnalysis, // Adds annotations containing info about clocks for each channel
+        UpdateBridgeClockInfo,    // Determines each bridges clock domain & adds annotations about it
+        fame.WrapTop,             // Wrap FireSim with FAMETop
+        fame.LabelMultiThreadedInstances,
+        new ResolveAndCheck,
+        new EmitFirrtl("post-wrap-top.fir"),
+        new fame.EmitAllAnnotations("post-wrap-top-all.json"),
       ) ++
-    optionalDedup ++
-    Seq(
-      fame.PromotePassthroughConnections,
-      new ResolveAndCheck,
-      new EmitFirrtl("post-promote-passthrough.fir"),
-      new fame.EmitFAMEAnnotations("post-promote-passthrough.json"),
-      new fame.FAMEDefaults,
-      new EmitFirrtl("post-fame-defaults.fir"),
-      new fame.EmitFAMEAnnotations("post-fame-defaults.json"),
-      fame.FindDefaultClocks,
-      new fame.EmitFAMEAnnotations("post-find-default-clocks.json"),
-      new fame.ChannelExcision,
-      new fame.EmitFAMEAnnotations("post-channel-excision.json"),
-      new EmitFirrtl("post-channel-excision.fir"),
-      // We could delay adding FAMETransformAnnotations to all top modules to here (not used before this)
-      new fame.InferModelPorts,
-      new EmitFirrtl("post-infer-model-ports.fir"),
-      new fame.EmitFAMEAnnotations("post-infer-model-ports.json"),
-      new fame.FAMETransform,
-      DefineAbstractClockGate,
-      fame.AddRemainingFanoutAnnotations,
-      new EmitFirrtl("post-fame-transform.fir"),
-      new fame.EmitFAMEAnnotations("post-fame-transform.json"),
-      new ResolveAndCheck,
-      new EmitFirrtl("pre-fame5-transform.fir"),
-      new fame.EmitFAMEAnnotations("pre-fame5-transform.json"),
-      fame.MultiThreadFAME5Models,
-      new EmitFirrtl("post-fame5-transform.fir"),
-      new fame.EmitFAMEAnnotations("post-fame5-transform.json"),
-      new ResolveAndCheck,
-      new passes.InlineInstances,
-      passes.ResolveKinds,
-      new fame.EmitAndWrapRAMModels,
-      new ResolveAndCheck,
-      new EmitFirrtl("post-gen-sram-models.fir"),
-      new fame.EmitFAMEAnnotations("post-gen-sram-models.json"),
-      new SimulationMapping(state.circuit.main),
-      xilinx.HostSpecialization,
-      new ResolveAndCheck)
-      (xforms foldLeft state)((in, xform) =>
-      xform runTransform in).copy(form=outputForm)
+      optionalTargetTransforms ++
+      Seq(
+        new EmitFirrtl("pre-extract-model.fir"),
+        new fame.EmitAllAnnotations("pre-extract-model-all.json"),
+        new fame.ExtractModel,
+        new ResolveAndCheck,
+        new EmitFirrtl("post-extract-model.fir"),
+        new fame.EmitAllAnnotations("post-extract-model-all.json"),
+        new HighFirrtlToMiddleFirrtl,
+        new MiddleFirrtlToLowFirrtl,
+      ) ++
+      optionalDedup ++
+      Seq(
+        fame.PromotePassthroughConnections,
+        new ResolveAndCheck,
+        new EmitFirrtl("post-promote-passthrough.fir"),
+        new fame.EmitFAMEAnnotations("post-promote-passthrough.json"),
+        new fame.FAMEDefaults,
+        new EmitFirrtl("post-fame-defaults.fir"),
+        new fame.EmitFAMEAnnotations("post-fame-defaults.json"),
+        fame.FindDefaultClocks,
+        new fame.EmitFAMEAnnotations("post-find-default-clocks.json"),
+        new fame.ChannelExcision,
+        new fame.EmitFAMEAnnotations("post-channel-excision.json"),
+        new EmitFirrtl("post-channel-excision.fir"),
+        // We could delay adding FAMETransformAnnotations to all top modules to here (not used before this)
+        new fame.InferModelPorts,
+        new EmitFirrtl("post-infer-model-ports.fir"),
+        new fame.EmitFAMEAnnotations("post-infer-model-ports.json"),
+        new fame.FAMETransform,
+        DefineAbstractClockGate,
+        fame.AddRemainingFanoutAnnotations,
+        new EmitFirrtl("post-fame-transform.fir"),
+        new fame.EmitFAMEAnnotations("post-fame-transform.json"),
+        new ResolveAndCheck,
+        new EmitFirrtl("pre-fame5-transform.fir"),
+        new fame.EmitFAMEAnnotations("pre-fame5-transform.json"),
+        fame.MultiThreadFAME5Models,
+        new EmitFirrtl("post-fame5-transform.fir"),
+        new fame.EmitFAMEAnnotations("post-fame5-transform.json"),
+        new ResolveAndCheck,
+        new passes.InlineInstances,
+        passes.ResolveKinds,
+        new fame.EmitAndWrapRAMModels,
+        new ResolveAndCheck,
+        new EmitFirrtl("post-gen-sram-models.fir"),
+        new fame.EmitFAMEAnnotations("post-gen-sram-models.json"),
+        new SimulationMapping(internalState.circuit.main),
+        xilinx.HostSpecialization,
+        new ResolveAndCheck,
+      )
+    (xforms.foldLeft(internalState))((in, xform) => xform.runTransform(in)).copy(form = outputForm)
   }
 }

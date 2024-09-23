@@ -2,15 +2,12 @@
 
 package goldengate.tests.widgets
 
-import chisel3._
 import midas.widgets._
 
-import org.scalatest._
 import org.scalatest.flatspec.AnyFlatSpec
 
 import chisel3._
 import chisel3.stage.ChiselStage
-import chisel3.experimental.BaseModule
 
 /** Unit tests for [[PlusArgsBridge]]
   */

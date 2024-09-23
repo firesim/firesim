@@ -6,11 +6,11 @@ import org.scalatest.flatspec._
 import firrtl.annotations._
 import midas.stage._
 
-import scala.reflect.{ClassTag}
+import scala.reflect.ClassTag
 
 class ChecksSpec extends AnyFlatSpec {
 
-  behavior of "Command-line argument / input annotation checks"
+  behavior.of("Command-line argument / input annotation checks")
 
   def baselineAnnos = Seq(
     OutputBaseFilenameAnnotation("A"),
@@ -26,21 +26,18 @@ class ChecksSpec extends AnyFlatSpec {
     println(e.getMessage)
   }
 
-  /**
-    * Checks the phase runs correctly when:
-    * 1) an extra instance of the annotation is provided, and
-    * 2) when all instances of the provided annotation type are removed
-    *
+  /** Checks the phase runs correctly when: 1) an extra instance of the annotation is provided, and 2) when all
+    * instances of the provided annotation type are removed
     */
-  def checkExactlyOne[T <: Annotation : ClassTag](extraAnno: T): Unit = {
+  def checkExactlyOne[T <: Annotation: ClassTag](extraAnno: T): Unit = {
     val className = extraAnno.getClass.getName
     it should s"reject passing multiple ${className}s" in {
       runAndInterceptOptionsException(extraAnno +: baselineAnnos)
     }
 
     val filteredAnnos = baselineAnnos.filterNot {
-      case a: T => true
-      case _ => false
+      case _: T => true
+      case _    => false
     }
 
     it should s"reject passing zero ${className}s" in {

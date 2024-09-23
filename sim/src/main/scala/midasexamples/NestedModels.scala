@@ -23,17 +23,17 @@ class Inner extends Module {
 }
 
 class Mid extends Module {
-  val io = IO(new SimpleIO)
+  val io    = IO(new SimpleIO)
   val inner = Module(new Inner)
   annotate(FAMEModelAnnotation(inner))
   inner.io.i0 := RegNext(RegNext(io.i0))
   inner.io.i1 := RegNext(io.i1)
-  io.o0 := inner.io.o0
-  io.o1 := inner.io.o1
+  io.o0       := inner.io.o0
+  io.o1       := inner.io.o1
 }
 
 class NestedModelsDUT extends Module {
-  val io = IO(new Bundle {
+  val io   = IO(new Bundle {
     val a = new SimpleIO
     val b = new SimpleIO
   })
@@ -45,4 +45,4 @@ class NestedModelsDUT extends Module {
   midB.io <> io.b
 }
 
-class NestedModels(implicit p: Parameters) extends PeekPokeMidasExampleHarness(() => new NestedModelsDUT)
+class NestedModels(implicit p: Parameters) extends firesim.lib.testutils.PeekPokeHarness(() => new NestedModelsDUT)

@@ -5,15 +5,23 @@ import abc
 import pprint
 import os
 
-from awstools.awstools import aws_resource_names, launch_instances, wait_on_instance_launches, get_instance_ids_for_instances, terminate_instances
+from awstools.awstools import (
+    aws_resource_names,
+    launch_instances,
+    wait_on_instance_launches,
+    get_instance_ids_for_instances,
+    terminate_instances,
+)
 
 # imports needed for python type checking
 from typing import cast, Any, Dict, Optional, Sequence, List, TYPE_CHECKING
+
 if TYPE_CHECKING:
     from buildtools.buildconfig import BuildConfig
     from mypy_boto3_ec2.service_resource import Instance as EC2InstanceResource
 
 rootLogger = logging.getLogger()
+
 
 class BuildHost:
     """Class representing a single basic platform-agnostic build host which holds a single build config.
@@ -23,11 +31,17 @@ class BuildHost:
         dest_build_dir: Name of build dir on build host.
         ip_address: IP address of build host.
     """
+
     build_config: Optional[BuildConfig]
     dest_build_dir: str
     ip_address: Optional[str]
 
-    def __init__(self, dest_build_dir: str, build_config: Optional[BuildConfig] = None, ip_address: Optional[str] = None) -> None:
+    def __init__(
+        self,
+        dest_build_dir: str,
+        build_config: Optional[BuildConfig] = None,
+        ip_address: Optional[str] = None,
+    ) -> None:
         """
         Args:
             dest_build_dir: Name of build dir on build host.
@@ -52,6 +66,7 @@ class BuildFarm(metaclass=abc.ABCMeta):
         build_hosts: List of build hosts used for builds.
         args: Set of options from the 'args' section of the YAML associated with the build farm.
     """
+
     build_hosts: List[BuildHost]
     args: Dict[str, Any]
 
@@ -107,7 +122,9 @@ class BuildFarm(metaclass=abc.ABCMeta):
         """
         build_host = self.get_build_host(build_config)
         ip_address = build_host.ip_address
-        assert ip_address is not None, f"Unassigned IP address for build host: {build_host}"
+        assert (
+            ip_address is not None
+        ), f"Unassigned IP address for build host: {build_host}"
         return ip_address
 
     @abc.abstractmethod
@@ -126,6 +143,7 @@ class ExternallyProvisioned(BuildFarm):
     Attributes:
         build_hosts_allocated: Count of build hosts assigned with builds (`BuildConfig`s).
     """
+
     build_hosts_allocated: int
 
     def __init__(self, args: Dict[str, Any]) -> None:
@@ -153,23 +171,29 @@ class ExternallyProvisioned(BuildFarm):
 
                 items = build_farm_host.items()
 
-                assert (len(items) == 1), f"dict type '{build_farm_hosts_key}' items map a single IP address to a dict of options. Not: {pprint.pformat(build_farm_host)}"
+                assert (
+                    len(items) == 1
+                ), f"dict type '{build_farm_hosts_key}' items map a single IP address to a dict of options. Not: {pprint.pformat(build_farm_host)}"
 
                 ip_addr, ip_args = next(iter(items))
 
-                dest_build_dir = ip_args.get('override_build_dir', default_build_dir)
+                dest_build_dir = ip_args.get("override_build_dir", default_build_dir)
             elif type(build_farm_host) is str:
                 # add element w/ defaults
 
                 ip_addr = build_farm_host
                 dest_build_dir = default_build_dir
             else:
-                raise Exception(f"""Unexpected YAML type provided in "{build_farm_hosts_key}" list. Must be dict or str.""")
+                raise Exception(
+                    f"""Unexpected YAML type provided in "{build_farm_hosts_key}" list. Must be dict or str."""
+                )
 
             if not dest_build_dir:
                 raise Exception("ERROR: Invalid null build dir")
 
-            self.build_hosts.append(BuildHost(ip_address=ip_addr, dest_build_dir=dest_build_dir))
+            self.build_hosts.append(
+                BuildHost(ip_address=ip_addr, dest_build_dir=dest_build_dir)
+            )
 
     def request_build_host(self, build_config: BuildConfig) -> None:
         """Request build host to use for build config. Just assigns build config to build host since IP address
@@ -199,7 +223,7 @@ class ExternallyProvisioned(BuildFarm):
         return
 
     def release_build_host(self, build_config: BuildConfig) -> None:
-        """ Nothing happens. Up to the IP address provider to cleanup after itself.
+        """Nothing happens. Up to the IP address provider to cleanup after itself.
 
         Args:
             build_config: Build config to find build host to terminate.
@@ -219,9 +243,15 @@ class EC2BuildHost(BuildHost):
     Attributes:
         launched_instance_object: Boto instance object associated with the build host.
     """
+
     launched_instance_object: EC2InstanceResource
 
-    def __init__(self, build_config: BuildConfig, inst_obj: EC2InstanceResource, dest_build_dir: str) -> None:
+    def __init__(
+        self,
+        build_config: BuildConfig,
+        inst_obj: EC2InstanceResource,
+        dest_build_dir: str,
+    ) -> None:
         """
         Args:
             build_config: Build config associated with the build host.
@@ -248,6 +278,7 @@ class AWSEC2(BuildFarm):
         spot_interruption_behavior: if spot instance, the interruption behavior
         spot_max_price: if spot instance, the max price
     """
+
     build_farm_tag: str
     instance_type: str
     build_instance_market: str
@@ -266,21 +297,27 @@ class AWSEC2(BuildFarm):
     def _parse_args(self) -> None:
         """Parse build host arguments."""
         # get aws specific args
-        build_farm_tag_prefix = "" if 'FIRESIM_BUILDFARM_PREFIX' not in os.environ else os.environ['FIRESIM_BUILDFARM_PREFIX']
+        build_farm_tag_prefix = (
+            ""
+            if "FIRESIM_BUILDFARM_PREFIX" not in os.environ
+            else os.environ["FIRESIM_BUILDFARM_PREFIX"]
+        )
         if build_farm_tag_prefix != "":
             build_farm_tag_prefix += "-"
 
-        self.build_farm_tag = build_farm_tag_prefix + self.args['build_farm_tag']
+        self.build_farm_tag = build_farm_tag_prefix + self.args["build_farm_tag"]
 
         aws_resource_names_dict = aws_resource_names()
-        if aws_resource_names_dict['buildfarmprefix'] is not None:
+        if aws_resource_names_dict["buildfarmprefix"] is not None:
             # if specified, further prefix buildfarmtag
-            self.build_farm_tag = aws_resource_names_dict['buildfarmprefix'] + "-" + self.build_farm_tag
+            self.build_farm_tag = (
+                aws_resource_names_dict["buildfarmprefix"] + "-" + self.build_farm_tag
+            )
 
-        self.instance_type = self.args['instance_type']
-        self.build_instance_market = self.args['build_instance_market']
-        self.spot_interruption_behavior = self.args['spot_interruption_behavior']
-        self.spot_max_price = self.args['spot_max_price']
+        self.instance_type = self.args["instance_type"]
+        self.build_instance_market = self.args["build_instance_market"]
+        self.spot_interruption_behavior = self.args["spot_interruption_behavior"]
+        self.spot_max_price = self.args["spot_max_price"]
 
         self.dest_build_dir = self.args["default_build_dir"]
         if not self.dest_build_dir:
@@ -300,17 +337,24 @@ class AWSEC2(BuildFarm):
             self.spot_max_price,
             blockdevices=[
                 {
-                    'DeviceName': '/dev/sda1',
-                    'Ebs': {
-                        'VolumeSize': 200,
-                        'VolumeType': 'gp2',
+                    "DeviceName": "/dev/sda1",
+                    "Ebs": {
+                        "VolumeSize": 200,
+                        "VolumeType": "gp2",
                     },
                 },
             ],
-            tags={ 'fsimbuildcluster': self.build_farm_tag },
-            randomsubnet=True)[0]
+            tags={"fsimbuildcluster": self.build_farm_tag},
+            randomsubnet=True,
+        )[0]
 
-        self.build_hosts.append(EC2BuildHost(build_config=build_config, inst_obj=inst_obj, dest_build_dir=self.dest_build_dir))
+        self.build_hosts.append(
+            EC2BuildHost(
+                build_config=build_config,
+                inst_obj=inst_obj,
+                dest_build_dir=self.dest_build_dir,
+            )
+        )
 
     def wait_on_build_host_initialization(self, build_config: BuildConfig) -> None:
         """Wait for EC2 instance launch.
@@ -323,14 +367,18 @@ class AWSEC2(BuildFarm):
         build_host.ip_address = build_host.launched_instance_object.private_ip_address
 
     def release_build_host(self, build_config: BuildConfig) -> None:
-        """ Terminate the EC2 instance running this build.
+        """Terminate the EC2 instance running this build.
 
         Args:
             build_config: Build config to find build host to terminate.
         """
         build_host = cast(EC2BuildHost, self.get_build_host(build_config))
-        instance_ids = get_instance_ids_for_instances([build_host.launched_instance_object])
-        rootLogger.info(f"Terminating build instance {instance_ids}. Please confirm in your AWS Management Console")
+        instance_ids = get_instance_ids_for_instances(
+            [build_host.launched_instance_object]
+        )
+        rootLogger.info(
+            f"Terminating build instance {instance_ids}. Please confirm in your AWS Management Console"
+        )
         terminate_instances(instance_ids, dryrun=False)
 
     def __repr__(self) -> str:

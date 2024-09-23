@@ -3,22 +3,22 @@
 
 package junctions
 
-import Chisel._
+import chisel3._
 import scala.collection.mutable.HashMap
 
 case class MemAttr(prot: Int, cacheable: Boolean = false)
 
 sealed abstract class MemRegion {
-  def start: BigInt
-  def size: BigInt
+  def start:     BigInt
+  def size:      BigInt
   def numSlaves: Int
-  def attr: MemAttr
+  def attr:      MemAttr
 
-  def containsAddress(x: UInt) = UInt(start) <= x && x < UInt(start + size)
+  def containsAddress(x: UInt) = start.U <= x && x < (start + size).U
 }
 
 case class MemSize(size: BigInt, attr: MemAttr) extends MemRegion {
-  def start = 0
+  def start     = 0
   def numSlaves = 1
 }
 
@@ -27,13 +27,13 @@ case class MemRange(start: BigInt, size: BigInt, attr: MemAttr) extends MemRegio
 }
 
 object AddrMapProt {
-  val R = 0x1
-  val W = 0x2
-  val X = 0x4
-  val RW = R | W
-  val RX = R | X
+  val R   = 0x1
+  val W   = 0x2
+  val X   = 0x4
+  val RW  = R | W
+  val RX  = R | X
   val RWX = R | W | X
-  val SZ = 3
+  val SZ  = 3
 }
 
 class AddrMapProt extends Bundle {
@@ -49,24 +49,25 @@ object AddrMap {
 }
 
 class AddrMap(
-    entriesIn: Seq[AddrMapEntry],
-    val start: BigInt = BigInt(0),
-    val collapse: Boolean = false) extends MemRegion {
+  entriesIn:    Seq[AddrMapEntry],
+  val start:    BigInt  = BigInt(0),
+  val collapse: Boolean = false,
+) extends MemRegion {
   private val slavePorts = HashMap[String, Int]()
-  private val mapping = HashMap[String, MemRegion]()
+  private val mapping    = HashMap[String, MemRegion]()
 
-  def isEmpty = entries.isEmpty
-  def length = entries.size
+  def isEmpty   = entries.isEmpty
+  def length    = entries.size
   def numSlaves = slavePorts.size
 
   val (size: BigInt, entries: Seq[AddrMapEntry], attr: MemAttr) = {
-    var ind = 0
-    var base = start
+    var ind            = 0
+    var base           = start
     var rebasedEntries = collection.mutable.ArrayBuffer[AddrMapEntry]()
-    var prot = 0
-    var cacheable = true
+    var prot           = 0
+    var cacheable      = true
     for (AddrMapEntry(name, r) <- entriesIn) {
-      require (!mapping.contains(name))
+      require(!mapping.contains(name))
       base = r.start
 
       r match {
@@ -79,15 +80,15 @@ class AddrMap(
             slavePorts += (name -> ind)
             ind += 1
           } else {
-            slavePorts ++= subMap.slavePorts.map {
-              case (k, v) => s"$name:$k" -> (ind + v)
+            slavePorts ++= subMap.slavePorts.map { case (k, v) =>
+              s"$name:$k" -> (ind + v)
             }
             ind += r.numSlaves
           }
-        case _ =>
+        case _          =>
           val e = MemRange(base, r.size, r.attr)
           rebasedEntries += AddrMapEntry(name, e)
-          mapping += name -> e
+          mapping += name    -> e
           slavePorts += name -> ind
           ind += r.numSlaves
       }
@@ -100,33 +101,37 @@ class AddrMap(
   }
 
   val flatten: Seq[AddrMapEntry] = {
-    mapping.toSeq.map {
-      case (name, range: MemRange) => Some(AddrMapEntry(name, range))
-      case _ => None
-    }.flatten.sortBy(_.region.start)
+    mapping.toSeq
+      .map {
+        case (name, range: MemRange) => Some(AddrMapEntry(name, range))
+        case _                       => None
+      }
+      .flatten
+      .sortBy(_.region.start)
   }
 
   // checks to see whether any MemRange overlaps within this AddrMap
-  flatten.combinations(2) foreach {
-    case (Seq(AddrMapEntry(an, ar), AddrMapEntry(bn, br))) =>
-      val arEnd = ar.start + ar.size
-      val brEnd = br.start + br.size
-      val abOverlaps = ar.start < brEnd && br.start < arEnd
-      require(!abOverlaps,
-        s"region $an@0x${ar.start.toString(16)} overlaps region $bn@0x${br.start.toString(16)}")
+  flatten.combinations(2).foreach { case (Seq(AddrMapEntry(an, ar), AddrMapEntry(bn, br))) =>
+    val arEnd      = ar.start + ar.size
+    val brEnd      = br.start + br.size
+    val abOverlaps = ar.start < brEnd && br.start < arEnd
+    require(!abOverlaps, s"region $an@0x${ar.start.toString(16)} overlaps region $bn@0x${br.start.toString(16)}")
   }
 
   def toRange: MemRange = MemRange(start, size, attr)
-  def apply(name: String): MemRegion = mapping(name)
-  def contains(name: String): Boolean = mapping.contains(name)
-  def port(name: String): Int = slavePorts(name)
-  def subMap(name: String): AddrMap = mapping(name).asInstanceOf[AddrMap]
+  def apply(name:      String): MemRegion = mapping(name)
+  def contains(name:   String): Boolean = mapping.contains(name)
+  def port(name:       String): Int = slavePorts(name)
+  def subMap(name:     String): AddrMap = mapping(name).asInstanceOf[AddrMap]
   def isInRegion(name: String, addr: UInt): Bool = mapping(name).containsAddress(addr)
 
   def isCacheable(addr: UInt): Bool = {
-    flatten.filter(_.region.attr.cacheable).map(
-      _.region.containsAddress(addr)
-    ).foldLeft(false.B)(_ || _)
+    flatten
+      .filter(_.region.attr.cacheable)
+      .map(
+        _.region.containsAddress(addr)
+      )
+      .foldLeft(false.B)(_ || _)
   }
 
   def isValid(addr: UInt): Bool = {
@@ -135,13 +140,12 @@ class AddrMap(
 
   def getProt(addr: UInt): AddrMapProt = {
     val protForRegion = flatten.map { entry =>
-      Mux(entry.region.containsAddress(addr),
-        UInt(entry.region.attr.prot, AddrMapProt.SZ), UInt(0))
+      Mux(entry.region.containsAddress(addr), entry.region.attr.prot.U(AddrMapProt.SZ.W), 0.U)
     }
-    new AddrMapProt().fromBits(protForRegion.reduce(_|_))
+    protForRegion.reduce(_ | _).asTypeOf(new AddrMapProt())
   }
 
   override def containsAddress(x: UInt) = {
-    flatten.map(_.region.containsAddress(x)).reduce(_||_)
+    flatten.map(_.region.containsAddress(x)).reduce(_ || _)
   }
 }

@@ -19,9 +19,6 @@ endif
 
 firesim_base_dir := $(abspath .)
 
-# Set up environment variables pointing to Chipyard
-include make/chipyard.mk
-
 ##################
 #   Parameters   #
 ##################
@@ -31,11 +28,9 @@ include make/chipyard.mk
 # src/main/{cc, scala, makefrag}/<target-project-name>
 #
 # Currently these projects are:
-# 	firesim: the default, Chipyard-based target-designs
 # 	midasexamples: simple chisel designs demonstrating FireSim's features
-# 	bridges: test bridges
 # 	fasedtests: test memory models and backing host memory system
-TARGET_PROJECT ?= firesim
+TARGET_PROJECT ?= midasexamples
 
 # Users can override this to point at a collections of Makefrags.
 # The following makefrags must be present in the folder:
@@ -51,6 +46,8 @@ PLATFORM ?= f1
 ####################
 #   Target Setup   #
 ####################
+
+include make/utils.mk
 
 include $(TARGET_PROJECT_MAKEFRAG)/config.mk
 include make/config.mk

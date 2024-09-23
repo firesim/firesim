@@ -7,10 +7,10 @@ import Mappers._
 import ir._
 import annotations._
 import collection.mutable.ArrayBuffer
-import midas.targetutils.{FirrtlMemModelAnnotation, FirrtlFAMEModelAnnotation}
+import midas.targetutils.{FirrtlFAMEModelAnnotation, FirrtlMemModelAnnotation}
 
 class LabelSRAMModels extends Transform {
-  def inputForm = HighForm
+  def inputForm  = HighForm
   def outputForm = HighForm
 
   // Wrapper gets converted to strip clocks from ports, has one top-level clock
@@ -20,20 +20,23 @@ class LabelSRAMModels extends Transform {
       case BundleType(fields) => BundleType(fields.filterNot(_.tpe == ClockType))
     }
     val ports = mem.readers ++ mem.writers ++ mem.readwriters
-    val connects = ports.map(p => PartialConnect(NoInfo, WSubField(WRef(mem.name), p), WRef(p)))
+    val connects    = ports.map(p => PartialConnect(NoInfo, WSubField(WRef(mem.name), p), WRef(p)))
     val clkConnects = ports.map(p => Connect(NoInfo, WSubField(WSubField(WRef(mem.name), p), "clk"), WRef(clockPort)))
-    val modPorts = clockPort +: passes.MemPortUtils.memType(mem).fields.map(f => Port(NoInfo, f.name, Input, stripClocks(f.tpe)))
+    val modPorts    =
+      clockPort +: passes.MemPortUtils.memType(mem).fields.map(f => Port(NoInfo, f.name, Input, stripClocks(f.tpe)))
     Module(mem.info, mem.name, modPorts, Block(mem +: connects ++: clkConnects))
   }
 
   override def execute(state: CircuitState): CircuitState = {
-    val circ = state.circuit
-    val moduleNS = Namespace(circ)
+    val circ                = state.circuit
+    val moduleNS            = Namespace(circ)
     val memModelAnnotations = new ArrayBuffer[Annotation]
-    val memModules = new ArrayBuffer[Module]
-    val annotatedMems = state.annotations.collect({
-      case FirrtlMemModelAnnotation(rt) => rt
-    }).toSet
+    val memModules          = new ArrayBuffer[Module]
+    val annotatedMems       = state.annotations
+      .collect({ case FirrtlMemModelAnnotation(rt) =>
+        rt
+      })
+      .toSet
 
     println(s"[MIDAS 2.0] RAM Models To Extract: ${annotatedMems.size}")
 
@@ -41,8 +44,8 @@ class LabelSRAMModels extends Transform {
       case m: Module =>
         val mt = ModuleTarget(circ.main, m.name)
         def onStmt(stmt: Statement): Statement = stmt.map(onStmt) match {
-          case mem: DefMemory if annotatedMems.contains(mt.ref(mem.name)) =>
-            val wrapper = mem2Module(mem).copy(name = moduleNS.newName(mem.name))
+          case mem: DefMemory if annotatedMems.contains(mt.ref(mem.name))             =>
+            val wrapper       = mem2Module(mem).copy(name = moduleNS.newName(mem.name))
             val wrapperTarget = ModuleTarget(circ.main, wrapper.name)
             memModules += wrapper
             memModelAnnotations += FirrtlFAMEModelAnnotation(mt.instOf(mem.name, wrapper.name))
@@ -56,17 +59,17 @@ class LabelSRAMModels extends Transform {
             WDefInstance(mem.info, mem.name, wrapper.name, UnknownType)
           case c: Connect if (Utils.kind(c.loc) == MemKind && c.loc.tpe == ClockType) =>
             // change clock connects to target single mem wrapper clock
-            val (wr, e) = Utils.splitRef(c.loc)
+            val (wr, e)      = Utils.splitRef(c.loc)
             val wrapperClock = Utils.mergeRef(wr, Utils.splitRef(e)._2)
             if (annotatedMems.contains(mt.ref(wr.name))) c.copy(loc = wrapperClock) else c
-          case s => s
+          case s                                                                      => s
         }
         m.copy(body = m.body.map(onStmt))
-      case m => m
+      case m         => m
     })
     val transformedCircuit = circ.copy(modules = (memModules ++ transformedModules).toSeq)
     // At this point, the FIRRTLMemModelAnnotations are no longer used, so remove them for cleanup.
-    val filteredAnnos = state.annotations.filterNot(_.isInstanceOf[FirrtlMemModelAnnotation])
+    val filteredAnnos      = state.annotations.filterNot(_.isInstanceOf[FirrtlMemModelAnnotation])
     state.copy(circuit = transformedCircuit, annotations = filteredAnnos ++ memModelAnnotations)
   }
 }

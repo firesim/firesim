@@ -3,23 +3,24 @@
 package firesim.midasexamples
 
 import chisel3._
-import org.chipsalliance.cde.config.{Parameters, Field, Config}
-import midas.widgets.{RationalClockBridge, PeekPokeBridge, ResetPulseBridge, ResetPulseBridgeParameters}
+import org.chipsalliance.cde.config.{Config, Field, Parameters}
+import firesim.lib.bridges.{PeekPokeBridge, RationalClockBridge, ResetPulseBridge, ResetPulseBridgeParameters}
 
 case object ResetPulseBridgeActiveHighKey extends Field[Boolean](true)
-class ResetPulseBridgeActiveLowConfig extends Config((site, here, up) => {
-  case ResetPulseBridgeActiveHighKey => false
-})
+class ResetPulseBridgeActiveLowConfig
+    extends Config((_, _, _) => { case ResetPulseBridgeActiveHighKey =>
+      false
+    })
 
 object ResetPulseBridgeTestConsts {
   val maxPulseLength = 1023
 }
 
-/**
-  * Instantiates the ResetClockBridge, and checks the created pulse matches an
-  * elaboration-time defined expected value with an unsynthesized assert.
+/** Instantiates the ResetClockBridge, and checks the created pulse matches an elaboration-time defined expected value
+  * with an unsynthesized assert.
   *
-  * @param p Parameters instance. See above for relavent keys.
+  * @param p
+  *   Parameters instance. See above for relavent keys.
   */
 
 class ResetPulseBridgeTest(implicit p: Parameters) extends RawModule {
@@ -27,15 +28,20 @@ class ResetPulseBridgeTest(implicit p: Parameters) extends RawModule {
   val clock = RationalClockBridge().io.clocks.head
 
   // TODO Remove once PeekPoke is excised from simif
-  val dummy = WireInit(false.B)
+  val dummy          = WireInit(false.B)
   val peekPokeBridge = PeekPokeBridge(clock, dummy)
 
-  val activeHigh = p(ResetPulseBridgeActiveHighKey)
-  val resetBridge = Module(new ResetPulseBridge(ResetPulseBridgeParameters(
-    activeHigh = activeHigh,
-    // This will be overridden to the maxPulseLength by the bridge's plusArg
-    defaultPulseLength = 1,
-    maxPulseLength = maxPulseLength)))
+  val activeHigh  = p(ResetPulseBridgeActiveHighKey)
+  val resetBridge = Module(
+    new ResetPulseBridge(
+      ResetPulseBridgeParameters(
+        activeHigh         = activeHigh,
+        // This will be overridden to the maxPulseLength by the bridge's plusArg
+        defaultPulseLength = 1,
+        maxPulseLength     = maxPulseLength,
+      )
+    )
+  )
   resetBridge.io.clock := clock
 
   withClockAndReset(clock, false.B) {

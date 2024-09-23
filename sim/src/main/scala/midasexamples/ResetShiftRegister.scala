@@ -16,7 +16,7 @@ class ResetShiftRegisterDUT extends Module {
   val r1 = RegInit(0.U(4.W))
   val r2 = RegInit(0.U(4.W))
   val r3 = RegInit(0.U(4.W))
-  when (io.shift) {
+  when(io.shift) {
     r0 := io.in
     r1 := r0
     r2 := r1
@@ -25,4 +25,5 @@ class ResetShiftRegisterDUT extends Module {
   io.out := r3
 }
 
-class ResetShiftRegister(implicit p: Parameters) extends PeekPokeMidasExampleHarness(() => new ResetShiftRegisterDUT)
+class ResetShiftRegister(implicit p: Parameters)
+    extends firesim.lib.testutils.PeekPokeHarness(() => new ResetShiftRegisterDUT)

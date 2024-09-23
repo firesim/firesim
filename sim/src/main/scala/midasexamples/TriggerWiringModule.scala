@@ -2,7 +2,8 @@
 
 package firesim.midasexamples
 
-import midas.widgets.{RationalClockBridge, PeekPokeBridge, RationalClock}
+import firesim.lib.bridges.{PeekPokeBridge, RationalClockBridge}
+import firesim.lib.bridgeutils.RationalClock
 import freechips.rocketchip.util.{DensePrefixSum, ResetCatchAndSync}
 import org.chipsalliance.cde.config.Parameters
 import chisel3._
@@ -14,7 +15,7 @@ class TriggerSinkModule extends Module {
   val reference = IO(Input(Bool()))
   // DOC include start: TriggerSink Usage
   // Note: this can be any reference you wish to have driven by the trigger.
-  val sinkBool = WireDefault(true.B)
+  val sinkBool  = WireDefault(true.B)
 
   import midas.targetutils.TriggerSink
   // Drives true.B if no TriggerSource credits exist in the design.
@@ -26,13 +27,13 @@ class TriggerSinkModule extends Module {
 
 class TriggerSourceModule extends Module {
   val referenceCredit = IO(Output(Bool()))
-  val referenceDebit = IO(Output(Bool()))
-  private val lfsr = random.LFSR(16)
+  val referenceDebit  = IO(Output(Bool()))
+  private val lfsr    = random.LFSR(16)
 
   // DOC include start: TriggerSource Usage
   // Some arbitarily logic to drive the credit source and sink. Replace with your own!
   val start = lfsr(1)
-  val stop = ShiftRegister(lfsr(0), 5)
+  val stop  = ShiftRegister(lfsr(0), 5)
 
   // Now annotate the signals.
   import midas.targetutils.TriggerSource
@@ -42,13 +43,13 @@ class TriggerSourceModule extends Module {
   // DOC include end: TriggerSource Usage
 
   referenceCredit := ~reset.asBool && start
-  referenceDebit := ~reset.asBool && stop
+  referenceDebit  := ~reset.asBool && stop
 }
 
 class LevelSensitiveTriggerSourceModule extends Module {
   val referenceCredit = IO(Output(Bool()))
-  val referenceDebit = IO(Output(Bool()))
-  private val enable = random.LFSR(16)(0)
+  val referenceDebit  = IO(Output(Bool()))
+  private val enable  = random.LFSR(16)(0)
 
   // DOC include start: TriggerSource Level-Sensitive Usage
   import midas.targetutils.TriggerSource
@@ -61,35 +62,35 @@ class LevelSensitiveTriggerSourceModule extends Module {
 }
 
 class ReferenceSourceCounters(numCredits: Int, numDebits: Int) extends Module {
-  def counterType = UInt(16.W)
+  def counterType  = UInt(16.W)
   val inputCredits = IO(Input(Vec(numCredits, Bool())))
   val inputDebits  = IO(Input(Vec(numCredits, Bool())))
   val totalCredit  = IO(Output(counterType))
   val totalDebit   = IO(Output(counterType))
 
   def doAccounting(values: Seq[Bool]): UInt = {
-    val total = Reg(counterType)
+    val total  = Reg(counterType)
     val update = total + PopCount(values)
     total := update
     update
   }
   totalCredit := doAccounting(inputCredits)
-  totalDebit := doAccounting(inputDebits)
+  totalDebit  := doAccounting(inputDebits)
 
   def synchAndDiff(count: UInt): UInt = {
-    val sync = RegNext(count)
+    val sync     = RegNext(count)
     val syncLast = RegNext(sync)
     sync - syncLast
   }
   def syncAndDiffCredits(): UInt = synchAndDiff(totalCredit)
-  def syncAndDiffDebits(): UInt = synchAndDiff(totalDebit)
+  def syncAndDiffDebits(): UInt  = synchAndDiff(totalDebit)
 }
 
 object ReferenceSourceCounters {
   def apply(credits: Seq[Bool], debits: Seq[Bool]): ReferenceSourceCounters = {
     val m = Module(new ReferenceSourceCounters(credits.size, debits.size))
     m.inputCredits := VecInit(credits)
-    m.inputDebits := VecInit(debits)
+    m.inputDebits  := VecInit(debits)
     m
   }
 }
@@ -98,14 +99,14 @@ object ReferenceSourceCounters {
 // implement in FIRRTL. The test fails if the firrtl-generated trigger-enables,
 // as seen by all nodes with a trigger sink, fail to match their references.
 class TriggerWiringModule(implicit p: Parameters) extends RawModule {
-  val clockBridge = RationalClockBridge(RationalClock("HalfRate", 1, 2))
+  val clockBridge                = RationalClockBridge(RationalClock("HalfRate", 1, 2))
   val refClock :: div2Clock :: _ = clockBridge.io.clocks.toList
-  val refSourceCounts = new mutable.ArrayBuffer[ReferenceSourceCounters]()
-  val refSinks = new mutable.ArrayBuffer[Bool]()
-  val reset = WireInit(false.B)
-  val resetHalfRate = ResetCatchAndSync(div2Clock, reset.asBool)
+  val refSourceCounts            = new mutable.ArrayBuffer[ReferenceSourceCounters]()
+  val refSinks                   = new mutable.ArrayBuffer[Bool]()
+  val reset                      = WireInit(false.B)
+  val resetHalfRate              = ResetCatchAndSync(div2Clock, reset.asBool)
   withClockAndReset(refClock, reset) {
-    val peekPokeBridge = PeekPokeBridge(refClock, reset)
+    PeekPokeBridge(refClock, reset)
     val src  = Module(new TriggerSourceModule)
     val sink = Module(new TriggerSinkModule)
 
@@ -114,7 +115,8 @@ class TriggerWiringModule(implicit p: Parameters) extends RawModule {
     // Reference Hardware
     refSourceCounts += ReferenceSourceCounters(
       Seq(src.referenceCredit, levelSensitiveSrc.referenceCredit),
-      Seq(src.referenceDebit, levelSensitiveSrc.referenceDebit))
+      Seq(src.referenceDebit, levelSensitiveSrc.referenceDebit),
+    )
     refSinks += {
       val syncReg = Reg(Bool())
       sink.reference := syncReg
@@ -142,7 +144,7 @@ class TriggerWiringModule(implicit p: Parameters) extends RawModule {
     refTotalCredit := refCreditNext
     refTotalDebit  := refDebitNext
     val refTriggerEnable = refCreditNext =/= refDebitNext
-    refSinks foreach { _ := refTriggerEnable }
+    refSinks.foreach { _ := refTriggerEnable }
   }
 
   // Reference Trigger Enable

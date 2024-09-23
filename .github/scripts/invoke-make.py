@@ -5,13 +5,14 @@ from fabric.api import prefix, run, execute # type: ignore
 
 import fabric_cfg
 from ci_variables import ci_env
+from utils import setup_shell_env_vars
 
 def invoke_make(make_args):
-    """Runs a scala test under the desired target project."""
+    """Runs the FireSim makefile"""
 
     with prefix(f"cd {ci_env['REMOTE_WORK_DIR']}"):
         with prefix('source sourceme-manager.sh --skip-ssh-setup'):
-            with prefix(fabric_cfg.setup_shell_env_vars()):
+            with prefix(setup_shell_env_vars()):
                 run(f"make -C sim {make_args}")
 
 if __name__ == "__main__":

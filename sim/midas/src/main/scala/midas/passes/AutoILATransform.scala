@@ -3,7 +3,7 @@
 package midas.passes
 
 import midas.{EnableAutoILA, ILADepthKey, ILAProbeTriggersKey}
-import midas.targetutils.FirrtlFpgaDebugAnnotation
+import midas.InternalFirrtlFpgaDebugAnnotation
 import midas.stage.GoldenGateOutputFileAnnotation
 import midas.stage.phases.ConfigParametersAnnotation
 
@@ -99,14 +99,14 @@ object AutoILATransform extends Transform with DependencyAPIMigration {
 
   private def runTransform(
     state:         CircuitState,
-    ilaAnnos:      Seq[FirrtlFpgaDebugAnnotation],
+    ilaAnnos:      Seq[InternalFirrtlFpgaDebugAnnotation],
     dataDepth:     Int,
     probeTriggers: Int,
   ): CircuitState = {
 
     // Map debug annotations to top wiring annotations
     val targetAnnos = ilaAnnos match {
-      case p => p.map { case FirrtlFpgaDebugAnnotation(target) => TopWiringAnnotation(target, s"ila_") }
+      case p => p.map { case InternalFirrtlFpgaDebugAnnotation(target) => TopWiringAnnotation(target, "ila_") }
     }
 
     // Sneak out mapping, which has information about port widths needed for
@@ -135,7 +135,7 @@ object AutoILATransform extends Transform with DependencyAPIMigration {
 
     val (possibleTops, submodules) = wiredState.circuit.modules.partition {
       case m: Module if m.name == c.main => true
-      case o                             => false
+      case _                             => false
     }
 
     val newTop             = possibleTops.head.asInstanceOf[Module]
@@ -150,7 +150,7 @@ object AutoILATransform extends Transform with DependencyAPIMigration {
       case Port(_, _, Output, _) => p.copy(direction = Input)
     }
     val flippedPorts = newPorts.map(flipPort).toSeq
-    val probes = extractedMappings.map { case ((cname, tpe, _, path, prefix), index) =>
+    val probes = extractedMappings.map { case ((_, tpe, _, path, prefix), index) =>
       val probeWidth = tpe match { case GroundType(IntWidth(w)) => w.toInt }
       ILAProbe(index, probeWidth, prefix + path.mkString("_"), probeTriggers)
     }
@@ -227,9 +227,9 @@ object AutoILATransform extends Transform with DependencyAPIMigration {
 
     // Re-target connect statements, which now reference the removed ports, to ILA wrapper
     def rewireConnects(s: Statement): Statement = s.map(rewireConnects) match {
-      case c @ Connect(_, WRef(portName, _, _, _), rhs) if newPortNames.contains(portName) =>
+      case c @ Connect(_, WRef(portName, _, _, _), _) if newPortNames.contains(portName) =>
         c.copy(loc = SubField(WRef(ilaWrapperInstName), portName))
-      case o                                                                               => o
+      case o                                                                             => o
     }
     val rewiredTop = newTopWithOldPorts.copy(
       body = Block(ilaWrapperInst, newTopWithOldPorts.body.map(rewireConnects))
@@ -253,7 +253,7 @@ object AutoILATransform extends Transform with DependencyAPIMigration {
   }
 
   def execute(state: CircuitState): CircuitState = {
-    val ilaAnnos      = state.annotations.collect { case a: FirrtlFpgaDebugAnnotation => a }
+    val ilaAnnos      = state.annotations.collect { case a: InternalFirrtlFpgaDebugAnnotation => a }
     val p             = state.annotations.collectFirst({ case ConfigParametersAnnotation(p) => p }).get
     val dataDepth     = p(ILADepthKey)
     val probeTriggers = p(ILAProbeTriggersKey)
@@ -269,10 +269,10 @@ object AutoILATransform extends Transform with DependencyAPIMigration {
     }
 
     val cleanedAnnos = newState.annotations.filter {
-      case a: TopWiringAnnotation            => false
-      case a: TopWiringOutputFilesAnnotation => false
-      case a: FirrtlFpgaDebugAnnotation      => false
-      case _                                 => true
+      case _: TopWiringAnnotation               => false
+      case _: TopWiringOutputFilesAnnotation    => false
+      case _: InternalFirrtlFpgaDebugAnnotation => false
+      case _                                    => true
     }
     newState.copy(annotations = cleanedAnnos)
   }

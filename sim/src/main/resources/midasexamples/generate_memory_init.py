@@ -2,7 +2,7 @@
 
 import argparse
 import random
-from itertools import izip, count
+from itertools import count
 
 parser = argparse.ArgumentParser(description="Generate a hex file to intialize the host memory when using the pointer chaser application.")
 
@@ -18,7 +18,7 @@ addresses = random.sample(range(args.base_address + 64, 1024*1024, 64),
             args.list_length)
 
 nodes = []
-for i, current, next_node in izip(count(),[args.base_address] + addresses[:], addresses[:] + [0]):
+for i, current, next_node in zip(count(),[args.base_address] + addresses[:], addresses[:] + [0]):
     nodes.append((current,i,next_node))
 
 

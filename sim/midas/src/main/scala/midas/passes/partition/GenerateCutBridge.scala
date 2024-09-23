@@ -6,6 +6,7 @@ import firrtl._
 import firrtl.ir._
 import firrtl.annotations.ModuleTarget
 import midas.widgets._
+import firesim.lib.bridgeutils.{BridgeAnnotation, PipeBridgeChannel}
 
 trait CutBridgePass {
   protected val outputPipeChannelLatency: Int = 0

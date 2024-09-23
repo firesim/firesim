@@ -7,7 +7,7 @@ import org.chipsalliance.cde.config.Parameters
 import chisel3.util._
 
 class RiscSRAMDUT extends Module {
-  val io = IO(new Bundle {
+  val io      = IO(new Bundle {
     val isWr   = Input(Bool())
     val wrAddr = Input(UInt(8.W))
     val wrData = Input(UInt(32.W))
@@ -22,12 +22,12 @@ class RiscSRAMDUT extends Module {
   //chisel3.experimental.annotate(MemModelAnnotation(codeMem))
 
   val idle :: fetch :: decode :: ra_read :: rb_read :: rc_write :: Nil = Enum(6)
-  val state = RegInit(idle)
+  val state                                                            = RegInit(idle)
 
   val add_op :: imm_op :: Nil = Enum(2)
-  val pc       = RegInit(0.U(8.W))
-  val raData   = Reg(UInt(32.W))
-  val rbData   = Reg(UInt(32.W))
+  val pc                      = RegInit(0.U(8.W))
+  val raData                  = Reg(UInt(32.W))
+  val rbData                  = Reg(UInt(32.W))
 
   val code = codeMem.read(pc, !io.isWr)
   when(io.isWr) {
@@ -35,19 +35,19 @@ class RiscSRAMDUT extends Module {
   }
 
   val inst = Reg(UInt(32.W))
-  val op   = inst(31,24)
-  val rci  = inst(23,16)
+  val op   = inst(31, 24)
+  val rci  = inst(23, 16)
   val rai  = inst(15, 8)
-  val rbi  = inst( 7, 0)
+  val rbi  = inst(7, 0)
   val ra   = Mux(rai === 0.U, 0.U, raData)
   val rb   = Mux(rbi === 0.U, 0.U, rbData)
 
   io.out   := Mux(op === add_op, ra + rb, Cat(rai, rbi))
   io.valid := state === rc_write && rci === 255.U
 
-  val file_wen = state === rc_write && rci =/= 255.U
+  val file_wen  = state === rc_write && rci =/= 255.U
   val file_addr = Mux(state === decode, rai, rbi)
-  val file = fileMem.read(file_addr)//, !file_wen)
+  val file      = fileMem.read(file_addr) //, !file_wen)
   when(file_wen) {
     fileMem.write(rci, io.out)
   }
@@ -82,4 +82,4 @@ class RiscSRAMDUT extends Module {
   }
 }
 
-class RiscSRAM(implicit p: Parameters) extends PeekPokeMidasExampleHarness(() => new RiscSRAMDUT)
+class RiscSRAM(implicit p: Parameters) extends firesim.lib.testutils.PeekPokeHarness(() => new RiscSRAMDUT)

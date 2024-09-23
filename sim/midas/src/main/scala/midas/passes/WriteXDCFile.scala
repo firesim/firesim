@@ -7,25 +7,26 @@ import firrtl.stage.Forms
 import firrtl.annotations._
 import firrtl.analyses.InstanceKeyGraph
 
-import midas.stage.{GoldenGateFileEmission}
+import midas.stage.GoldenGateFileEmission
 import midas.targetutils.xdc._
+import midas.InternalXDCAnnotation
 
-/**
-  * We could reuse [[GoldenGateOutputFileAnnotation]] here, but this makes it
-  * marginally easier to filter out.
+/** We could reuse [[GoldenGateOutputFileAnnotation]] here, but this makes it marginally easier to filter out.
   */
 private[midas] case class XDCOutputAnnotation(fileBody: String, suffix: Option[String])
-    extends NoTargetAnnotation with GoldenGateFileEmission {
+    extends NoTargetAnnotation
+    with GoldenGateFileEmission {
   def getBytes = fileBody.getBytes
 }
 
 private[midas] object WriteXDCFile extends Transform with DependencyAPIMigration with XDCAnnotationConstants {
-    override def prerequisites = Forms.LowForm
+  override def prerequisites = Forms.LowForm
 
   private def formatArguments(
-      iGraph: InstanceKeyGraph,
-      argumentList: Iterable[ReferenceTarget],
-      pathToCircuit: Option[String]): Iterable[Iterable[String]] = {
+    iGraph:        InstanceKeyGraph,
+    argumentList:  Iterable[ReferenceTarget],
+    pathToCircuit: Option[String],
+  ): Iterable[Iterable[String]] = {
 
     // Just skip empty argument lists.
     if (argumentList.isEmpty) {
@@ -38,21 +39,23 @@ private[midas] object WriteXDCFile extends Transform with DependencyAPIMigration
     // A better approach would be to find the LCA of all targets, and ensure none of them
     // are duplicated under that ancestor. In practice, XDC snippets will be
     // emitted with targets rooted at the current chisel module...
-    val rootModule = argumentList.head.module
+    val rootModule            = argumentList.head.module
     // Explicit here means the LCA is encoded directly in the module field of the target.
     val hasCommonExplicitRoot = argumentList.forall(_.module == rootModule)
-    require(hasCommonExplicitRoot,
+    require(
+      hasCommonExplicitRoot,
       "All targets in an XDC Annotation must be rooted at the same module. Got:\n" +
-      argumentList.mkString("\n"))
+        argumentList.mkString("\n"),
+    )
 
     // Get local paths for each reference under the enclosing module
     val relativePaths = for (arg <- argumentList) yield {
       arg.path.map { _._1.value } ++: // Path in the provided RT
-      arg.ref +:
-      arg.component.map { _.value }
+        arg.ref +:
+        arg.component.map { _.value }
     }
     // Prepare to duplicate the XDC snippet for each instance of the root module
-    val instances = iGraph.findInstancesInHierarchy(rootModule)
+    val instances     = iGraph.findInstancesInHierarchy(rootModule)
     for (instPath <- instances) yield {
       val fullInstPath = pathToCircuit ++: instPath.tail.map { _.Instance.value }
       for (rPath <- relativePaths) yield {
@@ -62,10 +65,11 @@ private[midas] object WriteXDCFile extends Transform with DependencyAPIMigration
   }
 
   private def serializeXDC(
-      anno: XDCAnnotation,
-      iGraph: InstanceKeyGraph,
-      pathToCircuit: Option[String]): Iterable[String] = {
-    val segments = specifierRegex.split(anno.formatString)
+    anno:          InternalXDCAnnotation,
+    iGraph:        InstanceKeyGraph,
+    pathToCircuit: Option[String],
+  ): Iterable[String] = {
+    val segments                = specifierRegex.split(anno.formatString)
     val duplicatedArgumentLists = formatArguments(iGraph, anno.argumentList, pathToCircuit)
     for (formattedArguments <- duplicatedArgumentLists) yield {
       segments.zipAll(formattedArguments, "", "").map { case (a, b) => a + b }.mkString
@@ -77,29 +81,29 @@ private[midas] object WriteXDCFile extends Transform with DependencyAPIMigration
     // Detect if our circuit is nested, and prepend the provided path to
     // emitted reference targets.
     val circuitPathMappings = state.annotations.collect { case XDCPathToCircuitAnnotation(pre, post) => (pre, post) }
-    require(circuitPathMappings.size == 1,
-      s"Exactly one PathToCircuitAnnotations required. Got ${circuitPathMappings.size}.")
+    require(
+      circuitPathMappings.size == 1,
+      s"Exactly one PathToCircuitAnnotations required. Got ${circuitPathMappings.size}.",
+    )
 
-    val iGraph = InstanceKeyGraph(state.circuit)
+    val iGraph                = InstanceKeyGraph(state.circuit)
     val xdcAnnosGroupedByFile = state.annotations
-      .collect { case a: XDCAnnotation => a }
+      .collect { case a: InternalXDCAnnotation => a }
       .groupBy { _.destinationFile }
       .toMap
 
     val (preLinkPath, postLinkPath) = circuitPathMappings.head
-    val outputAnnos = for (fileType <- XDCFiles.allFiles) yield {
+    val outputAnnos                 = for (fileType <- XDCFiles.allFiles) yield {
       val circuitPath = if (fileType.preLink) preLinkPath else postLinkPath
-      val annos = xdcAnnosGroupedByFile.get(fileType).getOrElse(Nil)
+      val annos       = xdcAnnosGroupedByFile.get(fileType).getOrElse(Nil)
       val xdcSnippets = annos.map { a => serializeXDC(a, iGraph, circuitPath) }
-      XDCOutputAnnotation(
-        (xdcHeader +: xdcSnippets.flatten).mkString("\n"),
-        Some(fileType.fileSuffix))
+      XDCOutputAnnotation((xdcHeader +: xdcSnippets.flatten).mkString("\n"), Some(fileType.fileSuffix))
     }
 
     val cleanedAnnotations = state.annotations.filterNot {
-      case a: XDCAnnotation => true
-      case a: XDCPathToCircuitAnnotation => true
-      case _ => false
+      case _: InternalXDCAnnotation      => true
+      case _: XDCPathToCircuitAnnotation => true
+      case _                             => false
     }
     state.copy(annotations = outputAnnos ++: cleanedAnnotations)
   }

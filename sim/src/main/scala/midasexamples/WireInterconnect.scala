@@ -1,4 +1,3 @@
-
 //See LICENSE for license details.
 
 package firesim.midasexamples
@@ -8,8 +7,8 @@ import chisel3._
 import chisel3.util._
 
 class PipeModule[T <: Data](gen: T, latency: Int = 0) extends Module {
-  val in   = IO(Input(gen))
-  val out  = IO(Output(gen))
+  val in  = IO(Input(gen))
+  val out = IO(Output(gen))
   out := ShiftRegister(in, latency)
 }
 
@@ -29,14 +28,15 @@ class WireInterconnectDUT extends Module {
   }
 
   val io = IO(new Bundle {
-    val aIn   = Input(aType)
-    val aOut  = Output(aType)
-    val bIn   = Input(bType)
-    val bOut  = Output(bType)
+    val aIn  = Input(aType)
+    val aOut = Output(aType)
+    val bIn  = Input(bType)
+    val bOut = Output(bType)
   })
 
   io.aOut := PipeModule(io.aIn, 0)
   io.bOut := PipeModule(io.bIn, 1)
 }
 
-class WireInterconnect(implicit p: Parameters) extends PeekPokeMidasExampleHarness(() => new WireInterconnectDUT)
+class WireInterconnect(implicit p: Parameters)
+    extends firesim.lib.testutils.PeekPokeHarness(() => new WireInterconnectDUT)

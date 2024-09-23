@@ -7,6 +7,7 @@ import firrtl.ir._
 import firrtl.annotations._
 import midas.widgets._
 import midas.targetutils._
+import firesim.lib.bridgeutils.{BridgeAnnotation, PipeBridgeChannel}
 
 /** Take the annotated target and drive with plus args bridge(s)
   */
@@ -56,14 +57,14 @@ object PlusArgsWiringTransform extends Transform {
     def swapRefs(e: Expression): Expression = {
       e match {
         // TODO: could match a bit stronger to the specific 'out' field
-        case wsf @ WSubField(WRef(iN, _, InstanceKind, _), iP, _, _) =>
+        case wsf @ WSubField(WRef(iN, _, InstanceKind, _), _, _, _) =>
           if (iN == plusArgInstanceName) {
             replaced = true
             WRef(newRef)
           } else {
             wsf
           }
-        case other                                                   =>
+        case other                                                  =>
           other.mapExpr(swapRefs)
       }
     }
@@ -88,7 +89,7 @@ object PlusArgsWiringTransform extends Transform {
 
   def onStmtRemoveDefInstance(stmt: Statement, instName: String): Seq[Statement] = {
     stmt match {
-      case DefInstance(i, n, m, t) if (n == instName) => Seq.empty
+      case DefInstance(_, n, _, _) if (n == instName) => Seq.empty
       case s                                          => Seq(s)
     }
   }
@@ -187,7 +188,7 @@ object PlusArgsWiringTransform extends Transform {
     }
 
     if (!plusArgAnnos.isEmpty) {
-      println(s"[PlusArgs] PlusArgs are:")
+      println("[PlusArgs] PlusArgs are:")
       plusArgAnnos.foreach(println(_))
       connectBridge(state, plusArgAnnos.toSeq)
     } else { state }
@@ -207,7 +208,7 @@ object PlusArgsWiringTransform extends Transform {
     // are implicitly marked as DontTouch, can be optimized across
     updatedState.copy(annotations = updatedState.annotations.filter {
       case PlusArgFirrtlAnnotation(_) => false
-      case o                          => true
+      case _                          => true
     })
   }
 }

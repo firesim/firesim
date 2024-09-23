@@ -2,41 +2,41 @@
 
 package midas.stage
 
-import firrtl.annotations.{NoTargetAnnotation, Annotation}
-import firrtl.options.{CustomFileEmission}
+import firrtl.annotations.{Annotation, NoTargetAnnotation}
+import firrtl.options.CustomFileEmission
 
 import chisel3.experimental.{annotate, ChiselAnnotation}
 
 trait GoldenGateFileEmission extends CustomFileEmission { this: Annotation =>
   override def baseFileName(annotations: firrtl.AnnotationSeq) = {
-    annotations.collectFirst{ case OutputBaseFilenameAnnotation(name) => name }.get
+    annotations.collectFirst { case OutputBaseFilenameAnnotation(name) => name }.get
   }
 }
 
-/**
-  * A generic wrapper for output files that have no targets.
+/** A generic wrapper for output files that have no targets.
   *
-  * @param body the body of the file
-  * @param fileSuffix The string to append to base output file name
-  *
+  * @param body
+  *   the body of the file
+  * @param fileSuffix
+  *   The string to append to base output file name
   */
 case class GoldenGateOutputFileAnnotation(body: String, fileSuffix: String)
-    extends NoTargetAnnotation with GoldenGateFileEmission {
-  def suffix = Some(fileSuffix)
+    extends NoTargetAnnotation
+    with GoldenGateFileEmission {
+  def suffix   = Some(fileSuffix)
   def getBytes = body.getBytes
 }
 
 object GoldenGateOutputFileAnnotation {
-  /**
-    * Sugar to add a new output file from a chisel source (e.g., in a bridge, platform shim)
+
+  /** Sugar to add a new output file from a chisel source (e.g., in a bridge, platform shim)
     */
   def annotateFromChisel(body: String, fileSuffix: String): Unit = {
     annotate(new ChiselAnnotation { def toFirrtl = GoldenGateOutputFileAnnotation(body, fileSuffix) })
   }
 }
 
-/**
-  * Wraps a StringBuilder to incrementally build up an output file annotation.
+/** Wraps a StringBuilder to incrementally build up an output file annotation.
   */
 class OutputFileBuilder(header: String, fileSuffix: String) {
   private val sb = new StringBuilder(header)

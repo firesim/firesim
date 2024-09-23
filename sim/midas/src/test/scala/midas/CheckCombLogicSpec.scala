@@ -1,6 +1,5 @@
 package goldengate.tests
 
-import java.io.{File, PrintWriter}
 import org.scalatest.freespec.AnyFreeSpec
 
 import firrtl._

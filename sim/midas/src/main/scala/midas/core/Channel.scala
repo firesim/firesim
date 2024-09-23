@@ -3,9 +3,10 @@
 package midas
 package core
 
-import org.chipsalliance.cde.config.{Parameters, Field}
+import org.chipsalliance.cde.config.{Field, Parameters}
 import freechips.rocketchip.unittest._
 import freechips.rocketchip.util.{DecoupledHelper, ShiftQueue} // Better than chisel's
+import firesim.lib.bridgeutils.HostReadyValid
 
 import chisel3._
 import chisel3.util._
@@ -16,27 +17,28 @@ import chisel3.util._
 case object GenerateTokenIrrevocabilityAssertions extends Field[Boolean](false)
 
 class PipeChannelIO[T <: Data](gen: T)(implicit p: Parameters) extends Bundle {
-  val in    = Flipped(Decoupled(gen))
-  val out   = Decoupled(gen)
+  val in  = Flipped(Decoupled(gen))
+  val out = Decoupled(gen)
 }
 
 class PipeChannel[T <: Data](
-    val gen: T,
-    latency: Int
-  )(implicit p: Parameters) extends Module {
+  val gen:    T,
+  latency:    Int,
+)(implicit p: Parameters
+) extends Module {
   require(latency == 0 || latency == 1)
 
-  val io = IO(new PipeChannelIO(gen))
+  val io     = IO(new PipeChannelIO(gen))
   val tokens = Module(new ShiftQueue(gen, 2))
   tokens.io.enq <> io.in
-  io.out <> tokens.io.deq
+  io.out        <> tokens.io.deq
 
   if (latency == 1) {
     val initializing = RegNext(reset.asBool)
     when(initializing) {
       tokens.io.enq.valid := true.B
-      tokens.io.enq.bits := 0.U.asTypeOf(tokens.io.enq.bits)
-      io.in.ready := false.B
+      tokens.io.enq.bits  := 0.U.asTypeOf(tokens.io.enq.bits)
+      io.in.ready         := false.B
     }
   }
 
@@ -46,17 +48,18 @@ class PipeChannel[T <: Data](
 // Generates stateful assertions to check that an ReadyValid interface is irrevocable
 object AssertTokenIrrevocable {
   def apply(valid: Bool, bits: Data, ready: Bool, suggestedName: Option[String]): Unit = {
-    val prefix = suggestedName match {
+    val prefix    = suggestedName match {
       case Some(str) => str + ": "
-      case None => ""
+      case None      => ""
     }
     val validPrev = RegNext(valid, false.B)
     val bitsPrev  = RegNext(bits)
     val firePrev  = RegNext(valid && ready)
-    assert(!validPrev || firePrev || valid,
-      s"${prefix}valid de-asserted without handshake, violating irrevocability")
-    assert(!validPrev || firePrev || bitsPrev.asUInt === bits.asUInt,
-      s"${prefix}bits changed without handshake, violating irrevocability")
+    assert(!validPrev || firePrev || valid, s"${prefix}valid de-asserted without handshake, violating irrevocability")
+    assert(
+      !validPrev || firePrev || bitsPrev.asUInt === bits.asUInt,
+      s"${prefix}bits changed without handshake, violating irrevocability",
+    )
   }
 
   def apply(rv: ReadyValidIO[_ <: Data], suggestedName: Option[String] = None): Unit =
@@ -64,19 +67,22 @@ object AssertTokenIrrevocable {
 }
 
 class PipeChannelUnitTest(
-    latency: Int = 0,
-    numTokens: Int = 4096,
-    timeout: Int = 50000
-  )(implicit p: Parameters) extends UnitTest(timeout) {
+  latency:    Int = 0,
+  numTokens:  Int = 4096,
+  timeout:    Int = 50000,
+)(implicit p: Parameters
+) extends UnitTest(timeout) {
 
   override val testName = "PipeChannel Unit Test"
-  val payloadWidth = 8
-  val dut = Module(new PipeChannel(UInt(payloadWidth.W), latency))
-  val referenceInput  = Wire(UInt(payloadWidth.W))
-  val referenceOutput = ShiftRegister(referenceInput, latency)
+  val payloadWidth      = 8
+  val dut               = Module(new PipeChannel(UInt(payloadWidth.W), latency))
+  val referenceInput    = Wire(UInt(payloadWidth.W))
+  val referenceOutput   = ShiftRegister(referenceInput, latency)
 
-  val inputChannelMapping = Seq(IChannelDesc("in", referenceInput, dut.io.in))
-  val outputChannelMapping = Seq(OChannelDesc("out", referenceOutput, dut.io.out, TokenComparisonFunctions.ignoreNTokens(1)))
+  val inputChannelMapping  = Seq(IChannelDesc("in", referenceInput, dut.io.in))
+  val outputChannelMapping = Seq(
+    OChannelDesc("out", referenceOutput, dut.io.out, TokenComparisonFunctions.ignoreNTokens(1))
+  )
 
   io.finished := DirectedLIBDNTestHelper(inputChannelMapping, outputChannelMapping, numTokens)
 }
@@ -99,8 +105,8 @@ class PipeChannelUnitTest(
 
 class SimReadyValidIO[T <: Data](gen: T) extends Bundle {
   val target = EnqIO(gen)
-  val fwd = new HostReadyValid
-  val rev = Flipped(new HostReadyValid)
+  val fwd    = new HostReadyValid
+  val rev    = Flipped(new HostReadyValid)
 
   def generateFwdIrrevocabilityAssertions(suggestedName: Option[String] = None): Unit =
     AssertTokenIrrevocable(fwd.hValid, Cat(target.valid, target.bits.asUInt), fwd.hReady, suggestedName)
@@ -112,16 +118,16 @@ class SimReadyValidIO[T <: Data](gen: T) extends Bundle {
   def bifurcate(): (DecoupledIO[ValidIO[T]], DecoupledIO[Bool]) = {
     // Can't use bidirectional wires, so we use a dummy module (akin to the identity module)
     class BifurcationModule[T <: Data](gen: T) extends Module {
-      val fwd = IO(Decoupled(Valid(gen)))
-      val rev = IO(Flipped(DecoupledIO(Bool())))
+      val fwd     = IO(Decoupled(Valid(gen)))
+      val rev     = IO(Flipped(DecoupledIO(Bool())))
       val coupled = IO(Flipped(cloneType))
       // Forward channel
-      fwd.bits.bits  := coupled.target.bits
-      fwd.bits.valid := coupled.target.valid
-      fwd.valid      := coupled.fwd.hValid
-      coupled.fwd.hReady := fwd.ready
+      fwd.bits.bits        := coupled.target.bits
+      fwd.bits.valid       := coupled.target.valid
+      fwd.valid            := coupled.fwd.hValid
+      coupled.fwd.hReady   := fwd.ready
       // Reverse channel
-      rev.ready := coupled.rev.hReady
+      rev.ready            := coupled.rev.hReady
       coupled.target.ready := rev.bits
       coupled.rev.hValid   := rev.valid
     }
@@ -134,18 +140,18 @@ class SimReadyValidIO[T <: Data](gen: T) extends Bundle {
   def combine(): (DecoupledIO[ValidIO[T]], DecoupledIO[Bool]) = {
     // Can't use bidirectional wires, so we use a dummy module (akin to the identity module)
     class CombiningModule[T <: Data](gen: T) extends Module {
-      val fwd = IO(Flipped(DecoupledIO(Valid(gen))))
-      val rev = IO((Decoupled(Bool())))
+      val fwd     = IO(Flipped(DecoupledIO(Valid(gen))))
+      val rev     = IO((Decoupled(Bool())))
       val coupled = IO(cloneType)
       // Forward channel
-      coupled.target.bits := fwd.bits.bits
+      coupled.target.bits  := fwd.bits.bits
       coupled.target.valid := fwd.bits.valid
-      coupled.fwd.hValid := fwd.valid
-      fwd.ready := coupled.fwd.hReady
+      coupled.fwd.hValid   := fwd.valid
+      fwd.ready            := coupled.fwd.hReady
       // Reverse channel
-      coupled.rev.hReady := rev.ready
-      rev.bits := coupled.target.ready
-      rev.valid := coupled.rev.hValid
+      coupled.rev.hReady   := rev.ready
+      rev.bits             := coupled.target.ready
+      rev.valid            := coupled.rev.hValid
     }
     val combiner = Module(new CombiningModule(gen))
     this <> combiner.coupled
@@ -158,29 +164,30 @@ object SimReadyValid {
 }
 
 class ReadyValidChannelIO[T <: Data](gen: T)(implicit p: Parameters) extends Bundle {
-  val enq = Flipped(SimReadyValid(gen))
-  val deq = SimReadyValid(gen)
+  val enq         = Flipped(SimReadyValid(gen))
+  val deq         = SimReadyValid(gen)
   val targetReset = Flipped(Decoupled(Bool()))
 }
 
 class ReadyValidChannel[T <: Data](
-    gen: T,
-    n: Int = 2, // Target queue depth
-  )(implicit p: Parameters) extends Module {
+  gen:        T,
+  n:          Int = 2,// Target queue depth
+)(implicit p: Parameters
+) extends Module {
 
-  val io = IO(new ReadyValidChannelIO(gen))
+  val io      = IO(new ReadyValidChannelIO(gen))
   val enqFwdQ = Module(new ShiftQueue(ValidIO(gen), 2, flow = true))
   enqFwdQ.io.enq.bits.valid := io.enq.target.valid
-  enqFwdQ.io.enq.bits.bits := io.enq.target.bits
-  enqFwdQ.io.enq.valid := io.enq.fwd.hValid
-  io.enq.fwd.hReady := enqFwdQ.io.enq.ready
+  enqFwdQ.io.enq.bits.bits  := io.enq.target.bits
+  enqFwdQ.io.enq.valid      := io.enq.fwd.hValid
+  io.enq.fwd.hReady         := enqFwdQ.io.enq.ready
 
   val deqRevQ = Module(new ShiftQueue(Bool(), 2, flow = true))
   deqRevQ.io.enq.bits  := io.deq.target.ready
   deqRevQ.io.enq.valid := io.deq.rev.hValid
   io.deq.rev.hReady    := deqRevQ.io.enq.ready
 
-  val reference = Module(new ShiftQueue(gen, n))
+  val reference   = Module(new ShiftQueue(gen, n))
   val deqFwdFired = RegInit(false.B)
   val enqRevFired = RegInit(false.B)
 
@@ -189,24 +196,25 @@ class ReadyValidChannel[T <: Data](
     enqFwdQ.io.deq.valid,
     deqRevQ.io.deq.valid,
     (enqRevFired || io.enq.rev.hReady),
-    (deqFwdFired || io.deq.fwd.hReady))
+    (deqFwdFired || io.deq.fwd.hReady),
+  )
 
-  val targetFire = finishing.fire()
+  val targetFire  = finishing.fire()
   val enqBitsLast = RegEnable(enqFwdQ.io.deq.bits.bits, targetFire)
   // enqRev
-  io.enq.rev.hValid := !enqRevFired
+  io.enq.rev.hValid   := !enqRevFired
   io.enq.target.ready := reference.io.enq.ready
 
   // deqFwd
-  io.deq.fwd.hValid := !deqFwdFired
-  io.deq.target.bits := reference.io.deq.bits
+  io.deq.fwd.hValid   := !deqFwdFired
+  io.deq.target.bits  := reference.io.deq.bits
   io.deq.target.valid := reference.io.deq.valid
 
   io.targetReset.ready := finishing.fire(io.targetReset.valid)
   enqFwdQ.io.deq.ready := finishing.fire(enqFwdQ.io.deq.valid)
   deqRevQ.io.deq.ready := finishing.fire(deqRevQ.io.deq.valid)
 
-  reference.reset := reset.asBool || targetFire && io.targetReset.bits
+  reference.reset        := reset.asBool || targetFire && io.targetReset.bits
   reference.io.enq.valid := targetFire && enqFwdQ.io.deq.bits.valid
   reference.io.enq.bits  := Mux(targetFire, enqFwdQ.io.deq.bits.bits, enqBitsLast)
   reference.io.deq.ready := targetFire && deqRevQ.io.deq.bits
@@ -221,17 +229,18 @@ class ReadyValidChannel[T <: Data](
 }
 
 class ReadyValidChannelUnitTest(
-    numTokens: Int = 4096,
-    queueDepth: Int = 2,
-    timeout: Int = 50000
-  )(implicit p: Parameters) extends UnitTest(timeout) {
+  numTokens:  Int = 4096,
+  queueDepth: Int = 2,
+  timeout:    Int = 50000,
+)(implicit p: Parameters
+) extends UnitTest(timeout) {
   override val testName = "PipeChannel"
 
   val payloadType = UInt(8.W)
   val resetLength = 4
 
-  val dut = Module(new ReadyValidChannel(payloadType))
-  val reference = Module(new ShiftQueue(payloadType, queueDepth))
+  val dut            = Module(new ReadyValidChannel(payloadType))
+  val reference      = Module(new ShiftQueue(payloadType, queueDepth))
   val referenceReset = Wire(Bool())
   reference.reset := referenceReset
 
@@ -250,24 +259,24 @@ class ReadyValidChannelUnitTest(
   //
   // TODO: Consider initializing all memories to zero even in the unittests as
   // that will more closely the FPGA
-  val enqCount = RegInit(0.U(log2Ceil(queueDepth + 1).W))
+  val enqCount        = RegInit(0.U(log2Ceil(queueDepth + 1).W))
   val memFullyDefined = enqCount === queueDepth.U
   enqCount := Mux(!memFullyDefined && reference.io.enq.fire && !reference.reset.asBool, enqCount + 1.U, enqCount)
 
   // Track the target cycle at which all entries are known
-  val memFullyDefinedCycle = RegInit(1.U(log2Ceil(2*timeout).W))
+  val memFullyDefinedCycle = RegInit(1.U(log2Ceil(2 * timeout).W))
   memFullyDefinedCycle := Mux(!memFullyDefined, memFullyDefinedCycle + 1.U, memFullyDefinedCycle)
 
   def strictPayloadCheck(ref: Data, ch: DecoupledIO[Data]): Bool = {
     // hack: fix the types
-    val refTyped = ref.asTypeOf(refDeqFwd)
+    val refTyped   = ref.asTypeOf(refDeqFwd)
     val modelTyped = ref.asTypeOf(refDeqFwd)
 
-    val deqCount = RegInit(0.U(log2Ceil(numTokens + 1).W))
-    when (ch.fire) { deqCount := deqCount + 1.U }
+    val deqCount   = RegInit(0.U(log2Ceil(numTokens + 1).W))
+    when(ch.fire) { deqCount := deqCount + 1.U }
 
     // Neglect a comparison if: 1) still under reset 2) mem contents still undefined
-    val exempt = deqCount < resetLength.U ||
+    val exempt     = deqCount < resetLength.U ||
       !refTyped.valid && !modelTyped.valid && (deqCount < memFullyDefinedCycle)
     val matchExact = ref.asUInt === ch.bits.asUInt
 
@@ -278,18 +287,22 @@ class ReadyValidChannelUnitTest(
   val (enqFwd, enqRev) = dut.io.enq.combine()
 
   val refDeqFwd = Wire(Valid(payloadType))
-  refDeqFwd.bits := reference.io.deq.bits
+  refDeqFwd.bits  := reference.io.deq.bits
   refDeqFwd.valid := reference.io.deq.valid
   val refEnqFwd = Wire(Valid(payloadType))
-  reference.io.enq.bits := refEnqFwd.bits
+  reference.io.enq.bits  := refEnqFwd.bits
   reference.io.enq.valid := refEnqFwd.valid
 
-  val inputChannelMapping = Seq(IChannelDesc("enqFwd", refEnqFwd, enqFwd),
-                                IChannelDesc("deqRev", reference.io.deq.ready, deqRev),
-                                IChannelDesc("reset" , referenceReset, dut.io.targetReset, Some(resetTokenGen _)))
+  val inputChannelMapping = Seq(
+    IChannelDesc("enqFwd", refEnqFwd, enqFwd),
+    IChannelDesc("deqRev", reference.io.deq.ready, deqRev),
+    IChannelDesc("reset", referenceReset, dut.io.targetReset, Some(resetTokenGen _)),
+  )
 
-  val outputChannelMapping = Seq(OChannelDesc("deqFwd", refDeqFwd, deqFwd, strictPayloadCheck),
-                                 OChannelDesc("enqRev", reference.io.enq.ready, enqRev, TokenComparisonFunctions.ignoreNTokens(resetLength)))
+  val outputChannelMapping = Seq(
+    OChannelDesc("deqFwd", refDeqFwd, deqFwd, strictPayloadCheck),
+    OChannelDesc("enqRev", reference.io.enq.ready, enqRev, TokenComparisonFunctions.ignoreNTokens(resetLength)),
+  )
 
   io.finished := DirectedLIBDNTestHelper(inputChannelMapping, outputChannelMapping, numTokens)
 }

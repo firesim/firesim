@@ -1,8 +1,7 @@
 package goldengate.tests
 
 import chisel3._
-import chisel3.util._
-import chisel3.experimental.{annotate, DataMirror, IO}
+import chisel3.experimental.DataMirror
 import chisel3.stage.{ChiselCircuitAnnotation, ChiselGeneratorAnnotation, ChiselStage, CircuitSerializationAnnotation}
 
 import org.scalatest.freespec.AnyFreeSpec
@@ -14,31 +13,14 @@ import firrtl.options.TargetDirAnnotation
 import firrtl.stage.{FirrtlCircuitAnnotation, RunFirrtlTransformAnnotation}
 import firrtl.transforms.DontTouchAnnotation
 
-import midas.stage._
-import midas.widgets.{
-  BridgeAnnotation,
-  PeekPokeBridge,
-  RationalClock,
-  RationalClockBridge,
-  ResetPulseBridge,
-  ResetPulseBridgeParameters,
-}
-import midas.targetutils.{
-  EnableModelMultiThreadingAnnotation,
-  FirrtlEnableModelMultiThreadingAnnotation,
-  FirrtlMemModelAnnotation,
-  MemModelAnnotation,
-}
+import firesim.lib.bridgeutils.BridgeAnnotation
+import midas.targetutils.{FirrtlEnableModelMultiThreadingAnnotation, FirrtlMemModelAnnotation}
 import midas.passes.partition.PrintAllPass
 
-import freechips.rocketchip.prci._
-import freechips.rocketchip.diplomacy._
-import org.chipsalliance.cde.config.{Config, Field, Parameters}
+import org.chipsalliance.cde.config.Config
 
 import java.io.{File, PrintWriter}
 import midas.targetutils.RoCCBusyFirrtlAnnotation
-import freechips.rocketchip.util.DecoupledHelper
-import midas.targetutils.MakeRoCCBusyLatencyInsensitive
 
 trait GoldenGateCompilerTest { this: TestSuite =>
   protected def annos: AnnotationSeq = Seq()
@@ -86,15 +68,15 @@ class FireSimFirrtlAndAnnotationGenerator extends AnyFreeSpec with GoldenGateCom
 
     val annosWithoutFAME5ANnos = annos.filter(a =>
       a match {
-        case f: FirrtlEnableModelMultiThreadingAnnotation => false
-        case f: FirrtlMemModelAnnotation                  => false
+        case _: FirrtlEnableModelMultiThreadingAnnotation => false
+        case _: FirrtlMemModelAnnotation                  => false
         case _                                            => true
       }
     )
 
     val FAME5PathAnnos = annos.filter(a =>
       a match {
-        case f: FirrtlEnableModelMultiThreadingAnnotation => true
+        case _: FirrtlEnableModelMultiThreadingAnnotation => true
         case _                                            => false
       }
     )
@@ -110,7 +92,7 @@ class FireSimFirrtlAndAnnotationGenerator extends AnyFreeSpec with GoldenGateCom
 
     val FAME5MemPathAnnos = annos.filter(a =>
       a match {
-        case f: FirrtlMemModelAnnotation => true
+        case _: FirrtlMemModelAnnotation => true
         case _                           => false
       }
     )
@@ -138,7 +120,7 @@ class FireSimFirrtlAndAnnotationGenerator extends AnyFreeSpec with GoldenGateCom
       case _: DontTouchAnnotation                       => true
       case _: FirrtlEnableModelMultiThreadingAnnotation => true
       case _: FirrtlMemModelAnnotation                  => true
-      case x: RoCCBusyFirrtlAnnotation                  => // TODO : Add serializer to use this...?
+      case _: RoCCBusyFirrtlAnnotation                  => // TODO : Add serializer to use this...?
         false
       case _                                            => false
     })))

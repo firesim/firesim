@@ -14,9 +14,10 @@ from util.deepmerge import deep_merge
 
 # imports needed for python type checking
 from typing import Dict, Optional, List, Set, Type, Any, TYPE_CHECKING
-import argparse # this is not within a if TYPE_CHECKING: scope so the `register_task` in FireSim can evaluate it's annotation
+import argparse  # this is not within a if TYPE_CHECKING: scope so the `register_task` in FireSim can evaluate it's annotation
 
 rootLogger = logging.getLogger()
+
 
 class BuildConfigFile:
     """Class representing the "global" build config file i.e. `config_build.yaml`.
@@ -30,7 +31,10 @@ class BuildConfigFile:
         build_ip_set: List of IPs to use for builds.
         num_builds: Number of builds to run.
         build_farm: Build farm used to host builds.
+        build_config_file_path: Path to build config file
+        build_config_recipes_file_path: Path to build config recipes file
     """
+
     args: argparse.Namespace
     forceterminate: bool
     agfistoshare: List[str]
@@ -40,6 +44,8 @@ class BuildConfigFile:
     build_ip_set: Set[str]
     num_builds: int
     build_farm: BuildFarm
+    build_config_file_path: str
+    build_config_recipes_file_path: str
 
     def __init__(self, args: argparse.Namespace) -> None:
         """
@@ -60,29 +66,32 @@ class BuildConfigFile:
             global_build_config_file = yaml.safe_load(yaml_file)
 
         # aws specific options
-        self.agfistoshare = global_build_config_file['agfis_to_share']
-        swa_dict = global_build_config_file['share_with_accounts']
+        self.agfistoshare = global_build_config_file["agfis_to_share"]
+        swa_dict = global_build_config_file["share_with_accounts"]
         self.acctids_to_sharewith = swa_dict.values() if swa_dict else []
 
         # this is a list of actual builds to run
-        builds_to_run_list = global_build_config_file['builds_to_run']
+        builds_to_run_list = global_build_config_file["builds_to_run"]
         self.num_builds = len(builds_to_run_list)
 
         build_recipes_config_file = None
         with open(args.buildrecipesconfigfile, "r") as yaml_file:
             build_recipes_config_file = yaml.safe_load(yaml_file)
 
+        self.build_config_file_path = args.buildconfigfile
+        self.build_config_recipes_file_path = args.buildrecipesconfigfile
+
         build_recipes = dict()
         for section_name, section_dict in build_recipes_config_file.items():
             if section_name in builds_to_run_list:
                 try:
                     build_recipes[section_name] = BuildConfig(
-                        section_name,
-                        section_dict,
-                        self,
-                        launch_time)
+                        section_name, section_dict, self, launch_time
+                    )
                 except Exception as e:
-                    raise Exception(f"Error constructing build recipe '{section_name}'") from e
+                    raise Exception(
+                        f"Error constructing build recipe '{section_name}'"
+                    ) from e
 
         self.hwdb = RuntimeHWDB(args.hwdbconfigfile)
 
@@ -100,17 +109,25 @@ class BuildConfigFile:
         build_farm_args = build_farm_config_file["args"]
 
         # add the overrides if it exists
-        override_args = global_build_config_file['build_farm'].get('recipe_arg_overrides')
+        override_args = global_build_config_file["build_farm"].get(
+            "recipe_arg_overrides"
+        )
         if override_args:
             build_farm_args = deep_merge(build_farm_args, override_args)
 
-        build_farm_dispatch_dict = dict([(x.__name__, x) for x in inheritors(BuildFarm)])
+        build_farm_dispatch_dict = dict(
+            [(x.__name__, x) for x in inheritors(BuildFarm)]
+        )
 
         if not build_farm_type_name in build_farm_dispatch_dict:
-            raise Exception(f"Unable to find {build_farm_type_name} in available build farm classes: {build_farm_dispatch_dict.keys()}")
+            raise Exception(
+                f"Unable to find {build_farm_type_name} in available build farm classes: {build_farm_dispatch_dict.keys()}"
+            )
 
         # create dispatcher object using class given and pass args to it
-        self.build_farm = build_farm_dispatch_dict[build_farm_type_name](build_farm_args)
+        self.build_farm = build_farm_dispatch_dict[build_farm_type_name](
+            build_farm_args
+        )
 
         # do bitbuilder setup after all parsing is complete
         for build in self.builds_list:
@@ -134,7 +151,6 @@ class BuildConfigFile:
                 raise Exception(error_msg)
             else:
                 self.build_ip_set.add(ip)
-
 
     def release_build_hosts(self) -> None:
         """Terminate all build instances that are launched."""
