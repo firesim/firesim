@@ -7,7 +7,7 @@ import chisel3._
 import org.chipsalliance.cde.config.Parameters
 
 import firesim.lib.bridges.{PeekPokeBridge, RationalClockBridge, ResetPulseBridge, ResetPulseBridgeParameters}
-import midas.targetutils.{GlobalResetCondition}
+import midas.targetutils.GlobalResetCondition
 
 // DOC include start: Counter
 // Simple module that when started (i.e. after reset) counts to 1000 then signals 'done'
@@ -18,14 +18,14 @@ class SimpleCounter extends Module {
 
   val cnt = RegInit(0.U(16.W))
 
-  when (cnt === 1000.U) {
+  when(cnt === 1000.U) {
     io.done := true.B
-  } .otherwise {
+  }.otherwise {
     io.done := false.B
-    cnt := cnt + 1.U
+    cnt     := cnt + 1.U
   }
 
-  when (cnt % 100.U === 0.U && cnt =/= 1000.U) {
+  when(cnt % 100.U === 0.U && cnt =/= 1000.U) {
     printf("Counter reached %d\n", cnt)
   }
 }
@@ -43,7 +43,7 @@ class SimpleCounterHarness(implicit val p: Parameters) extends RawModule {
   // Boilerplate code:
   // The peek-poke bridge must still be instantiated even though it's
   // functionally unused. This will be removed in a future PR.
-  val dummy = WireInit(false.B)
+  val dummy          = WireInit(false.B)
   val peekPokeBridge = PeekPokeBridge(clock, dummy)
 
 // DOC include start: Bridges
@@ -55,7 +55,7 @@ class SimpleCounterHarness(implicit val p: Parameters) extends RawModule {
   // In effect, the bridge counts the length of the reset in terms of this clock.
   resetBridge.io.clock := clock
   // Drive with pulsed reset for a default amount of time.
-  reset := resetBridge.io.reset
+  reset                := resetBridge.io.reset
 // DOC include end: Bridges
 
   // Boilerplate code:
@@ -72,7 +72,7 @@ class SimpleCounterHarness(implicit val p: Parameters) extends RawModule {
 
     // Print once when counter 'done' signal asserted.
     val printDone = RegInit(false.B)
-    when (simpleCounter.io.done && !printDone) {
+    when(simpleCounter.io.done && !printDone) {
       printDone := true.B
       printf("Counter has completed!\n")
     }

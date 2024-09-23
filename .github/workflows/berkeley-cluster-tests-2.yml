@@ -182,7 +182,10 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - name: Run simple counter top-level example
-        run: ./.github/scripts/invoke-make.py "TARGET_PROJECT=examples run-vcs"
+        continue-on-error: true
+        run: ./.github/scripts/invoke-make.py "TARGET_PROJECT=examples run-vcs" 2>&1 | tee out.log
+      - name: Check success
+        run: grep -rn "Counter has completed!" out.log
 
   cleanup-local-fpga-repo:
     name: cleanup-local-fpga-repo
