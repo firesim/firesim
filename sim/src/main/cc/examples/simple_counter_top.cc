@@ -1,10 +1,8 @@
 // See LICENSE for license details
 
 #include "bridges/clock.h"
-#include "bridges/fased_memory_timing_model.h"
 #include "bridges/heartbeat.h"
 #include "bridges/peek_poke.h"
-#include "core/bridge_driver.h"
 #include "core/simif.h"
 #include "core/simulation.h"
 #include "core/systematic_scheduler.h"
@@ -39,6 +37,7 @@ simple_counter_top_t::simple_counter_top_t(simif_t &simif,
       new heartbeat_t(simif, registry.get_widget<clockmodule_t>(), args));
 }
 
+// DOC include start: Loop
 int simple_counter_top_t::simulation_run() {
   int exit_code = 0;
   // infinite loop until '+max-cycles' value is reached (within 'systematic_scheduler_t')
@@ -61,7 +60,9 @@ int simple_counter_top_t::simulation_run() {
   }
   return exit_code;
 }
+// DOC include end: Loop
 
+// DOC include start: RegisterWithMain
 // used in firesim's 'main' to instantiate the custom C++ class you want for a simulation.
 // in this case our 'simple_counter_top_t'
 std::unique_ptr<simulation_t>
@@ -70,3 +71,4 @@ create_simulation(simif_t &simif,
                   const std::vector<std::string> &args) {
   return std::make_unique<simple_counter_top_t>(simif, registry, args);
 }
+// DOC include end: RegisterWithMain

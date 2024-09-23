@@ -11,11 +11,10 @@ dependencies:
     # https://docs.conda.io/projects/conda/en/latest/user-guide/concepts/pkg-specs.html#package-match-specifications
     #   documentation on package_spec syntax for constraining versions
 
-    - python>=3.9,<3.11
     - sphinx
     - Pygments
     - sphinx-autobuild
-    - sphinx_rtd_theme<1.2.0,>=1.0.0
+    - sphinx_rtd_theme
     - requests
     - sphinx-tabs
     - sphinx-copybutton
