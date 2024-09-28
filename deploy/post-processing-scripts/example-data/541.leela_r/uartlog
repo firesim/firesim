@@ -1,0 +1,128 @@
+Script started on Mon 19 Mar 2018 01:53:34 AM UTC
++ MACBASE=58
++ '[' -z 58 ']'
++ CHISELTRIPLET=FireSimNoNIC-FireSimRocketChipConfig-FireSimDDR3Config
++ '[' -z FireSimNoNIC-FireSimRocketChipConfig-FireSimDDR3Config ']'
++ DESIGN=FireSimNoNIC
++ '[' -z FireSimNoNIC ']'
++ output_dir=../sim/output/f1/FireSimNoNIC-FireSimRocketChipConfig-FireSimDDR3Config
++ SERVERIP=+serverip=127.0.0.1
++ PROFILE_INTERVAL=+profile-interval=50
++ RUNTIME_CONF=../sim/output/f1/FireSimNoNIC-FireSimRocketChipConfig-FireSimDDR3Config/runtime.conf
+++ python ../scripts/generate_mac.py 58 0
++ MAC=00:12:6D:00:00:3a
+++ cat ../sim/output/f1/FireSimNoNIC-FireSimRocketChipConfig-FireSimDDR3Config/runtime.conf
++ sim_args='+mm_relaxFunctionalModel=0
++mm_openPagePolicy=1
++mm_backendLatency=2
++mm_dramTimings_tAL=0
++mm_dramTimings_tCAS=14
++mm_dramTimings_tCMD=1
++mm_dramTimings_tCWD=10
++mm_dramTimings_tCCD=4
++mm_dramTimings_tFAW=25
++mm_dramTimings_tRAS=33
++mm_dramTimings_tREFI=7800
++mm_dramTimings_tRC=47
++mm_dramTimings_tRCD=14
++mm_dramTimings_tRFC=260
++mm_dramTimings_tRRD=5
++mm_dramTimings_tRP=14
++mm_dramTimings_tRTP=8
++mm_dramTimings_tRTRS=2
++mm_dramTimings_tWR=15
++mm_dramTimings_tWTR=8
++mm_rankAddr_offset=16
++mm_rankAddr_mask=3
++mm_rowAddr_offset=18
++mm_rowAddr_mask=65535
++mm_bankAddr_offset=13
++mm_bankAddr_mask=7'
++ echo 'disabling ctrl-c for passthrough'
+disabling ctrl-c for passthrough
++ stty intr '^]'
++ sudo ../sim/output/f1/FireSimNoNIC-FireSimRocketChipConfig-FireSimDDR3Config/FireSimNoNIC-f1 +permissive +mm_relaxFunctionalModel=0 +mm_openPagePolicy=1 +mm_backendLatency=2 +mm_dramTimings_tAL=0 +mm_dramTimings_tCAS=14 +mm_dramTimings_tCMD=1 +mm_dramTimings_tCWD=10 +mm_dramTimings_tCCD=4 +mm_dramTimings_tFAW=25 +mm_dramTimings_tRAS=33 +mm_dramTimings_tREFI=7800 +mm_dramTimings_tRC=47 +mm_dramTimings_tRCD=14 +mm_dramTimings_tRFC=260 +mm_dramTimings_tRRD=5 +mm_dramTimings_tRP=14 +mm_dramTimings_tRTP=8 +mm_dramTimings_tRTRS=2 +mm_dramTimings_tWR=15 +mm_dramTimings_tWTR=8 +mm_rankAddr_offset=16 +mm_rankAddr_mask=3 +mm_rowAddr_offset=18 +mm_rowAddr_mask=65535 +mm_bankAddr_offset=13 +mm_bankAddr_mask=7 +macaddr=00:12:6D:00:00:3a +blkdev=../sw/firesim-software/rootfs0.ext2 +slotid=0 +serverip=127.0.0.1 +profile-interval=50 +permissive-off ../sw/firesim-software/bbl-vmlinux0
+AFI PCI  Vendor ID: 0x1d0f, Device ID 0xf000
+Using edma queue: /dev/edma0_queue_0
+random min: 0x0, random max: 0xffffffffffffffff
+[    0.000000] OF: fdt: Ignoring memory range 0x80000000 - 0x80200000
+[    0.000000] Linux version 4.15.0-rc6-31580-g9c3074b5c2cd (centos@ip-192-168-3-35.ec2.internal) (gcc version 7.2.0 (GCC)) #1 SMP Sat Mar 17 03:30:28 UTC 2018
+[    0.000000] bootconsole [early0] enabled
+[    0.000000] Zone ranges:
+[    0.000000]   DMA      [mem 0x0000000080200000-0x00000000ffffffff]
+[    0.000000]   Normal   [mem 0x0000000100000000-0x000000047fffffff]
+[    0.000000] Movable zone start for each node
+[    0.000000] Early memory node ranges
+[    0.000000]   node   0: [mem 0x0000000080200000-0x000000047fffffff]
+[    0.000000] Initmem setup node 0 [mem 0x0000000080200000-0x000000047fffffff]
+[    0.000000] elf_hwcap is 0x112d
+[    0.000000] percpu: Embedded 14 pages/cpu @        (ptrval) s24664 r0 d32680 u57344
+[    0.000000] Built 1 zonelists, mobility grouping on.  Total pages: 4136455
+[    0.000000] Kernel command line: root=/dev/generic-blkdev rw 
+[    0.000000] Dentry cache hash table entries: 2097152 (order: 12, 16777216 bytes)
+[    0.000000] Inode-cache hash table entries: 1048576 (order: 11, 8388608 bytes)
+[    0.000000] Sorting __ex_table...
+[    0.000000] Memory: 16517492K/16775168K available (2069K kernel code, 148K rwdata, 544K rodata, 116K init, 760K bss, 257676K reserved, 0K cma-reserved)
+[    0.000000] SLUB: HWalign=64, Order=0-3, MinObjects=0, CPUs=1, Nodes=1
+[    0.000000] Hierarchical RCU implementation.
+[    0.000000]  RCU restricting CPUs from NR_CPUS=8 to nr_cpu_ids=1.
+[    0.000000] RCU: Adjusting geometry for rcu_fanout_leaf=16, nr_cpu_ids=1
+[    0.000000] NR_IRQS: 0, nr_irqs: 0, preallocated irqs: 0
+[    0.000000] riscv,cpu_intc,0: 64l local interrupts mapped
+[    0.000000] riscv,plic0,c000000: mapped 2 interrupts to 1/2 handlers
+[    0.000000] clocksource: riscv_clocksource: mask: 0xffffffffffffffff max_cycles: 0x1d854df40, max_idle_ns: 3526361616960 ns
+[    0.000000] console [hvc0] enabled
+[    0.000000] console [hvc0] enabled
+[    0.000000] bootconsole [early0] disabled
+[    0.000000] bootconsole [early0] disabled
+[    0.000000] Calibrating delay loop (skipped), value calculated using timer frequency.. 2.00 BogoMIPS (lpj=4000)
+[    0.000000] pid_max: default: 32768 minimum: 301
+[    0.000000] Mount-cache hash table entries: 32768 (order: 6, 262144 bytes)
+[    0.000000] Mountpoint-cache hash table entries: 32768 (order: 6, 262144 bytes)
+[    0.000000] Hierarchical SRCU implementation.
+[    0.004000] smp: Bringing up secondary CPUs ...
+[    0.004000] smp: Brought up 1 node, 1 CPU
+[    0.004000] devtmpfs: initialized
+[    0.004000] clocksource: jiffies: mask: 0xffffffff max_cycles: 0xffffffff, max_idle_ns: 7645041785100000 ns
+[    0.004000] futex hash table entries: 256 (order: 2, 16384 bytes)
+[    0.004000] random: get_random_u32 called from bucket_table_alloc+0xe6/0x276 with crng_init=0
+[    0.004000] NET: Registered protocol family 16
+[    0.008000] vgaarb: loaded
+[    0.008000] clocksource: Switched to clocksource riscv_clocksource
+[    0.008000] NET: Registered protocol family 2
+[    0.008000] TCP established hash table entries: 131072 (order: 8, 1048576 bytes)
+[    0.012000] TCP bind hash table entries: 65536 (order: 8, 1048576 bytes)
+[    0.012000] TCP: Hash tables configured (established 131072 bind 65536)
+[    0.012000] UDP hash table entries: 8192 (order: 6, 262144 bytes)
+[    0.012000] UDP-Lite hash table entries: 8192 (order: 6, 262144 bytes)
+[    0.012000] NET: Registered protocol family 1
+[    0.016000] workingset: timestamp_bits=62 max_order=22 bucket_order=0
+[    0.016000] random: fast init done
+[    0.016000] io scheduler noop registered
+[    0.016000] io scheduler cfq registered (default)
+[    0.016000] io scheduler mq-deadline registered
+[    0.016000] io scheduler kyber registered
+[    0.044000] disk [generic-blkdev] of loaded; 16000000 sectors, 1 tags, 16 max request length
+[    0.048000] VFS: Mounted root (ext2 filesystem) on device 254:0.
+[    0.048000] devtmpfs: mounted
+[    0.048000] Freeing unused kernel memory: 116K
+[    0.048000] This architecture does not have kernel memory protection.
+mount: mounting sysfs on /sys failed: No such device
+Starting logging: OK
+Starting rate 541.leela_r run with 1 copies
+Creating run directories
+pid 65's current affinity mask: 1
+pid 65's new affinity mask: 1
+[  184.544000] random: crng init done
+[ 2647.836000] reboot: Power down
+Power off
+time elapsed: 31405.2 s, simulation speed = 134.96 MHz
+*** PASSED *** after 4238328000087 cycles
+Runs 4238328000087 cycles
+[PASS] FireSimNoNIC Test
+SEED: 1521424414
++ echo 're-enabling ctrl-c'
+re-enabling ctrl-c
++ stty intr '^c'
+
+Script done on Mon 19 Mar 2018 10:37:02 AM UTC
