@@ -90,8 +90,7 @@ jobs:
               - '**/*.h'
 
             conda-reqs:
-                - 'conda-reqs/firesim.yaml'
-                - 'conda-reqs/ci-shared.yaml'
+                - 'conda-reqs/*.yaml'
 
             conda-lockfile:
                 - 'conda-reqs/*.conda-lock.yml'

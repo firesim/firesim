@@ -18,5 +18,6 @@ conda-lock \
   --no-micromamba \
   -f "$REQS_DIR/firesim.yaml" \
   -f "$REQS_DIR/ci-shared.yaml" \
+  -f "$REQS_DIR/docs.yaml" \
   -p linux-64 \
   --lockfile "$REQS_DIR/conda-reqs.conda-lock.yml"

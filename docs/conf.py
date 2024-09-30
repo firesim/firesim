@@ -101,7 +101,7 @@ else:
 logger.info(f"Setting |version| to {version}.")
 
 # set chipyard docs version
-cy_docs_version = "3439f8113eefe4e7798c47d724f7bae3d526b8e1"
+cy_docs_version = "dbc082e2206f787c3aba12b9b171e1704e15b707"
 
 # for now make these match
 release = version
