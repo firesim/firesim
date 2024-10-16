@@ -167,6 +167,36 @@ if wget -T 1 -t 3 -O /dev/null http://169.254.169.254/latest/; then
         cd "$FDIR/platforms/f1/aws-fpga/sdk/linux_kernel_drivers/xdma"
         make
 
+        # since we are on ec2 and it uses centos7 (which is EOL), we need to use the vault yum repos
+        # taken from: https://serverfault.com/questions/904304/could-not-resolve-host-mirrorlist-centos-org-centos-7
+        sudo sh -c "cat >/etc/yum.repos.d/CentOS-Base.repo" <<-EOF
+[base]
+name=CentOS-\$releasever - Base
+baseurl=http://vault.centos.org/7.9.2009/os/\$basearch/
+gpgcheck=1
+gpgkey=file:///etc/pki/rpm-gpg/RPM-GPG-KEY-CentOS-7
+
+[updates]
+name=CentOS-\$releasever - Updates
+baseurl=http://vault.centos.org/7.9.2009/updates/\$basearch/
+gpgcheck=1
+gpgkey=file:///etc/pki/rpm-gpg/RPM-GPG-KEY-CentOS-7
+
+[extras]
+name=CentOS-\$releasever - Extras
+baseurl=http://vault.centos.org/7.9.2009/extras/\$basearch/
+gpgcheck=1
+gpgkey=file:///etc/pki/rpm-gpg/RPM-GPG-KEY-CentOS-7
+
+[centosplus]
+name=CentOS-\$releasever - Plus
+baseurl=http://vault.centos.org/7.9.2009/centosplus/\$basearch/
+gpgcheck=1
+enabled=0
+gpgkey=file:///etc/pki/rpm-gpg/RPM-GPG-KEY-CentOS-7
+EOF
+        sudo yum clean all
+
         # the only ones missing are libguestfs-tools
         sudo yum install -y libguestfs-tools bc
 
