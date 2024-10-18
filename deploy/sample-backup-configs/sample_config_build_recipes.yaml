@@ -48,7 +48,7 @@ midasexamples_gcd:
 firesim_gemmini_rocket_singlecore_no_nic:
     PLATFORM: f1
     TARGET_PROJECT: firesim
-    TARGET_PROJECT_MAKEFRAG: ../../generators/firechip/chip/src/main/makefrag/firesim
+    TARGET_PROJECT_MAKEFRAG: ../../../generators/firechip/chip/src/main/makefrag/firesim
     DESIGN: FireSim
     TARGET_CONFIG: FireSimLeanGemminiRocketConfig
     PLATFORM_CONFIG: WithAutoCounter_BaseF1Config
@@ -64,7 +64,7 @@ firesim_gemmini_rocket_singlecore_no_nic:
 firesim_rocket_singlecore_no_nic_l2_lbp:
     PLATFORM: f1
     TARGET_PROJECT: firesim
-    TARGET_PROJECT_MAKEFRAG: ../../generators/firechip/chip/src/main/makefrag/firesim
+    TARGET_PROJECT_MAKEFRAG: ../../../generators/firechip/chip/src/main/makefrag/firesim
     DESIGN: FireSim
     TARGET_CONFIG: WithDefaultFireSimBridges_WithFireSimHighPerfConfigTweaks_chipyard.RocketConfig
     PLATFORM_CONFIG: BaseF1Config
