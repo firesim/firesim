@@ -76,6 +76,38 @@ firesim_rocket_singlecore_no_nic_l2_lbp:
     metasim_customruntimeconfig: null
     bit_builder_recipe: bit-builder-recipes/f1.yaml
 
+
+# FireAxe Tutorial Config
+f1_rocket_split_soc_fast:
+    PLATFORM: f1
+    TARGET_PROJECT: firesim
+    TARGET_PROJECT_MAKEFRAG: ../../../generators/firechip/chip/src/main/makefrag/firesim
+    DESIGN: FireSim
+    TARGET_CONFIG: FireSimRocketConfig
+    PLATFORM_CONFIG: RocketTileF1PCIMBase
+    deploy_quintuplet: null
+    platform_config_args:
+        fpga_frequency: 90
+        build_strategy: TIMING
+    post_build_hook: null
+    metasim_customruntimeconfig: null
+    bit_builder_recipe: bit-builder-recipes/f1.yaml
+
+f1_rocket_split_tile_fast:
+    PLATFORM: f1
+    TARGET_PROJECT: firesim
+    TARGET_PROJECT_MAKEFRAG: ../../../generators/firechip/chip/src/main/makefrag/firesim
+    DESIGN: FireSim
+    TARGET_CONFIG: FireSimRocketConfig
+    PLATFORM_CONFIG: RocketTileF1PCIMPartition0
+    deploy_quintuplet: null
+    platform_config_args:
+        fpga_frequency: 90
+        build_strategy: TIMING
+    post_build_hook: null
+    metasim_customruntimeconfig: null
+    bit_builder_recipe: bit-builder-recipes/f1.yaml
+
 ################################################################################################
 # FireAxe Examples
 ################################################################################################
