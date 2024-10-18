@@ -19,81 +19,6 @@ object LogicGraphTypes {
   type StrConnMap = DiGraph[String] with EdgeData[String, Info]
 }
 
-object CheckCombLogger {
-  import firrtl.transforms.CheckCombLoops._
-
-  val debugFile   = new File("midas/test-outputs/debug.log")
-  val debugWriter = new java.io.FileWriter(debugFile)
-
-  val debugFile2   = new File("midas/test-outputs/debug-2.log")
-  val debugWriter2 = new java.io.FileWriter(debugFile2)
-
-  def writeLine(s: String, writer: FileWriter): Unit = {
-    writer.write(s)
-    writer.write("\n")
-  }
-
-  def debug(s: String): Unit = {
-// println(s)
-    writeLine(s, debugWriter)
-    Logger.flush()
-  }
-
-  def debug2(s: String): Unit = {
-    writeLine(s, debugWriter2)
-    Logger.flush()
-  }
-
-  def printSimplifiedGraphs(gs: mutable.HashMap[String, AbstractConnMap]): Unit = {
-    gs.foreach { case (n, g) =>
-      debug2(s"Module ${n}")
-      printSimplifiedGraph(g)
-    }
-  }
-
-  def printSimplifiedGraph(g: AbstractConnMap): Unit = {
-    g.getVertices.foreach { v =>
-      g.getEdges(v).foreach { u =>
-        debug2(s"${v.name} -> ${u.name}")
-      }
-    }
-  }
-
-  def printInternalDeps(gs: mutable.HashMap[String, ConnMap]): Unit = {
-    gs.foreach { case (n, g) =>
-      debug2(s"InternalDep For Module ${n}")
-      printInternalDep(g)
-    }
-  }
-
-  def printInternalDep(g: ConnMap): Unit = {
-    g.getVertices.foreach { v =>
-      g.getEdges(v).foreach { u =>
-        debug2(s"${v.name} -> ${u.name}")
-      }
-    }
-  }
-
-  def printGraph(g: DiGraph[LogicNode]): Unit = {
-    g.getVertices.foreach { v =>
-      g.getEdges(v).foreach { u =>
-        debug2(s"${v} -> ${u}")
-      }
-    }
-  }
-
-  def flush(): Unit = {
-    debugWriter.flush()
-    debugWriter2.flush()
-  }
-
-  def close(): Unit = {
-    flush()
-    debugWriter.close()
-    debugWriter2.close()
-  }
-}
-
 class CheckCombLogic extends Transform with DependencyAPIMigration {
   override def prerequisites = firrtl.stage.Forms.MidForm ++
     Seq(Dependency(passes.LowerTypes), Dependency(firrtl.transforms.RemoveReset))
@@ -136,7 +61,6 @@ class CheckCombLogic extends Transform with DependencyAPIMigration {
       iGraph.getVertices.foreach(deps.addVertex(_))
       iGraph.getVertices.foreach({ v =>
         iGraph.getEdges(v).foreach { u =>
-          CheckCombLogger.debug(s"${i.name} ${v} -> ${u}")
           deps.addEdge(v, u)
         }
       })
@@ -173,19 +97,15 @@ class CheckCombLogic extends Transform with DependencyAPIMigration {
         val portSet      = m.ports.map(p => LogicNode(p.name)).toSet
         val internalDeps = new MutableDiGraph[LogicNode] with MutableEdgeData[LogicNode, Info]
         portSet.foreach(internalDeps.addVertex(_))
-        CheckCombLogger.debug(s"CheckCombLogic m.name ${m.name}")
         m.body.foreachStmt(getStmtDeps(simplifiedModuleGraphs, internalDeps)(_))
         moduleGraphs(m.name)           = internalDeps
         simplifiedModuleGraphs(m.name) = moduleGraphs(m.name).simplify(portSet)
       case m             => throwInternalError(s"Module ${m.name} has unrecognized type")
     }
-// CheckCombLogger.printSimplifiedGraphs(simplifiedModuleGraphs)
-// CheckCombLogger.printInternalDeps(moduleGraphs)
     (moduleGraphs, simplifiedModuleGraphs)
   }
 
   private def run(state: CircuitState, modNames: Seq[String]): CircuitState = {
-    CheckCombLogger.debug(s"Check comb logic for ${modNames}")
     val (moduleGraphs, simplifiedModuleGraphs) = getCombDep(state)
     val c                                      = state.circuit
     val iKeyGraph                              = InstanceKeyGraph(c)
@@ -213,10 +133,8 @@ class CheckCombLogic extends Transform with DependencyAPIMigration {
   }
 
   def execute(state: CircuitState): CircuitState = {
-    CheckCombLogger.debug("Starting CheckCombLogic Pass")
     val (groups, _) = getGroups(state)
     val result      = run(state, groups)
-    CheckCombLogger.close()
     result
   }
 }
@@ -240,9 +158,7 @@ class CheckCombPathLength extends CheckCombLogic {
       val front = q.remove(0)
       vis.add(front)
       val edges = mg.getEdges(front) ++ sg.getEdges(front)
-      CheckCombLogger.debug2(s"front ${front} edges ${edges}")
       edges.foreach { adj =>
-        CheckCombLogger.debug2(s"front ${front} adj ${adj}")
         if (!vis.contains(adj) && !(oPorts.contains(adj) && iPorts.contains(front))) {
           vis.add(adj)
           q.append(adj)
@@ -250,7 +166,6 @@ class CheckCombPathLength extends CheckCombLogic {
         }
       }
     }
-    reachable.foreach { ln => CheckCombLogger.debug2(s"${ln}") }
     reachable.toSet
   }
 
@@ -260,42 +175,27 @@ class CheckCombPathLength extends CheckCombLogic {
     mg:   ConnMap,
     psmg: AbstractConnMap,
   ): Unit = {
-    CheckCombLogger.debug2(s"checkCombPathLen ${inst}")
 
     val combOPorts = smg.getVertices.flatMap { v =>
       val deps = smg.getEdges(v).toSeq
       if (deps.size > 0) Some(v)
       else None
     }.toSet
-    CheckCombLogger.debug2(s"combOPorts ${combOPorts}")
 
     val combIPorts = smg.getVertices.flatMap { v =>
       smg.getEdges(v).toSeq
     }.toSet
-    CheckCombLogger.debug2(s"combIPorts ${combIPorts}")
 
     val fmg   = mg.reverse
     val fpsmg = psmg.reverse
-    CheckCombLogger.debug2("printInternalDep")
-    CheckCombLogger.printGraph(fmg)
-    CheckCombLogger.debug2("printSimplifiedGraph")
-    CheckCombLogger.printGraph(fpsmg)
-
     val combIPorts2 = combIPorts.map { ip =>
       ip.copy(inst = Some(inst))
     }
-    CheckCombLogger.debug2(s"combIPorts2 ${combIPorts2}")
 
     combOPorts.foreach { op =>
-      CheckCombLogger.debug2(s"op ${op}")
       val op2       = op.copy(inst = Some(inst))
       val deps      = BFS(fmg, fpsmg, op2, combIPorts, combOPorts)
       val intersect = deps.intersect(combIPorts2)
-      CheckCombLogger.debug2(s"deps ${deps}")
-      CheckCombLogger.debug2(s"intersect ${intersect}")
-      if (intersect.size >= 1) {
-        CheckCombLogger.close()
-      }
       assert(
         intersect.size < 1,
         """The length of combinational dependency chain btw ports
@@ -315,7 +215,6 @@ class CheckCombPathLength extends CheckCombLogic {
 
       val rootInstKey = instKeyPath.head.dropRight(1).last
       val curInstKey  = instKeyPath.head.last
-      CheckCombLogger.debug2(s"rootInstKey ${rootInstKey} curInstKey ${curInstKey}")
 
       // Check if there are combinational paths between the partitioned modules
       // there the path length is larger than 2.
@@ -338,7 +237,6 @@ class CheckCombPathLength extends CheckCombLogic {
         case Some(idx) => pglob(idx)
         case None      => pglob.flatten
       }
-      CheckCombLogger.debug2(s"modules to check for comb stuff ${partitionModules}")
       run(state, partitionModules)
     } else {
       state
