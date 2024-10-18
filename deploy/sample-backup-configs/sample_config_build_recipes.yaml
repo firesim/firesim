@@ -44,6 +44,38 @@ midasexamples_gcd:
     metasim_customruntimeconfig: null
     bit_builder_recipe: bit-builder-recipes/f1.yaml
 
+# Additional Tutorial Config (supports optional AutoCounters)
+firesim_gemmini_rocket_singlecore_no_nic:
+    PLATFORM: f1
+    TARGET_PROJECT: firesim
+    TARGET_PROJECT_MAKEFRAG: ../../generators/firechip/chip/src/main/makefrag/firesim
+    DESIGN: FireSim
+    TARGET_CONFIG: FireSimLeanGemminiRocketConfig
+    PLATFORM_CONFIG: WithAutoCounter_BaseF1Config
+    deploy_quintuplet: null
+    platform_config_args:
+        fpga_frequency: 30 # AJG: conservative for now, later sweep for higher frequency
+        build_strategy: TIMING
+    post_build_hook: null
+    metasim_customruntimeconfig: null
+    bit_builder_recipe: bit-builder-recipes/f1.yaml
+
+# Additional Tutorial Config
+firesim_rocket_singlecore_no_nic_l2_lbp:
+    PLATFORM: f1
+    TARGET_PROJECT: firesim
+    TARGET_PROJECT_MAKEFRAG: ../../generators/firechip/chip/src/main/makefrag/firesim
+    DESIGN: FireSim
+    TARGET_CONFIG: WithDefaultFireSimBridges_WithFireSimHighPerfConfigTweaks_chipyard.RocketConfig
+    PLATFORM_CONFIG: BaseF1Config
+    deploy_quintuplet: null
+    platform_config_args:
+        fpga_frequency: 90
+        build_strategy: TIMING
+    post_build_hook: null
+    metasim_customruntimeconfig: null
+    bit_builder_recipe: bit-builder-recipes/f1.yaml
+
 ################################################################################################
 # FireAxe Examples
 ################################################################################################

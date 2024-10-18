@@ -16,3 +16,15 @@ midasexamples_gcd:
     deploy_makefrag_override: null
     custom_runtime_config: null
 # DOCREF END: Example HWDB Entry
+
+firesim_gemmini_rocket_singlecore_no_nic:
+    agfi: agfi-05eec5fb565f7cfa3
+    deploy_quintuplet_override: null
+    deploy_makefrag_override: ../../generators/firechip/chip/src/main/makefrag/firesim
+    custom_runtime_config: null
+
+firesim_rocket_singlecore_no_nic_l2_lbp:
+    agfi: agfi-0cfc97258aa8389f0
+    deploy_quintuplet_override: null
+    deploy_makefrag_override: ../../generators/firechip/chip/src/main/makefrag/firesim
+    custom_runtime_config: null
