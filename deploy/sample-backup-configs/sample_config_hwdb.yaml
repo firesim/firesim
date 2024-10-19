@@ -28,3 +28,16 @@ firesim_rocket_singlecore_no_nic_l2_lbp:
     deploy_quintuplet_override: null
     deploy_makefrag_override: ../../../generators/firechip/chip/src/main/makefrag/firesim
     custom_runtime_config: null
+
+
+
+f1_rocket_split_soc_fast:
+    agfi: agfi-0839ac7e434ebbecf
+    deploy_quintuplet_override: null
+    deploy_makefrag_override: ../../../generators/firechip/chip/src/main/makefrag/firesim
+    custom_runtime_config: null
+f1_rocket_split_tile_fast:
+    agfi: agfi-097fb61fddb61f5ce
+    deploy_quintuplet_override: null
+    deploy_makefrag_override: ../../../generators/firechip/chip/src/main/makefrag/firesim
+    custom_runtime_config: null
