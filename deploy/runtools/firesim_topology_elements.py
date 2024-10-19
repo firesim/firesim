@@ -362,7 +362,7 @@ class FireSimServerNode(FireSimNode):
         assert self.partition_config is not None
         assert self.plusarg_passthrough is not None
 
-        all_macs = [self.get_mac_address()]
+        all_macs = [] if not self.mac_address_assignable() else [self.get_mac_address()]
         all_rootfses = self.process_qcow2_rootfses([self.get_rootfs_name()])
         all_linklatencies = [self.server_link_latency]
         all_maxbws = [self.server_bw_max]
