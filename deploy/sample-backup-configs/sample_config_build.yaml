@@ -15,7 +15,7 @@ build_farm:
 builds_to_run:
     # this section references builds defined in config_build_recipes.yaml
     # if you add a build here, it will be built when you run buildbitstream
-    - midasexamples_gcd
+    - firesim_rocket_singlecore_no_nic_l2_lbp
 
 agfis_to_share:
     - midasexamples_gcd

@@ -1,0 +1,4 @@
+firesim_rocket_singlecore_no_nic_l2_lbp:
+    agfi: agfi-02996021b15debaf4
+    deploy_quintuplet_override: null
+    custom_runtime_config: null

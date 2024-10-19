@@ -16,21 +16,6 @@ midasexamples_gcd:
     deploy_makefrag_override: null
     custom_runtime_config: null
 # DOCREF END: Example HWDB Entry
-
-firesim_gemmini_rocket_singlecore_no_nic:
-    agfi: agfi-05eec5fb565f7cfa3
-    deploy_quintuplet_override: null
-    deploy_makefrag_override: ../../../generators/firechip/chip/src/main/makefrag/firesim
-    custom_runtime_config: null
-
-firesim_rocket_singlecore_no_nic_l2_lbp:
-    agfi: agfi-0cfc97258aa8389f0
-    deploy_quintuplet_override: null
-    deploy_makefrag_override: ../../../generators/firechip/chip/src/main/makefrag/firesim
-    custom_runtime_config: null
-
-
-
 f1_rocket_split_soc_fast:
     agfi: agfi-0839ac7e434ebbecf
     deploy_quintuplet_override: null
@@ -38,6 +23,16 @@ f1_rocket_split_soc_fast:
     custom_runtime_config: null
 f1_rocket_split_tile_fast:
     agfi: agfi-097fb61fddb61f5ce
+    deploy_quintuplet_override: null
+    deploy_makefrag_override: ../../../generators/firechip/chip/src/main/makefrag/firesim
+    custom_runtime_config: null
+firesim_gemmini_rocket_singlecore_no_nic:
+    agfi: agfi-0902b022299df8be0
+    deploy_quintuplet_override: null
+    deploy_makefrag_override: ../../../generators/firechip/chip/src/main/makefrag/firesim
+    custom_runtime_config: null
+firesim_rocket_singlecore_no_nic_l2_lbp:
+    agfi: agfi-02996021b15debaf4
     deploy_quintuplet_override: null
     deploy_makefrag_override: ../../../generators/firechip/chip/src/main/makefrag/firesim
     custom_runtime_config: null

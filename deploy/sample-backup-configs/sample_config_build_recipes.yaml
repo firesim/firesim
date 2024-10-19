@@ -44,39 +44,6 @@ midasexamples_gcd:
     metasim_customruntimeconfig: null
     bit_builder_recipe: bit-builder-recipes/f1.yaml
 
-# Additional Tutorial Config (supports optional AutoCounters)
-firesim_gemmini_rocket_singlecore_no_nic:
-    PLATFORM: f1
-    TARGET_PROJECT: firesim
-    TARGET_PROJECT_MAKEFRAG: ../../../generators/firechip/chip/src/main/makefrag/firesim
-    DESIGN: FireSim
-    TARGET_CONFIG: FireSimLeanGemminiRocketConfig
-    PLATFORM_CONFIG: WithAutoCounter_BaseF1Config
-    deploy_quintuplet: null
-    platform_config_args:
-        fpga_frequency: 30 # AJG: conservative for now, later sweep for higher frequency
-        build_strategy: TIMING
-    post_build_hook: null
-    metasim_customruntimeconfig: null
-    bit_builder_recipe: bit-builder-recipes/f1.yaml
-
-# Additional Tutorial Config
-firesim_rocket_singlecore_no_nic_l2_lbp:
-    PLATFORM: f1
-    TARGET_PROJECT: firesim
-    TARGET_PROJECT_MAKEFRAG: ../../../generators/firechip/chip/src/main/makefrag/firesim
-    DESIGN: FireSim
-    TARGET_CONFIG: WithDefaultFireSimBridges_WithFireSimHighPerfConfigTweaks_chipyard.RocketConfig
-    PLATFORM_CONFIG: BaseF1Config
-    deploy_quintuplet: null
-    platform_config_args:
-        fpga_frequency: 90
-        build_strategy: TIMING
-    post_build_hook: null
-    metasim_customruntimeconfig: null
-    bit_builder_recipe: bit-builder-recipes/f1.yaml
-
-
 # FireAxe Tutorial Config
 f1_rocket_split_soc_fast:
     PLATFORM: f1
@@ -108,105 +75,34 @@ f1_rocket_split_tile_fast:
     metasim_customruntimeconfig: null
     bit_builder_recipe: bit-builder-recipes/f1.yaml
 
-################################################################################################
-# FireAxe Examples
-################################################################################################
+# Additional Tutorial Config (supports optional AutoCounters)
+firesim_gemmini_rocket_singlecore_no_nic:
+    PLATFORM: f1
+    TARGET_PROJECT: firesim
+    TARGET_PROJECT_MAKEFRAG: ../../../generators/firechip/chip/src/main/makefrag/firesim
+    DESIGN: FireSim
+    TARGET_CONFIG: FireSimLeanGemminiRocketConfig
+    PLATFORM_CONFIG: WithAutoCounter_BaseF1Config
+    deploy_quintuplet: null
+    platform_config_args:
+        fpga_frequency: 50 # conservative for now (could go higher)
+        build_strategy: TIMING
+    post_build_hook: null
+    metasim_customruntimeconfig: null
+    bit_builder_recipe: bit-builder-recipes/f1.yaml
 
-# DOC include start: F1 Rocket Partition Build Recipe
-################################################################################################
-# Fast-mode : pull out a RocketTile out from your SoC
-################################################################################################
-# f1_rocket_split_soc_fast:
-#     ...
-#     PLATFORM: f1
-#     TARGET_CONFIG: FireSimRocketConfig
-#     PLATFORM_CONFIG: RocketTileF1PCIMBase
-#     bit_builder_recipe: bit-builder-recipes/f1.yaml
-#     ...
-#
-# f1_rocket_split_tile_fast:
-#     ...
-#     PLATFORM: f1
-#     TARGET_CONFIG: FireSimRocketConfig
-#     PLATFORM_CONFIG: RocketTileF1PCIMPartition0
-#     bit_builder_recipe: bit-builder-recipes/f1.yaml
-#     ...
-# DOC include end: F1 Rocket Partition Build Recipe
-
-# DOC include start: F1 Exact Rocket Partition Build Recipe
-################################################################################################
-# Exact-mode : pull out a RocketTile out from your SoC
-################################################################################################
-# f1_firesim_rocket_soc_exact:
-#     ...
-#     PLATFORM: f1
-#     TARGET_CONFIG: FireSimRocketConfig
-#     PLATFORM_CONFIG: ExactMode_RocketTileF1PCIMBase
-#     bit_builder_recipe: bit-builder-recipes/f1.yaml
-#     ...
-#
-# f1_firesim_rocket_tile_exact:
-#     ...
-#     PLATFORM: f1
-#     TARGET_CONFIG: FireSimRocketConfig
-#     PLATFORM_CONFIG: ExactMode_RocketTileF1PCIMPartition0
-#     bit_builder_recipe: bit-builder-recipes/f1.yaml
-#     ...
-# DOC include end: F1 Exact Rocket Partition Build Recipe
-
-##############################################################################
-# Splitting the design onto 3 FPGAs
-##############################################################################
-# xilinx_u250_firesim_dual_rocket_split_base:
-#     ...
-#     PLATFORM: xilinx_alveo_u250
-#     TARGET_CONFIG: WithDefaultFireSimBridges_WithFireSimConfigTweaks_chipyard.DualRocketConfig
-#     PLATFORM_CONFIG: DualRocketTileQSFPBase
-#     bit_builder_recipe: bit-builder-recipes/xilinx_alveo_u250.yaml
-#     ...
-#
-# xilinx_u250_firesim_dual_rocket_split_0:
-#     ...
-#     PLATFORM: xilinx_alveo_u250
-#     TARGET_CONFIG: WithDefaultFireSimBridges_WithFireSimConfigTweaks_chipyard.DualRocketConfig
-#     PLATFORM_CONFIG: DualRocketTileQSFP0
-#     bit_builder_recipe: bit-builder-recipes/xilinx_alveo_u250.yaml
-#     ...
-#
-# xilinx_u250_firesim_dual_rocket_split_1:
-#     ...
-#     PLATFORM: xilinx_alveo_u250
-#     TARGET_CONFIG: WithDefaultFireSimBridges_WithFireSimConfigTweaks_chipyard.DualRocketConfig
-#     PLATFORM_CONFIG: DualRocketTileQSFP1
-#     bit_builder_recipe: bit-builder-recipes/xilinx_alveo_u250.yaml
-#     ...
-
-# DOC include start: Xilinx U250 NoC Partition Build Recipe
-##############################################################################
-# Using the NoC-partition-mode to partition the design across 3 FPGAs
-# connected as a ring.
-##############################################################################
-# xilinx_u250_quad_rocket_ring_base:
-#     ...
-#     PLATFORM: xilinx_alveo_u250
-#     TARGET_CONFIG: FireSimQuadRocketSbusRingNoCConfig
-#     PLATFORM_CONFIG: QuadTileRingNoCBase
-#     bit_builder_recipe: bit-builder-recipes/xilinx_alveo_u250.yaml
-#     ...
-#
-# xilinx_u250_quad_rocket_ring_0:
-#     ...
-#     PLATFORM: xilinx_alveo_u250
-#     TARGET_CONFIG: FireSimQuadRocketSbusRingNoCConfig
-#     PLATFORM_CONFIG: QuadTileRingNoC0
-#     bit_builder_recipe: bit-builder-recipes/xilinx_alveo_u250.yaml
-#     ...
-#
-# xilinx_u250_quad_rocket_ring_1:
-#     ...
-#     PLATFORM: xilinx_alveo_u250
-#     TARGET_CONFIG: FireSimQuadRocketSbusRingNoCConfig
-#     PLATFORM_CONFIG: QuadTileRingNoC1
-#     bit_builder_recipe: bit-builder-recipes/xilinx_alveo_u250.yaml
-#     ...
-# DOC include end: Xilinx U250 NoC Partition Build Recipe
+# Additional Tutorial Config
+firesim_rocket_singlecore_no_nic_l2_lbp:
+    PLATFORM: f1
+    TARGET_PROJECT: firesim
+    TARGET_PROJECT_MAKEFRAG: ../../../generators/firechip/chip/src/main/makefrag/firesim
+    DESIGN: FireSim
+    TARGET_CONFIG: WithDefaultFireSimBridges_WithFireSimHighPerfConfigTweaks_chipyard.RocketConfig
+    PLATFORM_CONFIG: BaseF1Config
+    deploy_quintuplet: null
+    platform_config_args:
+        fpga_frequency: 90
+        build_strategy: TIMING
+    post_build_hook: null
+    metasim_customruntimeconfig: null
+    bit_builder_recipe: bit-builder-recipes/f1.yaml

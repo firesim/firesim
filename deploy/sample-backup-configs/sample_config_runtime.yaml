@@ -33,7 +33,7 @@ target_config:
     # or from config_build_recipes.yaml for metasimulation
     # In homogeneous configurations, use this to set the hardware config deployed
     # for all simulators
-    default_hw_config: midasexamples_gcd
+    default_hw_config: firesim_rocket_singlecore_no_nic_l2_lbp
 
     # Advanced: Specify any extra plusargs you would like to provide when
     # booting the simulator (in both FPGA-sim and metasim modes). This is
@@ -61,7 +61,7 @@ autocounter:
     read_rate: 0
 
 workload:
-    workload_name: null.json
+    workload_name: br-base-uniform.json
     terminate_on_completion: no
     suffix_tag: null
 
