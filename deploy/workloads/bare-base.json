@@ -2,9 +2,6 @@
   "benchmark_name": "bare-base",
   "common_bootbinary": "../../../../../software/firemarshal/images/firechip/bare-base/bare-base-bin",
   "common_rootfs": "../../../../../software/firemarshal/images/firechip/bare-base/bare-base.img",
-  "common_outputs": [
-    "/etc/os-release"
-  ],
   "common_simulation_outputs": [
     "uartlog",
     "memory_stats*.csv"
