@@ -158,7 +158,7 @@ First, run the following to clone the XDMA kernel module source:
 .. code-block:: bash
 
     cd ~/   # or any directory you would like to work from
-    git clone https://github.com/Xilinx/dma_ip_drivers
+    git clone https://github.com/00light00/dma_ip_drivers
     cd dma_ip_drivers
     git checkout 0e8d321
     cd XDMA/linux-kernel/xdma
