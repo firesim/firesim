@@ -153,14 +153,18 @@ Next, install the cable drivers like so:
     These commands will need to be re-run everytime the kernel is updated (normally
     whenever the machine is rebooted).
 
+.. warning::
+
+    We use a non-Xilinx given XDMA/XVSEC repository since the mainline repository hasn't updated to 6.4.0+ kernels yet.
+
 First, run the following to clone the XDMA kernel module source:
 
 .. code-block:: bash
 
     cd ~/   # or any directory you would like to work from
-    git clone https://github.com/Xilinx/dma_ip_drivers
+    git clone https://github.com/paulmnt/dma_ip_drivers
     cd dma_ip_drivers
-    git checkout 0e8d321
+    git checkout 247a065
     cd XDMA/linux-kernel/xdma
 
 .. note::
@@ -193,7 +197,7 @@ repository due to kernel version incompatibility:
     cd ~/   # or any directory you would like to work from
     git clone https://github.com/paulmnt/dma_ip_drivers dma_ip_drivers_xvsec
     cd dma_ip_drivers_xvsec
-    git checkout 302856a
+    git checkout 247a065
     cd XVSEC/linux-kernel/
 
     make clean all

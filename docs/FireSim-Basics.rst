@@ -92,7 +92,9 @@ links to work through the getting started guide for your particular platform.
 
 - :doc:`/Getting-Started-Guides/AWS-EC2-F1-Getting-Started/index`
 
-  - Status: ✅ All FireSim Features Supported.
+  - Status: ✅ All FireSim Features Supported. ⚠️  F1 instances will be discontinued by AWS on Dec. 20, 2025.
+    We expect support for F1 instances and collateral (AMI's, etc) to slowly be removed/degraded over time.
+    For now, we recommend using on-premises FPGAs. **Stay tuned for AWS EC2 F2 updates**.
 
 - :doc:`/Getting-Started-Guides/On-Premises-FPGA-Getting-Started/Xilinx-Alveo-U200-FPGAs`
 
@@ -116,7 +118,7 @@ links to work through the getting started guide for your particular platform.
 
 - :doc:`Getting-Started-Guides/On-Premises-FPGA-Getting-Started/Xilinx-Vitis-FPGAs`
 
-  - Status: ⚠️ DMA-based Bridges Not Supported. The Vitis-based U250 flow is **not
+  - Status: ⚠️  DMA-based Bridges Not Supported. The Vitis-based U250 flow is **not
     recommended** unless you have specific constraints that require using Vitis.
     Notably, the Vitis-based flow does not support DMA-based FireSim bridges (e.g.,
     TracerV, Synthesizable Printfs, etc.), while the XDMA-based flows support all
