@@ -1,4 +1,4 @@
-# ci tests that use a separate repository to run (can potentially share ci resources with other workflows)
+# tests that use a separate repository to run (can potentially share ci resources with other workflows)
 name: berkeley-cluster-tests-1
 
 on:
