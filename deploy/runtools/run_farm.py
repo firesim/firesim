@@ -5,6 +5,8 @@ import logging
 import time
 import abc
 import os
+import http.server
+import socketserver
 from datetime import timedelta
 from fabric.api import run, env, prefix, put, cd, warn_only, local, settings, hide  # type: ignore
 from fabric.contrib.project import rsync_project  # type: ignore
@@ -804,3 +806,110 @@ class ExternallyProvisioned(RunFarm):
             f"WARNING: Skipping terminate_by_inst since run hosts are externally provisioned."
         )
         return
+
+class LocalProvisionedVM(RunFarm):
+    """Manages the set of locally provisioned VMs with FPGAs passed through to them. This class is responsible for spinning up the VMs and shutting down those VMs after the simulation is done.
+
+    Args:
+        RunFarm (_type_): _description_
+    """
+
+    def __init__(self, args: Dict[str, Any], metasimulation_enabled: bool) -> None :
+        super().__init__(args, metasimulation_enabled) # if metasim enabled, we give it to super to handle
+
+        self.__parse_args() # parse args in yaml file
+
+        self.init_postprocess()
+
+    def _parse_args(self) -> None: # parse args in yaml file
+        dispatch_dict = dict(
+            [(x.__name__, x) for x in inheritors(InstanceDeployManager)]
+        ) # calls specific instance deploy manager that is correct for the platform (vcu118, u250, aws)
+
+        default_platform = self.args.get("default_platform")
+        # CHK: is it always ec2instnacedeplymanager like in /externally_provisioned.yaml? -- no
+        default_fpga_db = self.args.get("default_fpga_db")
+
+        runhost_specs = dict()
+        for specinfo in self.args["run_farm_host_specs"]: # to write a new run farm host spec, add it in externally_provisioned.yaml
+            specinfo_value = next(iter(specinfo.items()))
+            runhost_specs[specinfo_value[0]] = specinfo_value[1]
+
+        runhosts_list = self.args["run_farm_hosts_to_use"] # this is in your config_runtime.yaml
+
+        self.run_farm_hosts_dict = defaultdict(list) 
+        self.mapper_consumed = defaultdict(int)
+
+        for runhost in runhosts_list:
+            if not isinstance(runhost, dict):
+                raise Exception(f"Invalid runhost to spec mapping for {runhost}.")
+
+            items = runhost.items()
+
+            assert (
+                len(items) == 1
+            ), f"dict type 'run_hosts' items map a single host name to a host spec. Not: {pprint.pformat(runhost)}"
+
+            ip_addr, host_spec_name = next(iter(items)) # this ip should get changed later with the actual IP address of the VM that we've spun up-- localhost jus means ???
+
+            if host_spec_name not in runhost_specs.keys():
+                raise Exception(f"Unknown runhost spec of {host_spec_name}")
+
+            host_spec = runhost_specs[host_spec_name]
+
+            # populate mapping helpers based on runhost_specs:
+            # TODO: figure out how localhost ips map to different VMs -- or ig we don't technically have this issue since each job will only have localhost: `n` FPGAs and different jobs will have their own configs?
+            self.SIM_HOST_HANDLE_TO_MAX_FPGA_SLOTS[ip_addr] = host_spec["num_fpgas"]
+            self.SIM_HOST_HANDLE_TO_MAX_METASIM_SLOTS[ip_addr] = host_spec[
+                "num_metasims"
+            ]
+            self.SIM_HOST_HANDLE_TO_SWITCH_ONLY_OK[ip_addr] = host_spec[
+                "use_for_switch_only"
+            ]
+
+            num_sims = 0
+            if self.metasimulation_enabled:
+                num_sims = host_spec.get("num_metasims")
+            else:
+                num_sims = host_spec.get("num_fpgas")
+            platform = host_spec.get("override_platform", default_platform)
+            simulation_dir = host_spec.get(
+                "override_simulation_dir", self.default_simulation_dir
+            )
+            fpga_db = host_spec.get("override_fpga_db", default_fpga_db)
+
+            inst = Inst(
+                self,
+                num_sims,
+                dispatch_dict[platform],
+                simulation_dir,
+                fpga_db,
+                self.metasimulation_enabled,
+            )
+            # inst.set_host(ip_addr) # do this with the actual IP
+            assert (
+                not ip_addr in self.run_farm_hosts_dict
+            ), f"Duplicate host name found in 'run_farm_hosts': {ip_addr}"
+            self.run_farm_hosts_dict[ip_addr] = [(inst, None)]
+            self.mapper_consumed[ip_addr] = 0
+
+    def post_launch_binding(self, mock: bool = False) -> None:
+        if mock:
+            self.bind_mock_instances_to_objects()
+        else:
+            self.bind_real_instances_to_objects()
+
+    def launch_run_farm(self) -> None:
+        # spin up a webserver on a port to serve linux autoinstall configs
+
+        cloud_init_port = 3003
+        config_dir = "firesim/deploy/vm-cloud-init-configs"
+
+        if not os.path.isdir(config_dir):
+            raise FileNotFoundError(f"Directory {config_dir} does not exist")
+        
+        handler = http.server.SimpleHTTPRequestHandler
+        
+        with socketserver.TCPServer(("", cloud_init_port), handler) as httpd:
+            print(f"Serving Ubuntu autoinstall files at http://localhost:{cloud_init_port}/")
+            httpd.serve_forever()
