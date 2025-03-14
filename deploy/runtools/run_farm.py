@@ -10,7 +10,7 @@ import socketserver
 from datetime import timedelta
 from fabric.api import run, env, prefix, put, cd, warn_only, local, settings, hide  # type: ignore
 from fabric.contrib.project import rsync_project  # type: ignore
-from os.path import join as pjoin
+from os.path import join as pjoin 
 import pprint
 from collections import defaultdict
 
@@ -904,7 +904,8 @@ class LocalProvisionedVM(RunFarm): # run_farm_type
         # spin up a webserver on a port to serve linux autoinstall configs
 
         cloud_init_port = 3003
-        config_dir = "firesim/deploy/vm-cloud-init-configs"
+        config_dir = pjoin(__file__, "..", "vm-cloud-init-configs")
+        # "firesim/deploy/vm-cloud-init-configs"
 
         if not os.path.isdir(config_dir):
             raise FileNotFoundError(f"Directory {config_dir} does not exist")
