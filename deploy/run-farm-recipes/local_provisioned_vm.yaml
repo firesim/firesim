@@ -1,0 +1,149 @@
+# Unmanaged list of run farm hosts. Assumed that they are pre-setup to run simulations.
+# all fields are required but can be overridden in the `*_runtime.yaml`
+
+run_farm_type: LocalProvisionedVM
+args:
+    # managerinit arg start
+    # REQUIRED: default platform used for run farm hosts. this is a class specifying
+    # how to run simulations on a run farm host.
+    default_platform: EC2InstanceDeployManager
+
+    # REQUIRED: default directory where simulations are run out of on the run farm hosts
+    default_simulation_dir: /home/centos
+
+    # REQUIRED: default fpga db file that enumerates what fpgas are available on the machine (used by XilinxU* Deploy Managers)
+    default_fpga_db: /opt/firesim-db.json
+
+    # REQUIRED: List of unique hostnames/IP addresses, each with their
+    # corresponding specification that describes the properties of the host.
+    #
+    # Ex:
+    # run_farm_hosts_to_use:
+    #     # use localhost which is described by "four_fpgas_spec" below.
+    #     - localhost: four_fpgas_spec
+    #     # supply IP address, which points to a machine that is described
+    #     # by "four_fpgas_spec" below.
+    #     - "111.111.1.111": four_fpgas_spec
+    run_farm_hosts_to_use:
+        - localhost: one_fpgas_spec
+    # managerinit arg end
+
+    # REQUIRED: List of host "specifications", i.e. re-usable collections of
+    # host parameters.
+    #
+    # The "name" of a spec (e.g. "four_fpgas_spec" below) is user-determined
+    # and is used to refer to the spec above.
+    #
+    # Besides required parameters shown below, each can have multiple OPTIONAL
+    # arguments, called "override_*", corresponding to the "default_*" arguments
+    # specified above. Each "override_*" argument overrides the corresponding
+    # "default_*" argument in that run host spec.
+    #
+    # Optional params include:
+    #       override_platform: EC2InstanceDeployManager
+    #       override_simulation_dir: /scratch/specific-build-host-build-dir
+    #       override_fpga_db: /opt/firesim-db-specific.json
+    run_farm_host_specs:
+        - four_fpgas_spec:
+            # REQUIRED: number of FPGAs on the machine
+            num_fpgas: 4
+            # REQUIRED: number of metasims this machine can host
+            num_metasims: 0
+            # REQUIRED: whether it is acceptable to use machines of this spec
+            # to host ONLY switches (e.g. any attached FPGAs are "wasted")
+            use_for_switch_only: false
+
+        - four_metasims_spec:
+            num_fpgas: 0
+            num_metasims: 4
+            use_for_switch_only: false
+
+        - switch_only_spec:
+            num_fpgas: 0
+            num_metasims: 0
+            use_for_switch_only: true
+
+        - one_fpga_spec:
+            num_fpgas: 1
+            num_metasims: 0
+            use_for_switch_only: false
+
+        - one_fpgas_spec:
+            num_fpgas: 1
+            num_metasims: 0
+            use_for_switch_only: false
+
+        - two_fpgas_spec:
+            num_fpgas: 2
+            num_metasims: 0
+            use_for_switch_only: false
+
+        - three_fpgas_spec:
+            num_fpgas: 3
+            num_metasims: 0
+            use_for_switch_only: false
+
+        - four_fpgas_spec:
+            num_fpgas: 4
+            num_metasims: 0
+            use_for_switch_only: false
+
+        - five_fpgas_spec:
+            num_fpgas: 5
+            num_metasims: 0
+            use_for_switch_only: false
+
+        - six_fpgas_spec:
+            num_fpgas: 6
+            num_metasims: 0
+            use_for_switch_only: false
+
+        - seven_fpgas_spec:
+            num_fpgas: 7
+            num_metasims: 0
+            use_for_switch_only: false
+
+        - eight_fpgas_spec:
+            num_fpgas: 8
+            num_metasims: 0
+            use_for_switch_only: false
+
+        - nine_fpgas_spec:
+            num_fpgas: 9
+            num_metasims: 0
+            use_for_switch_only: false
+
+        - ten_fpgas_spec:
+            num_fpgas: 10
+            num_metasims: 0
+            use_for_switch_only: false
+
+        - eleven_fpgas_spec:
+            num_fpgas: 11
+            num_metasims: 0
+            use_for_switch_only: false
+
+        - twelve_fpgas_spec:
+            num_fpgas: 12
+            num_metasims: 0
+            use_for_switch_only: false
+
+        - thirteen_fpgas_spec:
+            num_fpgas: 13
+            num_metasims: 0
+            use_for_switch_only: false
+
+        - fourteen_fpgas_spec:
+            num_fpgas: 14
+            num_metasims: 0
+            use_for_switch_only: false
+
+        - fifteen_fpgas_spec:
+            num_fpgas: 15
+            num_metasims: 0
+            use_for_switch_only: false
+
+        - sixteen_fpgas_spec:
+            num_fpgas: 16
+            num_metasims: 0
+            use_for_switch_only: false
