@@ -894,10 +894,11 @@ class LocalProvisionedVM(RunFarm): # run_farm_type
             self.mapper_consumed[ip_addr] = 0
 
     def post_launch_binding(self, mock: bool = False) -> None:
-        if mock:
-            self.bind_mock_instances_to_objects()
-        else:
-            self.bind_real_instances_to_objects()
+        # if mock:
+        #     self.bind_mock_instances_to_objects()
+        # else:
+        #     self.bind_real_instances_to_objects()
+        return
 
     def launch_run_farm(self) -> None:
         # spin up a webserver on a port to serve linux autoinstall configs
