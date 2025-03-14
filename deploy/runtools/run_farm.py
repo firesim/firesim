@@ -946,9 +946,9 @@ class LocalProvisionedVM(RunFarm): # run_farm_type
         
         pci_attach_xml = pci_attach_xml_fd.read()
         
-        pci_attach_xml = re.sub(r"bus='0x[0-9][0-9]'", f"bus='{bdfs[0]["busno"]}'", pci_attach_xml, count=1) # make sure we only replace 1 occurence
-        pci_attach_xml = re.sub(r"slot='0x[0-9][0-9]'", f"slot='{bdfs[0]["devno"]}'", pci_attach_xml, count=1)
-        pci_attach_xml = re.sub(r"function='0x[0-9]'", f"function='{bdfs[0]["funcno"]}'", pci_attach_xml, count=1)
+        pci_attach_xml = re.sub(r"bus='0x[0-9][0-9]'", f"bus='{bdfs[0]['busno']}'", pci_attach_xml, count=1) # make sure we only replace 1 occurence
+        pci_attach_xml = re.sub(r"slot='0x[0-9][0-9]'", f"slot='{bdfs[0]['devno']}'", pci_attach_xml, count=1)
+        pci_attach_xml = re.sub(r"function='0x[0-9]'", f"function='{bdfs[0]['funcno']}'", pci_attach_xml, count=1)
         
         pci_attach_xml_fd.write(pci_attach_xml)
         pci_attach_xml_fd.close()
