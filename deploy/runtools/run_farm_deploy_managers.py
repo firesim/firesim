@@ -1371,6 +1371,10 @@ class XilinxVCU118InstanceDeployManager(InstanceDeployManager):
                 run(f"sudo {cmd}", shell=True)
             else:
                 self.instance_logger("XDMA Driver Kernel Module already loaded.")
+            # run the xdma permissions script -- https://github.com/firesim/firesim/blob/396ef364237f387efec29da798981374c3f7d9d0/deploy/sudo-scripts/firesim-chmod-xdma-perm, otherwise fd != 0 assert fails
+            cmd = f"{script_path}/firesim-chmod-xdma-perm"  # fix: https://github.com/firesim/firesim/blob/396ef364237f387efec29da798981374c3f7d9d0/deploy/runtools/run_farm_deploy_managers.py#L1068
+            check_script(cmd)
+            run(f"sudo {cmd}")
 
     def load_xvsec(self) -> None:
         """load the xvsec kernel modules."""
@@ -1435,7 +1439,7 @@ class XilinxVCU118InstanceDeployManager(InstanceDeployManager):
                 # TODO: is hardcoded cap 0x1 correct?
                 # TODO: is "Partial Reconfig Clear File" useful (see xvsecctl help)?
                 bdfs = [
-                    {"busno": "0x" + i[:2], "devno": "0x" + i[3:5], "capno": "0x1"}
+                    {"busno": "0x" + i[:2], "devno": "0x" + i[3:5], "capno": "0x" + i[6:7]}
                     for i in collect.splitlines()
                     if len(i.strip()) >= 0
                 ]

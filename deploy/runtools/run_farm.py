@@ -807,7 +807,7 @@ class ExternallyProvisioned(RunFarm):
         )
         return
 
-class LocalProvisionedVM(RunFarm):
+class LocalProvisionedVM(RunFarm): # run_farm_type
     """Manages the set of locally provisioned VMs with FPGAs passed through to them. This class is responsible for spinning up the VMs and shutting down those VMs after the simulation is done.
 
     Args:
@@ -907,9 +907,119 @@ class LocalProvisionedVM(RunFarm):
 
         if not os.path.isdir(config_dir):
             raise FileNotFoundError(f"Directory {config_dir} does not exist")
+
+        # https://stackoverflow.com/questions/39801718/how-to-run-a-http-server-which-serves-a-specific-path
+        class Handler(http.server.SimpleHTTPRequestHandler):
+            def __init__(self, *args, **kwargs):
+                super().__init__(*args, directory=config_dir, **kwargs)
+
+        # shutdown: https://stackoverflow.com/questions/17550389/shut-down-socketserver-on-sig
+        cloud_init_server = socketserver.TCPServer(("", cloud_init_port), Handler)
+        print(f"Serving Ubuntu autoinstall files at http://localhost:{cloud_init_port}/")
+
+        cloud_init_server.serve_forever()
+
+        # there should only be 1 VM spun up no matter how many FPGAs we want - all FPGAs will get attached to the same VM (1 VM / job)
+
+        # create the VM - run vm-create.sh
+        vm_launch_cmd = open('firesim/deploy/vm-create.sh')
+        run(vm_launch_cmd.read())
+
+        # wait for the VM to be up
+        while True:
+            if run("virsh domstate jammy_cis") == "running": # TODO: this doeesn't tell us the system has booted -- only its "on"
+                break
+            time.sleep(1)
+        rootLogger.info("VM is up and running")
+
+        # attach FPGAs (TODO: currently this is just 1 fpga on the baremetal system) to the VM
+        bdf_collect = run("lspci | grep -i xilinx")
         
-        handler = http.server.SimpleHTTPRequestHandler
+        bdfs = [
+            {"busno": "0x" + i[:2], "devno": "0x" + i[3:5], "funcno": "0x" + i[6:7]}
+            for i in bdf_collect.split("\n")
+            if len(i.strip()) >= 0
+        ]
         
-        with socketserver.TCPServer(("", cloud_init_port), handler) as httpd:
-            print(f"Serving Ubuntu autoinstall files at http://localhost:{cloud_init_port}/")
-            httpd.serve_forever()
+        # TODO: just attaching the first FPGA for now + realistically we should import an XML parser that handles this since theres two "bus, slot, function"
+        pci_attach_xml_fd = open("firesim/deploy/vm-pci-attach.xml")
+        
+        pci_attach_xml = pci_attach_xml_fd.read()
+        
+        pci_attach_xml = re.sub(r"bus='0x[0-9][0-9]'", f"bus='{bdfs[0]["busno"]}'", pci_attach_xml, count=1) # make sure we only replace 1 occurence
+        pci_attach_xml = re.sub(r"slot='0x[0-9][0-9]'", f"slot='{bdfs[0]["devno"]}'", pci_attach_xml, count=1)
+        pci_attach_xml = re.sub(r"function='0x[0-9]'", f"function='{bdfs[0]["funcno"]}'", pci_attach_xml, count=1)
+        
+        pci_attach_xml_fd.write(pci_attach_xml)
+        pci_attach_xml_fd.close()
+        
+        run("virsh attach-device jammy_cis --file firesim/deploy/vm-pci-attach.xml --persistent")
+
+        # reboot
+        run("virsh reboot jammy_cis")
+        rootLogger.info("PCIe device attached, VM is rebooting")
+
+        # close fs read, close http server - done with initial setup
+        cloud_init_server.shutdown()
+        cloud_init_server.server_close()
+
+        vm_launch_cmd.close()
+        
+        # wait for the VM to be up
+        while True:
+            if run("virsh domstate jammy_cis") == "running": # FIXME: this doesnt show boot/not booted status
+                break
+            time.sleep(1)
+        print("VM is up and running")
+
+        # update the IP address in self
+        # grab VM IP - https://stackoverflow.com/questions/19057915/libvirt-fetch-ipv4-address-from-guest - if this doens't work we have an alt method
+        # TODO: ensure DHCP lease doesn't expire/IP doesn't change
+        ip_addr = run(
+            'for mac in `virsh domiflist jammy_cis |grep -o -E "([0-9a-f]{2}:){5}([0-9a-f]{2})"` ; do arp -e |grep $mac  |grep -o -P "^\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}" ; done'
+        )
+
+        # remap everything mapped to localhost to new ip
+        self.SIM_HOST_HANDLE_TO_MAX_FPGA_SLOTS[ip_addr] = self.SIM_HOST_HANDLE_TO_MAX_FPGA_SLOTS["localhost"]
+        self.SIM_HOST_HANDLE_TO_MAX_METASIM_SLOTS[ip_addr] = self.SIM_HOST_HANDLE_TO_MAX_METASIM_SLOTS["localhost"]
+        self.SIM_HOST_HANDLE_TO_SWITCH_ONLY_OK[ip_addr] = self.SIM_HOST_HANDLE_TO_SWITCH_ONLY_OK["localhost"]
+
+        self.run_farm_hosts_dict[ip_addr] = self.run_farm_hosts_dict["localhost"]
+
+        self.mapper_consumed[ip_addr] = self.mapper_consumed["localhost"]
+
+        del self.SIM_HOST_HANDLE_TO_MAX_FPGA_SLOTS["localhost"]
+        del self.SIM_HOST_HANDLE_TO_MAX_METASIM_SLOTS["localhost"]
+        del self.SIM_HOST_HANDLE_TO_SWITCH_ONLY_OK["localhost"]
+        del self.run_farm_hosts_dict["localhost"]
+        del self.mapper_consumed["localhost"]
+
+        self.run_farm_hosts_dict[ip_addr][0][0].set_host(ip_addr) # set the host to the new ip address
+
+        # install cmake, gcc, git
+        
+    def terminate_run_farm(
+        self, terminate_some_dict: Dict[str, int], forceterminate: bool
+    ) -> None:
+
+        # detach FPGAs
+        # destroy VM
+        # remove from run_farm_hosts_dict
+        
+        raise NotImplementedError("terminate_run_farm not implemented for LocalProvisionedVM")
+    
+    def get_all_host_nodes(self) -> List[Inst]:
+        
+        raise NotImplementedError("get_all_host_nodes not implemented for LocalProvisionedVM")
+    
+    def get_all_bound_host_nodes(self) -> List[Inst]:
+        
+        raise NotImplementedError("get_all_bound_host_nodes not implemented for LocalProvisionedVM")
+    
+    def lookup_by_host(self, host: str) -> Inst:
+        
+        raise NotImplementedError("lookup_by_host not implemented for LocalProvisionedVM")
+    
+    def terminate_by_inst(self, inst: Inst) -> None:
+        
+        raise NotImplementedError("terminate_by_inst not implemented for LocalProvisionedVM")
