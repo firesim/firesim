@@ -926,7 +926,11 @@ class LocalProvisionedVM(RunFarm): # run_farm_type
         # there should only be 1 VM spun up no matter how many FPGAs we want - all FPGAs will get attached to the same VM (1 VM / job)
 
         # create the VM - run vm-create.sh
-        vm_launch_cmd = open('firesim/deploy/vm-create.sh')
+        # vm_launch_cmd = open('firesim/deploy/vm-create.sh')
+        vm_launch_cmd = open(pjoin(
+            os.path.dirname(os.path.abspath(__file__)), "..", "vm-create.sh"
+        ))
+
         run(vm_launch_cmd.read())
         rootLogger.info(
             "ran vm-create.sh to create the VM"
@@ -949,7 +953,10 @@ class LocalProvisionedVM(RunFarm): # run_farm_type
         ]
 
         # TODO: just attaching the first FPGA for now + realistically we should import an XML parser that handles this since theres two "bus, slot, function"
-        pci_attach_xml_fd = open("firesim/deploy/vm-pci-attach.xml")
+        # pci_attach_xml_fd = open("firesim/deploy/vm-pci-attach.xml")
+        pci_attach_xml_fd = open(
+            pjoin(os.path.dirname(os.path.abspath(__file__)), "..", "vm-pci-attach.xml")
+        )
 
         pci_attach_xml = pci_attach_xml_fd.read()
 
