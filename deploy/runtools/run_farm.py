@@ -904,7 +904,9 @@ class LocalProvisionedVM(RunFarm): # run_farm_type
         # spin up a webserver on a port to serve linux autoinstall configs
 
         cloud_init_port = 3003
-        config_dir = pjoin(__file__, "..", "vm-cloud-init-configs")
+        config_dir = pjoin(
+            os.path.dirname(os.path.abspath(__file__)), "..", "vm-cloud-init-configs"
+        )
         # "firesim/deploy/vm-cloud-init-configs"
 
         if not os.path.isdir(config_dir):
