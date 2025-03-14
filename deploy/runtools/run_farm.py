@@ -919,7 +919,7 @@ class LocalProvisionedVM(RunFarm): # run_farm_type
 
         # shutdown: https://stackoverflow.com/questions/17550389/shut-down-socketserver-on-sig
         cloud_init_server = socketserver.TCPServer(("", cloud_init_port), Handler)
-        print(f"Serving Ubuntu autoinstall files at http://localhost:{cloud_init_port}/")
+        rootLogger.info(f"Serving Ubuntu autoinstall files at http://localhost:{cloud_init_port}/")
 
         cloud_init_server.serve_forever()
 
@@ -928,6 +928,9 @@ class LocalProvisionedVM(RunFarm): # run_farm_type
         # create the VM - run vm-create.sh
         vm_launch_cmd = open('firesim/deploy/vm-create.sh')
         run(vm_launch_cmd.read())
+        rootLogger.info(
+            "ran vm-create.sh to create the VM"
+        )
 
         # wait for the VM to be up
         while True:
