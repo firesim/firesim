@@ -817,7 +817,7 @@ class LocalProvisionedVM(RunFarm): # run_farm_type
     def __init__(self, args: Dict[str, Any], metasimulation_enabled: bool) -> None :
         super().__init__(args, metasimulation_enabled) # if metasim enabled, we give it to super to handle
 
-        self.__parse_args() # parse args in yaml file
+        self._parse_args()  # parse args in yaml file
 
         self.init_postprocess()
 
@@ -934,25 +934,25 @@ class LocalProvisionedVM(RunFarm): # run_farm_type
 
         # attach FPGAs (TODO: currently this is just 1 fpga on the baremetal system) to the VM
         bdf_collect = run("lspci | grep -i xilinx")
-        
+
         bdfs = [
             {"busno": "0x" + i[:2], "devno": "0x" + i[3:5], "funcno": "0x" + i[6:7]}
             for i in bdf_collect.split("\n")
             if len(i.strip()) >= 0
         ]
-        
+
         # TODO: just attaching the first FPGA for now + realistically we should import an XML parser that handles this since theres two "bus, slot, function"
         pci_attach_xml_fd = open("firesim/deploy/vm-pci-attach.xml")
-        
+
         pci_attach_xml = pci_attach_xml_fd.read()
-        
+
         pci_attach_xml = re.sub(r"bus='0x[0-9][0-9]'", f"bus='{bdfs[0]['busno']}'", pci_attach_xml, count=1) # make sure we only replace 1 occurence
         pci_attach_xml = re.sub(r"slot='0x[0-9][0-9]'", f"slot='{bdfs[0]['devno']}'", pci_attach_xml, count=1)
         pci_attach_xml = re.sub(r"function='0x[0-9]'", f"function='{bdfs[0]['funcno']}'", pci_attach_xml, count=1)
-        
+
         pci_attach_xml_fd.write(pci_attach_xml)
         pci_attach_xml_fd.close()
-        
+
         run("virsh attach-device jammy_cis --file firesim/deploy/vm-pci-attach.xml --persistent")
 
         # reboot
@@ -964,7 +964,7 @@ class LocalProvisionedVM(RunFarm): # run_farm_type
         cloud_init_server.server_close()
 
         vm_launch_cmd.close()
-        
+
         # wait for the VM to be up
         while True:
             if run("virsh domstate jammy_cis") == "running": # FIXME: this doesnt show boot/not booted status
@@ -997,7 +997,7 @@ class LocalProvisionedVM(RunFarm): # run_farm_type
         self.run_farm_hosts_dict[ip_addr][0][0].set_host(ip_addr) # set the host to the new ip address
 
         # install cmake, gcc, git
-        
+
     def terminate_run_farm(
         self, terminate_some_dict: Dict[str, int], forceterminate: bool
     ) -> None:
@@ -1005,21 +1005,21 @@ class LocalProvisionedVM(RunFarm): # run_farm_type
         # detach FPGAs
         # destroy VM
         # remove from run_farm_hosts_dict
-        
+
         raise NotImplementedError("terminate_run_farm not implemented for LocalProvisionedVM")
-    
+
     def get_all_host_nodes(self) -> List[Inst]:
-        
+
         raise NotImplementedError("get_all_host_nodes not implemented for LocalProvisionedVM")
-    
+
     def get_all_bound_host_nodes(self) -> List[Inst]:
-        
+
         raise NotImplementedError("get_all_bound_host_nodes not implemented for LocalProvisionedVM")
-    
+
     def lookup_by_host(self, host: str) -> Inst:
-        
+
         raise NotImplementedError("lookup_by_host not implemented for LocalProvisionedVM")
-    
+
     def terminate_by_inst(self, inst: Inst) -> None:
-        
+
         raise NotImplementedError("terminate_by_inst not implemented for LocalProvisionedVM")
