@@ -6,6 +6,7 @@ import time
 import abc
 import os
 import http.server
+import threading
 import socketserver
 from datetime import timedelta
 from fabric.api import run, env, prefix, put, cd, warn_only, local, settings, hide  # type: ignore
@@ -918,10 +919,14 @@ class LocalProvisionedVM(RunFarm): # run_farm_type
                 super().__init__(*args, directory=config_dir, **kwargs)
 
         # shutdown: https://stackoverflow.com/questions/17550389/shut-down-socketserver-on-sig
-        cloud_init_server = socketserver.TCPServer(("", cloud_init_port), Handler)
+        cloud_init_server = socketserver.ThreadingTCPServer(("", cloud_init_port), Handler)
         rootLogger.info(f"Serving Ubuntu autoinstall files at http://localhost:{cloud_init_port}/")
 
-        cloud_init_server.serve_forever()
+        cloud_init_thread = threading.Thread(
+            target=cloud_init_server.serve_forever, daemon=True
+        )
+
+        cloud_init_thread.start()
 
         # there should only be 1 VM spun up no matter how many FPGAs we want - all FPGAs will get attached to the same VM (1 VM / job)
 
@@ -976,6 +981,8 @@ class LocalProvisionedVM(RunFarm): # run_farm_type
         # close fs read, close http server - done with initial setup
         cloud_init_server.shutdown()
         cloud_init_server.server_close()
+        cloud_init_thread.join()
+        rootLogger.info("Closed HTTP server")
 
         vm_launch_cmd.close()
 
