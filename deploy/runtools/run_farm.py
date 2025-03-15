@@ -932,34 +932,25 @@ class LocalProvisionedVM(RunFarm): # run_farm_type
 
         # create the VM - run vm-create.sh
         # vm_launch_cmd = open('firesim/deploy/vm-create.sh')
-       # rootLogger.info(
-       #     pjoin(os.path.dirname(os.path.abspath(__file__)), "..", "vm-create.sh")
-       #  )
 
         vm_launch_cmd = open(pjoin(
             os.path.dirname(os.path.abspath(__file__)), "..", "vm-create.sh"
         ))
-        
-       #  rootLogger.info(vm_launch_cmd.read())
 
-        test = local("uname -a")
-
-        rootLogger.info(test)
-
-        run(vm_launch_cmd.read())
+        local(vm_launch_cmd.read())
         rootLogger.info(
             "ran vm-create.sh to create the VM"
         )
 
         # wait for the VM to be up
         while True:
-            if run("virsh domstate jammy_cis") == "running": # TODO: this doeesn't tell us the system has booted -- only its "on"
+            if local("virsh domstate jammy_cis") == "running": # TODO: this doeesn't tell us the system has booted -- only its "on"
                 break
             time.sleep(1)
         rootLogger.info("VM is up and running")
 
         # attach FPGAs (TODO: currently this is just 1 fpga on the baremetal system) to the VM
-        bdf_collect = run("lspci | grep -i xilinx")
+        bdf_collect = local("lspci | grep -i xilinx")
 
         bdfs = [
             {"busno": "0x" + i[:2], "devno": "0x" + i[3:5], "funcno": "0x" + i[6:7]}
@@ -982,10 +973,10 @@ class LocalProvisionedVM(RunFarm): # run_farm_type
         pci_attach_xml_fd.write(pci_attach_xml)
         pci_attach_xml_fd.close()
 
-        run("virsh attach-device jammy_cis --file firesim/deploy/vm-pci-attach.xml --persistent")
+        local("virsh attach-device jammy_cis --file firesim/deploy/vm-pci-attach.xml --persistent")
 
         # reboot
-        run("virsh reboot jammy_cis")
+        local("virsh reboot jammy_cis")
         rootLogger.info("PCIe device attached, VM is rebooting")
 
         # close fs read, close http server - done with initial setup
@@ -998,7 +989,7 @@ class LocalProvisionedVM(RunFarm): # run_farm_type
 
         # wait for the VM to be up
         while True:
-            if run("virsh domstate jammy_cis") == "running": # FIXME: this doesnt show boot/not booted status
+            if local("virsh domstate jammy_cis") == "running": # FIXME: this doesnt show boot/not booted status
                 break
             time.sleep(1)
         print("VM is up and running")
@@ -1006,7 +997,7 @@ class LocalProvisionedVM(RunFarm): # run_farm_type
         # update the IP address in self
         # grab VM IP - https://stackoverflow.com/questions/19057915/libvirt-fetch-ipv4-address-from-guest - if this doens't work we have an alt method
         # TODO: ensure DHCP lease doesn't expire/IP doesn't change
-        ip_addr = run(
+        ip_addr = local(
             'for mac in `virsh domiflist jammy_cis |grep -o -E "([0-9a-f]{2}:){5}([0-9a-f]{2})"` ; do arp -e |grep $mac  |grep -o -P "^\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}" ; done'
         )
 
