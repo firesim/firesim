@@ -932,6 +932,9 @@ class LocalProvisionedVM(RunFarm): # run_farm_type
 
         # create the VM - run vm-create.sh
         # vm_launch_cmd = open('firesim/deploy/vm-create.sh')
+        rootLogger.log(
+            pjoin(os.path.dirname(os.path.abspath(__file__)), "..", "vm-create.sh")
+        )
         vm_launch_cmd = open(pjoin(
             os.path.dirname(os.path.abspath(__file__)), "..", "vm-create.sh"
         ))
