@@ -1371,8 +1371,7 @@ class XilinxVCU118InstanceDeployManager(InstanceDeployManager):
                 run(f"sudo {cmd}", shell=True)
             else:
                 self.instance_logger("XDMA Driver Kernel Module already loaded.")
-            # run the xdma permissions script -- https://github.com/firesim/firesim/blob/396ef364237f387efec29da798981374c3f7d9d0/deploy/sudo-scripts/firesim-chmod-xdma-perm, otherwise fd != 0 assert fails
-            cmd = f"{script_path}/firesim-chmod-xdma-perm"  # fix: https://github.com/firesim/firesim/blob/396ef364237f387efec29da798981374c3f7d9d0/deploy/runtools/run_farm_deploy_managers.py#L1068
+            cmd = f"{script_path}/firesim-chmod-xdma-perm"
             check_script(cmd)
             run(f"sudo {cmd}")
 
