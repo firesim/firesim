@@ -49,7 +49,7 @@ def get_local_shared_libraries(elf: str) -> List[Tuple[str, str]]:
     )
     rootLogger.debug(f"Running on OS: {os_flavor}")
 
-    if os_flavor not in ["ubuntu", "centos", "amzn", "debian"]:
+    if os_flavor not in ["ubuntu", "centos", "amzn", "debian", "rhel"]:
         raise ValueError(f"Unknown OS: {os_flavor}")
 
     glibc_shared_libs = []
@@ -74,7 +74,7 @@ def get_local_shared_libraries(elf: str) -> List[Tuple[str, str]]:
             glibc_shared_libs.extend(dpkg_output_paths.stdout.split("\n"))
 
         rootLogger.debug(glibc_shared_libs)
-    elif os_flavor in ["centos", "amzn"]:
+    elif os_flavor in ["centos", "amzn", "rhel"]:
         with settings(warn_only=True):
             rpm_output = local(
                 "rpm -q -f /lib64/libc.so* --filesbypkg | grep -P '\.so(\.|\s*$)'"
