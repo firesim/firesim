@@ -957,13 +957,14 @@ class LocalProvisionedVM(RunFarm): # run_farm_type
                     """,
                     capture=True,
                 )
-                if (ip_addr != "") and ("0.0% packet loss" in local(f"ping -c 1 {ip_addr}")):
+                if (ip_addr != "") and ("0% packet loss" in local(f"ping -c 1 {ip_addr}")):
                     break
             time.sleep(1)
         rootLogger.info("VM is up and running")
 
         # attach FPGAs (TODO: currently this is just 1 fpga on the baremetal system) to the VM
-        bdf_collect = local("lspci | grep -i xilinx")
+        bdf_collect = local("lspci | grep -i xilinx", capture=True)
+        rootLogger.info(f"FPGA BDFs: {bdf_collect}")
 
         bdfs = [
             {"busno": "0x" + i[:2], "devno": "0x" + i[3:5], "funcno": "0x" + i[6:7]}
@@ -995,20 +996,27 @@ class LocalProvisionedVM(RunFarm): # run_farm_type
         rootLogger.info("PCIe device attached, VM is rebooting")
 
         # close fs read, close http server - done with initial setup
-        cloud_init_server.shutdown()
-        cloud_init_server.server_close()
-        cloud_init_thread.join()
-        rootLogger.info("Closed HTTP server")
+        # cloud_init_server.shutdown()
+        # cloud_init_server.server_close()
+        # cloud_init_thread.join()
+        # rootLogger.info("Closed HTTP server")
 
-        vm_launch_cmd.close()
+        # vm_launch_cmd.close()
 
         # wait for the VM to be up
         while True:
-            if local("virsh domstate jammy_cis") == "running": # TODO: this doeesn't tell us the system has booted -- only its "on"
+            if "running" in local(
+                "virsh domstate jammy_cis", capture=True
+            ):  # TODO: this doeesn't tell us the system has booted -- only its "on"
                 ip_addr = local(
-                    'for mac in `virsh domiflist jammy_cis |grep -o -E "([0-9a-f]{2}:){5}([0-9a-f]{2})"` ; do arp -e |grep $mac  |grep -o -P "^\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}" ; done'
+                    """
+                    for mac in `virsh domiflist jammy_cis |grep -o -E "([0-9a-f]{2}:){5}([0-9a-f]{2})"` ; do arp -e |grep $mac  |grep -o -P "^\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}" ; done
+                    """,
+                    capture=True,
                 )
-                if (ip_addr != "") and ("0.0% packet loss" in local(f"ping -c 1 {ip_addr}")):
+                if (ip_addr != "") and (
+                    "0% packet loss" in local(f"ping -c 1 {ip_addr}")
+                ):
                     break
             time.sleep(1)
         rootLogger.info("VM is up and running from pci attach reboot")
@@ -1017,7 +1025,10 @@ class LocalProvisionedVM(RunFarm): # run_farm_type
         # grab VM IP - https://stackoverflow.com/questions/19057915/libvirt-fetch-ipv4-address-from-guest - if this doens't work we have an alt method
         # TODO: ensure DHCP lease doesn't expire/IP doesn't change
         ip_addr = local(
-            'for mac in `virsh domiflist jammy_cis |grep -o -E "([0-9a-f]{2}:){5}([0-9a-f]{2})"` ; do arp -e |grep $mac  |grep -o -P "^\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}" ; done'
+            """
+            for mac in `virsh domiflist jammy_cis |grep -o -E "([0-9a-f]{2}:){5}([0-9a-f]{2})"` ; do arp -e |grep $mac  |grep -o -P "^\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}" ; done
+            """,
+            capture=True,
         )
 
         # remap everything mapped to localhost to new ip
