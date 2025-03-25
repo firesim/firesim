@@ -937,10 +937,15 @@ class LocalProvisionedVM(RunFarm): # run_farm_type
             os.path.dirname(os.path.abspath(__file__)), "..", "vm-create.sh"
         ))
 
+        rootLogger.info("running vm-create.sh...")
         local(vm_launch_cmd.read())
         rootLogger.info(
             "ran vm-create.sh to create the VM"
         )
+
+        # eject the CDROM from VM
+        local("virsh change-media jammy_cis sdc --eject --force")
+        rootLogger.info("Ejected ISO from VM")
 
         # wait for the VM to be up
         while True:
@@ -952,10 +957,6 @@ class LocalProvisionedVM(RunFarm): # run_farm_type
                     break
             time.sleep(1)
         rootLogger.info("VM is up and running")
-
-        # eject the CDROM from VM
-        local("virsh change-media jammy_cis sdc --eject --force")
-        rootLogger.info("Ejected ISO from VM")
 
         # attach FPGAs (TODO: currently this is just 1 fpga on the baremetal system) to the VM
         bdf_collect = local("lspci | grep -i xilinx")
