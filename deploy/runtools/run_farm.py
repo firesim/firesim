@@ -971,7 +971,7 @@ class LocalProvisionedVM(RunFarm): # run_farm_type
             for i in bdf_collect.split("\n")
             if len(i.strip()) >= 0
         ]
-        
+
         rootLogger.info(f"FPGA BDFs: {bdfs}")
 
         # TODO: just attaching the first FPGA for now + realistically we should import an XML parser that handles this since theres two "bus, slot, function"
@@ -989,9 +989,11 @@ class LocalProvisionedVM(RunFarm): # run_farm_type
         rootLogger.info(f"Frame PCIe device XML: {pci_attach_xml}")
 
         # make sure we only replace 1 occurence
-        pci_attach_xml.replace("BUS", bdfs[0]["busno"], 1)
-        pci_attach_xml.replace("SLOT", bdfs[0]["devno"], 1)
-        pci_attach_xml.replace("FUNCT", bdfs[0]["funcno"], 1)
+        pci_attach_xml = pci_attach_xml.replace("BUS", bdfs[0]["busno"], 1)
+        pci_attach_xml = pci_attach_xml.replace("SLOT", bdfs[0]["devno"], 1)
+        pci_attach_xml = pci_attach_xml.replace("FUNCT", bdfs[0]["funcno"], 1)
+
+        rootLogger.info(f"PCIe device XML: {pci_attach_xml}")
 
         # remap fd so that we dont write to the frame
         pci_attach_xml_fd.close()
