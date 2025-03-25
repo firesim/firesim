@@ -19,4 +19,5 @@ virt-install \
 --tpm type=emulator,version=2.0,model=tpm-tis \
 --boot loader=/usr/share/OVMF/OVMF_CODE_4M.secboot.fd,loader.readonly=yes,loader.type=pflash,loader.secure=yes,nvram.template=/usr/share/OVMF/OVMF_VARS_4M.ms.fd \
 --extra-args='autoinstall ds=nocloud-net;s=http://_gateway:3003/' \
---noautoconsole
+--noautoconsole \
+--wait=-1

@@ -943,28 +943,28 @@ class LocalProvisionedVM(RunFarm): # run_farm_type
             "ran vm-create.sh to create the VM"
         )
 
-        # wait for the VM to be up - TODO: Functionalize this
-        while True:
-            if "running" in local(
-                "virsh domstate jammy_cis", capture=True
-            ):  # TODO: this doeesn't tell us the system has booted -- only its "on"
-                with settings(warn_only=True):
-                    ip_addr = local(
-                        """
-                        for mac in `virsh domiflist jammy_cis |grep -o -E "([0-9a-f]{2}:){5}([0-9a-f]{2})"` ; do arp -e |grep $mac  |grep -o -P "^\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}" ; done
-                        """,
-                        capture=True,
-                    )
-                    if (ip_addr != "") and (
-                        "0% packet loss" in local(f"ping -c 1 {ip_addr}", capture=True)
-                    ):
-                        # eject the CDROM from VM
-                        local("virsh change-media jammy_cis sdc --eject --force")
-                        rootLogger.info("Ejected ISO from VM")
-                        time.sleep(10) # give some time for the VM IP to be no longer valid - removing the CDROM from the VM will likely cause the VM to reboot
-                        break
-            time.sleep(1)
-        rootLogger.info("VM is up and running")
+        # # wait for the VM to be up - TODO: Functionalize this
+        # while True:
+        #     if "running" in local(
+        #         "virsh domstate jammy_cis", capture=True
+        #     ):  # TODO: this doeesn't tell us the system has booted -- only its "on"
+        #         with settings(warn_only=True):
+        #             ip_addr = local(
+        #                 """
+        #                 for mac in `virsh domiflist jammy_cis |grep -o -E "([0-9a-f]{2}:){5}([0-9a-f]{2})"` ; do arp -e |grep $mac  |grep -o -P "^\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}" ; done
+        #                 """,
+        #                 capture=True,
+        #             )
+        #             if (ip_addr != "") and (
+        #                 "0% packet loss" in local(f"ping -c 1 {ip_addr}", capture=True)
+        #             ):
+        #                 # eject the CDROM from VM
+        #                 local("virsh change-media jammy_cis sdc --eject --force")
+        #                 rootLogger.info("Ejected ISO from VM")
+        #                 time.sleep(10) # give some time for the VM IP to be no longer valid - removing the CDROM from the VM will likely cause the VM to reboot
+        #                 break
+        #     time.sleep(1)
+        # rootLogger.info("VM is up and running")
 
         # wait for the VM to be up
         while True:
@@ -976,7 +976,7 @@ class LocalProvisionedVM(RunFarm): # run_farm_type
                         """,
                         capture=True,
                     )
-                    if (ip_addr != "") and ("0% packet loss" in local(f"ping -c 1 {ip_addr}", capture=True)):
+                    if (ip_addr != "") and ("SSH" in local(f"nc {ip_addr} 22", capture=True)): # use nc here to ensure that the VM is actually up and running, we arent just looking for ip assigment here
                         break
             time.sleep(1)
         rootLogger.info("VM is up and running")
