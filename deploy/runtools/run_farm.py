@@ -902,51 +902,69 @@ class LocalProvisionedVM(RunFarm): # run_farm_type
         return
 
     def launch_run_farm(self) -> None:
-        # # spin up a webserver on a port to serve linux autoinstall configs
+        # spin up a webserver on a port to serve linux autoinstall configs
 
-        # cloud_init_port = 3003
-        # config_dir = pjoin(
-        #     os.path.dirname(os.path.abspath(__file__)), "..", "vm-cloud-init-configs"
-        # )
-        # # "firesim/deploy/vm-cloud-init-configs"
+        cloud_init_port = 3003
+        config_dir = pjoin(
+            os.path.dirname(os.path.abspath(__file__)), "..", "vm-cloud-init-configs"
+        )
+        # "firesim/deploy/vm-cloud-init-configs"
 
-        # if not os.path.isdir(config_dir):
-        #     raise FileNotFoundError(f"Directory {config_dir} does not exist")
+        if not os.path.isdir(config_dir):
+            raise FileNotFoundError(f"Directory {config_dir} does not exist")
 
-        # # https://stackoverflow.com/questions/39801718/how-to-run-a-http-server-which-serves-a-specific-path
-        # class Handler(http.server.SimpleHTTPRequestHandler):
-        #     def __init__(self, *args, **kwargs):
-        #         super().__init__(*args, directory=config_dir, **kwargs)
+        # https://stackoverflow.com/questions/39801718/how-to-run-a-http-server-which-serves-a-specific-path
+        class Handler(http.server.SimpleHTTPRequestHandler):
+            def __init__(self, *args, **kwargs):
+                super().__init__(*args, directory=config_dir, **kwargs)
 
-        # # shutdown: https://stackoverflow.com/questions/17550389/shut-down-socketserver-on-sig
-        # cloud_init_server = socketserver.ThreadingTCPServer(("", cloud_init_port), Handler)
-        # rootLogger.info(f"Serving Ubuntu autoinstall files at http://localhost:{cloud_init_port}/")
+        # shutdown: https://stackoverflow.com/questions/17550389/shut-down-socketserver-on-sig
+        cloud_init_server = socketserver.ThreadingTCPServer(("", cloud_init_port), Handler)
+        rootLogger.info(f"Serving Ubuntu autoinstall files at http://localhost:{cloud_init_port}/")
 
-        # cloud_init_thread = threading.Thread(
-        #     target=cloud_init_server.serve_forever, daemon=True
-        # )
+        cloud_init_thread = threading.Thread(
+            target=cloud_init_server.serve_forever, daemon=True
+        )
 
-        # cloud_init_thread.start()
+        cloud_init_thread.start()
 
-        # # there should only be 1 VM spun up no matter how many FPGAs we want - all FPGAs will get attached to the same VM (1 VM / job)
+        # there should only be 1 VM spun up no matter how many FPGAs we want - all FPGAs will get attached to the same VM (1 VM / job)
 
-        # # create the VM - run vm-create.sh
-        # # vm_launch_cmd = open('firesim/deploy/vm-create.sh')
+        # create the VM - run vm-create.sh
+        # vm_launch_cmd = open('firesim/deploy/vm-create.sh')
 
-        # vm_launch_cmd = open(pjoin(
-        #     os.path.dirname(os.path.abspath(__file__)), "..", "vm-create.sh"
-        # ))
+        vm_launch_cmd = open(pjoin(
+            os.path.dirname(os.path.abspath(__file__)), "..", "vm-create.sh"
+        ))
 
-        # rootLogger.info("running vm-create.sh...")
-        # local(vm_launch_cmd.read())
-        # rootLogger.info(
-        #     "ran vm-create.sh to create the VM"
-        # )
+        rootLogger.info("running vm-create.sh...")
+        local(vm_launch_cmd.read())
+        rootLogger.info(
+            "ran vm-create.sh to create the VM"
+        )
 
-        # ------------------------------------------------------------
-        # eject the CDROM from VM
-        # local("virsh change-media jammy_cis sdc --eject --force")
-        # rootLogger.info("Ejected ISO from VM")
+        # wait for the VM to be up - TODO: Functionalize this
+        while True:
+            if "running" in local(
+                "virsh domstate jammy_cis", capture=True
+            ):  # TODO: this doeesn't tell us the system has booted -- only its "on"
+                with settings(warn_only=True):
+                    ip_addr = local(
+                        """
+                        for mac in `virsh domiflist jammy_cis |grep -o -E "([0-9a-f]{2}:){5}([0-9a-f]{2})"` ; do arp -e |grep $mac  |grep -o -P "^\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}" ; done
+                        """,
+                        capture=True,
+                    )
+                    if (ip_addr != "") and (
+                        "0% packet loss" in local(f"ping -c 1 {ip_addr}", capture=True)
+                    ):
+                        # eject the CDROM from VM
+                        local("virsh change-media jammy_cis sdc --eject --force")
+                        rootLogger.info("Ejected ISO from VM")
+                        time.sleep(10) # give some time for the VM IP to be no longer valid - removing the CDROM from the VM will likely cause the VM to reboot
+                        break
+            time.sleep(1)
+        rootLogger.info("VM is up and running")
 
         # wait for the VM to be up
         while True:
@@ -974,8 +992,7 @@ class LocalProvisionedVM(RunFarm): # run_farm_type
 
         rootLogger.info(f"FPGA BDFs: {bdfs}")
 
-        # TODO: just attaching the first FPGA for now + realistically we should import an XML parser that handles this since theres two "bus, slot, function"
-        # pci_attach_xml_fd = open("firesim/deploy/vm-pci-attach.xml")
+        # TODO: just attaching the first FPGA for now + realistically we should import an XML parser that handles this if there are multiple FPGAs
         pci_attach_xml_fd = open(
             pjoin(
                 os.path.dirname(os.path.abspath(__file__)),
@@ -1020,12 +1037,12 @@ class LocalProvisionedVM(RunFarm): # run_farm_type
         time.sleep(10) # give some time for the VM IP to be no longer valid
 
         # close fs read, close http server - done with initial setup
-        # cloud_init_server.shutdown()
-        # cloud_init_server.server_close()
-        # cloud_init_thread.join()
-        # rootLogger.info("Closed HTTP server")
+        cloud_init_server.shutdown()
+        cloud_init_server.server_close()
+        cloud_init_thread.join()
+        rootLogger.info("Closed HTTP server")
 
-        # vm_launch_cmd.close()
+        vm_launch_cmd.close()
 
         # wait for the VM to be up
         while True:
@@ -1070,7 +1087,17 @@ class LocalProvisionedVM(RunFarm): # run_farm_type
 
         self.run_farm_hosts_dict[ip_addr][0][0].set_host(ip_addr) # set the host to the new ip address
 
-        # install cmake, gcc, git
+        # print out updated dict
+        rootLogger.info(f"Updated run_farm_hosts_dict: {self.run_farm_hosts_dict}")
+        rootLogger.info(f"Updated SIM_HOST_HANDLE_TO_MAX_FPGA_SLOTS: {self.SIM_HOST_HANDLE_TO_MAX_FPGA_SLOTS}")
+        rootLogger.info(f"Updated SIM_HOST_HANDLE_TO_MAX_METASIM_SLOTS: {self.SIM_HOST_HANDLE_TO_MAX_METASIM_SLOTS}")
+        rootLogger.info(f"Updated SIM_HOST_HANDLE_TO_SWITCH_ONLY_OK: {self.SIM_HOST_HANDLE_TO_SWITCH_ONLY_OK}")
+        rootLogger.info(f"Updated mapper_consumed: {self.mapper_consumed}")
+
+        # print first inst in run_farm_hosts_dict
+        rootLogger.info(f"First inst in run_farm_hosts_dict: {self.run_farm_hosts_dict[ip_addr][0][0]}")
+
+        # install cmake, gcc, git (?)
 
     def terminate_run_farm(
         self, terminate_some_dict: Dict[str, int], forceterminate: bool
