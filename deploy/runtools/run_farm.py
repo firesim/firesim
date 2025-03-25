@@ -933,42 +933,16 @@ class LocalProvisionedVM(RunFarm): # run_farm_type
         # there should only be 1 VM spun up no matter how many FPGAs we want - all FPGAs will get attached to the same VM (1 VM / job)
 
         # create the VM - run vm-create.sh
-        # vm_launch_cmd = open('firesim/deploy/vm-create.sh')
-
         vm_launch_cmd = open(pjoin(
             os.path.dirname(os.path.abspath(__file__)), "..", "vm-create.sh"
         ))
-
         rootLogger.info("running vm-create.sh...")
-        local(vm_launch_cmd.read())
+        local(vm_launch_cmd.read()) # will auto restart after installation completes
         rootLogger.info(
             "ran vm-create.sh to create the VM"
         )
 
-        # # wait for the VM to be up - TODO: Functionalize this
-        # while True:
-        #     if "running" in local(
-        #         "virsh domstate jammy_cis", capture=True
-        #     ):  # TODO: this doeesn't tell us the system has booted -- only its "on"
-        #         with settings(warn_only=True):
-        #             ip_addr = local(
-        #                 """
-        #                 for mac in `virsh domiflist jammy_cis |grep -o -E "([0-9a-f]{2}:){5}([0-9a-f]{2})"` ; do arp -e |grep $mac  |grep -o -P "^\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}" ; done
-        #                 """,
-        #                 capture=True,
-        #             )
-        #             if (ip_addr != "") and (
-        #                 "0% packet loss" in local(f"ping -c 1 {ip_addr}", capture=True)
-        #             ):
-        #                 # eject the CDROM from VM
-        #                 local("virsh change-media jammy_cis sdc --eject --force")
-        #                 rootLogger.info("Ejected ISO from VM")
-        #                 time.sleep(10) # give some time for the VM IP to be no longer valid - removing the CDROM from the VM will likely cause the VM to reboot
-        #                 break
-        #     time.sleep(1)
-        # rootLogger.info("VM is up and running")
-
-        # wait for the VM to be up
+        # wait for the VM to be up (from reboot after installation)
         while True:
             if "running" in local("virsh domstate jammy_cis", capture=True): # TODO: this doeesn't tell us the system has booted -- only its "on"
                 with settings(warn_only=True):
@@ -978,7 +952,7 @@ class LocalProvisionedVM(RunFarm): # run_farm_type
                         """,
                         capture=True,
                     )
-                    # as soon as IP is assigned, we can attach the PCIe device - this way when installer reboots VM, the PCIe device will be attached
+                    # as soon as machine state changes to running, we can attach device - this way the kernel picks up the device during boot
                     if (not pcie_attached):
                         # attach FPGAs (TODO: currently this is just 1 fpga on the baremetal system) to the VM
                         bdf_collect = local("lspci | grep -i xilinx", capture=True)
@@ -1031,16 +1005,9 @@ class LocalProvisionedVM(RunFarm): # run_farm_type
                         pcie_attached = True
 
                     if (ip_addr != "") and ("SSH" in local(f"echo | nc {ip_addr} 22", capture=True)): # use nc here to ensure that the VM is actually up and running, we arent just looking for ip assigment here
-                        time.sleep(5) # add some buffer
                         break
             time.sleep(1)
         rootLogger.info("VM is up and running")
-
-        # reboot
-        # local("virsh reboot jammy_cis")
-        # rootLogger.info("VM is rebooting")
-
-        # time.sleep(10) # give some time for the VM IP to be no longer valid
 
         # close fs read, close http server - done with initial setup
         cloud_init_server.shutdown()
@@ -1049,22 +1016,6 @@ class LocalProvisionedVM(RunFarm): # run_farm_type
         rootLogger.info("Closed HTTP server")
 
         vm_launch_cmd.close()
-
-        # wait for the VM to be up
-        # while True:
-        #     if "running" in local("virsh domstate jammy_cis", capture=True):  # TODO: this doeesn't tell us the system has booted -- only its "on"
-
-        #         with settings(warn_only=True):
-        #             ip_addr = local(
-        #                 """
-        #                 for mac in `virsh domiflist jammy_cis |grep -o -E "([0-9a-f]{2}:){5}([0-9a-f]{2})"` ; do arp -e |grep $mac  |grep -o -P "^\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}" ; done
-        #                 """,
-        #                 capture=True,
-        #             )
-        #             if (ip_addr != "") and ("0% packet loss" in local(f"ping -c 1 {ip_addr}", capture=True)):
-        #                 break
-        #     time.sleep(1)
-        # rootLogger.info("VM is up and running from pci attach reboot")
 
         # update the IP address in self
         # grab VM IP - https://stackoverflow.com/questions/19057915/libvirt-fetch-ipv4-address-from-guest - if this doens't work we have an alt method
