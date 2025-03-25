@@ -958,8 +958,8 @@ class LocalProvisionedVM(RunFarm): # run_farm_type
                         """,
                         capture=True,
                     )
-                if (ip_addr != "") and ("0% packet loss" in local(f"ping -c 1 {ip_addr}", capture=True)):
-                    break
+                    if (ip_addr != "") and ("0% packet loss" in local(f"ping -c 1 {ip_addr}", capture=True)):
+                        break
             time.sleep(1)
         rootLogger.info("VM is up and running")
 
@@ -1016,6 +1016,8 @@ class LocalProvisionedVM(RunFarm): # run_farm_type
         # reboot
         local("virsh reboot jammy_cis")
         rootLogger.info("VM is rebooting")
+        
+        time.sleep(10) # give some time for the VM IP to be no longer valid
 
         # close fs read, close http server - done with initial setup
         # cloud_init_server.shutdown()
@@ -1027,9 +1029,7 @@ class LocalProvisionedVM(RunFarm): # run_farm_type
 
         # wait for the VM to be up
         while True:
-            if "running" in local(
-                "virsh domstate jammy_cis", capture=True
-            ):  # TODO: this doeesn't tell us the system has booted -- only its "on"
+            if "running" in local("virsh domstate jammy_cis", capture=True):  # TODO: this doeesn't tell us the system has booted -- only its "on"
 
                 with settings(warn_only=True):
                     ip_addr = local(
@@ -1038,10 +1038,8 @@ class LocalProvisionedVM(RunFarm): # run_farm_type
                         """,
                         capture=True,
                     )
-                if (ip_addr != "") and (
-                    "0% packet loss" in local(f"ping -c 1 {ip_addr}")
-                ):
-                    break
+                    if (ip_addr != "") and ("0% packet loss" in local(f"ping -c 1 {ip_addr}")):
+                        break
             time.sleep(1)
         rootLogger.info("VM is up and running from pci attach reboot")
 
