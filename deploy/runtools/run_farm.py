@@ -902,46 +902,46 @@ class LocalProvisionedVM(RunFarm): # run_farm_type
         return
 
     def launch_run_farm(self) -> None:
-        # spin up a webserver on a port to serve linux autoinstall configs
+        # # spin up a webserver on a port to serve linux autoinstall configs
 
-        cloud_init_port = 3003
-        config_dir = pjoin(
-            os.path.dirname(os.path.abspath(__file__)), "..", "vm-cloud-init-configs"
-        )
-        # "firesim/deploy/vm-cloud-init-configs"
+        # cloud_init_port = 3003
+        # config_dir = pjoin(
+        #     os.path.dirname(os.path.abspath(__file__)), "..", "vm-cloud-init-configs"
+        # )
+        # # "firesim/deploy/vm-cloud-init-configs"
 
-        if not os.path.isdir(config_dir):
-            raise FileNotFoundError(f"Directory {config_dir} does not exist")
+        # if not os.path.isdir(config_dir):
+        #     raise FileNotFoundError(f"Directory {config_dir} does not exist")
 
-        # https://stackoverflow.com/questions/39801718/how-to-run-a-http-server-which-serves-a-specific-path
-        class Handler(http.server.SimpleHTTPRequestHandler):
-            def __init__(self, *args, **kwargs):
-                super().__init__(*args, directory=config_dir, **kwargs)
+        # # https://stackoverflow.com/questions/39801718/how-to-run-a-http-server-which-serves-a-specific-path
+        # class Handler(http.server.SimpleHTTPRequestHandler):
+        #     def __init__(self, *args, **kwargs):
+        #         super().__init__(*args, directory=config_dir, **kwargs)
 
-        # shutdown: https://stackoverflow.com/questions/17550389/shut-down-socketserver-on-sig
-        cloud_init_server = socketserver.ThreadingTCPServer(("", cloud_init_port), Handler)
-        rootLogger.info(f"Serving Ubuntu autoinstall files at http://localhost:{cloud_init_port}/")
+        # # shutdown: https://stackoverflow.com/questions/17550389/shut-down-socketserver-on-sig
+        # cloud_init_server = socketserver.ThreadingTCPServer(("", cloud_init_port), Handler)
+        # rootLogger.info(f"Serving Ubuntu autoinstall files at http://localhost:{cloud_init_port}/")
 
-        cloud_init_thread = threading.Thread(
-            target=cloud_init_server.serve_forever, daemon=True
-        )
+        # cloud_init_thread = threading.Thread(
+        #     target=cloud_init_server.serve_forever, daemon=True
+        # )
 
-        cloud_init_thread.start()
+        # cloud_init_thread.start()
 
-        # there should only be 1 VM spun up no matter how many FPGAs we want - all FPGAs will get attached to the same VM (1 VM / job)
+        # # there should only be 1 VM spun up no matter how many FPGAs we want - all FPGAs will get attached to the same VM (1 VM / job)
 
-        # create the VM - run vm-create.sh
-        # vm_launch_cmd = open('firesim/deploy/vm-create.sh')
+        # # create the VM - run vm-create.sh
+        # # vm_launch_cmd = open('firesim/deploy/vm-create.sh')
 
-        vm_launch_cmd = open(pjoin(
-            os.path.dirname(os.path.abspath(__file__)), "..", "vm-create.sh"
-        ))
+        # vm_launch_cmd = open(pjoin(
+        #     os.path.dirname(os.path.abspath(__file__)), "..", "vm-create.sh"
+        # ))
 
-        rootLogger.info("running vm-create.sh...")
-        local(vm_launch_cmd.read())
-        rootLogger.info(
-            "ran vm-create.sh to create the VM"
-        )
+        # rootLogger.info("running vm-create.sh...")
+        # local(vm_launch_cmd.read())
+        # rootLogger.info(
+        #     "ran vm-create.sh to create the VM"
+        # )
 
         # ------------------------------------------------------------
         # eject the CDROM from VM
@@ -950,7 +950,7 @@ class LocalProvisionedVM(RunFarm): # run_farm_type
 
         # wait for the VM to be up
         while True:
-            if "running" in local("virsh domstate jammy_cis"): # TODO: this doeesn't tell us the system has booted -- only its "on"
+            if "running" in local("virsh domstate jammy_cis", capture=True): # TODO: this doeesn't tell us the system has booted -- only its "on"
                 ip_addr = local(
                     'for mac in `virsh domiflist jammy_cis |grep -o -E "([0-9a-f]{2}:){5}([0-9a-f]{2})"` ; do arp -e |grep $mac  |grep -o -P "^\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}" ; done'
                 , capture=True)
