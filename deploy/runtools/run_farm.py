@@ -977,6 +977,7 @@ class LocalProvisionedVM(RunFarm): # run_farm_type
                         capture=True,
                     )
                     if (ip_addr != "") and ("SSH" in local(f"echo | nc {ip_addr} 22", capture=True)): # use nc here to ensure that the VM is actually up and running, we arent just looking for ip assigment here
+                        time.sleep(5) # add some buffer
                         break
             time.sleep(1)
         rootLogger.info("VM is up and running")
