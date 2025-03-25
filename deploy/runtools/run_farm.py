@@ -1010,7 +1010,11 @@ class LocalProvisionedVM(RunFarm): # run_farm_type
         pci_attach_xml_fd.close()
 
         rootLogger.info("attaching PCIe device to VM...")
-        local(f"virsh attach-device jammy_cis --file {pjoin(os.path.dirname(os.path.abspath(__file__)), "..", "vm-pci-attach.xml")} --persistent")
+        local(f"virsh attach-device jammy_cis --file {pjoin(
+                os.path.dirname(os.path.abspath(__file__)),
+                "..",
+                "vm-pci-attach.xml",
+            )} --persistent")
         rootLogger.info("attached PCIe device to VM")
 
         # reboot
