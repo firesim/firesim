@@ -904,6 +904,8 @@ class LocalProvisionedVM(RunFarm): # run_farm_type
     def launch_run_farm(self) -> None:
         # spin up a webserver on a port to serve linux autoinstall configs
 
+        pcie_attached = False
+        
         cloud_init_port = 3003
         config_dir = pjoin(
             os.path.dirname(os.path.abspath(__file__)), "..", "vm-cloud-init-configs"
@@ -976,66 +978,69 @@ class LocalProvisionedVM(RunFarm): # run_farm_type
                         """,
                         capture=True,
                     )
+                    # as soon as IP is assigned, we can attach the PCIe device - this way when installer reboots VM, the PCIe device will be attached
+                    if (not pcie_attached):
+                        # attach FPGAs (TODO: currently this is just 1 fpga on the baremetal system) to the VM
+                        bdf_collect = local("lspci | grep -i xilinx", capture=True)
+
+                        bdfs = [
+                            {"busno": "0x" + i[:2], "devno": "0x" + i[3:5], "funcno": "0x" + i[6:7]}
+                            for i in bdf_collect.split("\n")
+                            if len(i.strip()) >= 0
+                        ]
+
+                        rootLogger.info(f"FPGA BDFs: {bdfs}")
+
+                        # TODO: just attaching the first FPGA for now + realistically we should import an XML parser that handles this if there are multiple FPGAs
+                        pci_attach_xml_fd = open(
+                            pjoin(
+                                os.path.dirname(os.path.abspath(__file__)),
+                                "..",
+                                "vm-pci-attach-frame.xml",
+                            )
+                        )
+
+                        pci_attach_xml = pci_attach_xml_fd.read()
+
+                        rootLogger.info(f"Frame PCIe device XML: {pci_attach_xml}")
+
+                        # make sure we only replace 1 occurence
+                        pci_attach_xml = pci_attach_xml.replace("BUS", bdfs[0]["busno"], 1)
+                        pci_attach_xml = pci_attach_xml.replace("SLOT", bdfs[0]["devno"], 1)
+                        pci_attach_xml = pci_attach_xml.replace("FUNCT", bdfs[0]["funcno"], 1)
+
+                        rootLogger.info(f"PCIe device XML: {pci_attach_xml}")
+
+                        # remap fd so that we dont write to the frame
+                        pci_attach_xml_fd.close()
+                        pci_attach_xml_fd = open(
+                            pjoin(
+                                os.path.dirname(os.path.abspath(__file__)),
+                                "..",
+                                "vm-pci-attach.xml",
+                            ),
+                            "w",
+                        )
+
+                        pci_attach_xml_fd.write(pci_attach_xml)
+                        pci_attach_xml_fd.close()
+
+                        rootLogger.info("attaching PCIe device to VM...")
+                        local(f"virsh attach-device jammy_cis --file {pjoin(os.path.dirname(os.path.abspath(__file__)), '..','vm-pci-attach.xml',)} --persistent")
+                        rootLogger.info("attached PCIe device to VM")
+                        pcie_attached = True
+
                     if (ip_addr != "") and ("SSH" in local(f"echo | nc {ip_addr} 22", capture=True)): # use nc here to ensure that the VM is actually up and running, we arent just looking for ip assigment here
                         time.sleep(5) # add some buffer
                         break
             time.sleep(1)
         rootLogger.info("VM is up and running")
 
-        # attach FPGAs (TODO: currently this is just 1 fpga on the baremetal system) to the VM
-        bdf_collect = local("lspci | grep -i xilinx", capture=True)
-
-        bdfs = [
-            {"busno": "0x" + i[:2], "devno": "0x" + i[3:5], "funcno": "0x" + i[6:7]}
-            for i in bdf_collect.split("\n")
-            if len(i.strip()) >= 0
-        ]
-
-        rootLogger.info(f"FPGA BDFs: {bdfs}")
-
-        # TODO: just attaching the first FPGA for now + realistically we should import an XML parser that handles this if there are multiple FPGAs
-        pci_attach_xml_fd = open(
-            pjoin(
-                os.path.dirname(os.path.abspath(__file__)),
-                "..",
-                "vm-pci-attach-frame.xml",
-            )
-        )
-
-        pci_attach_xml = pci_attach_xml_fd.read()
-
-        rootLogger.info(f"Frame PCIe device XML: {pci_attach_xml}")
-
-        # make sure we only replace 1 occurence
-        pci_attach_xml = pci_attach_xml.replace("BUS", bdfs[0]["busno"], 1)
-        pci_attach_xml = pci_attach_xml.replace("SLOT", bdfs[0]["devno"], 1)
-        pci_attach_xml = pci_attach_xml.replace("FUNCT", bdfs[0]["funcno"], 1)
-
-        rootLogger.info(f"PCIe device XML: {pci_attach_xml}")
-
-        # remap fd so that we dont write to the frame
-        pci_attach_xml_fd.close()
-        pci_attach_xml_fd = open(
-            pjoin(
-                os.path.dirname(os.path.abspath(__file__)),
-                "..",
-                "vm-pci-attach.xml",
-            ),
-            "w",
-        )
-
-        pci_attach_xml_fd.write(pci_attach_xml)
-        pci_attach_xml_fd.close()
-
-        rootLogger.info("attaching PCIe device to VM...")
-        local(f"virsh attach-device jammy_cis --file {pjoin(os.path.dirname(os.path.abspath(__file__)), '..','vm-pci-attach.xml',)} --persistent")
-        rootLogger.info("attached PCIe device to VM")
-
         # reboot
-        local("virsh reboot jammy_cis")
-        rootLogger.info("VM is rebooting")
-        
-        time.sleep(10) # give some time for the VM IP to be no longer valid
+        # local("virsh reboot jammy_cis")
+        # rootLogger.info("VM is rebooting")
+
+        # time.sleep(10) # give some time for the VM IP to be no longer valid
 
         # close fs read, close http server - done with initial setup
         cloud_init_server.shutdown()
@@ -1046,20 +1051,20 @@ class LocalProvisionedVM(RunFarm): # run_farm_type
         vm_launch_cmd.close()
 
         # wait for the VM to be up
-        while True:
-            if "running" in local("virsh domstate jammy_cis", capture=True):  # TODO: this doeesn't tell us the system has booted -- only its "on"
+        # while True:
+        #     if "running" in local("virsh domstate jammy_cis", capture=True):  # TODO: this doeesn't tell us the system has booted -- only its "on"
 
-                with settings(warn_only=True):
-                    ip_addr = local(
-                        """
-                        for mac in `virsh domiflist jammy_cis |grep -o -E "([0-9a-f]{2}:){5}([0-9a-f]{2})"` ; do arp -e |grep $mac  |grep -o -P "^\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}" ; done
-                        """,
-                        capture=True,
-                    )
-                    if (ip_addr != "") and ("0% packet loss" in local(f"ping -c 1 {ip_addr}", capture=True)):
-                        break
-            time.sleep(1)
-        rootLogger.info("VM is up and running from pci attach reboot")
+        #         with settings(warn_only=True):
+        #             ip_addr = local(
+        #                 """
+        #                 for mac in `virsh domiflist jammy_cis |grep -o -E "([0-9a-f]{2}:){5}([0-9a-f]{2})"` ; do arp -e |grep $mac  |grep -o -P "^\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}" ; done
+        #                 """,
+        #                 capture=True,
+        #             )
+        #             if (ip_addr != "") and ("0% packet loss" in local(f"ping -c 1 {ip_addr}", capture=True)):
+        #                 break
+        #     time.sleep(1)
+        # rootLogger.info("VM is up and running from pci attach reboot")
 
         # update the IP address in self
         # grab VM IP - https://stackoverflow.com/questions/19057915/libvirt-fetch-ipv4-address-from-guest - if this doens't work we have an alt method
