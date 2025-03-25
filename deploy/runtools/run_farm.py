@@ -977,11 +977,12 @@ class LocalProvisionedVM(RunFarm): # run_farm_type
         # pci_attach_xml_fd = open("firesim/deploy/vm-pci-attach.xml")
         pci_attach_xml_fd = open(
             pjoin(os.path.dirname(os.path.abspath(__file__)), "..", "vm-pci-attach.xml")
+        , mode="w+"
         )
 
         pci_attach_xml = pci_attach_xml_fd.read()
 
-        rootLogger.info(f"PCIe device XML: {pci_attach_xml}")
+        rootLogger.info(f"Frame PCIe device XML: {pci_attach_xml}")
 
         pci_attach_xml = re.sub(r"bus='0x[0-9][0-9]'", f"bus='{bdfs[0]['busno']}'", pci_attach_xml, count=1) # make sure we only replace 1 occurence
         pci_attach_xml = re.sub(r"slot='0x[0-9][0-9]'", f"slot='{bdfs[0]['devno']}'", pci_attach_xml, count=1)
@@ -990,11 +991,13 @@ class LocalProvisionedVM(RunFarm): # run_farm_type
         pci_attach_xml_fd.write(pci_attach_xml)
         pci_attach_xml_fd.close()
 
+        rootLogger.info("attaching PCIe device to VM...")
         local("virsh attach-device jammy_cis --file firesim/deploy/vm-pci-attach.xml --persistent")
+        rootLogger.info("attached PCIe device to VM")
 
         # reboot
         local("virsh reboot jammy_cis")
-        rootLogger.info("PCIe device attached, VM is rebooting")
+        rootLogger.info("VM is rebooting")
 
         # close fs read, close http server - done with initial setup
         # cloud_init_server.shutdown()
@@ -1009,12 +1012,14 @@ class LocalProvisionedVM(RunFarm): # run_farm_type
             if "running" in local(
                 "virsh domstate jammy_cis", capture=True
             ):  # TODO: this doeesn't tell us the system has booted -- only its "on"
-                ip_addr = local(
-                    """
-                    for mac in `virsh domiflist jammy_cis |grep -o -E "([0-9a-f]{2}:){5}([0-9a-f]{2})"` ; do arp -e |grep $mac  |grep -o -P "^\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}" ; done
-                    """,
-                    capture=True,
-                )
+            
+                with settings(warn_only=True):
+                    ip_addr = local(
+                        """
+                        for mac in `virsh domiflist jammy_cis |grep -o -E "([0-9a-f]{2}:){5}([0-9a-f]{2})"` ; do arp -e |grep $mac  |grep -o -P "^\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}" ; done
+                        """,
+                        capture=True,
+                    )
                 if (ip_addr != "") and (
                     "0% packet loss" in local(f"ping -c 1 {ip_addr}")
                 ):
