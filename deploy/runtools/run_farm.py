@@ -944,15 +944,15 @@ class LocalProvisionedVM(RunFarm): # run_farm_type
         )
 
         # eject the CDROM from VM
-        local("virsh change-media jammy_cis sdc --eject --force")
-        rootLogger.info("Ejected ISO from VM")
+        #local("virsh change-media jammy_cis sdc --eject --force")
+        #rootLogger.info("Ejected ISO from VM")
 
         # wait for the VM to be up
         while True:
-            if local("virsh domstate jammy_cis") == "running": # TODO: this doeesn't tell us the system has booted -- only its "on"
+            if "running" in local("virsh domstate jammy_cis", capture=True): # TODO: this doeesn't tell us the system has booted -- only its "on"
                 ip_addr = local(
                     'for mac in `virsh domiflist jammy_cis |grep -o -E "([0-9a-f]{2}:){5}([0-9a-f]{2})"` ; do arp -e |grep $mac  |grep -o -P "^\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}" ; done'
-                )
+                , capture=True)
                 if (ip_addr != "") and ("0.0% packet loss" in local(f"ping -c 1 {ip_addr}")):
                     break
             time.sleep(1)
