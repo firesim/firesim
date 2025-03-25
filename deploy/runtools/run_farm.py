@@ -951,13 +951,13 @@ class LocalProvisionedVM(RunFarm): # run_farm_type
         # wait for the VM to be up
         while True:
             if "running" in local("virsh domstate jammy_cis", capture=True): # TODO: this doeesn't tell us the system has booted -- only its "on"
-                ip_addr = local(
-                    """
-                    for mac in `virsh domiflist jammy_cis |grep -o -E "([0-9a-f]{2}:){5}([0-9a-f]{2})"` ; do arp -e |grep $mac  |grep -o -P "^\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}" ; done
-                    """,
-                    capture=True,
-                    warn_only=True
-                )
+                with settings(warn_only=True):
+                    ip_addr = local(
+                        """
+                        for mac in `virsh domiflist jammy_cis |grep -o -E "([0-9a-f]{2}:){5}([0-9a-f]{2})"` ; do arp -e |grep $mac  |grep -o -P "^\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}" ; done
+                        """,
+                        capture=True,
+                    )
                 if (ip_addr != "") and ("0% packet loss" in local(f"ping -c 1 {ip_addr}", capture=True)):
                     break
             time.sleep(1)
