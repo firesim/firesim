@@ -943,13 +943,14 @@ class LocalProvisionedVM(RunFarm): # run_farm_type
             "ran vm-create.sh to create the VM"
         )
 
+        # ------------------------------------------------------------
         # eject the CDROM from VM
         #local("virsh change-media jammy_cis sdc --eject --force")
         #rootLogger.info("Ejected ISO from VM")
 
         # wait for the VM to be up
         while True:
-            if "running" in local("virsh domstate jammy_cis", capture=True): # TODO: this doeesn't tell us the system has booted -- only its "on"
+            if "running" in local("virsh domstate jammy_cis"): # TODO: this doeesn't tell us the system has booted -- only its "on"
                 ip_addr = local(
                     'for mac in `virsh domiflist jammy_cis |grep -o -E "([0-9a-f]{2}:){5}([0-9a-f]{2})"` ; do arp -e |grep $mac  |grep -o -P "^\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}" ; done'
                 , capture=True)
