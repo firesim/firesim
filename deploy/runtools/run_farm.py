@@ -965,13 +965,14 @@ class LocalProvisionedVM(RunFarm): # run_farm_type
 
         # attach FPGAs (TODO: currently this is just 1 fpga on the baremetal system) to the VM
         bdf_collect = local("lspci | grep -i xilinx", capture=True)
-        rootLogger.info(f"FPGA BDFs: {bdf_collect}")
 
         bdfs = [
             {"busno": "0x" + i[:2], "devno": "0x" + i[3:5], "funcno": "0x" + i[6:7]}
             for i in bdf_collect.split("\n")
             if len(i.strip()) >= 0
         ]
+        
+        rootLogger.info(f"FPGA BDFs: {bdfs}")
 
         # TODO: just attaching the first FPGA for now + realistically we should import an XML parser that handles this since theres two "bus, slot, function"
         # pci_attach_xml_fd = open("firesim/deploy/vm-pci-attach.xml")
@@ -987,9 +988,10 @@ class LocalProvisionedVM(RunFarm): # run_farm_type
 
         rootLogger.info(f"Frame PCIe device XML: {pci_attach_xml}")
 
-        pci_attach_xml = re.sub(r"bus='0x[0-9][0-9]'", f"bus='{bdfs[0]['busno']}'", pci_attach_xml, count=1) # make sure we only replace 1 occurence
-        pci_attach_xml = re.sub(r"slot='0x[0-9][0-9]'", f"slot='{bdfs[0]['devno']}'", pci_attach_xml, count=1)
-        pci_attach_xml = re.sub(r"function='0x[0-9]'", f"function='{bdfs[0]['funcno']}'", pci_attach_xml, count=1)
+        # make sure we only replace 1 occurence
+        pci_attach_xml.replace("BUS", bdfs[0]["busno"], 1)
+        pci_attach_xml.replace("SLOT", bdfs[0]["devno"], 1)
+        pci_attach_xml.replace("FUNCT", bdfs[0]["funcno"], 1)
 
         # remap fd so that we dont write to the frame
         pci_attach_xml_fd.close()
