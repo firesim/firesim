@@ -1068,6 +1068,7 @@ class LocalProvisionedVM(RunFarm): # run_farm_type
         rootLogger.info(f"{self.vm_username}@{ip_addr}")
         env.host_string = f"{self.vm_username}@{ip_addr}"
         env.key_filename = None
+        env.no_keys = True
         env.password = "ubuntu"  # will be ssh key based in the future - https://canonical-subiquity.readthedocs-hosted.com/en/latest/reference/autoinstall-reference.html#ssh
         env.warn_only = True
         run(f"sudo apt-get update && sudo apt-get install -y gcc cmake", shell=True)
