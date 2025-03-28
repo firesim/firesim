@@ -1067,9 +1067,10 @@ class LocalProvisionedVM(RunFarm): # run_farm_type
         logging.getLogger("paramiko").setLevel(logging.DEBUG)
         rootLogger.info(f"{self.vm_username}@{ip_addr}")
         env.host_string = f"{self.vm_username}@{ip_addr}"
+        env.password = "ubuntu"  # will be ssh key based in the future - https://canonical-subiquity.readthedocs-hosted.com/en/latest/reference/autoinstall-reference.html#ssh
         env.key_filename = None
         env.no_keys = True
-        env.password = "ubuntu"  # will be ssh key based in the future - https://canonical-subiquity.readthedocs-hosted.com/en/latest/reference/autoinstall-reference.html#ssh
+        env.reject_unknown_hosts = False
         env.warn_only = True
         run(f"sudo apt-get update && sudo apt-get install -y gcc cmake", shell=True)
 
