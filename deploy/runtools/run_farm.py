@@ -1069,7 +1069,7 @@ class LocalProvisionedVM(RunFarm): # run_farm_type
         env.host_string = f"{self.vm_username}@{ip_addr}"
         
         # will be ssh key based in the future - https://canonical-subiquity.readthedocs-hosted.com/en/latest/reference/autoinstall-reference.html#ssh
-        local(f"sudo apt-get update && sudo apt-get install -y gcc cmake", shell=True)
+        run(f"sudo apt-get update && sudo apt-get install -y gcc cmake", shell=True)
 
 
         # install xdma & xcsec drivers
