@@ -819,6 +819,7 @@ class LocalProvisionedVM(RunFarm): # run_farm_type
         str, List[Tuple[Inst, Optional[Union[EC2InstanceResource, MockBoto3Instance, str]]]]
     ]
     vm_name = "jammy_cisz"  # TODO: make this a parameter or (more preferred) randomized so we don't get VM name collisions on 1 target machine
+    vm_username = "ubuntu"
 
     def __init__(self, args: Dict[str, Any], metasimulation_enabled: bool) -> None :
         super().__init__(args, metasimulation_enabled) # if metasim enabled, we give it to super to handle
@@ -1060,11 +1061,17 @@ class LocalProvisionedVM(RunFarm): # run_farm_type
         rootLogger.info(f"First inst in run_farm_hosts_dict: {self.run_farm_hosts_dict[ip_addr][0][0]}")
 
         # install cmake, gcc - can prob use run()? - how to setup?
-        rootLogger.info("Installing cmake, gcc")
-        local(f"ssh -o StrictHostKeyChecking=no -i {self.args['ssh_key_path']} ubuntu@{ip_addr} 'sudo apt-get update && sudo apt-get install -y cmake gcc git'")
+        rootLogger.info("Installing gcc, cmake")
+        env.host_string = f"{self.vm_username}@{ip_addr}"
+        env.password = "ubuntu"  # will be ssh key based in the future - https://canonical-subiquity.readthedocs-hosted.com/en/latest/reference/autoinstall-reference.html#ssh
+        run(f"sudo apt-get update && sudo apt-get install -y gcc cmake", warn_only=True)
 
         # install xdma & xcsec drivers
         rootLogger.info("Installing xdma & xcsec drivers...")
+
+        run(f"git clone https://github.com/Xilinx/dma_ip_drivers ~/dma_ip_drivers && cd ~/dma_ip_drivers/XDMA/linux-kernel/xdma && sudo make install", warn_only=True)
+
+        run(f"git clone https://github.com/paulmnt/dma_ip_drivers dma_ip_drivers_xvsec ~/dma_ip_drivers_xvsec && cd ~/dma_ip_drivers_xvsec/XVSEC/linux-kernel && sudo make clean all && sudo make install", warn_only=True)
 
     def terminate_run_farm(
         self, terminate_some_dict: Dict[str, int], forceterminate: bool
@@ -1087,7 +1094,7 @@ class LocalProvisionedVM(RunFarm): # run_farm_type
             # first send shutdown signal, if that doesn't work, force shutdown
             local(f"virsh shutdown {self.vm_name} --mode acpi")
             rootLogger.info("Shutdown signal sent to VM")   
-            
+
             time.sleep(10)
             if "running" in local(f"virsh domstate {self.vm_name}", capture=True):
                 rootLogger.info("Force shutting down VM...")
