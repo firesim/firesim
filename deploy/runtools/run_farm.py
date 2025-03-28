@@ -1071,7 +1071,6 @@ class LocalProvisionedVM(RunFarm): # run_farm_type
         # will be ssh key based in the future - https://canonical-subiquity.readthedocs-hosted.com/en/latest/reference/autoinstall-reference.html#ssh
         run(
             """sudo apt-get install -y gcc cmake""",
-            user="ubuntu",
             shell=True,
             pty=True,
         )
