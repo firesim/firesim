@@ -1069,15 +1069,15 @@ class LocalProvisionedVM(RunFarm): # run_farm_type
         env.host_string = f"{self.vm_username}@{ip_addr}" # this changes the host_string for subsequent run() calls so maybe we want a function task and call execute()
         
         # will be ssh key based in the future - https://canonical-subiquity.readthedocs-hosted.com/en/latest/reference/autoinstall-reference.html#ssh
-        sudo(f"sudo apt-get update && sudo apt-get install -y gcc cmake", shell=True)
+        sudo("""sudo apt-get update && sudo apt-get install -y gcc cmake""", user="ubuntu", shell=True, pty=True)
 
 
         # install xdma & xcsec drivers
         rootLogger.info("Installing xdma & xcsec drivers...")
 
-        sudo(f"git clone https://github.com/Xilinx/dma_ip_drivers ~/dma_ip_drivers && cd ~/dma_ip_drivers/XDMA/linux-kernel/xdma && sudo make install", warn_only=True)
+        sudo("""git clone https://github.com/Xilinx/dma_ip_drivers ~/dma_ip_drivers && cd ~/dma_ip_drivers/XDMA/linux-kernel/xdma && sudo make install""", user="ubuntu", shell=True, pty=True)
 
-        sudo(f"git clone https://github.com/paulmnt/dma_ip_drivers dma_ip_drivers_xvsec ~/dma_ip_drivers_xvsec && cd ~/dma_ip_drivers_xvsec/XVSEC/linux-kernel && sudo make clean all && sudo make install", warn_only=True)
+        sudo("""git clone https://github.com/paulmnt/dma_ip_drivers dma_ip_drivers_xvsec ~/dma_ip_drivers_xvsec && cd ~/dma_ip_drivers_xvsec/XVSEC/linux-kernel && sudo make clean all && sudo make install""", user="ubuntu", shell=True, pty=True)
 
     def terminate_run_farm(
         self, terminate_some_dict: Dict[str, int], forceterminate: bool
