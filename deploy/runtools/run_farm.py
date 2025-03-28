@@ -1065,7 +1065,7 @@ class LocalProvisionedVM(RunFarm): # run_farm_type
         # install cmake, gcc - can prob use run()? - how to setup?
         rootLogger.info("Installing gcc, cmake")
         logging.getLogger("paramiko").setLevel(logging.DEBUG)
-        rootLogger.info(f"{self.vm_username}@{ip_addr}")
+        rootLogger.info(f"-o PreferredAuthentications=password -o PubkeyAuthentication=no {self.vm_username}@{ip_addr}")
         env.host_string = f"{self.vm_username}@{ip_addr}"
         env.password = "ubuntu"  # will be ssh key based in the future - https://canonical-subiquity.readthedocs-hosted.com/en/latest/reference/autoinstall-reference.html#ssh
         env.warn_only = True
