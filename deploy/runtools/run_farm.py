@@ -1077,7 +1077,7 @@ class LocalProvisionedVM(RunFarm): # run_farm_type
         )
 
         # test = sudo("nohup sudo ls >& /dev/null < /dev/null &", user="ubuntu", pty=True, warn_only=True) # this is just to test if we can run sudo commands
-        rootLogger.info(f"sudo ls: {test}")
+        # rootLogger.info(f"sudo ls: {test}")
 
         # install xdma & xcsec drivers
         rootLogger.info("Installing xdma & xcsec drivers...")
