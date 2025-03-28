@@ -1023,17 +1023,17 @@ class LocalProvisionedVM(RunFarm): # run_farm_type
 
         # # grab VM IP - https://stackoverflow.com/questions/19057915/libvirt-fetch-ipv4-address-from-guest
         # # TODO: ensure DHCP lease doesn't expire/IP doesn't change
-        # ip_addr = local(
-        #     " ".join(
-        #         [
-        #             """for mac in `virsh domiflist""",
-        #             self.vm_name,
-        #             """|grep -o -E "([0-9a-f]{2}:){5}([0-9a-f]{2})"` ; do arp -e |grep $mac  |grep -o -P "^\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}" ; done
-        #                 """,
-        #         ]
-        #     ),
-        #     capture=True,
-        # )
+        ip_addr = local(
+            " ".join(
+                [
+                    """for mac in `virsh domiflist""",
+                    self.vm_name,
+                    """|grep -o -E "([0-9a-f]{2}:){5}([0-9a-f]{2})"` ; do arp -e |grep $mac  |grep -o -P "^\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}" ; done
+                        """,
+                ]
+            ),
+            capture=True,
+        )
 
         # # remap everything mapped to localhost to new ip
         # self.SIM_HOST_HANDLE_TO_MAX_FPGA_SLOTS[ip_addr] = self.SIM_HOST_HANDLE_TO_MAX_FPGA_SLOTS["localhost"]
