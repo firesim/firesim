@@ -1069,14 +1069,14 @@ class LocalProvisionedVM(RunFarm): # run_farm_type
         env.host_string = f"{self.vm_username}@{ip_addr}" # this changes the host_string for subsequent run() calls so maybe we want a function task and call execute()
 
         # will be ssh key based in the future - https://canonical-subiquity.readthedocs-hosted.com/en/latest/reference/autoinstall-reference.html#ssh
-        run(
-            """sudo apt-get install -y gcc cmake""",
-            shell=True,
-            pty=True,
-        )
+        #run(
+        #    """sudo apt-get install -y gcc cmake""",
+        #    shell=True,
+        #    pty=True,
+        # )
 
-        # test = sudo("nohup sudo ls >& /dev/null < /dev/null &", user="ubuntu", pty=True, warn_only=True) # this is just to test if we can run sudo commands
-        # rootLogger.info(f"sudo ls: {test}")
+        test = run("whoami") # this is just to test if we can run sudo commands
+        rootLogger.info(f"sudo ls: {test}")
 
         # install xdma & xcsec drivers
         rootLogger.info("Installing xdma & xcsec drivers...")
