@@ -811,9 +811,14 @@ class ExternallyProvisioned(RunFarm):
 class LocalProvisionedVM(RunFarm): # run_farm_type
     """Manages the set of locally provisioned VMs with FPGAs passed through to them. This class is responsible for spinning up the VMs and shutting down those VMs after the simulation is done.
 
-    Args:
-        RunFarm (_type_): _description_
+    Attributes:
+        vm_ip_to_instance: dict of IP address to instance name
     """
+
+    run_farm_hosts_dict: Dict[
+        str, List[Tuple[Inst, Optional[Union[EC2InstanceResource, MockBoto3Instance, str]]]]
+    ]
+    vm_name = "jammy_cisz"  # TODO: make this a parameter or (more preferred) randomized so we don't get VM name collisions on 1 target machine
 
     def __init__(self, args: Dict[str, Any], metasimulation_enabled: bool) -> None :
         super().__init__(args, metasimulation_enabled) # if metasim enabled, we give it to super to handle
@@ -825,10 +830,9 @@ class LocalProvisionedVM(RunFarm): # run_farm_type
     def _parse_args(self) -> None: # parse args in yaml file
         dispatch_dict = dict(
             [(x.__name__, x) for x in inheritors(InstanceDeployManager)]
-        ) # calls specific instance deploy manager that is correct for the platform (vcu118, u250, aws)
+        ) # calls specific instance deploy manager that is correct for the platform (vcu118, u250)
 
         default_platform = self.args.get("default_platform")
-        # CHK: is it always ec2instnacedeplymanager like in /externally_provisioned.yaml? -- no
         default_fpga_db = self.args.get("default_fpga_db")
 
         runhost_specs = dict()
@@ -851,7 +855,7 @@ class LocalProvisionedVM(RunFarm): # run_farm_type
                 len(items) == 1
             ), f"dict type 'run_hosts' items map a single host name to a host spec. Not: {pprint.pformat(runhost)}"
 
-            ip_addr, host_spec_name = next(iter(items)) # this ip should get changed later with the actual IP address of the VM that we've spun up-- localhost jus means ???
+            ip_addr, host_spec_name = next(iter(items)) # localhost is just a placeholder
 
             if host_spec_name not in runhost_specs.keys():
                 raise Exception(f"Unknown runhost spec of {host_spec_name}")
@@ -891,21 +895,18 @@ class LocalProvisionedVM(RunFarm): # run_farm_type
             assert (
                 not ip_addr in self.run_farm_hosts_dict
             ), f"Duplicate host name found in 'run_farm_hosts': {ip_addr}"
-            self.run_farm_hosts_dict[ip_addr] = [(inst, None)]
+            self.run_farm_hosts_dict[ip_addr] = [(inst, self.vm_name)]
             self.mapper_consumed[ip_addr] = 0
 
     def post_launch_binding(self, mock: bool = False) -> None:
-        # if mock:
-        #     self.bind_mock_instances_to_objects()
-        # else:
-        #     self.bind_real_instances_to_objects()
+        # binding of IP with instance name completed in launch_run_farm since there are no objects, its just a str [ip] : str [vm name] binding
         return
 
     def launch_run_farm(self) -> None:
         # spin up a webserver on a port to serve linux autoinstall configs
 
         pcie_attached = False
-        
+
         cloud_init_port = 3003
         config_dir = pjoin(
             os.path.dirname(os.path.abspath(__file__)), "..", "vm-cloud-init-configs"
@@ -944,12 +945,11 @@ class LocalProvisionedVM(RunFarm): # run_farm_type
 
         # wait for the VM to be up (from reboot after installation)
         while True:
-            if "running" in local("virsh domstate jammy_cis", capture=True): # TODO: this doeesn't tell us the system has booted -- only its "on"
+            if "running" in local(f"virsh domstate {self.vm_name}", capture=True): # TODO: this doesn't tell us the system has booted -- only its "on"
                 with settings(warn_only=True):
                     ip_addr = local(
-                        """
-                        for mac in `virsh domiflist jammy_cis |grep -o -E "([0-9a-f]{2}:){5}([0-9a-f]{2})"` ; do arp -e |grep $mac  |grep -o -P "^\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}" ; done
-                        """,
+                        " ".join(["""for mac in `virsh domiflist""", self.vm_name, """|grep -o -E "([0-9a-f]{2}:){5}([0-9a-f]{2})"` ; do arp -e |grep $mac  |grep -o -P "^\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}" ; done
+                        """]),
                         capture=True,
                     )
                     # as soon as machine state changes to running, we can attach device - this way the kernel picks up the device during boot
@@ -979,6 +979,7 @@ class LocalProvisionedVM(RunFarm): # run_farm_type
                         rootLogger.info(f"Frame PCIe device XML: {pci_attach_xml}")
 
                         # make sure we only replace 1 occurence
+                        # TODO: BDF coded to use the first one - since we are only attaching 1 FPGA for now
                         pci_attach_xml = pci_attach_xml.replace("BUS", bdfs[0]["busno"], 1)
                         pci_attach_xml = pci_attach_xml.replace("SLOT", bdfs[0]["devno"], 1)
                         pci_attach_xml = pci_attach_xml.replace("FUNCT", bdfs[0]["funcno"], 1)
@@ -1000,7 +1001,7 @@ class LocalProvisionedVM(RunFarm): # run_farm_type
                         pci_attach_xml_fd.close()
 
                         rootLogger.info("attaching PCIe device to VM...")
-                        local(f"virsh attach-device jammy_cis --file {pjoin(os.path.dirname(os.path.abspath(__file__)), '..','vm-pci-attach.xml',)} --persistent")
+                        local(f"virsh attach-device {self.vm_name} --file {pjoin(os.path.dirname(os.path.abspath(__file__)), '..','vm-pci-attach.xml',)} --persistent")
                         rootLogger.info("attached PCIe device to VM")
                         pcie_attached = True
 
@@ -1017,14 +1018,18 @@ class LocalProvisionedVM(RunFarm): # run_farm_type
 
         vm_launch_cmd.close()
 
-        # update the IP address in self
-        # grab VM IP - https://stackoverflow.com/questions/19057915/libvirt-fetch-ipv4-address-from-guest - if this doens't work we have an alt method
+        # grab VM IP - https://stackoverflow.com/questions/19057915/libvirt-fetch-ipv4-address-from-guest
         # TODO: ensure DHCP lease doesn't expire/IP doesn't change
         ip_addr = local(
-            """
-            for mac in `virsh domiflist jammy_cis |grep -o -E "([0-9a-f]{2}:){5}([0-9a-f]{2})"` ; do arp -e |grep $mac  |grep -o -P "^\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}" ; done
-            """,
-            capture=True
+            " ".join(
+                [
+                    """for mac in `virsh domiflist""",
+                    self.vm_name,
+                    """|grep -o -E "([0-9a-f]{2}:){5}([0-9a-f]{2})"` ; do arp -e |grep $mac  |grep -o -P "^\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}" ; done
+                        """,
+                ]
+            ),
+            capture=True,
         )
 
         # remap everything mapped to localhost to new ip
@@ -1054,30 +1059,69 @@ class LocalProvisionedVM(RunFarm): # run_farm_type
         # print first inst in run_farm_hosts_dict
         rootLogger.info(f"First inst in run_farm_hosts_dict: {self.run_farm_hosts_dict[ip_addr][0][0]}")
 
-        # install cmake, gcc, git (?)
+        # install cmake, gcc - can prob use run()? - how to setup?
+        rootLogger.info("Installing cmake, gcc")
+        local(f"ssh -o StrictHostKeyChecking=no -i {self.args['ssh_key_path']} ubuntu@{ip_addr} 'sudo apt-get update && sudo apt-get install -y cmake gcc git'")
+
+        # install xdma & xcsec drivers
+        rootLogger.info("Installing xdma & xcsec drivers...")
 
     def terminate_run_farm(
         self, terminate_some_dict: Dict[str, int], forceterminate: bool
     ) -> None:
 
-        # detach FPGAs
-        # destroy VM
-        # remove from run_farm_hosts_dict
+        if (not forceterminate):
+            userconfirm = firesim_input(
+                "Type yes, then press enter, to continue. Otherwise, the operation will be cancelled.\n"
+            )
+        else: 
+            userconfirm = "yes"
 
-        raise NotImplementedError("terminate_run_farm not implemented for LocalProvisionedVM")
+        if userconfirm == "yes":
+            # detach FPGAs - since we have only 1 VM per run, we can just run detach cmd - terminate_some_dict is not used
+            local(
+                f"virsh attach-device {self.vm_name} --file {pjoin(os.path.dirname(os.path.abspath(__file__)), '..','vm-pci-attach.xml',)} --persistent"
+            )
+            rootLogger.info("Detached PCIe device from VM")
+
+            # first send shutdown signal, if that doesn't work, force shutdown
+            local(f"virsh shutdown {self.vm_name} --mode acpi")
+            rootLogger.info("Shutdown signal sent to VM")   
+            
+            time.sleep(10)
+            if "running" in local(f"virsh domstate {self.vm_name}", capture=True):
+                rootLogger.info("Force shutting down VM...")
+                local(f"virsh destroy {self.vm_name}")
+                rootLogger.info("Force shut down VM")
+
+        # empty run_farm_hosts_dict
+        self.run_farm_hosts_dict.clear()
+        # remove from SIM_HOST_HANDLE_TO_MAX_FPGA_SLOTS
+        self.SIM_HOST_HANDLE_TO_MAX_FPGA_SLOTS.clear()
+        # remove from SIM_HOST_HANDLE_TO_MAX_METASIM_SLOTS
+        self.SIM_HOST_HANDLE_TO_MAX_METASIM_SLOTS.clear()
+        # remove from SIM_HOST_HANDLE_TO_SWITCH_ONLY_OK
+        self.SIM_HOST_HANDLE_TO_SWITCH_ONLY_OK.clear()
+        # remove from mapper_consumed
+        self.mapper_consumed.clear()
 
     def get_all_host_nodes(self) -> List[Inst]:
-
-        raise NotImplementedError("get_all_host_nodes not implemented for LocalProvisionedVM")
+        all_insts = []
+        for sim_host_handle in sorted(self.SIM_HOST_HANDLE_TO_MAX_FPGA_SLOTS):
+            inst_list = self.run_farm_hosts_dict[sim_host_handle]
+            for inst, vm_name in inst_list:
+                all_insts.append(inst)
+        return all_insts
 
     def get_all_bound_host_nodes(self) -> List[Inst]:
-
-        raise NotImplementedError("get_all_bound_host_nodes not implemented for LocalProvisionedVM")
+        return self.get_all_host_nodes()
 
     def lookup_by_host(self, host: str) -> Inst:
-
-        raise NotImplementedError("lookup_by_host not implemented for LocalProvisionedVM")
+        for host_node in self.get_all_bound_host_nodes():
+            if host_node.get_host() == host:
+                return host_node
+        assert False, f"Unable to find host node by {host} host name"
 
     def terminate_by_inst(self, inst: Inst) -> None:
-
-        raise NotImplementedError("terminate_by_inst not implemented for LocalProvisionedVM")
+        # there should only be one instance to terminate since we have 1 vm/user or job
+        return self.terminate_run_farm(self, {}, True)
