@@ -1065,13 +1065,13 @@ class LocalProvisionedVM(RunFarm): # run_farm_type
         # install cmake, gcc - can prob use run()? - how to setup?
         rootLogger.info("Installing gcc, cmake")
         logging.getLogger("paramiko").setLevel(logging.DEBUG)
-        # rootLogger.info(f"{self.vm_username}@{ip_addr}")
+        rootLogger.info(f"{self.vm_username}@{ip_addr}")
         env.host_string = f"{self.vm_username}@{ip_addr}" # this changes the host_string for subsequent run() calls so maybe we want a function task and call execute()
         
         # will be ssh key based in the future - https://canonical-subiquity.readthedocs-hosted.com/en/latest/reference/autoinstall-reference.html#ssh
         # sudo("""sudo apt-get update && sudo apt-get install -y gcc cmake""", user="ubuntu", shell=True, pty=True)
 
-        test = sudo("""sudo ls""", user="ubuntu", pty=True) # this is just to test if we can run sudo commands
+        test = sudo("""sudo ls""", user="ubuntu", pty=True, warn_only=True) # this is just to test if we can run sudo commands
         rootLogger.info(f"sudo ls: {test}")
 
         # install xdma & xcsec drivers
