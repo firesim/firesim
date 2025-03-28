@@ -1064,9 +1064,11 @@ class LocalProvisionedVM(RunFarm): # run_farm_type
 
         # install cmake, gcc - can prob use run()? - how to setup?
         rootLogger.info("Installing gcc, cmake")
+        rootLogger.info(f"{self.vm_username}@{ip_addr}")
         env.host_string = f"{self.vm_username}@{ip_addr}"
         env.password = "ubuntu"  # will be ssh key based in the future - https://canonical-subiquity.readthedocs-hosted.com/en/latest/reference/autoinstall-reference.html#ssh
-        run(f"sudo apt-get update && sudo apt-get install -y gcc cmake", warn_only=True)
+        env.warn_only = True
+        run(f"sudo apt-get update && sudo apt-get install -y gcc cmake", shell=True)
 
         # install xdma & xcsec drivers
         rootLogger.info("Installing xdma & xcsec drivers...")
