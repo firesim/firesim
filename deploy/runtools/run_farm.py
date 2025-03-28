@@ -939,9 +939,9 @@ class LocalProvisionedVM(RunFarm): # run_farm_type
         #     os.path.dirname(os.path.abspath(__file__)), "..", "vm-create.sh"
         # ))
         rootLogger.info("running vm-create...")
-        local(f"""{open(pjoin(
+        local(f"""{pjoin(
             os.path.dirname(os.path.abspath(__file__)), "..", "vm-create"
-        ))} {self.vm_name}""") # will auto restart after installation completes
+        )} {self.vm_name}""") # will auto restart after installation completes
         rootLogger.info(
             "ran vm-create to create the VM"
         )
