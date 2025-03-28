@@ -1,15 +1,19 @@
+#!/bin/bash
+
+set -ex
+
 virt-install \
 --virt-type kvm \
---name=jammy_cis \
+--name=${1} \
 --os-variant=ubuntu22.04 \
 --vcpus 2 \
 --cpu host-passthrough \
 --memory 4096 \
 --features smm.state=on \
---disk path=/var/lib/libvirt/images/jammy_cis.qcow2,size=90,format=qcow2,sparse=true,bus=scsi,discard=unmap  \
+--disk path=/var/lib/libvirt/images/${1}.qcow2,size=90,format=qcow2,sparse=true,bus=scsi,discard=unmap  \
 --controller type=scsi,model=virtio-scsi \
 --network bridge=virbr0,model=virtio \
---metadata title='Ubuntu 22.04 (CIS)' \
+--metadata title="Ubuntu 22.04 (${1})" \
 --location /home/chief/Downloads/ubuntu-22.04.5-live-server-amd64.iso,kernel=casper/vmlinuz,initrd=casper/initrd \
 --channel spicevmc,target_type=virtio,name=com.redhat.spice.0 \
 --channel unix,target_type=virtio,name=org.qemu.guest_agent.0 \

@@ -935,13 +935,15 @@ class LocalProvisionedVM(RunFarm): # run_farm_type
         # there should only be 1 VM spun up no matter how many FPGAs we want - all FPGAs will get attached to the same VM (1 VM / job)
 
         # create the VM - run vm-create.sh
-        vm_launch_cmd = open(pjoin(
-            os.path.dirname(os.path.abspath(__file__)), "..", "vm-create.sh"
-        ))
-        rootLogger.info("running vm-create.sh...")
-        local(vm_launch_cmd.read()) # will auto restart after installation completes
+        # vm_launch_cmd = open(pjoin(
+        #     os.path.dirname(os.path.abspath(__file__)), "..", "vm-create.sh"
+        # ))
+        rootLogger.info("running vm-create...")
+        local(f"""{open(pjoin(
+            os.path.dirname(os.path.abspath(__file__)), "..", "vm-create"
+        ))} {self.vm_name}""") # will auto restart after installation completes
         rootLogger.info(
-            "ran vm-create.sh to create the VM"
+            "ran vm-create to create the VM"
         )
 
         # wait for the VM to be up (from reboot after installation)
