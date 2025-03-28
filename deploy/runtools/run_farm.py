@@ -1071,7 +1071,8 @@ class LocalProvisionedVM(RunFarm): # run_farm_type
         # will be ssh key based in the future - https://canonical-subiquity.readthedocs-hosted.com/en/latest/reference/autoinstall-reference.html#ssh
         # sudo("""sudo apt-get update && sudo apt-get install -y gcc cmake""", user="ubuntu", shell=True, pty=True)
 
-        sudo("""sudo ls""", user="ubuntu", shell=True, pty=True) # this is just to test if we can run sudo commands
+        test = sudo("""sudo ls""", user="ubuntu", capture=True, pty=True) # this is just to test if we can run sudo commands
+        rootLogger.info(f"sudo ls: {test}")
 
         # install xdma & xcsec drivers
         rootLogger.info("Installing xdma & xcsec drivers...")
