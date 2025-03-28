@@ -1019,7 +1019,7 @@ class LocalProvisionedVM(RunFarm): # run_farm_type
         cloud_init_thread.join()
         rootLogger.info("Closed HTTP server")
 
-        vm_launch_cmd.close()
+        # vm_launch_cmd.close()
 
         # grab VM IP - https://stackoverflow.com/questions/19057915/libvirt-fetch-ipv4-address-from-guest
         # TODO: ensure DHCP lease doesn't expire/IP doesn't change
