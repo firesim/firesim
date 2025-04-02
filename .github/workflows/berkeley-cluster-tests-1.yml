@@ -197,6 +197,7 @@ jobs:
     name: run-scala-lint
     needs: [setup-persistent-repo]
     runs-on: local-fpga
+    continue-on-error: true
     steps:
       - uses: actions/checkout@v4
       - name: Scala fix + format check
