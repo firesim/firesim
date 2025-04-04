@@ -9,9 +9,9 @@ autoinstall:
         groups: adm, cdrom, dip, lxd, plugdev, sudo
         shell: /bin/bash
         sudo: ALL=(ALL) NOPASSWD:ALL # disable sudo asking for password
+        ssh_authorized_keys:
+          - ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIIvQsWSvfqYylXAcbJGaAAmZghOoBtEKZ0340/ZtU+Ko yf328@berkeley.edu 
   shutdown: reboot
   ssh:
     install-server: true
-    authorized-keys:
-      - ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIIvQsWSvfqYylXAcbJGaAAmZghOoBtEKZ0340/ZtU+Ko yf328@berkeley.edu
     allow-pw: false
