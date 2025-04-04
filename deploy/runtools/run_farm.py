@@ -1076,7 +1076,7 @@ class LocalProvisionedVM(RunFarm): # run_farm_type
         
         run("""cd ~/dma_ip_drivers/XDMA/linux-kernel/xdma && sudo make install""", shell=True)
 
-        run("""git clone https://github.com/paulmnt/dma_ip_drivers dma_ip_drivers_xvsec ~/dma_ip_drivers_xvsec""", shell=True) 
+        run("""git clone https://github.com/paulmnt/dma_ip_drivers ~/dma_ip_drivers_xvsec""", shell=True) 
         
         run("""cd ~/dma_ip_drivers_xvsec/XVSEC/linux-kernel && sudo make clean all && sudo make install""", shell=True)
 
