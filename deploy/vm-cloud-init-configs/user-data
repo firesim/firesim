@@ -12,4 +12,6 @@ autoinstall:
   shutdown: reboot
   ssh:
     install-server: true
-    allow-pw: true
+    authorized-keys:
+      - ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIIvQsWSvfqYylXAcbJGaAAmZghOoBtEKZ0340/ZtU+Ko yf328@berkeley.edu
+    allow-pw: false
