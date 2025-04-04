@@ -906,123 +906,118 @@ class LocalProvisionedVM(RunFarm): # run_farm_type
     def launch_run_farm(self) -> None:
         # spin up a webserver on a port to serve linux autoinstall configs
 
-        # pcie_attached = False
+        pcie_attached = False
 
-        # cloud_init_port = 3003
-        # config_dir = pjoin(
-        #     os.path.dirname(os.path.abspath(__file__)), "..", "vm-cloud-init-configs"
-        # )
-        # # "firesim/deploy/vm-cloud-init-configs"
+        cloud_init_port = 3003
+        config_dir = pjoin(
+            os.path.dirname(os.path.abspath(__file__)), "..", "vm-cloud-init-configs"
+        )
+        # "firesim/deploy/vm-cloud-init-configs"
 
-        # if not os.path.isdir(config_dir):
-        #     raise FileNotFoundError(f"Directory {config_dir} does not exist")
+        if not os.path.isdir(config_dir):
+            raise FileNotFoundError(f"Directory {config_dir} does not exist")
 
-        # # https://stackoverflow.com/questions/39801718/how-to-run-a-http-server-which-serves-a-specific-path
-        # class Handler(http.server.SimpleHTTPRequestHandler):
-        #     def __init__(self, *args, **kwargs):
-        #         super().__init__(*args, directory=config_dir, **kwargs)
+        # https://stackoverflow.com/questions/39801718/how-to-run-a-http-server-which-serves-a-specific-path
+        class Handler(http.server.SimpleHTTPRequestHandler):
+            def __init__(self, *args, **kwargs):
+                super().__init__(*args, directory=config_dir, **kwargs)
 
-        # # shutdown: https://stackoverflow.com/questions/17550389/shut-down-socketserver-on-sig
-        # cloud_init_server = socketserver.ThreadingTCPServer(("", cloud_init_port), Handler)
-        # rootLogger.info(f"Serving Ubuntu autoinstall files at http://localhost:{cloud_init_port}/")
+        # shutdown: https://stackoverflow.com/questions/17550389/shut-down-socketserver-on-sig
+        cloud_init_server = socketserver.ThreadingTCPServer(("", cloud_init_port), Handler)
+        rootLogger.info(f"Serving Ubuntu autoinstall files at http://localhost:{cloud_init_port}/")
 
-        # cloud_init_thread = threading.Thread(
-        #     target=cloud_init_server.serve_forever, daemon=True
-        # )
+        cloud_init_thread = threading.Thread(
+            target=cloud_init_server.serve_forever, daemon=True
+        )
 
-        # cloud_init_thread.start()
+        cloud_init_thread.start()
 
-        # # there should only be 1 VM spun up no matter how many FPGAs we want - all FPGAs will get attached to the same VM (1 VM / job)
+        # there should only be 1 VM spun up no matter how many FPGAs we want - all FPGAs will get attached to the same VM (1 VM / job)
 
-        # # create the VM - run vm-create.sh
-        # # vm_launch_cmd = open(pjoin(
-        # #     os.path.dirname(os.path.abspath(__file__)), "..", "vm-create.sh"
-        # # ))
-        # rootLogger.info("running vm-create...")
-        # local(f"""{pjoin(
-        #     os.path.dirname(os.path.abspath(__file__)), "..", "vm-create"
-        # )} {self.vm_name}""") # will auto restart after installation completes
-        # rootLogger.info(
-        #     "ran vm-create to create the VM"
-        # )
+        # create the VM - run vm-create.sh
+        rootLogger.info("running vm-create...")
+        local(f"""{pjoin(
+            os.path.dirname(os.path.abspath(__file__)), "..", "vm-create"
+        )} {self.vm_name}""") # will auto restart after installation completes
+        rootLogger.info(
+            "ran vm-create to create the VM"
+        )
 
-        # # wait for the VM to be up (from reboot after installation)
-        # while True:
-        #     if "running" in local(f"virsh domstate {self.vm_name}", capture=True): # TODO: this doesn't tell us the system has booted -- only its "on"
-        #         with settings(warn_only=True):
-        #             ip_addr = local(
-        #                 " ".join(["""for mac in `virsh domiflist""", self.vm_name, """|grep -o -E "([0-9a-f]{2}:){5}([0-9a-f]{2})"` ; do arp -e |grep $mac  |grep -o -P "^\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}" ; done
-        #                 """]),
-        #                 capture=True,
-        #             )
-        #             # as soon as machine state changes to running, we can attach device - this way the kernel picks up the device during boot
-        #             if (not pcie_attached):
-        #                 # attach FPGAs (TODO: currently this is just 1 fpga on the baremetal system) to the VM
-        #                 bdf_collect = local("lspci | grep -i xilinx", capture=True)
+        # wait for the VM to be up (from reboot after installation)
+        while True:
+            if "running" in local(f"virsh domstate {self.vm_name}", capture=True): # TODO: this doesn't tell us the system has booted -- only its "on"
+                with settings(warn_only=True):
+                    ip_addr = local(
+                        " ".join(["""for mac in `virsh domiflist""", self.vm_name, """|grep -o -E "([0-9a-f]{2}:){5}([0-9a-f]{2})"` ; do arp -e |grep $mac  |grep -o -P "^\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}" ; done
+                        """]),
+                        capture=True,
+                    )
+                    # as soon as machine state changes to running, we can attach device - this way the kernel picks up the device during boot
+                    if (not pcie_attached):
+                        # attach FPGAs (TODO: currently this is just 1 fpga on the baremetal system) to the VM
+                        bdf_collect = local("lspci | grep -i xilinx", capture=True)
 
-        #                 bdfs = [
-        #                     {"busno": "0x" + i[:2], "devno": "0x" + i[3:5], "funcno": "0x" + i[6:7]}
-        #                     for i in bdf_collect.split("\n")
-        #                     if len(i.strip()) >= 0
-        #                 ]
+                        bdfs = [
+                            {"busno": "0x" + i[:2], "devno": "0x" + i[3:5], "funcno": "0x" + i[6:7]}
+                            for i in bdf_collect.split("\n")
+                            if len(i.strip()) >= 0
+                        ]
 
-        #                 rootLogger.info(f"FPGA BDFs: {bdfs}")
+                        rootLogger.info(f"FPGA BDFs: {bdfs}")
 
-        #                 # TODO: just attaching the first FPGA for now + realistically we should import an XML parser that handles this if there are multiple FPGAs
-        #                 pci_attach_xml_fd = open(
-        #                     pjoin(
-        #                         os.path.dirname(os.path.abspath(__file__)),
-        #                         "..",
-        #                         "vm-pci-attach-frame.xml",
-        #                     )
-        #                 )
+                        # TODO: just attaching the first FPGA for now + realistically we should import an XML parser that handles this if there are multiple FPGAs
+                        pci_attach_xml_fd = open(
+                            pjoin(
+                                os.path.dirname(os.path.abspath(__file__)),
+                                "..",
+                                "vm-pci-attach-frame.xml",
+                            )
+                        )
 
-        #                 pci_attach_xml = pci_attach_xml_fd.read()
+                        pci_attach_xml = pci_attach_xml_fd.read()
 
-        #                 rootLogger.info(f"Frame PCIe device XML: {pci_attach_xml}")
+                        rootLogger.info(f"Frame PCIe device XML: {pci_attach_xml}")
 
-        #                 # make sure we only replace 1 occurence
-        #                 # TODO: BDF coded to use the first one - since we are only attaching 1 FPGA for now
-        #                 pci_attach_xml = pci_attach_xml.replace("BUS", bdfs[0]["busno"], 1)
-        #                 pci_attach_xml = pci_attach_xml.replace("SLOT", bdfs[0]["devno"], 1)
-        #                 pci_attach_xml = pci_attach_xml.replace("FUNCT", bdfs[0]["funcno"], 1)
+                        # make sure we only replace 1 occurence
+                        # TODO: BDF coded to use the first one - since we are only attaching 1 FPGA for now
+                        pci_attach_xml = pci_attach_xml.replace("BUS", bdfs[0]["busno"], 1)
+                        pci_attach_xml = pci_attach_xml.replace("SLOT", bdfs[0]["devno"], 1)
+                        pci_attach_xml = pci_attach_xml.replace("FUNCT", bdfs[0]["funcno"], 1)
 
-        #                 rootLogger.info(f"PCIe device XML: {pci_attach_xml}")
+                        rootLogger.info(f"PCIe device XML: {pci_attach_xml}")
 
-        #                 # remap fd so that we dont write to the frame
-        #                 pci_attach_xml_fd.close()
-        #                 pci_attach_xml_fd = open(
-        #                     pjoin(
-        #                         os.path.dirname(os.path.abspath(__file__)),
-        #                         "..",
-        #                         "vm-pci-attach.xml",
-        #                     ),
-        #                     "w",
-        #                 )
+                        # remap fd so that we dont write to the frame
+                        pci_attach_xml_fd.close()
+                        pci_attach_xml_fd = open(
+                            pjoin(
+                                os.path.dirname(os.path.abspath(__file__)),
+                                "..",
+                                "vm-pci-attach.xml",
+                            ),
+                            "w",
+                        )
 
-        #                 pci_attach_xml_fd.write(pci_attach_xml)
-        #                 pci_attach_xml_fd.close()
+                        pci_attach_xml_fd.write(pci_attach_xml)
+                        pci_attach_xml_fd.close()
 
-        #                 rootLogger.info("attaching PCIe device to VM...")
-        #                 local(f"virsh attach-device {self.vm_name} --file {pjoin(os.path.dirname(os.path.abspath(__file__)), '..','vm-pci-attach.xml',)} --persistent")
-        #                 rootLogger.info("attached PCIe device to VM")
-        #                 pcie_attached = True
+                        rootLogger.info("attaching PCIe device to VM...")
+                        local(f"virsh attach-device {self.vm_name} --file {pjoin(os.path.dirname(os.path.abspath(__file__)), '..','vm-pci-attach.xml',)} --persistent")
+                        rootLogger.info("attached PCIe device to VM")
+                        pcie_attached = True
 
-        #             if (ip_addr != "") and ("SSH" in local(f"echo | nc {ip_addr} 22", capture=True)): # use nc here to ensure that the VM is actually up and running, we arent just looking for ip assigment here
-        #                 break
-        #     time.sleep(1)
-        # rootLogger.info("VM is up and running")
+                    if (ip_addr != "") and ("SSH" in local(f"echo | nc {ip_addr} 22", capture=True)): # use nc here to ensure that the VM is actually up and running, we arent just looking for ip assigment here
+                        break
+            time.sleep(1)
+        rootLogger.info("VM is up and running")
 
-        # # close fs read, close http server - done with initial setup
-        # cloud_init_server.shutdown()
-        # cloud_init_server.server_close()
-        # cloud_init_thread.join()
-        # rootLogger.info("Closed HTTP server")
+        # close fs read, close http server - done with initial setup
+        cloud_init_server.shutdown()
+        cloud_init_server.server_close()
+        cloud_init_thread.join()
+        rootLogger.info("Closed HTTP server")
 
-        # # vm_launch_cmd.close()
-
-        # # grab VM IP - https://stackoverflow.com/questions/19057915/libvirt-fetch-ipv4-address-from-guest
-        # # TODO: ensure DHCP lease doesn't expire/IP doesn't change
+        # grab VM IP - https://stackoverflow.com/questions/19057915/libvirt-fetch-ipv4-address-from-guest
+        # TODO: ensure DHCP lease doesn't expire/IP doesn't change
         ip_addr = local(
             " ".join(
                 [
@@ -1035,32 +1030,32 @@ class LocalProvisionedVM(RunFarm): # run_farm_type
             capture=True,
         )
 
-        # # remap everything mapped to localhost to new ip
-        # self.SIM_HOST_HANDLE_TO_MAX_FPGA_SLOTS[ip_addr] = self.SIM_HOST_HANDLE_TO_MAX_FPGA_SLOTS["localhost"]
-        # self.SIM_HOST_HANDLE_TO_MAX_METASIM_SLOTS[ip_addr] = self.SIM_HOST_HANDLE_TO_MAX_METASIM_SLOTS["localhost"]
-        # self.SIM_HOST_HANDLE_TO_SWITCH_ONLY_OK[ip_addr] = self.SIM_HOST_HANDLE_TO_SWITCH_ONLY_OK["localhost"]
+        # remap everything mapped to localhost to new ip
+        self.SIM_HOST_HANDLE_TO_MAX_FPGA_SLOTS[ip_addr] = self.SIM_HOST_HANDLE_TO_MAX_FPGA_SLOTS["localhost"]
+        self.SIM_HOST_HANDLE_TO_MAX_METASIM_SLOTS[ip_addr] = self.SIM_HOST_HANDLE_TO_MAX_METASIM_SLOTS["localhost"]
+        self.SIM_HOST_HANDLE_TO_SWITCH_ONLY_OK[ip_addr] = self.SIM_HOST_HANDLE_TO_SWITCH_ONLY_OK["localhost"]
 
-        # self.run_farm_hosts_dict[ip_addr] = self.run_farm_hosts_dict["localhost"]
+        self.run_farm_hosts_dict[ip_addr] = self.run_farm_hosts_dict["localhost"]
 
-        # self.mapper_consumed[ip_addr] = self.mapper_consumed["localhost"]
+        self.mapper_consumed[ip_addr] = self.mapper_consumed["localhost"]
 
-        # del self.SIM_HOST_HANDLE_TO_MAX_FPGA_SLOTS["localhost"]
-        # del self.SIM_HOST_HANDLE_TO_MAX_METASIM_SLOTS["localhost"]
-        # del self.SIM_HOST_HANDLE_TO_SWITCH_ONLY_OK["localhost"]
-        # del self.run_farm_hosts_dict["localhost"]
-        # del self.mapper_consumed["localhost"]
+        del self.SIM_HOST_HANDLE_TO_MAX_FPGA_SLOTS["localhost"]
+        del self.SIM_HOST_HANDLE_TO_MAX_METASIM_SLOTS["localhost"]
+        del self.SIM_HOST_HANDLE_TO_SWITCH_ONLY_OK["localhost"]
+        del self.run_farm_hosts_dict["localhost"]
+        del self.mapper_consumed["localhost"]
 
-        # self.run_farm_hosts_dict[ip_addr][0][0].set_host(ip_addr) # set the host to the new ip address
+        self.run_farm_hosts_dict[ip_addr][0][0].set_host(ip_addr) # set the host to the new ip address
 
-        # # print out updated dict
-        # rootLogger.info(f"Updated run_farm_hosts_dict: {self.run_farm_hosts_dict}")
-        # rootLogger.info(f"Updated SIM_HOST_HANDLE_TO_MAX_FPGA_SLOTS: {self.SIM_HOST_HANDLE_TO_MAX_FPGA_SLOTS}")
-        # rootLogger.info(f"Updated SIM_HOST_HANDLE_TO_MAX_METASIM_SLOTS: {self.SIM_HOST_HANDLE_TO_MAX_METASIM_SLOTS}")
-        # rootLogger.info(f"Updated SIM_HOST_HANDLE_TO_SWITCH_ONLY_OK: {self.SIM_HOST_HANDLE_TO_SWITCH_ONLY_OK}")
-        # rootLogger.info(f"Updated mapper_consumed: {self.mapper_consumed}")
+        # print out updated dict
+        rootLogger.info(f"Updated run_farm_hosts_dict: {self.run_farm_hosts_dict}")
+        rootLogger.info(f"Updated SIM_HOST_HANDLE_TO_MAX_FPGA_SLOTS: {self.SIM_HOST_HANDLE_TO_MAX_FPGA_SLOTS}")
+        rootLogger.info(f"Updated SIM_HOST_HANDLE_TO_MAX_METASIM_SLOTS: {self.SIM_HOST_HANDLE_TO_MAX_METASIM_SLOTS}")
+        rootLogger.info(f"Updated SIM_HOST_HANDLE_TO_SWITCH_ONLY_OK: {self.SIM_HOST_HANDLE_TO_SWITCH_ONLY_OK}")
+        rootLogger.info(f"Updated mapper_consumed: {self.mapper_consumed}")
 
-        # # print first inst in run_farm_hosts_dict
-        # rootLogger.info(f"First inst in run_farm_hosts_dict: {self.run_farm_hosts_dict[ip_addr][0][0]}")
+        # print first inst in run_farm_hosts_dict
+        rootLogger.info(f"First inst in run_farm_hosts_dict: {self.run_farm_hosts_dict[ip_addr][0][0]}")
 
         # install cmake, gcc - can prob use run()? - how to setup?
         rootLogger.info("Installing gcc, cmake")
@@ -1069,11 +1064,7 @@ class LocalProvisionedVM(RunFarm): # run_farm_type
         env.host_string = f"{self.vm_username}@{ip_addr}" # this changes the host_string for subsequent run() calls so maybe we want a function task and call execute()
 
         # will be ssh key based in the future - https://canonical-subiquity.readthedocs-hosted.com/en/latest/reference/autoinstall-reference.html#ssh
-        #run(
-        #    """sudo apt-get install -y gcc cmake""",
-        #    shell=True,
-        #    pty=True,
-        # )
+        run("""sudo apt-get install -y gcc cmake""", shell=True)
 
         test = run("whoami") # this is just to test if we can run sudo commands
         rootLogger.info(f"sudo ls: {test}")
@@ -1081,9 +1072,9 @@ class LocalProvisionedVM(RunFarm): # run_farm_type
         # install xdma & xcsec drivers
         rootLogger.info("Installing xdma & xcsec drivers...")
 
-        sudo("""git clone https://github.com/Xilinx/dma_ip_drivers ~/dma_ip_drivers && cd ~/dma_ip_drivers/XDMA/linux-kernel/xdma && sudo make install""", user="ubuntu", shell=True, pty=True)
+        run("""git clone https://github.com/Xilinx/dma_ip_drivers ~/dma_ip_drivers && cd ~/dma_ip_drivers/XDMA/linux-kernel/xdma && sudo make install""", shell=True)
 
-        # sudo("""git clone https://github.com/paulmnt/dma_ip_drivers dma_ip_drivers_xvsec ~/dma_ip_drivers_xvsec && cd ~/dma_ip_drivers_xvsec/XVSEC/linux-kernel && sudo make clean all && sudo make install""", user="ubuntu", shell=True, pty=True)
+        run("""git clone https://github.com/paulmnt/dma_ip_drivers dma_ip_drivers_xvsec ~/dma_ip_drivers_xvsec && cd ~/dma_ip_drivers_xvsec/XVSEC/linux-kernel && sudo make clean all && sudo make install""", shell=True)
 
     def terminate_run_farm(
         self, terminate_some_dict: Dict[str, int], forceterminate: bool

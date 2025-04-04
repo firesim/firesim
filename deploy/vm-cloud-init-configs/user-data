@@ -1,10 +1,13 @@
 #cloud-config
 autoinstall:
   version: 1
-  identity:
-    hostname: ubuntu-server
-    password: "$6$exDY1mhS4KUYCE/2$zmn9ToZwTKLhCw.b4/b.ZRTIZM30JZ4QrOQ2aOXJ8yk96xpcCof0kxKwuX1kqLG/ygbJ1f8wxED22bTL4F46P0"
-    username: ubuntu
+  users:
+    - name: ubuntu
+    - gecos: 'firesim vm user'
+    - password: "$6$exDY1mhS4KUYCE/2$zmn9ToZwTKLhCw.b4/b.ZRTIZM30JZ4QrOQ2aOXJ8yk96xpcCof0kxKwuX1kqLG/ygbJ1f8wxED22bTL4F46P0"
+    - groups: ubuntu, adm, cdrom, dip, plugdev, lpadmin, users, sudo
+    - shell: /bin/bash
+    - sudo: ALL=(ALL) NOPASSWD:ALL # disable sudo asking for password
   shutdown: reboot
   ssh:
     install-server: true
