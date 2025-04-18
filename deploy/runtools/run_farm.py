@@ -1094,7 +1094,7 @@ class LocalProvisionedVM(RunFarm): # run_farm_type
         if userconfirm == "yes":
             # detach FPGAs - since we have only 1 VM per run, we can just run detach cmd - terminate_some_dict is not used
             local(
-                f"virsh attach-device {self.vm_name} --file {pjoin(os.path.dirname(os.path.abspath(__file__)), '..','vm-pci-attach.xml',)} --persistent"
+                f"virsh detach-device {self.vm_name} --file {pjoin(os.path.dirname(os.path.abspath(__file__)), '..','vm-pci-attach.xml',)} --persistent"
             )
             rootLogger.info("Detached PCIe device from VM")
 
@@ -1103,21 +1103,22 @@ class LocalProvisionedVM(RunFarm): # run_farm_type
             rootLogger.info("Shutdown signal sent to VM")   
 
             time.sleep(10)
+            # if still running after 10 seconds, then something went wrong, force shutdown
             if "running" in local(f"virsh domstate {self.vm_name}", capture=True):
                 rootLogger.info("Force shutting down VM...")
                 local(f"virsh destroy {self.vm_name}")
                 rootLogger.info("Force shut down VM")
 
-        # empty run_farm_hosts_dict
-        self.run_farm_hosts_dict.clear()
-        # remove from SIM_HOST_HANDLE_TO_MAX_FPGA_SLOTS
-        self.SIM_HOST_HANDLE_TO_MAX_FPGA_SLOTS.clear()
-        # remove from SIM_HOST_HANDLE_TO_MAX_METASIM_SLOTS
-        self.SIM_HOST_HANDLE_TO_MAX_METASIM_SLOTS.clear()
-        # remove from SIM_HOST_HANDLE_TO_SWITCH_ONLY_OK
-        self.SIM_HOST_HANDLE_TO_SWITCH_ONLY_OK.clear()
-        # remove from mapper_consumed
-        self.mapper_consumed.clear()
+            # empty run_farm_hosts_dict
+            self.run_farm_hosts_dict.clear()
+            # remove from SIM_HOST_HANDLE_TO_MAX_FPGA_SLOTS
+            self.SIM_HOST_HANDLE_TO_MAX_FPGA_SLOTS.clear()
+            # remove from SIM_HOST_HANDLE_TO_MAX_METASIM_SLOTS
+            self.SIM_HOST_HANDLE_TO_MAX_METASIM_SLOTS.clear()
+            # remove from SIM_HOST_HANDLE_TO_SWITCH_ONLY_OK
+            self.SIM_HOST_HANDLE_TO_SWITCH_ONLY_OK.clear()
+            # remove from mapper_consumed
+            self.mapper_consumed.clear()
 
     def get_all_host_nodes(self) -> List[Inst]:
         all_insts = []
