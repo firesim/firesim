@@ -1064,7 +1064,7 @@ class LocalProvisionedVM(RunFarm): # run_farm_type
         env.host_string = f"{self.vm_username}@{ip_addr}" # this changes the host_string for subsequent run() calls so maybe we want a function task and call execute()
 
         # will be ssh key based in the future - https://canonical-subiquity.readthedocs-hosted.com/en/latest/reference/autoinstall-reference.html#ssh
-        run("""sudo apt-get install -y gcc cmake""", shell=True)
+        run("""sudo apt-get install -y build-essential""", shell=True)
 
         test = run("whoami") # this is just to test if we can run sudo commands
         rootLogger.info(f"sudo ls: {test}")
