@@ -1110,7 +1110,7 @@ class LocalProvisionedVM(RunFarm): # run_farm_type
                 rootLogger.info("Force shut down VM")
 
             # remove the VM
-            local(f"virsh undefine {self.vm_name}  --remove-all-storage")
+            local(f"virsh undefine {self.vm_name} --nvram --remove-all-storage")
             rootLogger.info("Removed VM")
     
             # empty run_farm_hosts_dict
