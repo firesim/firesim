@@ -1109,6 +1109,10 @@ class LocalProvisionedVM(RunFarm): # run_farm_type
                 local(f"virsh destroy {self.vm_name}")
                 rootLogger.info("Force shut down VM")
 
+            # remove the VM
+            local(f"virsh undefine {self.vm_name}  --remove-all-storage")
+            rootLogger.info("Removed VM")
+    
             # empty run_farm_hosts_dict
             self.run_farm_hosts_dict.clear()
             # remove from SIM_HOST_HANDLE_TO_MAX_FPGA_SLOTS
