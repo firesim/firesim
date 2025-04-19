@@ -892,7 +892,7 @@ class LocalProvisionedVM(RunFarm): # run_farm_type
                 fpga_db,
                 self.metasimulation_enabled,
             )
-            # inst.set_host(ip_addr) # do this with the actual IP
+            inst.set_host(ip_addr) # do this with the actual IP later, but for now set to localhost
             assert (
                 not ip_addr in self.run_farm_hosts_dict
             ), f"Duplicate host name found in 'run_farm_hosts': {ip_addr}"
