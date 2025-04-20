@@ -1070,15 +1070,15 @@ class LocalProvisionedVM(RunFarm): # run_farm_type
         rootLogger.info(f"sudo ls: {test}")
 
         # install xdma & xcsec drivers
-        rootLogger.info("Installing xdma & xcsec drivers...")
+        # rootLogger.info("Installing xdma & xcsec drivers...")
 
-        run("""git clone https://github.com/Xilinx/dma_ip_drivers ~/dma_ip_drivers""", shell=True)
+        # run("""git clone https://github.com/Xilinx/dma_ip_drivers ~/dma_ip_drivers""", shell=True)
         
-        run("""cd ~/dma_ip_drivers/XDMA/linux-kernel/xdma && sudo make install""", shell=True)
+        # run("""cd ~/dma_ip_drivers/XDMA/linux-kernel/xdma && sudo make install""", shell=True)
 
-        run("""git clone https://github.com/paulmnt/dma_ip_drivers ~/dma_ip_drivers_xvsec""", shell=True) 
+        # run("""git clone https://github.com/paulmnt/dma_ip_drivers ~/dma_ip_drivers_xvsec""", shell=True) 
         
-        run("""cd ~/dma_ip_drivers_xvsec/XVSEC/linux-kernel && sudo make clean all && sudo make install""", shell=True)
+        # run("""cd ~/dma_ip_drivers_xvsec/XVSEC/linux-kernel && sudo make clean all && sudo make install""", shell=True)
 
     def terminate_run_farm(
         self, terminate_some_dict: Dict[str, int], forceterminate: bool
