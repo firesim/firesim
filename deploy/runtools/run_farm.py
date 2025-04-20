@@ -1058,7 +1058,7 @@ class LocalProvisionedVM(RunFarm): # run_farm_type
         rootLogger.info(f"First inst in run_farm_hosts_dict: {self.run_farm_hosts_dict[ip_addr][0][0]}")
 
         # install cmake, gcc - can prob use run()? - how to setup?
-        rootLogger.info("Installing gcc, cmake")
+        rootLogger.info("Installing build-essential...")
         logging.getLogger("paramiko").setLevel(logging.DEBUG)
         rootLogger.info(f"{self.vm_username}@{ip_addr}")
         env.host_string = f"{self.vm_username}@{ip_addr}" # this changes the host_string for subsequent run() calls so maybe we want a function task and call execute()
@@ -1068,17 +1068,24 @@ class LocalProvisionedVM(RunFarm): # run_farm_type
 
         test = run("whoami") # this is just to test if we can run sudo commands
         rootLogger.info(f"sudo ls: {test}")
+        
+        # install scripts to /usr/local/bin
+        rootLogger.info("Installing scripts to /usr/local/bin...")
+        run("""git clone https://github.com/firesim/firesim ~/firesim""", shell=True)
+        run("""sudo cp deploy/sudo-scripts/* /usr/local/bin""", shell=True)
+        run("""sudo cp platforms/xilinx_alveo_u250/scripts/* /usr/local/bin""", shell=True) # TODO: this is hardcoded to the u250 platform, need to make it more generic
+        run("""rm -rf ~/firesim""", shell=True) # remove the repo after copying the scripts
 
         # install xdma & xcsec drivers
-        # rootLogger.info("Installing xdma & xcsec drivers...")
+        rootLogger.info("Installing xdma & xcsec drivers...")
 
-        # run("""git clone https://github.com/Xilinx/dma_ip_drivers ~/dma_ip_drivers""", shell=True)
+        run("""git clone https://github.com/Xilinx/dma_ip_drivers ~/dma_ip_drivers""", shell=True)
         
-        # run("""cd ~/dma_ip_drivers/XDMA/linux-kernel/xdma && sudo make install""", shell=True)
+        run("""cd ~/dma_ip_drivers/XDMA/linux-kernel/xdma && sudo make install""", shell=True)
 
-        # run("""git clone https://github.com/paulmnt/dma_ip_drivers ~/dma_ip_drivers_xvsec""", shell=True) 
+        run("""git clone https://github.com/paulmnt/dma_ip_drivers ~/dma_ip_drivers_xvsec""", shell=True) 
         
-        # run("""cd ~/dma_ip_drivers_xvsec/XVSEC/linux-kernel && sudo make clean all && sudo make install""", shell=True)
+        run("""cd ~/dma_ip_drivers_xvsec/XVSEC/linux-kernel && sudo make clean all && sudo make install""", shell=True)
 
     def terminate_run_farm(
         self, terminate_some_dict: Dict[str, int], forceterminate: bool
