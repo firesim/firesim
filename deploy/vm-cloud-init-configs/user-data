@@ -3,14 +3,15 @@ autoinstall:
   version: 1
   user-data:
     users:
-      - name: ubuntu
+      - name: chief
         gecos: firesim vm user
         passwd: $6$exDY1mhS4KUYCE/2$zmn9ToZwTKLhCw.b4/b.ZRTIZM30JZ4QrOQ2aOXJ8yk96xpcCof0kxKwuX1kqLG/ygbJ1f8wxED22bTL4F46P0
         groups: adm, cdrom, dip, lxd, plugdev, sudo
         shell: /bin/bash
         sudo: ALL=(ALL) NOPASSWD:ALL # disable sudo asking for password
         ssh_authorized_keys:
-          - ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIIvQsWSvfqYylXAcbJGaAAmZghOoBtEKZ0340/ZtU+Ko yf328@berkeley.edu 
+          - ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIIvQsWSvfqYylXAcbJGaAAmZghOoBtEKZ0340/ZtU+Ko yf328@berkeley.edu
+          - ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIBO61L803e497zbjMrOAuOCDyLUN/Oxgr2PIjUtfTLSo firesim.pem 
   shutdown: reboot
   ssh:
     install-server: true
