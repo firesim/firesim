@@ -1073,7 +1073,7 @@ class LocalProvisionedVM(RunFarm): # run_farm_type
         rootLogger.info("Installing scripts to /usr/local/bin...")
         run("""git clone https://github.com/firesim/firesim ~/firesim""", shell=True)
         run("""cd firesim && sudo cp deploy/sudo-scripts/* /usr/local/bin""", shell=True)
-        run("""sudo cp platforms/xilinx_alveo_u250/scripts/* /usr/local/bin""", shell=True) # TODO: this is hardcoded to the u250 platform, need to make it more generic
+        run("""cd firesim && sudo cp platforms/xilinx_alveo_u250/scripts/* /usr/local/bin""", shell=True) # TODO: this is hardcoded to the u250 platform, need to make it more generic
         run("""rm -rf ~/firesim""", shell=True) # remove the repo after copying the scripts
 
         # install xdma & xcsec drivers
