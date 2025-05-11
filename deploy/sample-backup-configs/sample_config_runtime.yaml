@@ -2,35 +2,19 @@
 # See https://docs.fires.im/en/stable/Advanced-Usage/Manager/Manager-Configuration-Files.html for documentation of all of these params.
 
 run_farm:
-  base_recipe: run-farm-recipes/externally_provisioned.yaml
-  recipe_arg_overrides:
-    # REQUIRED: default platform used for run farm hosts. this is a class specifying
-    # how to run simulations on a run farm host.
-    default_platform: XilinxAlveoU250InstanceDeployManager
-
-    # REQUIRED: default directory where simulations are run out of on the run farm hosts
-    default_simulation_dir: /scratch/joonho.whangbo/coding/FIRESIM_RUNS_DIR
-
-    # REQUIRED: default fpga db file that enumerates what fpgas are available on the machine (used by XilinxU* Deploy Managers)
-    default_fpga_db: /opt/firesim-db.json
-
-    # REQUIRED: List of unique hostnames/IP addresses, each with their
-    # corresponding specification that describes the properties of the host.
-    #
-    # Ex:
-    # run_farm_hosts_to_use:
-    #     # use localhost which is described by "four_fpgas_spec" below.
-    #     - localhost: four_fpgas_spec
-    #     # supply IP address, which points to a machine that is described
-    #     # by "four_fpgas_spec" below.
-    #     - "111.111.1.111": four_fpgas_spec
-    run_farm_hosts_to_use:
-        - localhost: four_metasims_spec
+  # managerinit replace start
+  base_recipe: run-farm-recipes/aws_ec2.yaml
+  # Uncomment and add args to override defaults.
+  # Arg structure should be identical to the args given
+  # in the base_recipe.
+  #recipe_arg_overrides:
+  #  <ARG>: <OVERRIDE>
+  # managerinit replace end
 
 metasimulation:
-  metasimulation_enabled: true
+  metasimulation_enabled: false
   # vcs or verilator. use vcs-debug or verilator-debug for waveform generation
-  metasimulation_host_simulator: vcs
+  metasimulation_host_simulator: verilator
   # plusargs passed to the simulator for all metasimulations
   metasimulation_only_plusargs: "+fesvr-step-size=128 +max-cycles=100000000"
   # plusargs passed to the simulator ONLY FOR vcs metasimulations
@@ -49,8 +33,7 @@ target_config:
     # or from config_build_recipes.yaml for metasimulation
     # In homogeneous configurations, use this to set the hardware config deployed
     # for all simulators
-# default_hw_config: single_rocket_u250
-    default_hw_config: single_boom_u250
+    default_hw_config: midasexamples_gcd
 
     # Advanced: Specify any extra plusargs you would like to provide when
     # booting the simulator (in both FPGA-sim and metasim modes). This is
@@ -78,7 +61,7 @@ autocounter:
     read_rate: 0
 
 workload:
-    workload_name: hello.json
+    workload_name: null.json
     terminate_on_completion: no
     suffix_tag: null
 
