@@ -341,7 +341,11 @@ class EmitAllAnnotations(fileName: String) extends firrtl.Transform {
     val targetDir  = state.annotations.collectFirst { case TargetDirAnnotation(dir) => dir }
     val dirName    = targetDir.getOrElse(".")
     val outputFile = new java.io.PrintWriter(s"${dirName}/${fileName}")
-    outputFile.write(JsonProtocol.serialize(state.annotations))
+    val annos = state.annotations.filter ({
+      case a: firrtl.stage.FirrtlCircuitAnnotation => false
+      case _ => true
+    })
+    outputFile.write(JsonProtocol.serialize(annos))
     outputFile.close()
     state
   }

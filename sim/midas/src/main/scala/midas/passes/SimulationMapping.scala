@@ -94,6 +94,9 @@ private[passes] class SimulationMapping(targetName: String) extends firrtl.Trans
     // Generate a port map to look up the types of the IO of the channels
     implicit val p  =
       innerState.annotations.collectFirst({ case midas.stage.phases.ConfigParametersAnnotation(p) => p }).get
+
+    println(s"p ${p}")
+
     val circuit     = innerState.circuit
     val portTypeMap = circuit.modules
       .filter(_.name == circuit.main)
