@@ -29,20 +29,35 @@
 #    #  <ARG>: <OVERRIDE>
 
 # MIDAS Examples -- BUILD SUPPORT ONLY; Can't launch driver correctly on run farm
-midasexamples_gcd:
-    PLATFORM: f1
-    TARGET_PROJECT: midasexamples
-    TARGET_PROJECT_MAKEFRAG: null
-    DESIGN: GCD
-    TARGET_CONFIG: NoConfig
-    PLATFORM_CONFIG: DefaultF1Config
-    deploy_quintuplet: null
-    platform_config_args:
-        fpga_frequency: 75
-        build_strategy: TIMING
-    post_build_hook: null
-    metasim_customruntimeconfig: null
-    bit_builder_recipe: bit-builder-recipes/f1.yaml
+single_rocket_u250:
+  PLATFORM: xilinx_alveo_u250
+  TARGET_PROJECT: firesim
+  TARGET_PROJECT_MAKEFRAG: ../../../generators/firechip/chip/src/main/makefrag/firesim
+  DESIGN: FireSim
+  TARGET_CONFIG: FireSimRocketConfig
+  PLATFORM_CONFIG: BaseXilinxAlveoU250Config
+  deploy_quintuplet: null
+  platform_config_args:
+  │ │ fpga_frequency: 60
+  │ │ build_strategy: TIMING
+  post_build_hook: null
+  metasim_customruntimeconfig: null
+  bit_builder_recipe: bit-builder-recipes/xilinx_alveo_u250.yaml
+
+single_boom_u250:
+  PLATFORM: xilinx_alveo_u250
+  TARGET_PROJECT: firesim
+  TARGET_PROJECT_MAKEFRAG: ../../../generators/firechip/chip/src/main/makefrag/firesim
+  DESIGN: FireSim
+  TARGET_CONFIG: FireSimLargeBoomConfig
+  PLATFORM_CONFIG: BaseXilinxAlveoU250Config
+  deploy_quintuplet: null
+  platform_config_args:
+  │ │ fpga_frequency: 60
+  │ │ build_strategy: TIMING
+  post_build_hook: null
+  metasim_customruntimeconfig: null
+  bit_builder_recipe: bit-builder-recipes/xilinx_alveo_u250.yaml
 
 ################################################################################################
 # FireAxe Examples
