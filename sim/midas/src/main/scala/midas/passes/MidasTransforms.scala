@@ -224,11 +224,12 @@ private[midas] class MidasTransforms extends Transform {
         passes.ResolveKinds,
         new fame.EmitAndWrapRAMModels,
         new ResolveAndCheck,
+
+        firrtl.passes.SplitExpressions,
         new EmitFirrtl("post-gen-sram-models.fir"),
         new fame.EmitFAMEAnnotations("post-gen-sram-models.json"),
         new fame.EmitAllAnnotations("post-gen-sram-all.json"),
 
-        firrtl.passes.SplitExpressions,
         new fame.EmitAndReadBackFIRRTL("post-gen-sram-models.fir", "post-gen-sram-all.json"),
         new ResolveAndCheck,
         new EmitFirrtl("post-readback.fir"),

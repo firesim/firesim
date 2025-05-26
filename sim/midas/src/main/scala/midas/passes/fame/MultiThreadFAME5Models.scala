@@ -33,7 +33,7 @@ case class ReadyValidSink(ref: Expression) extends ReadyValidSignal
 case class ReadyValidSource(ref: Expression) extends ReadyValidSignal
 
 object FAME5Info {
-  def info = FileInfo(StringLit("@ [Added during FAME5Transform]"))
+  def info = FileInfo(StringLit("Added during FAME5Transform"))
 }
 
 object Counter {
@@ -181,6 +181,9 @@ object MultiThreadFAME5Models extends Transform {
     val threadedModuleNames = state.circuit.modules
       .collect({
         // Don't replace blackbox instances! TODO: Check for illegal blackboxes.
+        //
+        // NOTE: This skips threading the AbstractClockGate in the FAME-1 transformed
+        // modules to be multithreaded (which is what we want anyways)
         case m: Module => m.name -> circuitNS.newName(s"${m.name}_threaded")
       })
       .toMap
