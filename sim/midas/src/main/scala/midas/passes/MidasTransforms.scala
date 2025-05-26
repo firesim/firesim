@@ -228,8 +228,8 @@ private[midas] class MidasTransforms extends Transform {
         new fame.EmitFAMEAnnotations("post-gen-sram-models.json"),
         new fame.EmitAllAnnotations("post-gen-sram-all.json"),
 
-        new fame.EmitAndReadBackFIRRTL("post-gen-sram-models.fir", "post-gen-sram-all.json"),
         firrtl.passes.SplitExpressions,
+        new fame.EmitAndReadBackFIRRTL("post-gen-sram-models.fir", "post-gen-sram-all.json"),
         new ResolveAndCheck,
         new EmitFirrtl("post-readback.fir"),
         new fame.EmitAllAnnotations("post-readback-all.json"),

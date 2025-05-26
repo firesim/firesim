@@ -7,11 +7,18 @@ import firrtl.annotations._
 import firrtl.ir._
 import firrtl.Parser
 import java.io.{File, PrintWriter}
+import scala.sys.process._
 
 class EmitAndReadBackFIRRTL(firFile: String, annoFile: String) extends Transform {
   import firrtl.options.TargetDirAnnotation
   def inputForm = UnknownForm
   def outputForm = UnknownForm
+
+  def runExternalBinary(binaryPath: String, args: Seq[String]): Int = {
+    val cmd = Process(binaryPath +: args)
+    val exitCode = cmd.!
+    exitCode
+  }
 
   def execute(state: CircuitState): CircuitState = {
     val q  =
@@ -20,8 +27,17 @@ class EmitAndReadBackFIRRTL(firFile: String, annoFile: String) extends Transform
     val targetDir  = state.annotations.collectFirst { case TargetDirAnnotation(dir) => dir }
     val dirName    = targetDir.getOrElse(".")
 
+    // Usage
+    val binary_path = "/scratch/joonho.whangbo/coding/ripple-ir/target/release/ripple-ir";
+    val args = Seq(s"--input", s"${dirName}/${firFile}", "--output", s"${dirName}/post-custom-binary.fir", "--firrtl-version", "firrtl3")
+
+    println(s"args ${args}")
+
+    val exit = runExternalBinary(binary_path, args)
+    println(s"Binary exited with code $exit")
+
     // Read the circuit back
-    val reader = scala.io.Source.fromFile(s"${dirName}/${firFile}")
+    val reader = scala.io.Source.fromFile(s"${dirName}/post-custom-binary.fir")
     val fileContents = try reader.mkString finally reader.close()
     val parsedCircuit = Parser.parse(fileContents)
 
