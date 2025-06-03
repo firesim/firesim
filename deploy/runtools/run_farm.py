@@ -5,6 +5,7 @@ import logging
 import time
 import abc
 import os
+import json
 import http.server
 import threading
 import socketserver
@@ -845,6 +846,13 @@ class LocalProvisionedVM(RunFarm): # run_farm_type
 
         self.run_farm_hosts_dict = defaultdict(list) 
         self.mapper_consumed = defaultdict(int)
+        
+        
+        with open(firesim_vm_status_path, "r") as db_file:
+            try:
+                db_data = json.load(db_file)
+            except json.JSONDecodeError as e:
+                raise ValueError(f"Error decoding JSON from firesim_vm_status.json: {e}")
 
         for runhost in runhosts_list:
             if not isinstance(runhost, dict):
@@ -856,7 +864,7 @@ class LocalProvisionedVM(RunFarm): # run_farm_type
                 len(items) == 1
             ), f"dict type 'run_hosts' items map a single host name to a host spec. Not: {pprint.pformat(runhost)}"
 
-            ip_addr, host_spec_name = next(iter(items)) # localhost is just a placeholder
+            ip_addr, host_spec_name = next(iter(items))
 
             if host_spec_name not in runhost_specs.keys():
                 raise Exception(f"Unknown runhost spec of {host_spec_name}")
@@ -865,13 +873,29 @@ class LocalProvisionedVM(RunFarm): # run_farm_type
 
             # populate mapping helpers based on runhost_specs:
             # TODO: figure out how localhost ips map to different VMs -- or ig we don't technically have this issue since each job will only have localhost: `n` FPGAs and different jobs will have their own configs?
-            self.SIM_HOST_HANDLE_TO_MAX_FPGA_SLOTS[ip_addr] = host_spec["num_fpgas"]
-            self.SIM_HOST_HANDLE_TO_MAX_METASIM_SLOTS[ip_addr] = host_spec[
-                "num_metasims"
-            ]
-            self.SIM_HOST_HANDLE_TO_SWITCH_ONLY_OK[ip_addr] = host_spec[
-                "use_for_switch_only"
-            ]
+            
+            # read firesim_vm_status.json to see if the VM has been setup already - if yes, remap the ip
+            firesim_vm_status_path = pjoin(
+                os.path.dirname(os.path.abspath(__file__)), "..", "firesim_vm_status.json"
+            )
+                
+                
+            if db_data["vm_setup"]:
+                self.SIM_HOST_HANDLE_TO_MAX_FPGA_SLOTS[db_data["vm_ip"]] = host_spec["num_fpgas"]
+                self.SIM_HOST_HANDLE_TO_MAX_METASIM_SLOTS[db_data["vm_ip"]] = host_spec[
+                    "num_metasims"
+                ]
+                self.SIM_HOST_HANDLE_TO_SWITCH_ONLY_OK[db_data["vm_ip"]] = host_spec[
+                    "use_for_switch_only"
+                ]
+            else: 
+                self.SIM_HOST_HANDLE_TO_MAX_FPGA_SLOTS[ip_addr] = host_spec["num_fpgas"]
+                self.SIM_HOST_HANDLE_TO_MAX_METASIM_SLOTS[ip_addr] = host_spec[
+                    "num_metasims"
+                ]
+                self.SIM_HOST_HANDLE_TO_SWITCH_ONLY_OK[ip_addr] = host_spec[
+                    "use_for_switch_only"
+                ]
 
             num_sims = 0
             if self.metasimulation_enabled:
@@ -892,12 +916,23 @@ class LocalProvisionedVM(RunFarm): # run_farm_type
                 fpga_db,
                 self.metasimulation_enabled,
             )
-            inst.set_host(ip_addr) # do this with the actual IP later, but for now set to localhost
-            assert (
-                not ip_addr in self.run_farm_hosts_dict
-            ), f"Duplicate host name found in 'run_farm_hosts': {ip_addr}"
-            self.run_farm_hosts_dict[ip_addr] = [(inst, self.vm_name)]
-            self.mapper_consumed[ip_addr] = 0
+            
+            if (db_data["vm_setup"]):
+                inst.set_host(db_data["vm_ip"])
+                assert (
+                    not ip_addr in self.run_farm_hosts_dict
+                ), f"Duplicate host name found in 'run_farm_hosts': {db_data['vm_ip']}"
+                self.run_farm_hosts_dict[db_data["vm_ip"]] = [(inst, self.vm_name)]
+                self.mapper_consumed[db_data["vm_ip"]] = 0
+            else:
+                inst.set_host(ip_addr)
+                assert (
+                    not ip_addr in self.run_farm_hosts_dict
+                ), f"Duplicate host name found in 'run_farm_hosts': {ip_addr}"
+                self.run_farm_hosts_dict[ip_addr] = [(inst, self.vm_name)]
+                self.mapper_consumed[ip_addr] = 0
+            
+            
 
     def post_launch_binding(self, mock: bool = False) -> None:
         # binding of IP with instance name completed in launch_run_farm since there are no objects, its just a str [ip] : str [vm name] binding
@@ -905,6 +940,118 @@ class LocalProvisionedVM(RunFarm): # run_farm_type
 
     def launch_run_farm(self) -> None:
         # spin up a webserver on a port to serve linux autoinstall configs
+
+        # schema:
+        #     [
+        #         "fpga_bdf": {
+        #             busy: bool, # whether the FPGA is being used by a vm or not
+        #             vm_name: str, # name of the VM that is using the FPGA
+        #             vm_ip: str, # IP address of the VM that is using the FPGA
+        #             in_use_by: str, # name of the job/user that is using the FPGA
+        #         }
+        #     ]
+        # look at the database on the host machine, find list of FPGAs free, if num free > num requested by the spec, grab their bdfs and attach them to the VM, record vm IP in the database
+
+        # open /opt/firesim-vm-host.db.json, count number of fpgas not busy
+
+        # TODO: THIS NEEDS TO BE ON THE HOST MACHINE -- WHICH CAN BE DIFFERENT FROM THE MANAGER MACHINE THIS IS BEING RUN ON
+        # TODO: LOCK ACQUIRE
+        db_path = pjoin("/opt/firesim-vm-host-db.json")  # this won't be exposed to the user for now
+        if not os.path.isfile(db_path):
+            raise FileNotFoundError(f"Database file {db_path} does not exist. Did you run enumeratefpgas?")
+        with open(db_path, "r") as db_file:
+            try:
+                host_machine_fpgas_db = json.load(db_file)
+            except json.JSONDecodeError as e:
+                raise ValueError(f"Error decoding JSON from {db_path}: {e}")
+        rootLogger.info(f"Loaded database from {db_path}")
+        rootLogger.info(f"Database contents: {json.dumps(db_data, indent=2)}")
+
+        # get number of FPGAs that are not busy
+        free_fpgas = [
+            fpga for fpga in host_machine_fpgas_db if not host_machine_fpgas_db[fpga]["busy"]
+        ]
+        rootLogger.info(f"Number of free FPGAs: {len(free_fpgas)}")
+
+        # get number of FPGAs requested by the spec
+        host_machine_ip = self.args["run_farm_hosts_to_use"][0].keys()[0]  # assuming the first host is the one we are using - typcially for local setup you only have 1 host with the fpgas
+        num_requested_fpgas = self.SIM_HOST_HANDLE_TO_MAX_FPGA_SLOTS[host_machine_ip]
+
+        rootLogger.info(f"Number of FPGAs requested by the spec: {num_requested_fpgas}")
+
+        # check if there are enough free FPGAs available
+        if len(free_fpgas) < num_requested_fpgas:
+            raise RuntimeError(
+                f"Not enough free FPGAs available. Requested: {num_requested_fpgas}, Available: {len(free_fpgas)}"
+            )
+
+        # grab their bdfs and attach them to the VM, set them as busy, record vm IP in the database
+        
+        fpgas_to_attach = free_fpgas[:num_requested_fpgas]
+        
+        # set those fpgas as busy in the database & write to file
+        for fpga in fpgas_to_attach:
+            host_machine_fpgas_db[fpga]["busy"] = True
+            host_machine_fpgas_db[fpga]["vm_name"] = f"{self.vm_name}-{local("whoami", capture=True)}"  # use the VM name + username to avoid collisions
+            host_machine_fpgas_db[fpga]["in_use_by"] = local("whoami", capture=True)
+        
+        # write the updated database back to the file
+        with open(db_path, "w") as db_file:
+            try:
+                json.dump(host_machine_fpgas_db, db_file, indent=2)
+            except TypeError as e:
+                raise ValueError(f"Error writing JSON to {db_path}: {e}")
+        rootLogger.info(f"Updated database with attached FPGAs: {json.dumps(host_machine_fpgas_db, indent=2)}")
+        
+        # TODO: LOCK RELEASE
+
+        # prepare xml file for attaching the FPGAs to the VM
+        # <hostdev mode='subsystem' type='pci' managed='yes'>
+        #     <source>
+        #         <address domain='0x0000' bus='BUS' slot='SLOT' function='FUNCT'/>
+        #     </source>
+        #     <rom bar='off'/>
+        #     <address type='pci' domain='0x0000' bus='0x07' slot='0x00' function='0x0'/>
+        # </hostdev>
+        
+        # clear the existing pci-attach xml file
+        pci_attach_xml_path = pjoin(
+            os.path.dirname(os.path.abspath(__file__)), "..", "vm-pci-attach.xml"
+        )
+        if os.path.isfile(pci_attach_xml_path):
+            os.remove(pci_attach_xml_path)
+        
+        # create the XML for each FPGA to attach to the VM & write <devices> section
+        with open(pci_attach_xml_path, "w") as pci_attach_xml_fd:
+            pci_attach_xml_fd.write("<devices>\n")
+        
+        for fpga in fpgas_to_attach:
+            bdf = host_machine_fpgas_db[fpga]["bdf"]
+            bdf_parts = bdf.split(":")
+            if len(bdf_parts) != 3:
+                raise ValueError(f"Invalid BDF format: {bdf}. Expected format: bus:slot:function")
+            bus, slot, function = bdf_parts
+            # create the XML file for attaching the FPGA to the VM
+            pci_attach_xml = f"""<hostdev mode='subsystem' type='pci' managed='yes'>
+                <source>
+                    <address domain='0x0000' bus='0x{bus}' slot='0x{slot}' function='0x{function}'/>
+                </source>
+                <rom bar='off'/>
+                <address type='pci' domain='0x0000' bus='0x{bus}' slot='0x{slot}' function='0x{function}'/>
+            </hostdev>"""
+            # write the XML to a file
+            pci_attach_xml_path = pjoin(
+                os.path.dirname(os.path.abspath(__file__)), "..", "vm-pci-attach.xml"
+            )
+            # append the XML to the file
+            with open(pci_attach_xml_path, "a") as pci_attach_xml_fd:
+                pci_attach_xml_fd.write(pci_attach_xml + "\n")
+        
+        with open(pci_attach_xml_path, "a") as pci_attach_xml_fd:
+            pci_attach_xml_fd.write("</devices>\n")
+
+
+        rootLogger.info(f"Prepared PCIe attach XML for FPGAs: {fpgas_to_attach}")
 
         pcie_attached = False
 
@@ -936,7 +1083,7 @@ class LocalProvisionedVM(RunFarm): # run_farm_type
 
         # create the VM - run vm-create.sh
         rootLogger.info("running vm-create...")
-        local(f"""{pjoin(
+        run(f"""{pjoin(
             os.path.dirname(os.path.abspath(__file__)), "..", "vm-create"
         )} {self.vm_name}""") # will auto restart after installation completes
         rootLogger.info(
@@ -945,9 +1092,9 @@ class LocalProvisionedVM(RunFarm): # run_farm_type
 
         # wait for the VM to be up (from reboot after installation)
         while True:
-            if "running" in local(f"virsh domstate {self.vm_name}", capture=True): # TODO: this doesn't tell us the system has booted -- only its "on"
+            if "running" in run(f"virsh domstate {self.vm_name}", capture=True): # TODO: this doesn't tell us the system has booted -- only its "on"
                 with settings(warn_only=True):
-                    ip_addr = local(
+                    ip_addr = run(
                         " ".join(["""for mac in `virsh domiflist""", self.vm_name, """|grep -o -E "([0-9a-f]{2}:){5}([0-9a-f]{2})"` ; do arp -e |grep $mac  |grep -o -P "^\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}" ; done
                         """]),
                         capture=True,
@@ -955,7 +1102,7 @@ class LocalProvisionedVM(RunFarm): # run_farm_type
                     # as soon as machine state changes to running, we can attach device - this way the kernel picks up the device during boot
                     if (not pcie_attached):
                         # attach FPGAs (TODO: currently this is just 1 fpga on the baremetal system) to the VM
-                        bdf_collect = local("lspci | grep -i xilinx", capture=True)
+                        bdf_collect = run("lspci | grep -i xilinx", capture=True)
 
                         bdfs = [
                             {"busno": "0x" + i[:2], "devno": "0x" + i[3:5], "funcno": "0x" + i[6:7]}
@@ -1001,11 +1148,11 @@ class LocalProvisionedVM(RunFarm): # run_farm_type
                         pci_attach_xml_fd.close()
 
                         rootLogger.info("attaching PCIe device to VM...")
-                        local(f"virsh attach-device {self.vm_name} --file {pjoin(os.path.dirname(os.path.abspath(__file__)), '..','vm-pci-attach.xml',)} --persistent")
+                        run(f"virsh attach-device {self.vm_name} --file {pjoin(os.path.dirname(os.path.abspath(__file__)), '..','vm-pci-attach.xml',)} --persistent")
                         rootLogger.info("attached PCIe device to VM")
                         pcie_attached = True
 
-                    if (ip_addr != "") and ("SSH" in local(f"echo | nc {ip_addr} 22", capture=True)): # use nc here to ensure that the VM is actually up and running, we arent just looking for ip assigment here
+                    if (ip_addr != "") and ("SSH" in run(f"echo | nc {ip_addr} 22", capture=True)): # use nc here to ensure that the VM is actually up and running, we arent just looking for ip assigment here
                         break
             time.sleep(1)
         rootLogger.info("VM is up and running")
@@ -1018,7 +1165,7 @@ class LocalProvisionedVM(RunFarm): # run_farm_type
 
         # grab VM IP - https://stackoverflow.com/questions/19057915/libvirt-fetch-ipv4-address-from-guest
         # TODO: ensure DHCP lease doesn't expire/IP doesn't change
-        ip_addr = local(
+        ip_addr = run(
             " ".join(
                 [
                     """for mac in `virsh domiflist""",
@@ -1029,6 +1176,31 @@ class LocalProvisionedVM(RunFarm): # run_farm_type
             ),
             capture=True,
         )
+
+        # set ip address in host machines db
+        for fpga in fpgas_to_attach:
+            host_machine_fpgas_db[fpga]["vm_ip"] = ip_addr
+        
+        with open(db_path, "w") as db_file:
+            try:
+                json.dump(host_machine_fpgas_db, db_file, indent=2)
+            except TypeError as e:
+                raise ValueError(f"Error writing JSON to {db_path}: {e}")
+
+        # write to local firesim_vm_status.json
+        firesim_vm_status_path = pjoin(
+            os.path.dirname(os.path.abspath(__file__)), "..", "firesim_vm_status.json"
+        )
+        with open(firesim_vm_status_path, "r+") as f:
+            firesim_vm_status = json.load(f)
+            firesim_vm_status = {
+                "vm_setup": True,
+                "vm_ip": ip_addr,
+            }
+            f.seek(0)
+            json.dump(firesim_vm_status, f, indent=2)
+            f.truncate()
+        
 
         # remap everything mapped to localhost to new ip
         self.SIM_HOST_HANDLE_TO_MAX_FPGA_SLOTS[ip_addr] = self.SIM_HOST_HANDLE_TO_MAX_FPGA_SLOTS["localhost"]
@@ -1068,7 +1240,7 @@ class LocalProvisionedVM(RunFarm): # run_farm_type
 
         test = run("whoami") # this is just to test if we can run sudo commands
         rootLogger.info(f"sudo ls: {test}")
-        
+
         # install scripts to /usr/local/bin
         rootLogger.info("Installing scripts to /usr/local/bin...")
         run("""git clone https://github.com/firesim/firesim ~/firesim""", shell=True)
@@ -1080,13 +1252,14 @@ class LocalProvisionedVM(RunFarm): # run_farm_type
         rootLogger.info("Installing xdma & xcsec drivers...")
 
         run("""git clone https://github.com/Xilinx/dma_ip_drivers ~/dma_ip_drivers""", shell=True)
-        
+
         run("""cd ~/dma_ip_drivers/XDMA/linux-kernel/xdma && sudo make install""", shell=True)
 
         run("""git clone https://github.com/paulmnt/dma_ip_drivers ~/dma_ip_drivers_xvsec""", shell=True) 
-        
+
         run("""cd ~/dma_ip_drivers_xvsec/XVSEC/linux-kernel && sudo make clean all && sudo make install""", shell=True)
 
+    # TODO: ENSURE THAT THIS USES THE LOCALHOST IP IN THE YAML
     def terminate_run_farm(
         self, terminate_some_dict: Dict[str, int], forceterminate: bool
     ) -> None:
@@ -1119,7 +1292,7 @@ class LocalProvisionedVM(RunFarm): # run_farm_type
             # remove the VM
             local(f"virsh undefine {self.vm_name} --nvram --remove-all-storage")
             rootLogger.info("Removed VM")
-    
+
             # empty run_farm_hosts_dict
             self.run_farm_hosts_dict.clear()
             # remove from SIM_HOST_HANDLE_TO_MAX_FPGA_SLOTS
