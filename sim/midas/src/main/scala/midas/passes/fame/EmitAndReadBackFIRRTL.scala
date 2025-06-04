@@ -28,8 +28,13 @@ class EmitAndReadBackFIRRTL(firFile: String, annoFile: String) extends Transform
     val dirName    = targetDir.getOrElse(".")
 
     // Usage
-    val binary_path = "/scratch/joonho.whangbo/coding/ripple-ir/target/release/ripple-ir";
-    val args = Seq(s"--input", s"${dirName}/${firFile}", "--output", s"${dirName}/post-custom-binary.fir", "--firrtl-version", "firrtl3")
+    val binary_path = "/scratch/fpga-demo/coding/ripple-ir/target/release/ripple-ir";
+    val args = Seq(
+        s"--input", s"${dirName}/${firFile}",
+        "--output", s"${dirName}/post-custom-binary.fir",
+        "--annos-in", s"${dirName}/${annoFile}",
+        "--annos-out", s"${dirName}/post-custom-binary.json",
+        "--firrtl-version", "firrtl3")
 
     println(s"args ${args}")
 
@@ -42,7 +47,7 @@ class EmitAndReadBackFIRRTL(firFile: String, annoFile: String) extends Transform
     val parsedCircuit = Parser.parse(fileContents)
 
     // Read annotations back
-    val annoReader = scala.io.Source.fromFile(s"${dirName}/${annoFile}")
+    val annoReader = scala.io.Source.fromFile(s"${dirName}/post-custom-binary.json")
     val annoFileContents = try annoReader.mkString finally annoReader.close()
     val parsedAnnos = JsonProtocol.deserialize(annoFileContents)
     val annos: AnnotationSeq = parsedAnnos ++ Seq(midas.stage.phases.ConfigParametersAnnotation(q))
