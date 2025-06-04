@@ -819,8 +819,10 @@ class LocalProvisionedVM(RunFarm): # run_farm_type
     run_farm_hosts_dict: Dict[
         str, List[Tuple[Inst, Optional[Union[EC2InstanceResource, MockBoto3Instance, str]]]]
     ]
-    vm_name = "jammy_cisz"  # TODO: make this a parameter or (more preferred) randomized so we don't get VM name collisions on 1 target machine
-    vm_username = "chief"
+    vm_name: str = "jammy_cisz"  # TODO: make this a parameter or (more preferred) randomized so we don't get VM name collisions on 1 target machine
+    vm_username: str = "chief"
+    
+    iso_location: str = "/home/chief/Downloads/ubuntu-22.04.5-live-server-amd64.iso"
 
     def __init__(self, args: Dict[str, Any], metasimulation_enabled: bool) -> None :
         super().__init__(args, metasimulation_enabled) # if metasim enabled, we give it to super to handle
@@ -847,6 +849,10 @@ class LocalProvisionedVM(RunFarm): # run_farm_type
         self.run_farm_hosts_dict = defaultdict(list) 
         self.mapper_consumed = defaultdict(int)
         
+        # read firesim_vm_status.json to see if the VM has been setup already - if yes, remap the ip
+        firesim_vm_status_path = pjoin(
+            os.path.dirname(os.path.abspath(__file__)), "..", "firesim_vm_status.json"
+        )
         
         with open(firesim_vm_status_path, "r") as db_file:
             try:
@@ -873,11 +879,6 @@ class LocalProvisionedVM(RunFarm): # run_farm_type
 
             # populate mapping helpers based on runhost_specs:
             # TODO: figure out how localhost ips map to different VMs -- or ig we don't technically have this issue since each job will only have localhost: `n` FPGAs and different jobs will have their own configs?
-            
-            # read firesim_vm_status.json to see if the VM has been setup already - if yes, remap the ip
-            firesim_vm_status_path = pjoin(
-                os.path.dirname(os.path.abspath(__file__)), "..", "firesim_vm_status.json"
-            )
                 
                 
             if db_data["vm_setup"]:
@@ -917,10 +918,11 @@ class LocalProvisionedVM(RunFarm): # run_farm_type
                 self.metasimulation_enabled,
             )
             
+            # inst.set_host(ip_addr)
             if (db_data["vm_setup"]):
-                inst.set_host(db_data["vm_ip"])
+                inst.set_host(db_data["vm_ip"])  # use the IP from the db if it exists
                 assert (
-                    not ip_addr in self.run_farm_hosts_dict
+                    not db_data["vm_ip"] in self.run_farm_hosts_dict
                 ), f"Duplicate host name found in 'run_farm_hosts': {db_data['vm_ip']}"
                 self.run_farm_hosts_dict[db_data["vm_ip"]] = [(inst, self.vm_name)]
                 self.mapper_consumed[db_data["vm_ip"]] = 0
@@ -958,14 +960,13 @@ class LocalProvisionedVM(RunFarm): # run_farm_type
         # TODO: LOCK ACQUIRE
         db_path = pjoin("/opt/firesim-vm-host-db.json")  # this won't be exposed to the user for now
         if not os.path.isfile(db_path):
-            raise FileNotFoundError(f"Database file {db_path} does not exist. Did you run enumeratefpgas?")
+            raise FileNotFoundError(f"Database file {db_path} does not exist. Did you run sudo python3 host-machine-setupdb.py?")
         with open(db_path, "r") as db_file:
             try:
                 host_machine_fpgas_db = json.load(db_file)
             except json.JSONDecodeError as e:
                 raise ValueError(f"Error decoding JSON from {db_path}: {e}")
         rootLogger.info(f"Loaded database from {db_path}")
-        rootLogger.info(f"Database contents: {json.dumps(db_data, indent=2)}")
 
         # get number of FPGAs that are not busy
         free_fpgas = [
@@ -974,7 +975,7 @@ class LocalProvisionedVM(RunFarm): # run_farm_type
         rootLogger.info(f"Number of free FPGAs: {len(free_fpgas)}")
 
         # get number of FPGAs requested by the spec
-        host_machine_ip = self.args["run_farm_hosts_to_use"][0].keys()[0]  # assuming the first host is the one we are using - typcially for local setup you only have 1 host with the fpgas
+        host_machine_ip = list(self.args["run_farm_hosts_to_use"][0].keys())[0]  # assuming the first host is the one we are using - typcially for local setup you only have 1 host with `n` fpgas
         num_requested_fpgas = self.SIM_HOST_HANDLE_TO_MAX_FPGA_SLOTS[host_machine_ip]
 
         rootLogger.info(f"Number of FPGAs requested by the spec: {num_requested_fpgas}")
@@ -992,7 +993,7 @@ class LocalProvisionedVM(RunFarm): # run_farm_type
         # set those fpgas as busy in the database & write to file
         for fpga in fpgas_to_attach:
             host_machine_fpgas_db[fpga]["busy"] = True
-            host_machine_fpgas_db[fpga]["vm_name"] = f"{self.vm_name}-{local("whoami", capture=True)}"  # use the VM name + username to avoid collisions
+            host_machine_fpgas_db[fpga]["vm_name"] = f"{self.vm_name}-{local('whoami', capture=True)}"  # use the VM name + username to avoid collisions
             host_machine_fpgas_db[fpga]["in_use_by"] = local("whoami", capture=True)
         
         # write the updated database back to the file
@@ -1022,22 +1023,22 @@ class LocalProvisionedVM(RunFarm): # run_farm_type
             os.remove(pci_attach_xml_path)
         
         # create the XML for each FPGA to attach to the VM & write <devices> section
-        with open(pci_attach_xml_path, "w") as pci_attach_xml_fd:
-            pci_attach_xml_fd.write("<devices>\n")
+        # with open(pci_attach_xml_path, "w") as pci_attach_xml_fd:
+        #     pci_attach_xml_fd.write("<devices>\n")
         
         for fpga in fpgas_to_attach:
-            bdf = host_machine_fpgas_db[fpga]["bdf"]
-            bdf_parts = bdf.split(":")
-            if len(bdf_parts) != 3:
-                raise ValueError(f"Invalid BDF format: {bdf}. Expected format: bus:slot:function")
-            bus, slot, function = bdf_parts
+            bdf_parts = fpga.split(":")
+            if len(bdf_parts) != 4:
+                raise ValueError(f"Invalid BDF format: {fpga}. Expected format: bus:slot:function")
+            _, bus, slot, function = bdf_parts
             # create the XML file for attaching the FPGA to the VM
+            # bus number cannot be the same as {bus} otherwise you get an conficting bdf error
             pci_attach_xml = f"""<hostdev mode='subsystem' type='pci' managed='yes'>
                 <source>
                     <address domain='0x0000' bus='0x{bus}' slot='0x{slot}' function='0x{function}'/>
                 </source>
                 <rom bar='off'/>
-                <address type='pci' domain='0x0000' bus='0x{bus}' slot='0x{slot}' function='0x{function}'/>
+                <address type='pci' domain='0x0000' bus='0x07' slot='0x{slot}' function='0x{function}'/>
             </hostdev>"""
             # write the XML to a file
             pci_attach_xml_path = pjoin(
@@ -1047,13 +1048,11 @@ class LocalProvisionedVM(RunFarm): # run_farm_type
             with open(pci_attach_xml_path, "a") as pci_attach_xml_fd:
                 pci_attach_xml_fd.write(pci_attach_xml + "\n")
         
-        with open(pci_attach_xml_path, "a") as pci_attach_xml_fd:
-            pci_attach_xml_fd.write("</devices>\n")
+        # with open(pci_attach_xml_path, "a") as pci_attach_xml_fd:
+        #     pci_attach_xml_fd.write("</devices>\n")
 
 
         rootLogger.info(f"Prepared PCIe attach XML for FPGAs: {fpgas_to_attach}")
-
-        pcie_attached = False
 
         cloud_init_port = 3003
         config_dir = pjoin(
@@ -1070,6 +1069,7 @@ class LocalProvisionedVM(RunFarm): # run_farm_type
                 super().__init__(*args, directory=config_dir, **kwargs)
 
         # shutdown: https://stackoverflow.com/questions/17550389/shut-down-socketserver-on-sig
+        # TODO: this should be moved to different script-- something the sysadmin sets up and never touches again
         cloud_init_server = socketserver.ThreadingTCPServer(("", cloud_init_port), Handler)
         rootLogger.info(f"Serving Ubuntu autoinstall files at http://localhost:{cloud_init_port}/")
 
@@ -1081,82 +1081,32 @@ class LocalProvisionedVM(RunFarm): # run_farm_type
 
         # there should only be 1 VM spun up no matter how many FPGAs we want - all FPGAs will get attached to the same VM (1 VM / job)
 
-        # create the VM - run vm-create.sh
+        # create the VM - run vm-create.sh + attach pcie device
         rootLogger.info("running vm-create...")
+        env.host_string = host_machine_ip # set the host string to localhost since we are running this on the local machine
+        rootLogger.info(f"running as: {env.host_string}")
         run(f"""{pjoin(
             os.path.dirname(os.path.abspath(__file__)), "..", "vm-create"
-        )} {self.vm_name}""") # will auto restart after installation completes
+        )} {self.vm_name} {self.iso_location} {pjoin(os.path.dirname(os.path.abspath(__file__)), '..','vm-pci-attach.xml',)}""") # will auto restart after installation completes
         rootLogger.info(
-            "ran vm-create to create the VM"
+            "ran vm-create to create the VM + attached pcie devices"
         )
 
-        # wait for the VM to be up (from reboot after installation)
+        # spin & wait for the VM to be up (from reboot after installation)
         while True:
-            if "running" in run(f"virsh domstate {self.vm_name}", capture=True): # TODO: this doesn't tell us the system has booted -- only its "on"
+            # if "running" in run(f"virsh domstate {self.vm_name}", capture=True): # TODO: this doesn't tell us the system has booted -- only its "on"
+            if "running" in run(f"virsh domstate {self.vm_name}"): # TODO: this doesn't tell us the system has booted -- only its "on"
                 with settings(warn_only=True):
                     ip_addr = run(
                         " ".join(["""for mac in `virsh domiflist""", self.vm_name, """|grep -o -E "([0-9a-f]{2}:){5}([0-9a-f]{2})"` ; do arp -e |grep $mac  |grep -o -P "^\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}" ; done
                         """]),
-                        capture=True,
                     )
-                    # as soon as machine state changes to running, we can attach device - this way the kernel picks up the device during boot
-                    if (not pcie_attached):
-                        # attach FPGAs (TODO: currently this is just 1 fpga on the baremetal system) to the VM
-                        bdf_collect = run("lspci | grep -i xilinx", capture=True)
-
-                        bdfs = [
-                            {"busno": "0x" + i[:2], "devno": "0x" + i[3:5], "funcno": "0x" + i[6:7]}
-                            for i in bdf_collect.split("\n")
-                            if len(i.strip()) >= 0
-                        ]
-
-                        rootLogger.info(f"FPGA BDFs: {bdfs}")
-
-                        # TODO: just attaching the first FPGA for now + realistically we should import an XML parser that handles this if there are multiple FPGAs
-                        pci_attach_xml_fd = open(
-                            pjoin(
-                                os.path.dirname(os.path.abspath(__file__)),
-                                "..",
-                                "vm-pci-attach-frame.xml",
-                            )
-                        )
-
-                        pci_attach_xml = pci_attach_xml_fd.read()
-
-                        rootLogger.info(f"Frame PCIe device XML: {pci_attach_xml}")
-
-                        # make sure we only replace 1 occurence
-                        # TODO: BDF coded to use the first one - since we are only attaching 1 FPGA for now
-                        pci_attach_xml = pci_attach_xml.replace("BUS", bdfs[0]["busno"], 1)
-                        pci_attach_xml = pci_attach_xml.replace("SLOT", bdfs[0]["devno"], 1)
-                        pci_attach_xml = pci_attach_xml.replace("FUNCT", bdfs[0]["funcno"], 1)
-
-                        rootLogger.info(f"PCIe device XML: {pci_attach_xml}")
-
-                        # remap fd so that we dont write to the frame
-                        pci_attach_xml_fd.close()
-                        pci_attach_xml_fd = open(
-                            pjoin(
-                                os.path.dirname(os.path.abspath(__file__)),
-                                "..",
-                                "vm-pci-attach.xml",
-                            ),
-                            "w",
-                        )
-
-                        pci_attach_xml_fd.write(pci_attach_xml)
-                        pci_attach_xml_fd.close()
-
-                        rootLogger.info("attaching PCIe device to VM...")
-                        run(f"virsh attach-device {self.vm_name} --file {pjoin(os.path.dirname(os.path.abspath(__file__)), '..','vm-pci-attach.xml',)} --persistent")
-                        rootLogger.info("attached PCIe device to VM")
-                        pcie_attached = True
-
-                    if (ip_addr != "") and ("SSH" in run(f"echo | nc {ip_addr} 22", capture=True)): # use nc here to ensure that the VM is actually up and running, we arent just looking for ip assigment here
+                    if (ip_addr != "") and ("SSH" in run(f"echo | nc {ip_addr} 22")): # use nc here to ensure that the VM is actually up and running, we arent just looking for ip assigment here
                         break
             time.sleep(1)
         rootLogger.info("VM is up and running")
-
+        
+        
         # close fs read, close http server - done with initial setup
         cloud_init_server.shutdown()
         cloud_init_server.server_close()
@@ -1173,8 +1123,7 @@ class LocalProvisionedVM(RunFarm): # run_farm_type
                     """|grep -o -E "([0-9a-f]{2}:){5}([0-9a-f]{2})"` ; do arp -e |grep $mac  |grep -o -P "^\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}" ; done
                         """,
                 ]
-            ),
-            capture=True,
+            )
         )
 
         # set ip address in host machines db
@@ -1200,42 +1149,15 @@ class LocalProvisionedVM(RunFarm): # run_farm_type
             f.seek(0)
             json.dump(firesim_vm_status, f, indent=2)
             f.truncate()
-        
-
-        # remap everything mapped to localhost to new ip
-        self.SIM_HOST_HANDLE_TO_MAX_FPGA_SLOTS[ip_addr] = self.SIM_HOST_HANDLE_TO_MAX_FPGA_SLOTS["localhost"]
-        self.SIM_HOST_HANDLE_TO_MAX_METASIM_SLOTS[ip_addr] = self.SIM_HOST_HANDLE_TO_MAX_METASIM_SLOTS["localhost"]
-        self.SIM_HOST_HANDLE_TO_SWITCH_ONLY_OK[ip_addr] = self.SIM_HOST_HANDLE_TO_SWITCH_ONLY_OK["localhost"]
-
-        self.run_farm_hosts_dict[ip_addr] = self.run_farm_hosts_dict["localhost"]
-
-        self.mapper_consumed[ip_addr] = self.mapper_consumed["localhost"]
-
-        del self.SIM_HOST_HANDLE_TO_MAX_FPGA_SLOTS["localhost"]
-        del self.SIM_HOST_HANDLE_TO_MAX_METASIM_SLOTS["localhost"]
-        del self.SIM_HOST_HANDLE_TO_SWITCH_ONLY_OK["localhost"]
-        del self.run_farm_hosts_dict["localhost"]
-        del self.mapper_consumed["localhost"]
-
-        self.run_farm_hosts_dict[ip_addr][0][0].set_host(ip_addr) # set the host to the new ip address
-
-        # print out updated dict
-        rootLogger.info(f"Updated run_farm_hosts_dict: {self.run_farm_hosts_dict}")
-        rootLogger.info(f"Updated SIM_HOST_HANDLE_TO_MAX_FPGA_SLOTS: {self.SIM_HOST_HANDLE_TO_MAX_FPGA_SLOTS}")
-        rootLogger.info(f"Updated SIM_HOST_HANDLE_TO_MAX_METASIM_SLOTS: {self.SIM_HOST_HANDLE_TO_MAX_METASIM_SLOTS}")
-        rootLogger.info(f"Updated SIM_HOST_HANDLE_TO_SWITCH_ONLY_OK: {self.SIM_HOST_HANDLE_TO_SWITCH_ONLY_OK}")
-        rootLogger.info(f"Updated mapper_consumed: {self.mapper_consumed}")
-
-        # print first inst in run_farm_hosts_dict
-        rootLogger.info(f"First inst in run_farm_hosts_dict: {self.run_farm_hosts_dict[ip_addr][0][0]}")
-
+    
         # install cmake, gcc - can prob use run()? - how to setup?
-        rootLogger.info("Installing build-essential...")
+        
         logging.getLogger("paramiko").setLevel(logging.DEBUG)
         rootLogger.info(f"{self.vm_username}@{ip_addr}")
         env.host_string = f"{self.vm_username}@{ip_addr}" # this changes the host_string for subsequent run() calls so maybe we want a function task and call execute()
 
         # will be ssh key based in the future - https://canonical-subiquity.readthedocs-hosted.com/en/latest/reference/autoinstall-reference.html#ssh
+        rootLogger.info("Installing build-essential...")
         run("""sudo apt-get install -y build-essential""", shell=True)
 
         test = run("whoami") # this is just to test if we can run sudo commands
@@ -1263,7 +1185,10 @@ class LocalProvisionedVM(RunFarm): # run_farm_type
     def terminate_run_farm(
         self, terminate_some_dict: Dict[str, int], forceterminate: bool
     ) -> None:
-
+        
+        # run everything here on host machine
+        host_machine_ip = list(self.args["run_farm_hosts_to_use"][0].keys())[0] 
+        env.host_string = host_machine_ip 
         if (not forceterminate):
             userconfirm = firesim_input(
                 "Type yes, then press enter, to continue. Otherwise, the operation will be cancelled.\n"
@@ -1273,24 +1198,24 @@ class LocalProvisionedVM(RunFarm): # run_farm_type
 
         if userconfirm == "yes":
             # detach FPGAs - since we have only 1 VM per run, we can just run detach cmd - terminate_some_dict is not used
-            local(
+            run(
                 f"virsh detach-device {self.vm_name} --file {pjoin(os.path.dirname(os.path.abspath(__file__)), '..','vm-pci-attach.xml',)} --persistent"
             )
             rootLogger.info("Detached PCIe device from VM")
 
             # first send shutdown signal, if that doesn't work, force shutdown
-            local(f"virsh shutdown {self.vm_name} --mode acpi")
+            run(f"virsh shutdown {self.vm_name} --mode acpi")
             rootLogger.info("Shutdown signal sent to VM")   
 
             time.sleep(10)
             # if still running after 10 seconds, then something went wrong, force shutdown
-            if "running" in local(f"virsh domstate {self.vm_name}", capture=True):
+            if "running" in run(f"virsh domstate {self.vm_name}"):
                 rootLogger.info("Force shutting down VM...")
-                local(f"virsh destroy {self.vm_name}")
+                run(f"virsh destroy {self.vm_name}")
                 rootLogger.info("Force shut down VM")
 
             # remove the VM
-            local(f"virsh undefine {self.vm_name} --nvram --remove-all-storage")
+            run(f"virsh undefine {self.vm_name} --nvram --remove-all-storage")
             rootLogger.info("Removed VM")
 
             # empty run_farm_hosts_dict
@@ -1303,6 +1228,44 @@ class LocalProvisionedVM(RunFarm): # run_farm_type
             self.SIM_HOST_HANDLE_TO_SWITCH_ONLY_OK.clear()
             # remove from mapper_consumed
             self.mapper_consumed.clear()
+            
+            # remove the VM IP from the firesim_vm_status.json
+            firesim_vm_status_path = pjoin(
+                os.path.dirname(os.path.abspath(__file__)), "..", "firesim_vm_status.json"
+            )
+            with open(firesim_vm_status_path, "r+") as f:
+                firesim_vm_status = json.load(f)
+                firesim_vm_status = {
+                    "vm_setup": False,
+                    "vm_ip": "",
+                }
+                f.seek(0)
+                json.dump(firesim_vm_status, f, indent=2)
+                f.truncate()
+            
+            # set fpga as free in the host machine's database
+            db_path = pjoin("/opt/firesim-vm-host-db.json")
+            if not os.path.isfile(db_path):
+                raise FileNotFoundError(f"Database file {db_path} does not exist. Did you run sudo python3 host-machine-setupdb.py?")
+            with open(db_path, "r") as db_file:
+                try:
+                    host_machine_fpgas_db = json.load(db_file)
+                except json.JSONDecodeError as e:
+                    raise ValueError(f"Error decoding JSON from {db_path}: {e}")
+            rootLogger.info(f"Loaded database from {db_path}")
+            # any fpga that has vm_name as the current VM name, set busy to false and vm_name to empty string
+            for fpga in host_machine_fpgas_db:
+                if host_machine_fpgas_db[fpga]["vm_name"] == f"{self.vm_name}-{local('whoami', capture=True)}":
+                    host_machine_fpgas_db[fpga]["busy"] = False
+                    host_machine_fpgas_db[fpga]["vm_name"] = ""
+                    host_machine_fpgas_db[fpga]["in_use_by"] = ""
+            
+            # write the updated database back to the file
+            with open(db_path, "w") as db_file:
+                try:
+                    json.dump(host_machine_fpgas_db, db_file, indent=2)
+                except TypeError as e:
+                    raise ValueError(f"Error writing JSON to {db_path}: {e}")
 
     def get_all_host_nodes(self) -> List[Inst]:
         all_insts = []

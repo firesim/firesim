@@ -14,7 +14,7 @@ virt-install \
 --controller type=scsi,model=virtio-scsi \
 --network bridge=virbr0,model=virtio \
 --metadata title="Ubuntu 22.04 (${1})" \
---location /home/chief/Downloads/ubuntu-22.04.5-live-server-amd64.iso,kernel=casper/vmlinuz,initrd=casper/initrd \
+--location ${2},kernel=casper/vmlinuz,initrd=casper/initrd \
 --channel spicevmc,target_type=virtio,name=com.redhat.spice.0 \
 --channel unix,target_type=virtio,name=org.qemu.guest_agent.0 \
 --graphics spice,gl.enable=no,listen=none \
@@ -25,3 +25,5 @@ virt-install \
 --extra-args='autoinstall ds=nocloud-net;s=http://_gateway:3003/' \
 --noautoconsole \
 --wait=-1
+
+virsh attach-device ${1} --file ${3} --persistent
