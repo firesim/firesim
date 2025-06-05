@@ -1,4 +1,5 @@
 #!/bin/bash
+set -ex
 
 sudo python3 utils/host-machine-setupdb.py
 sudo chmod 777 /opt/firesim-vm-host-db.json

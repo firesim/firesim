@@ -821,10 +821,10 @@ class LocalProvisionedVM(RunFarm): # run_farm_type
     run_farm_hosts_dict: Dict[
         str, List[Tuple[Inst, Optional[Union[EC2InstanceResource, MockBoto3Instance, str]]]]
     ]
-    vm_name: str = f"jammy_cis-{local('whoami', capture=True)}"  # TODO: make this a parameter or (more preferred) randomized so we don't get VM name collisions on 1 target machine
+    vm_name: str = f"jammy_cis-{local('whoami', capture=True)}"
     vm_username: str = local("whoami", capture=True)
     
-    iso_location: str = "/home/chief/Downloads/ubuntu-22.04.5-live-server-amd64.iso"
+    iso_location: str = "/home/chief/Downloads/ubuntu-22.04.5-live-server-amd64.iso" # TODO: update location dynamically
 
     def __init__(self, args: Dict[str, Any], metasimulation_enabled: bool) -> None :
         super().__init__(args, metasimulation_enabled) # if metasim enabled, we give it to super to handle
@@ -939,8 +939,6 @@ class LocalProvisionedVM(RunFarm): # run_farm_type
         return
 
     def launch_run_farm(self) -> None:
-        # spin up a webserver on a port to serve linux autoinstall configs
-
         # schema:
         #     [
         #         "fpga_bdf": {
@@ -1154,7 +1152,10 @@ class LocalProvisionedVM(RunFarm): # run_farm_type
         # install cmake, gcc, etc
         logging.getLogger("paramiko").setLevel(logging.DEBUG)
         rootLogger.info(f"{self.vm_username}@{ip_addr}")
-        env.host_string = f"{self.vm_username}@{ip_addr}" # this changes the host_string for subsequent run() calls so maybe we want a function task and call execute()
+        env.host_string = f"{self.vm_username}@{ip_addr}" # this changes the host_string for subsequent run() calls until program exits
+        env.key_filename = pjoin(
+            os.path.dirname(os.path.abspath(__file__)), "..", "vm-cloud-init-configs", "firesim_vm_ed25519"
+        )  # this is the key we use to ssh into the VM, set in vm-cloud-init-configs/user-data
 
         # ssh into the vm is key based, set in vm-cloud-init-configs/user-data
         rootLogger.info("Installing build-essential...")
@@ -1177,8 +1178,7 @@ class LocalProvisionedVM(RunFarm): # run_farm_type
         run("""git clone https://github.com/paulmnt/dma_ip_drivers ~/dma_ip_drivers_xvsec""", shell=True) 
 
         run("""cd ~/dma_ip_drivers_xvsec/XVSEC/linux-kernel && sudo make clean all && sudo make install""", shell=True)
-
-
+        
     def terminate_run_farm(
         self, terminate_some_dict: Dict[str, int], forceterminate: bool
     ) -> None:
