@@ -10,8 +10,7 @@ autoinstall:
         shell: /bin/bash
         sudo: ALL=(ALL) NOPASSWD:ALL # disable sudo asking for password
         ssh_authorized_keys:
-          - ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIIvQsWSvfqYylXAcbJGaAAmZghOoBtEKZ0340/ZtU+Ko yf328@berkeley.edu
-          - ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIBO61L803e497zbjMrOAuOCDyLUN/Oxgr2PIjUtfTLSo firesim.pem 
+          - ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAID3Rt7ZtWALJD03sIENljrH9Pei3VTyrfWeUHKGzWl5g firesim@googlegroups.com
   shutdown: reboot
   ssh:
     install-server: true

@@ -6,6 +6,7 @@ args:
     # managerinit arg start
     # REQUIRED: default platform used for run farm hosts. this is a class specifying
     # how to run simulations on a run farm host.
+    # will change to vcu118 automatically
     default_platform: EC2InstanceDeployManager
 
     # REQUIRED: default directory where simulations are run out of on the run farm hosts
@@ -13,6 +14,8 @@ args:
 
     # REQUIRED: default fpga db file that enumerates what fpgas are available on the machine (used by XilinxU* Deploy Managers)
     default_fpga_db: /opt/firesim-db.json
+
+    default_fpga_vm_db: /opt/firesim-vm-host-db.json
 
     # REQUIRED: List of unique hostnames/IP addresses, each with their
     # corresponding specification that describes the properties of the host.
