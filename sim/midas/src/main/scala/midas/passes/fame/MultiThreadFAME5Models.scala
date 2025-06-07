@@ -158,6 +158,8 @@ object MultiThreadFAME5Models extends Transform {
     val fame5InstancesByModule = fame5RawInstances.filter { case (_, v) => v.size > 1 }
     val fame5ModulesByInstance = fame5InstancesByModule.flatMap({ case (k, v) => v.map(vv => vv -> k) }).toMap
 
+    println(s"fame5ModulesByInstance ${fame5ModulesByInstance} fame5InstancesByModule ${fame5InstancesByModule}")
+
     // Maps from an (OfModule, PortName) pair
     // It's actually nested (rather than indexed by tuple) for convenience
     // We don't track the direction in this map, since we can just find it later

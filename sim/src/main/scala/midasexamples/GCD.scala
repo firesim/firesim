@@ -6,7 +6,7 @@ import chisel3._
 import org.chipsalliance.cde.config.Parameters
 import chisel3.experimental.annotate
 
-import midas.targetutils.{FAMEModelAnnotation, FpgaDebug}
+import midas.targetutils.{FAMEModelAnnotation, FpgaDebug, EnableModelMultiThreadingAnnotation}
 
 class GCDIO extends Bundle {
   val a = Input(UInt(16.W))
@@ -28,15 +28,15 @@ class GCDInner extends Module {
   // TODO: this assertion fails spuriously with deduped, extracted models
   // assert(!io.e || io.a =/= 0.U && io.b =/= 0.U, "Inputs to GCD cannot be 0")
   printf("X: %d, Y:%d\n", x, y)
-  FpgaDebug(x)
+// FpgaDebug(x)
 }
 
 class GCDDUT extends Module {
   val io     = IO(new GCDIO)
   val inner1 = Module(new GCDInner)
-  annotate(FAMEModelAnnotation(inner1))
+  annotate(EnableModelMultiThreadingAnnotation(inner1))
   val inner2 = Module(new GCDInner)
-  annotate(FAMEModelAnnotation(inner2))
+  annotate(EnableModelMultiThreadingAnnotation(inner2))
 
   val select = RegInit(false.B)
   select := !select
