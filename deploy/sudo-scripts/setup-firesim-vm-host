@@ -1,8 +1,8 @@
 #!/bin/bash
 set -ex
 
-sudo python3 utils/host-machine-setupdb.py
+sudo python3 "$FS_DIR/utils/host-machine-setupdb.py"
 sudo chmod 777 /opt/firesim-vm-host-db.json
 touch /opt/firesim-vm-host-db.lock
 sudo chmod 777 /opt/firesim-vm-host-db.lock
-python3 deploy/util/start-cloud-init-server.py
+python3 "$FS_DIR/deploy/util/start-cloud-init-server.py"

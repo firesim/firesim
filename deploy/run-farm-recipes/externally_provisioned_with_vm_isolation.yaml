@@ -1,7 +1,7 @@
 # Unmanaged list of run farm hosts. Assumed that they are pre-setup to run simulations.
 # all fields are required but can be overridden in the `*_runtime.yaml`
 
-run_farm_type: LocalProvisionedVM
+run_farm_type: ExternallyProvisionedWithVMIsolation
 args:
     # managerinit arg start
     # REQUIRED: default platform used for run farm hosts. this is a class specifying

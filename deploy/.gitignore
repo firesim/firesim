@@ -9,3 +9,4 @@ generated-topology-diagrams/
 logs/*.log
 built-hwdb-entries/
 /firesim.py
+vm-pci-attach.xml

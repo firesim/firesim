@@ -162,9 +162,9 @@ First, run the following to clone the XDMA kernel module source:
 .. code-block:: bash
 
     cd ~/   # or any directory you would like to work from
-    git clone https://github.com/paulmnt/dma_ip_drivers
+    git clone https://github.com/joonho3020/dma_ip_drivers
     cd dma_ip_drivers
-    git checkout 247a065
+    git checkout ubuntu-24-xdma
     cd XDMA/linux-kernel/xdma
 
 .. note::
@@ -195,9 +195,9 @@ repository due to kernel version incompatibility:
 .. code-block:: bash
 
     cd ~/   # or any directory you would like to work from
-    git clone https://github.com/paulmnt/dma_ip_drivers dma_ip_drivers_xvsec
+    git clone https://github.com/joonho3020/dma_ip_drivers dma_ip_drivers_xvsec
     cd dma_ip_drivers_xvsec
-    git checkout 247a065
+    git checkout ubuntu-24-xvsec
     cd XVSEC/linux-kernel/
 
     make clean all

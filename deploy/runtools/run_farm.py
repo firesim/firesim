@@ -811,7 +811,7 @@ class ExternallyProvisioned(RunFarm):
         )
         return
 
-class LocalProvisionedVM(RunFarm): # run_farm_type
+class ExternallyProvisionedWithVMIsolation(RunFarm): # run_farm_type
     """Manages the set of locally provisioned VMs with FPGAs passed through to them. This class is responsible for spinning up the VMs and shutting down those VMs after the simulation is done.
 
     Attributes:

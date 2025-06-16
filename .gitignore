@@ -16,4 +16,3 @@ scala-doc-env.sh
 vivado*.log
 vivado*.jou
 __pycache__
-.DS_Store
