@@ -15,7 +15,7 @@ args:
     # REQUIRED: default fpga db file that enumerates what fpgas are available on the machine (used by XilinxU* Deploy Managers)
     default_fpga_db: /opt/firesim-db.json
 
-    default_fpga_vm_db: /opt/firesim-vm-host-db.json
+    run_vm_os_iso: $FS_DIR/deploy/ubuntu-22.04.5-live-server-amd64.iso
 
     # REQUIRED: List of unique hostnames/IP addresses, each with their
     # corresponding specification that describes the properties of the host.

@@ -16,7 +16,7 @@ from fabric.api import run, env, prefix, put, cd, warn_only, local, settings, hi
 from fabric.contrib.project import rsync_project  # type: ignore
 from os.path import join as pjoin 
 import pprint
-from collections import defaultdict
+from collections import defaultdict, Counter
 
 from awstools.awstools import (
     instances_sorted_by_avail_ip,
@@ -821,14 +821,19 @@ class ExternallyProvisionedWithVMIsolation(RunFarm): # run_farm_type
     run_farm_hosts_dict: Dict[
         str, List[Tuple[Inst, Optional[Union[EC2InstanceResource, MockBoto3Instance, str]]]]
     ]
-    vm_name: str = f"jammy_cis-{local('whoami', capture=True)}"
-    vm_username: str = local("whoami", capture=True)
+    vm_name: str
+    vm_username: str
     
-    iso_location: str = "/home/chief/Downloads/ubuntu-22.04.5-live-server-amd64.iso" # TODO: update location dynamically
+    iso_location: str
 
     def __init__(self, args: Dict[str, Any], metasimulation_enabled: bool) -> None :
         super().__init__(args, metasimulation_enabled) # if metasim enabled, we give it to super to handle
-
+        
+        # find user that is running the simulation to set the vm_name
+        manager_username = local("whoami", capture=True)
+        self.vm_name = f"firesim-run-{manager_username}"
+        self.vm_username = manager_username
+        
         self._parse_args()  # parse args in yaml file
 
         self.init_postprocess()
@@ -840,6 +845,12 @@ class ExternallyProvisionedWithVMIsolation(RunFarm): # run_farm_type
 
         default_platform = self.args.get("default_platform")
         default_fpga_db = self.args.get("default_fpga_db")
+        
+        self.iso_location = self.args.get("run_vm_os_iso")
+        # resolve fs_dir if it is specified in the iso_location
+        if self.iso_location and "$FS_DIR" in self.iso_location:
+            fs_dir = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", ".."))
+            self.iso_location = self.iso_location.replace("$FS_DIR", fs_dir)
 
         runhost_specs = dict()
         for specinfo in self.args["run_farm_host_specs"]: # to write a new run farm host spec, add it in externally_provisioned.yaml
@@ -994,8 +1005,13 @@ class ExternallyProvisionedWithVMIsolation(RunFarm): # run_farm_type
 
         # check if there are enough free FPGAs available
         if len(free_fpgas) < num_requested_fpgas:
+            usage = Counter(entry["in_use_by"] for entry in host_machine_fpgas_db.values() if entry["in_use_by"])
+            print("Current FPGA usage by users:")
+            print("-------------------------------")
+            for user, count in usage.items():
+                print(f"{user}: {count} FPGA(s)")
             raise RuntimeError(
-                f"Not enough free FPGAs available. Requested: {num_requested_fpgas}, Available: {len(free_fpgas)}"
+                f"Not enough free FPGAs available. Requested: {num_requested_fpgas}, Available: {len(free_fpgas)}."
             )
 
         # grab their bdfs and attach them to the VM, set them as busy, record vm IP in the database
