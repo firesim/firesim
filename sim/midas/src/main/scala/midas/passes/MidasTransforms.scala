@@ -214,11 +214,14 @@ private[midas] class MidasTransforms extends Transform {
         new EmitFirrtl("post-fame-transform.fir"),
         new fame.EmitFAMEAnnotations("post-fame-transform.json"),
         new ResolveAndCheck,
+
+        firrtl.passes.SplitExpressions,
         new EmitFirrtl("pre-fame5-transform.fir"),
         new fame.EmitFAMEAnnotations("pre-fame5-transform.json"),
         fame.MultiThreadFAME5Models,
         new EmitFirrtl("post-fame5-transform.fir"),
         new fame.EmitFAMEAnnotations("post-fame5-transform.json"),
+
         new ResolveAndCheck,
         new passes.InlineInstances,
         passes.ResolveKinds,
@@ -229,12 +232,10 @@ private[midas] class MidasTransforms extends Transform {
         new EmitFirrtl("post-gen-sram-models.fir"),
         new fame.EmitFAMEAnnotations("post-gen-sram-models.json"),
         new fame.EmitAllAnnotations("post-gen-sram-all.json"),
-
         new fame.EmitAndReadBackFIRRTL("post-gen-sram-models.fir", "post-gen-sram-all.json"),
         new ResolveAndCheck,
         new EmitFirrtl("post-readback.fir"),
         new fame.EmitAllAnnotations("post-readback-all.json"),
-
         new SimulationMapping(internalState.circuit.main),
         xilinx.HostSpecialization,
         new ResolveAndCheck,
