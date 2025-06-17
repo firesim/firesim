@@ -156,3 +156,12 @@ class DefaultVitisConfig
       new BaseBridgesConfig ++
         new midas.VitisConfig
     )
+
+
+class WithExternalCompiler
+    extends Config((_, _, _) => { case midas.UseExternalCompiler =>
+      true
+    })
+
+// Short name aliases for above
+class ExternalCompiler extends WithExternalCompiler

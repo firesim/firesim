@@ -329,3 +329,6 @@ class WithPartitionIndex(index: Int)
     })
 
 class ExactMode extends WithFireAxePreserveTarget
+
+// External compiler
+case object UseExternalCompiler extends Field[Boolean](false)

@@ -9,7 +9,7 @@ import firrtl.Parser
 import java.io.{File, PrintWriter}
 import scala.sys.process._
 
-class EmitAndReadBackFIRRTL(firFile: String, annoFile: String) extends Transform {
+class FAME5ExternalCompiler(firFile: String, annoFile: String) extends Transform {
   import firrtl.options.TargetDirAnnotation
   def inputForm = UnknownForm
   def outputForm = UnknownForm
@@ -28,13 +28,14 @@ class EmitAndReadBackFIRRTL(firFile: String, annoFile: String) extends Transform
     val dirName    = targetDir.getOrElse(".")
 
     // Usage
-    val binary_path = "/scratch/fpga-demo/coding/ripple-ir/target/release/ripple-ir";
+    val binary_path = "/scratch/joonho.whangbo/coding/ripple-ir/target/release/ripple-ir";
     val args = Seq(
-        s"--input", s"${dirName}/${firFile}",
-        "--output", s"${dirName}/post-custom-binary.fir",
-        "--annos-in", s"${dirName}/${annoFile}",
+        "--input",     s"${dirName}/${firFile}",
+        "--annos-in",  s"${dirName}/${annoFile}",
+        "--output",    s"${dirName}/post-custom-binary.fir",
         "--annos-out", s"${dirName}/post-custom-binary.json",
-        "--firrtl-version", "firrtl3")
+        "--firrtl-version", "firrtl3",
+        "--fame5")
 
     println(s"args ${args}")
 

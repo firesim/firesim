@@ -28,6 +28,29 @@ private[midas] class MidasTransforms extends Transform {
     val partition = p(FireAxePartitionGlobalInfo).isDefined
     val extract   = p(FireAxePartitionIndex).isDefined
 
+    val external_compiler = p(UseExternalCompiler)
+
+    val fame5_passes = if (external_compiler) {
+      Seq(
+        firrtl.passes.SplitExpressions,
+        new EmitFirrtl("post-gen-sram-models.fir"),
+        new fame.EmitFAMEAnnotations("post-gen-sram-models.json"),
+        new fame.EmitAllAnnotations("post-gen-sram-all.json"),
+        new fame.FAME5ExternalCompiler("post-gen-sram-models.fir", "post-gen-sram-all.json"),
+        new ResolveAndCheck,
+        new EmitFirrtl("post-readback.fir"),
+        new fame.EmitAllAnnotations("post-readback-all.json"),
+      )
+    } else {
+      Seq(
+        new EmitFirrtl("pre-fame5-transform.fir"),
+        new fame.EmitFAMEAnnotations("pre-fame5-transform.json"),
+        fame.MultiThreadFAME5Models,
+        new EmitFirrtl("post-fame5-transform.fir"),
+        new fame.EmitFAMEAnnotations("post-fame5-transform.json")
+      )
+    }
+
     val performExtractPass = if (partition && extract) {
       println("PerformExtractPass")
       Seq(
@@ -214,28 +237,14 @@ private[midas] class MidasTransforms extends Transform {
         new EmitFirrtl("post-fame-transform.fir"),
         new fame.EmitFAMEAnnotations("post-fame-transform.json"),
         new ResolveAndCheck,
-
-        firrtl.passes.SplitExpressions,
-        new EmitFirrtl("pre-fame5-transform.fir"),
-        new fame.EmitFAMEAnnotations("pre-fame5-transform.json"),
-        fame.MultiThreadFAME5Models,
-        new EmitFirrtl("post-fame5-transform.fir"),
-        new fame.EmitFAMEAnnotations("post-fame5-transform.json"),
-
+      ) ++
+      fame5_passes ++
+      Seq(
         new ResolveAndCheck,
         new passes.InlineInstances,
         passes.ResolveKinds,
         new fame.EmitAndWrapRAMModels,
         new ResolveAndCheck,
-
-        firrtl.passes.SplitExpressions,
-        new EmitFirrtl("post-gen-sram-models.fir"),
-        new fame.EmitFAMEAnnotations("post-gen-sram-models.json"),
-        new fame.EmitAllAnnotations("post-gen-sram-all.json"),
-        new fame.EmitAndReadBackFIRRTL("post-gen-sram-models.fir", "post-gen-sram-all.json"),
-        new ResolveAndCheck,
-        new EmitFirrtl("post-readback.fir"),
-        new fame.EmitAllAnnotations("post-readback-all.json"),
         new SimulationMapping(internalState.circuit.main),
         xilinx.HostSpecialization,
         new ResolveAndCheck,
