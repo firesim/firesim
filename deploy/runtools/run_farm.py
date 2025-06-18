@@ -12,11 +12,12 @@ import subprocess
 import tempfile
 import socketserver
 from datetime import timedelta
-from fabric.api import run, env, prefix, put, cd, warn_only, local, settings, hide, sudo  # type: ignore
+from fabric.api import run, env, prefix, put, cd, warn_only, local, settings, hide, sudo, execute  # type: ignore
 from fabric.contrib.project import rsync_project  # type: ignore
 from os.path import join as pjoin 
 import pprint
 from collections import defaultdict, Counter
+import base64
 
 from awstools.awstools import (
     instances_sorted_by_avail_ip,
@@ -962,6 +963,82 @@ class ExternallyProvisionedWithVMIsolation(RunFarm): # run_farm_type
         # look at the database on the host machine, find list of FPGAs free, if num free > num requested by the spec, grab their bdfs and attach them to the VM, record vm IP in the database
 
         # open /opt/firesim-vm-host.db.json, count number of fpgas not busy
+        
+        def flock_host_machine_db(lock_path, db_path, local_tmp_path):
+            try:
+                output = run(f"flock {lock_path} cat {db_path}")
+                with open(local_tmp_path, "wb") as f:
+                    f.write(output.encode())  # Encode to bytes for binary write
+            except e:
+                raise RuntimeError(
+                    f"Failed to read database file {db_path} on host {env.host_string}: {e} -- Did you run sudo ./setup-firesim-vm-host?"
+                )
+                
+        def push_db_file(lock_path, db_path, local_tmp_path):
+            # Read local file and base64 encode to safely send via command line
+            with open(local_tmp_path, "rb") as f:
+                encoded = base64.b64encode(f.read()).decode()
+
+            # Echo the data into a remote flocked cat > db_path
+            cmd = f"echo {encoded} | base64 -d | flock {lock_path} bash -c 'cat > {db_path}'"
+            run(cmd)
+        
+        
+        def install_vm_pkgs():
+            rootLogger.info("Installing build-essential...")
+            run("sudo apt-get install -y build-essential")
+
+            # install scripts to /usr/local/bin
+            rootLogger.info("Installing scripts to /usr/local/bin...")
+            run("git clone https://github.com/firesim/firesim ~/firesim")
+            run("cd ~/firesim && sudo cp deploy/sudo-scripts/* /usr/local/bin")
+            run("cd ~/firesim && sudo cp platforms/xilinx_alveo_u250/scripts/* /usr/local/bin")  # TODO: hardcoded
+            run("rm -rf ~/firesim")
+
+            # install xdma & xcsec drivers
+            rootLogger.info("Installing xdma & xcsec drivers...")
+            run("git clone https://github.com/Xilinx/dma_ip_drivers ~/dma_ip_drivers")
+            run("cd ~/dma_ip_drivers/XDMA/linux-kernel/xdma && sudo make install")
+
+            run("git clone https://github.com/paulmnt/dma_ip_drivers ~/dma_ip_drivers_xvsec")
+            run("cd ~/dma_ip_drivers_xvsec/XVSEC/linux-kernel && sudo make clean all && sudo make install")
+        
+        def setup_vm(vm_name, iso_location):
+            run(f"""{pjoin(
+                os.path.dirname(os.path.abspath(__file__)), "..", "vm-create"
+            )} {vm_name} {iso_location} {pjoin(os.path.dirname(os.path.abspath(__file__)), '..','vm-pci-attach.xml',)}""") # will auto restart after installation completes
+            rootLogger.info(
+                "ran vm-create to create the VM + attached pcie devices"
+            )
+
+            # spin & wait for the VM to be up (from reboot after installation)
+            while True:
+                if "running" in run(f"virsh domstate {vm_name}"): # this doesn't tell us the system has booted -- only its "on"
+                    with settings(warn_only=True):
+                        ip_addr = run(
+                            " ".join(["""for mac in `virsh domiflist""", vm_name, """|grep -o -E "([0-9a-f]{2}:){5}([0-9a-f]{2})"` ; do arp -e |grep $mac  |grep -o -P "^\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}" ; done
+                            """]),
+                        )
+                        if (ip_addr != "") and ("SSH" in run(f"echo | nc {ip_addr} 22")): # use nc here to ensure that the VM is actually up and running, we arent just looking for ip assigment here
+                            break
+                time.sleep(1)
+            rootLogger.info("VM is up and running")
+        
+            # grab VM IP - https://stackoverflow.com/questions/19057915/libvirt-fetch-ipv4-address-from-guest
+            # TODO: ensure DHCP lease doesn't expire/IP doesn't change
+            ip_addr = run(
+                " ".join(
+                    [
+                        """for mac in `virsh domiflist""",
+                        vm_name,
+                        """|grep -o -E "([0-9a-f]{2}:){5}([0-9a-f]{2})"` ; do arp -e |grep $mac  |grep -o -P "^\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}" ; done
+                            """,
+                    ]
+                )
+            )
+            
+            return ip_addr
+            
 
         host_machine_ip = list(self.args["run_farm_hosts_to_use"][0].keys())[0]  # assuming the first host is the one we are using - typcially for local setup you only have 1 host with `n` fpgas
         
@@ -975,14 +1052,8 @@ class ExternallyProvisionedWithVMIsolation(RunFarm): # run_farm_type
             
         rootLogger.info(f"Reading database file {db_path} from host {host_machine_ip} to local temp file {local_tmp_path}")
         
-        # Acquire lock, copy file
-        try:
-            subprocess.run([
-                "ssh", host_machine_ip,
-                f"flock {lock_path} cat {db_path}"
-            ], check=True, stdout=open(local_tmp_path, "wb"))
-        except subprocess.CalledProcessError as e:
-            raise RuntimeError(f"Failed to read database file {db_path} on host {host_machine_ip}: {e} -- Did you run sudo ./setup-firesim-vm-host?")
+        # Acquire lock, copy file        
+        execute(flock_host_machine_db, lock_path, db_path, local_tmp_path, hosts=[host_machine_ip])
     
         # Step 2: Load + modify JSON locally
         with open(local_tmp_path, "r") as db_file:
@@ -1006,13 +1077,16 @@ class ExternallyProvisionedWithVMIsolation(RunFarm): # run_farm_type
         # check if there are enough free FPGAs available
         if len(free_fpgas) < num_requested_fpgas:
             usage = Counter(entry["in_use_by"] for entry in host_machine_fpgas_db.values() if entry["in_use_by"])
-            print("Current FPGA usage by users:")
-            print("-------------------------------")
-            for user, count in usage.items():
-                print(f"{user}: {count} FPGA(s)")
-            raise RuntimeError(
-                f"Not enough free FPGAs available. Requested: {num_requested_fpgas}, Available: {len(free_fpgas)}."
+            usage_lines = "\n".join(f"{user}: {count} FPGA(s)" for user, count in usage.items())
+            error_message = (
+                f"Not enough free FPGAs available. Requested: {num_requested_fpgas}, "
+                f"Available: {len(free_fpgas)}.\n"
+                f"Users currently using FPGAs:\n"
+                f"-------------------------------\n"
+                f"{usage_lines}"
             )
+            raise RuntimeError(error_message)
+
 
         # grab their bdfs and attach them to the VM, set them as busy, record vm IP in the database
         
@@ -1033,10 +1107,7 @@ class ExternallyProvisionedWithVMIsolation(RunFarm): # run_farm_type
         rootLogger.info(f"Updated database with attached FPGAs: {json.dumps(host_machine_fpgas_db, indent=2)}")
         
         # Step 4: scp back while holding the lock
-        subprocess.run([
-            "ssh", host_machine_ip,
-            f"flock {lock_path} bash -c 'cat > {db_path}'"
-        ], input=open(local_tmp_path, "rb").read(), check=True)
+        execute(push_db_file, lock_path, db_path, local_tmp_path, hosts=[host_machine_ip])
 
         # prepare xml file for attaching the FPGAs to the VM -- see vm-pci-attach-frame.xml for example
         # clear the existing pci-attach xml file
@@ -1075,40 +1146,43 @@ class ExternallyProvisionedWithVMIsolation(RunFarm): # run_farm_type
 
         # create the VM - run vm-create.sh + attach pcie device
         rootLogger.info("running vm-create...")
-        env.host_string = host_machine_ip # set the host string to localhost since we are running this on the local machine
-        rootLogger.info(f"running as: {env.host_string}")
-        run(f"""{pjoin(
-            os.path.dirname(os.path.abspath(__file__)), "..", "vm-create"
-        )} {self.vm_name} {self.iso_location} {pjoin(os.path.dirname(os.path.abspath(__file__)), '..','vm-pci-attach.xml',)}""") # will auto restart after installation completes
-        rootLogger.info(
-            "ran vm-create to create the VM + attached pcie devices"
-        )
+        # env.host_string = host_machine_ip 
+        rootLogger.info(f"running as: {host_machine_ip}")
+        
+        # run(f"""{pjoin(
+        #     os.path.dirname(os.path.abspath(__file__)), "..", "vm-create"
+        # )} {self.vm_name} {self.iso_location} {pjoin(os.path.dirname(os.path.abspath(__file__)), '..','vm-pci-attach.xml',)}""") # will auto restart after installation completes
+        # rootLogger.info(
+        #     "ran vm-create to create the VM + attached pcie devices"
+        # )
 
-        # spin & wait for the VM to be up (from reboot after installation)
-        while True:
-            if "running" in run(f"virsh domstate {self.vm_name}"): # this doesn't tell us the system has booted -- only its "on"
-                with settings(warn_only=True):
-                    ip_addr = run(
-                        " ".join(["""for mac in `virsh domiflist""", self.vm_name, """|grep -o -E "([0-9a-f]{2}:){5}([0-9a-f]{2})"` ; do arp -e |grep $mac  |grep -o -P "^\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}" ; done
-                        """]),
-                    )
-                    if (ip_addr != "") and ("SSH" in run(f"echo | nc {ip_addr} 22")): # use nc here to ensure that the VM is actually up and running, we arent just looking for ip assigment here
-                        break
-            time.sleep(1)
-        rootLogger.info("VM is up and running")
+        # # spin & wait for the VM to be up (from reboot after installation)
+        # while True:
+        #     if "running" in run(f"virsh domstate {self.vm_name}"): # this doesn't tell us the system has booted -- only its "on"
+        #         with settings(warn_only=True):
+        #             ip_addr = run(
+        #                 " ".join(["""for mac in `virsh domiflist""", self.vm_name, """|grep -o -E "([0-9a-f]{2}:){5}([0-9a-f]{2})"` ; do arp -e |grep $mac  |grep -o -P "^\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}" ; done
+        #                 """]),
+        #             )
+        #             if (ip_addr != "") and ("SSH" in run(f"echo | nc {ip_addr} 22")): # use nc here to ensure that the VM is actually up and running, we arent just looking for ip assigment here
+        #                 break
+        #     time.sleep(1)
+        # rootLogger.info("VM is up and running")
     
-        # grab VM IP - https://stackoverflow.com/questions/19057915/libvirt-fetch-ipv4-address-from-guest
-        # TODO: ensure DHCP lease doesn't expire/IP doesn't change
-        ip_addr = run(
-            " ".join(
-                [
-                    """for mac in `virsh domiflist""",
-                    self.vm_name,
-                    """|grep -o -E "([0-9a-f]{2}:){5}([0-9a-f]{2})"` ; do arp -e |grep $mac  |grep -o -P "^\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}" ; done
-                        """,
-                ]
-            )
-        )
+        # # grab VM IP - https://stackoverflow.com/questions/19057915/libvirt-fetch-ipv4-address-from-guest
+        # # TODO: ensure DHCP lease doesn't expire/IP doesn't change
+        # ip_addr = run(
+        #     " ".join(
+        #         [
+        #             """for mac in `virsh domiflist""",
+        #             self.vm_name,
+        #             """|grep -o -E "([0-9a-f]{2}:){5}([0-9a-f]{2})"` ; do arp -e |grep $mac  |grep -o -P "^\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}" ; done
+        #                 """,
+        #         ]
+        #     )
+        # )
+        
+        ip_addr = execute(setup_vm, self.vm_name, self.iso_location, hosts=[host_machine_ip])[host_machine_ip]
 
         # Step 1: Read and lock file remotely
         with tempfile.NamedTemporaryFile(mode='w+', delete=False) as local_db:
@@ -1117,13 +1191,7 @@ class ExternallyProvisionedWithVMIsolation(RunFarm): # run_farm_type
         rootLogger.info(f"Reading database file {db_path} from host {host_machine_ip} to local temp file {local_tmp_path}")
         
         # Acquire lock, copy file
-        try:
-            subprocess.run([
-                "ssh", host_machine_ip,
-                f"flock {lock_path} cat {db_path}"
-            ], check=True, stdout=open(local_tmp_path, "wb"))
-        except subprocess.CalledProcessError as e:
-            raise RuntimeError(f"Failed to read database file {db_path} on host {host_machine_ip}: {e} -- Did you run sudo ./setup-firesim-vm-host?")
+        execute(flock_host_machine_db, lock_path, db_path, local_tmp_path, hosts=[host_machine_ip])
     
         # Step 2: Load + modify JSON locally
         with open(local_tmp_path, "r") as db_file:
@@ -1146,10 +1214,7 @@ class ExternallyProvisionedWithVMIsolation(RunFarm): # run_farm_type
         rootLogger.info(f"Updated database with attached FPGAs: {json.dumps(host_machine_fpgas_db, indent=2)}")
         
         # Step 4: scp back while holding the lock
-        subprocess.run([
-            "ssh", host_machine_ip,
-            f"flock {lock_path} bash -c 'cat > {db_path}'"
-        ], input=open(local_tmp_path, "rb").read(), check=True)
+        execute(push_db_file, lock_path, db_path, local_tmp_path, hosts=[host_machine_ip])
 
         # write to local firesim_vm_status.json
         firesim_vm_status_path = pjoin(
@@ -1168,50 +1233,33 @@ class ExternallyProvisionedWithVMIsolation(RunFarm): # run_farm_type
         # install cmake, gcc, etc
         logging.getLogger("paramiko").setLevel(logging.DEBUG)
         rootLogger.info(f"{self.vm_username}@{ip_addr}")
-        env.host_string = f"{self.vm_username}@{ip_addr}" # this changes the host_string for subsequent run() calls until program exits
-        env.key_filename = pjoin(
-            os.path.dirname(os.path.abspath(__file__)), "..", "vm-cloud-init-configs", "firesim_vm_ed25519"
-        )  # this is the key we use to ssh into the VM, set in vm-cloud-init-configs/user-data
-
-        # ssh into the vm is key based, set in vm-cloud-init-configs/user-data
-        rootLogger.info("Installing build-essential...")
-        run("""sudo apt-get install -y build-essential""", shell=True)
-
-        # install scripts to /usr/local/bin
-        rootLogger.info("Installing scripts to /usr/local/bin...")
-        run("""git clone https://github.com/firesim/firesim ~/firesim""", shell=True)
-        run("""cd firesim && sudo cp deploy/sudo-scripts/* /usr/local/bin""", shell=True)
-        run("""cd firesim && sudo cp platforms/xilinx_alveo_u250/scripts/* /usr/local/bin""", shell=True) # TODO: this is hardcoded to the u250 platform, need to make it more generic
-        run("""rm -rf ~/firesim""", shell=True) # remove the repo after copying the scripts
-
-        # install xdma & xcsec drivers
-        rootLogger.info("Installing xdma & xcsec drivers...")
-
-        run("""git clone https://github.com/Xilinx/dma_ip_drivers ~/dma_ip_drivers""", shell=True)
-
-        run("""cd ~/dma_ip_drivers/XDMA/linux-kernel/xdma && sudo make install""", shell=True)
-
-        run("""git clone https://github.com/paulmnt/dma_ip_drivers ~/dma_ip_drivers_xvsec""", shell=True) 
-
-        run("""cd ~/dma_ip_drivers_xvsec/XVSEC/linux-kernel && sudo make clean all && sudo make install""", shell=True)
+        
+        execute(install_vm_pkgs, hosts=[f"{self.vm_username}@{ip_addr}"])  # install packages on the VM        
         
     def terminate_run_farm(
         self, terminate_some_dict: Dict[str, int], forceterminate: bool
     ) -> None:
         
-        # run everything here on host machine, not vms
-        host_machine_ip = list(self.args["run_farm_hosts_to_use"][0].keys())[0] 
-        env.host_string = host_machine_ip 
-        db_path = "/opt/firesim-vm-host-db.json"
-        lock_path = "/opt/firesim-vm-host-db.lock"
-        if (not forceterminate):
-            userconfirm = firesim_input(
-                "Type yes, then press enter, to continue. Otherwise, the operation will be cancelled.\n"
-            )
-        else: 
-            userconfirm = "yes"
+        def flock_host_machine_db(lock_path, db_path, local_tmp_path):
+            try:
+                output = run(f"flock {lock_path} cat {db_path}")
+                with open(local_tmp_path, "wb") as f:
+                    f.write(output.encode())  # Encode to bytes for binary write
+            except e:
+                raise RuntimeError(
+                    f"Failed to read database file {db_path} on host {env.host_string}: {e} -- Did you run sudo ./setup-firesim-vm-host?"
+                )
+                
+        def push_db_file(lock_path, db_path, local_tmp_path):
+            # Read local file and base64 encode to safely send via command line
+            with open(local_tmp_path, "rb") as f:
+                encoded = base64.b64encode(f.read()).decode()
 
-        if userconfirm == "yes":
+            # Echo the data into a remote flocked cat > db_path
+            cmd = f"echo {encoded} | base64 -d | flock {lock_path} bash -c 'cat > {db_path}'"
+            run(cmd)
+        
+        def destroy_vm():
             # detach FPGAs - technically not needed -- deleting a vm will automatically detach -- but good practice
             run(
                 f"virsh detach-device {self.vm_name} --file {pjoin(os.path.dirname(os.path.abspath(__file__)), '..','vm-pci-attach.xml',)} --persistent"
@@ -1232,6 +1280,23 @@ class ExternallyProvisionedWithVMIsolation(RunFarm): # run_farm_type
             # remove the VM
             run(f"virsh undefine {self.vm_name} --nvram --remove-all-storage")
             rootLogger.info("Removed VM")
+            
+        
+        # run everything here on host machine, not vms
+        host_machine_ip = list(self.args["run_farm_hosts_to_use"][0].keys())[0] 
+        # env.host_string = host_machine_ip
+        db_path = "/opt/firesim-vm-host-db.json"
+        lock_path = "/opt/firesim-vm-host-db.lock"
+        if (not forceterminate):
+            userconfirm = firesim_input(
+                "Type yes, then press enter, to continue. Otherwise, the operation will be cancelled.\n"
+            )
+        else: 
+            userconfirm = "yes"
+
+        if userconfirm == "yes":
+            
+            execute(destroy_vm, hosts=[host_machine_ip])  # destroy the VM
 
             # empty run_farm_hosts_dict
             self.run_farm_hosts_dict.clear()
@@ -1266,13 +1331,7 @@ class ExternallyProvisionedWithVMIsolation(RunFarm): # run_farm_type
             rootLogger.info(f"Reading database file {db_path} from host {host_machine_ip} to local temp file {local_tmp_path}")
             
             # Acquire lock, copy file
-            try:
-                subprocess.run([
-                    "ssh", host_machine_ip,
-                    f"flock {lock_path} cat {db_path}"
-                ], check=True, stdout=open(local_tmp_path, "wb"))
-            except subprocess.CalledProcessError as e:
-                raise RuntimeError(f"Failed to read database file {db_path} on host {host_machine_ip}: {e} -- Did you run sudo ./setup-firesim-vm-host?")
+            execute(flock_host_machine_db, lock_path, db_path, local_tmp_path, hosts=[host_machine_ip])
         
             # Step 2: Load + modify JSON locally
             with open(local_tmp_path, "r") as db_file:
@@ -1298,10 +1357,8 @@ class ExternallyProvisionedWithVMIsolation(RunFarm): # run_farm_type
             rootLogger.info(f"Updated database with attached FPGAs: {json.dumps(host_machine_fpgas_db, indent=2)}")
             
             # Step 4: scp back while holding the lock
-            subprocess.run([
-                "ssh", host_machine_ip,
-                f"flock {lock_path} bash -c 'cat > {db_path}'"
-            ], input=open(local_tmp_path, "rb").read(), check=True)
+            execute(push_db_file, lock_path, db_path, local_tmp_path, hosts=[host_machine_ip])
+            
 
     def get_all_host_nodes(self) -> List[Inst]:
         all_insts = []
