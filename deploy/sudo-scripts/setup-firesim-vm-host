@@ -21,9 +21,12 @@ if $DOWNLOAD_ISO; then
     fi
 fi
 
-sudo python3 "$FS_DIR/utils/host-machine-setupdb.py"
+firesim enumeratefpgas
 sudo chmod 777 /opt/firesim-vm-host-db.json
 touch /opt/firesim-vm-host-db.lock
 sudo chmod 777 /opt/firesim-vm-host-db.lock
+
+# update vm os cloud-init with newly generated ssh key
+python3 "$FS_DIR/utils/update-cloud-init.py"
 
 python3 "$FS_DIR/deploy/util/start-cloud-init-server.py"

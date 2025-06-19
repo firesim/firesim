@@ -10,3 +10,5 @@ logs/*.log
 built-hwdb-entries/
 /firesim.py
 vm-pci-attach.xml
+vm-cloud-init-configs/firesim_vm_ed25519
+vm-cloud-init-configs/firesim_vm_ed25519.pub
