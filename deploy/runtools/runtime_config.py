@@ -12,7 +12,7 @@ import yaml
 import os
 import sys
 from fabric.operations import _stdoutString  # type: ignore
-from fabric.api import prefix, settings, local, run # type: ignore
+from fabric.api import prefix, settings, local, run  # type: ignore
 from fabric.contrib.project import rsync_project  # type: ignore
 from os.path import join as pjoin
 from os.path import basename, expanduser
