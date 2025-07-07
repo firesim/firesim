@@ -62,6 +62,10 @@ args:
           num_fpgas: 2
           num_metasims: 0
           use_for_switch_only: false
+      - f2.6xlarge:
+          num_fpgas: 1
+          num_metasims: 0
+          use_for_switch_only: false
       - f1.16xlarge:
           num_fpgas: 8
           num_metasims: 0

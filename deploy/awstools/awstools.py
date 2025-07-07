@@ -11,6 +11,7 @@ from itertools import chain
 import time
 import sys
 import json
+import re
 
 import boto3
 import botocore
@@ -52,25 +53,19 @@ def get_f1_ami_name() -> str:
             print(
                 "Unknown $USER (expected centos/amzn). Defaulting to the Centos AWS EC2 AMI."
             )
-        return "FPGA Developer AMI - 1.12.2-40257ab5-6688-4c95-97d1-e251a40fd1fc"
+        return "FPGA Developer AMI (Ubuntu) - 1.17.0   -prod-rhng4b6alkhdq"
 
 
 def get_incremented_f1_ami_name(ami_name: str, increment: int) -> str:
     """For an ami_name of the format "STUFF - X.Y.Z-hash-stuff",
-    return ami_name, but with Z incremented by increment for auto-bumping
-    the AMI on hotfix releases."""
-    base_name = get_f1_ami_name()
-    split1 = base_name.split(" - ")
-    prefix = split1[0] + " - "
+    return ami_name, but with Z incremented by increment for auto-bumping the AMI on hotfix releases. Uses Regex in case ami_nname has variable spaces between `-`
+    """
+    def replacer(match):
+        x, y, z = map(int, match.group().split("."))
+        return f"{x}.{y}.{z + increment}"
 
-    split2 = split1[1].split("-")
-    suffix = "-" + "-".join(split2[1:])
-
-    version_number = list(map(int, split2[0].split(".")))
-    version_number[-1] += increment
-    version_number_str = ".".join(map(str, version_number))
-    return prefix + version_number_str + suffix
-
+    # Replace the first occurrence of a version number like X.Y.Z
+    return re.sub(r"\b\d+\.\d+\.\d+\b", replacer, ami_name, count=1)
 
 class MockBoto3Instance:
     """This is used for testing without actually launching instances."""
@@ -611,6 +606,9 @@ def launch_instances(
                     }
                 ],
                 "KeyName": keyname,
+                # "Placement": {
+                    # 'AvailabilityZone': 'us-west-2c', # TODO: don't hardcode this? - https://docs.aws.amazon.com/global-infrastructure/latest/regions/aws-availability-zones.html#zones-north-america - want us-west-2b or us-west-2c to match f2.6xlarge
+                # }, # hindsight: no need - it'll try multiple availability zones automatically along with different subnets
                 "TagSpecifications": (
                     []
                     if tags is None
@@ -627,6 +625,8 @@ def launch_instances(
                 with open(user_data_file, "r") as f:
                     instance_args["UserData"] = "".join(f.readlines())
 
+            # print instance_args
+            rootLogger.info(f"LAUNCHING: {instance_args}")
             instance = ec2.create_instances(**instance_args)
             instances += instance
 
@@ -719,6 +719,7 @@ def launch_run_instances(
                 "Ebs": {
                     "VolumeSize": 300,  # TODO: make this configurable from .yaml?
                     "VolumeType": "gp2",
+                    # "AvailabilityZone": "us-west-2c",  # TODO: don't hardcode this? - https://docs.aws.amazon.com/global-infrastructure/latest/regions/aws-availability-zones.html#zones-north-america - want us-west-2b or us-west-2c to match f2.6xlarge
                 },
             },
         ],
