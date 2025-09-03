@@ -1,6 +1,9 @@
 [submodule "platforms/f1/aws-fpga"]
 	path = platforms/f1/aws-fpga
 	url = https://github.com/firesim/aws-fpga-firesim
+[submodule "platforms/f2/aws-fpga"]
+	path = platforms/f2/aws-fpga
+	url = https://github.com/aws/aws-fpga
 [submodule "utils/FlameGraph"]
 	path = utils/fireperf/FlameGraph
 	url = https://github.com/brendangregg/FlameGraph.git
