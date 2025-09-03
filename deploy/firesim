@@ -152,7 +152,7 @@ def managerinit(args: argparse.Namespace):
         return start_arg_idx, end_arg_idx
 
     rootLogger.info("Adding default overrides to config files")
-    if args.platform == 'f1':
+    if args.platform == 'f1' or args.platform == 'f2':
         runfarm_default_file = "run-farm-recipes/aws_ec2.yaml"
         with open(runfarm_default_file, "r") as f:
             rf_recipe_lines = f.readlines()
@@ -234,7 +234,7 @@ def managerinit(args: argparse.Namespace):
     else:
         rootLogger.info(f"Unknown platform {args.platform}. Skipping default config overrides.")
 
-    if args.platform == 'f1':
+    if args.platform == 'f1' or args.platform == 'f2':
         awsinit()
 
 @register_task
