@@ -213,9 +213,11 @@ class F1BitBuilder(BitBuilder):
         fpga_build_postfix = f"hdk/cl/developer_designs/cl_{chisel_quintuplet}"
 
         # local paths
-        local_awsfpga_dir = f"{get_deploy_dir()}/../platforms/f1/aws-fpga"
+        # local_awsfpga_dir = f"{get_deploy_dir()}/../platforms/f1/aws-fpga"
+        local_awsfpga_dir = f"{get_deploy_dir()}/../platforms/f2/aws-fpga"
 
-        dest_f1_platform_dir = f"{dest_build_dir}/platforms/f1/"
+        # dest_f1_platform_dir = f"{dest_build_dir}/platforms/f1/"
+        dest_f1_platform_dir = f"{dest_build_dir}/platforms/f2/"
         dest_awsfpga_dir = f"{dest_f1_platform_dir}/aws-fpga"
 
         # copy aws-fpga to the build instance.

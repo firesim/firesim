@@ -1,0 +1,8 @@
+{
+	"benchmark_name": "br-base",
+	"common_simulation_outputs": [
+		"uartlog"
+	],
+	"common_bootbinary": "../../../../../software/firemarshal/images/firechip/br-base/br-base-bin",
+	"common_rootfs": "../../../../../software/firemarshal/images/firechip/br-base/br-base.img"
+}

@@ -49,7 +49,7 @@ def get_f1_ami_name() -> str:
     if cuser == "amzn":
         return "FPGA Developer AMI(AL2) - 1.11.3-62ddb7b2-2f1e-4c38-a111-9093dcb1656f"
     else:
-        if cuser != "centos":
+        if cuser != "ubuntu":
             print(
                 "Unknown $USER (expected centos/amzn). Defaulting to the Centos AWS EC2 AMI."
             )
