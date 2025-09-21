@@ -131,6 +131,32 @@ class F1Config
       case PostLinkCircuitPath         => Some("WRAPPER_INST/CL/firesim_top")
     }) ++ new SimConfig)
 
+class F2Config
+    extends Config(new Config((_, _, _) => {
+      case Platform                    => (p: Parameters) => new F1Shim()(p)
+      case HasDMAChannel               => true
+      case StreamEngineInstantiatorKey => (e: StreamEngineParameters, p: Parameters) => new CPUManagedStreamEngine(p, e)
+      case CPUManagedAXI4Key           =>
+        Some(
+          CPUManagedAXI4Params(
+            addrBits = 64,
+            dataBits = 512,
+            idBits   = 6,
+          )
+        )
+      case FPGAManagedAXI4Key          => None
+      case CtrlNastiKey                => NastiParameters(32, 25, 12)
+      case HostMemChannelKey           =>
+        HostMemChannelParams(
+          size      = 0x400000000L, // 16 GiB
+          beatBytes = 8,
+          idBits    = 16,
+        )
+      case HostMemNumChannels          => 4
+      case PreLinkCircuitPath          => Some("firesim_top")
+      case PostLinkCircuitPath         => Some("WRAPPER_INST/CL/firesim_top")
+    }) ++ new SimConfig)
+
 class XilinxAlveoU250Config
     extends Config(new Config((_, _, _) => {
       case F1ShimHasQSFPPorts  => true
