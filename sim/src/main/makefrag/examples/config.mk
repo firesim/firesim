@@ -17,3 +17,4 @@ TARGET_CONFIG ?= NoConfig
 # argument). Defaults to the basic F1 config (since 'PLATFORM' should be 'f1')
 PLATFORM_CONFIG_PACKAGE ?= midas
 PLATFORM_CONFIG ?= F1Config
+# PLATFORM_CONFIG ?= F2Config

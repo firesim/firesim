@@ -115,7 +115,8 @@ class F1Config
           CPUManagedAXI4Params(
             addrBits = 64,
             dataBits = 512,
-            idBits   = 6,
+            // idBits   = 6,
+            idBits   = 16,
           )
         )
       case FPGAManagedAXI4Key          => None
