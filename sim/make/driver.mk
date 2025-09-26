@@ -15,8 +15,10 @@ driver: $(PLATFORM)
 
 
 # these compilation flags are setup for centos7-only (what AWS FPGA supports)
+# $(f1): export CXXFLAGS := $(CXXFLAGS) $(common_cxx_flags) $(DRIVER_CXXOPTS) \
+# 	-I$(platforms_dir)/f1/aws-fpga/sdk/userspace/include
 $(f1): export CXXFLAGS := $(CXXFLAGS) $(common_cxx_flags) $(DRIVER_CXXOPTS) \
-	-I$(platforms_dir)/f1/aws-fpga/sdk/userspace/include
+	-I$(platforms_dir)/f2/aws-fpga-firesim-f2/sdk/userspace/include
 # We will copy shared libs into same directory as driver on runhost, so add $ORIGIN to rpath ($$ORIGIN when given on the shell)
 $(f1): export LDFLAGS := $(LDFLAGS) $(common_ld_flags) -Wl,-rpath='$$$$ORIGIN' -L /usr/local/lib64 -lfpga_mgmt -lz
 
