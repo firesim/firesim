@@ -22,6 +22,6 @@
 [submodule "sim/cde"]
 	path = sim/cde
 	url = https://github.com/chipsalliance/cde.git
-[submodule "platforms/f2/aws-fpga"]
-	path = platforms/f2/aws-fpga
+[submodule "platforms/f2/aws-fpga-firesim-f2"]
+	path = platforms/f2/aws-fpga-firesim-f2
 	url = https://github.com/rickydumplings/aws-fpga-firesim-f2.git
