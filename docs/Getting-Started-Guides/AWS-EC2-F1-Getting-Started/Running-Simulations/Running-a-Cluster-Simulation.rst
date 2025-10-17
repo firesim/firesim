@@ -151,7 +151,7 @@ infrastructure, let's run:
 
 .. code-block:: bash
 
-    firesim infrasetup -a ${CY_DIR}sims/firesim-staging/sample_config_hwdb.yaml -r ${CY_DIR}/sims/firesim-staging/sample_config_build_recipes.yaml
+    firesim infrasetup -a ${CY_DIR}/sims/firesim-staging/sample_config_hwdb.yaml -r ${CY_DIR}/sims/firesim-staging/sample_config_build_recipes.yaml
 
 For a complete run, you should expect output like the following:
 
