@@ -15,7 +15,7 @@ from datetime import date
 import warnings
 from cryptography.utils import CryptographyDeprecationWarning
 with warnings.catch_warnings():
-    if date.today() < date(2025, 1, 1):
+    if date.today() < date(2026, 1, 1):
         # Temporarily wave CryptographyDeprecationWarning while we wait on a paramiko-ng release
         warnings.filterwarnings('ignore', category=CryptographyDeprecationWarning)
     from fabric.api import local, hide, warn_only, env, execute, parallel # type: ignore
@@ -458,6 +458,12 @@ def main(args: argparse.Namespace) -> None:
     # we elastically spin instances up/down. we can easily get re-used IPs with
     # different keys. also, probably won't get MITM'd
     env.disable_known_hosts = True
+    env.user = 'ubuntu' #rh: please
+    env.key_filename = os.path.expanduser("~/.ssh/firesim.pem") #rh: okay so /firesim.pem does not work for buildbitstream
+    env.use_ssh_config = False #rh: work please
+    env.password = None #rh: bruh
+    env.passwords = {} #rh: come on
+    rootLogger.debug(f"Fabric SSH config: user={env.user}, key={env.key_filename}, use_ssh_config={env.use_ssh_config}") #rh: bro
 
     rootLogger.info("FireSim Manager. Docs: https://docs.fires.im\nRunning: %s\n", str(args.task))
 

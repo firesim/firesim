@@ -41,3 +41,4 @@ dependencies:
         - fab-classic>=1.19.2
         - azure-mgmt-resourcegraph # ci-only
         - bcrypt<4.0.0
+        - paramiko>=4.0.0
