@@ -38,7 +38,7 @@ dependencies:
 
     - pip
     - pip:
-        - fab-classic>=1.19.2
+        - fab-classic>=1.19.2 #rh: keeping for continuity but will be overwritten
         - azure-mgmt-resourcegraph # ci-only
         - bcrypt<4.0.0
-        - paramiko==2.9.0
+
