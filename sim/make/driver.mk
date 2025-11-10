@@ -15,40 +15,38 @@ driver: $(PLATFORM)
 
 
 # these compilation flags are setup for centos7-only (what AWS FPGA supports)
-# $(f1): export CXXFLAGS := $(CXXFLAGS) $(common_cxx_flags) $(DRIVER_CXXOPTS) \
-# 	-I$(platforms_dir)/f1/aws-fpga/sdk/userspace/include
-# $(f1): export CXXFLAGS := $(CXXFLAGS) $(common_cxx_flags) $(DRIVER_CXXOPTS) \
-# 	-I$(platforms_dir)/f2/aws-fpga-firesim-f2/sdk/userspace/include
-# # We will copy shared libs into same directory as driver on runhost, so add $ORIGIN to rpath ($$ORIGIN when given on the shell)
-# $(f1): export LDFLAGS := $(LDFLAGS) $(common_ld_flags) -Wl,-rpath='$$$$ORIGIN' -L /usr/local/lib64 -lfpga_mgmt -lz
-
-# # Compile Driver
-# $(f1): $(header) $(DRIVER_CC) $(DRIVER_H) $(midas_cc) $(midas_h)
-# 	mkdir -p $(OUTPUT_DIR)/build
-# 	cp $(header) $(OUTPUT_DIR)/build/
-# 	$(MAKE) -C $(simif_dir) driver MAIN=$(PLATFORM) PLATFORM=$(PLATFORM) \
-# 		DRIVER_NAME=$(DESIGN) \
-# 		GEN_FILE_BASENAME=$(BASE_FILE_NAME) \
-# 		GEN_DIR=$(OUTPUT_DIR)/build \
-# 		OUT_DIR=$(OUTPUT_DIR) \
-# 		DRIVER="$(DRIVER_CC)"
-
-# ========= copied to f2 ============
-$(f2): export CXXFLAGS := $(CXXFLAGS) $(common_cxx_flags) $(DRIVER_CXXOPTS) \
-	-I$(platforms_dir)/f2/aws-fpga-firesim-f2/sdk/userspace/include
+$(f1): export CXXFLAGS := $(CXXFLAGS) $(common_cxx_flags) $(DRIVER_CXXOPTS) \
+	-I$(platforms_dir)/f1/aws-fpga/sdk/userspace/include
 # We will copy shared libs into same directory as driver on runhost, so add $ORIGIN to rpath ($$ORIGIN when given on the shell)
-$(f2): export LDFLAGS := $(LDFLAGS) $(common_ld_flags) -Wl,-rpath='$$$$ORIGIN' -L /usr/local/lib64 -lfpga_mgmt -lz
+$(f1): export LDFLAGS := $(LDFLAGS) $(common_ld_flags) -Wl,-rpath='$$$$ORIGIN' -L /usr/local/lib64 -lfpga_mgmt -lz
 
 # Compile Driver
-$(f2): $(header) $(DRIVER_CC) $(DRIVER_H) $(midas_cc) $(midas_h)
+$(f1): $(header) $(DRIVER_CC) $(DRIVER_H) $(midas_cc) $(midas_h)
 	mkdir -p $(OUTPUT_DIR)/build
 	cp $(header) $(OUTPUT_DIR)/build/
-	$(MAKE) -C $(simif_dir) driver MAIN=f2_xsim PLATFORM=$(PLATFORM) \
+	$(MAKE) -C $(simif_dir) driver MAIN=$(PLATFORM) PLATFORM=$(PLATFORM) \
 		DRIVER_NAME=$(DESIGN) \
 		GEN_FILE_BASENAME=$(BASE_FILE_NAME) \
 		GEN_DIR=$(OUTPUT_DIR)/build \
 		OUT_DIR=$(OUTPUT_DIR) \
 		DRIVER="$(DRIVER_CC)"
+
+# # ========= f2 driver (rh: commented out for f1 compatibility) ============
+# $(f2): export CXXFLAGS := $(CXXFLAGS) $(common_cxx_flags) $(DRIVER_CXXOPTS) \
+# 	-I$(platforms_dir)/f2/aws-fpga-firesim-f2/sdk/userspace/include
+# # We will copy shared libs into same directory as driver on runhost, so add $ORIGIN to rpath ($$ORIGIN when given on the shell)
+# $(f2): export LDFLAGS := $(LDFLAGS) $(common_ld_flags) -Wl,-rpath='$$$$ORIGIN' -L /usr/local/lib64 -lfpga_mgmt -lz
+#
+# # Compile Driver
+# $(f2): $(header) $(DRIVER_CC) $(DRIVER_H) $(midas_cc) $(midas_h)
+# 	mkdir -p $(OUTPUT_DIR)/build
+# 	cp $(header) $(OUTPUT_DIR)/build/
+# 	$(MAKE) -C $(simif_dir) driver MAIN=f2_xsim PLATFORM=$(PLATFORM) \
+# 		DRIVER_NAME=$(DESIGN) \
+# 		GEN_FILE_BASENAME=$(BASE_FILE_NAME) \
+# 		GEN_DIR=$(OUTPUT_DIR)/build \
+# 		OUT_DIR=$(OUTPUT_DIR) \
+# 		DRIVER="$(DRIVER_CC)"
 
 # macro to create a driver that was built only with a conda environment (no leakage of host's environment)
 # $1 - platform name (i.e. xilinx_alveo_u250)

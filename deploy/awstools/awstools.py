@@ -130,45 +130,22 @@ def get_localhost_instance_info(url_ext: str) -> Optional[str]:
     curl_connection_timeout = 10
     with settings(ok_ret_codes=[0, 7, 28]), hide("everything"):
 
-        connect_timeout = 2
-        total_timeout = 3
         base = "http://169.254.169.254/latest/"
-        curl_common = (f"curl -sS --connect-timeout {connect_timeout} --max-time {total_timeout} --noproxy '*'")
-
-        token_cmd = (f"{curl_common} -X PUT -H 'X-aws-ec2-metadata-token-ttl-seconds: 21600' {base}api/token")
-
+        token_cmd = f"curl -S --connect-timeout {curl_connection_timeout} -X PUT -H 'X-aws-ec2-metadata-token-ttl-seconds: 21600' {base}api/token"
         token_res = local(token_cmd, capture=True)
         token = token_res.stdout.strip()
 
-        meta_cmd = f"{curl_common} -H 'X-aws-ec2-metadata-token: {token}' {base}{url_ext}"
+        metadata_cmd = f"curl -sS --connect-timeout {curl_connection_timeout} -H 'X-aws-ec2-metadata-token: {token}' {base}{url_ext}"
+        res = local(metadata_cmd, capture=True)
+        rootLogger.debug(res.stdout)
+        rootLogger.debug(res.stderr)
 
-        with settings(ok_ret_codes=[0, 7, 28]), hide("everything"):
-            res = local(meta_cmd, capture=True)
-            rootLogger.debug(res.stdout)
-            rootLogger.debug(res.stderr)
-
-        # 3) Only return non-empty content on success
-        if res.return_code == 0 and res.stdout and res.stdout.strip():
-            rootLogger.debug("AWS Host Detected")
-            return res.stdout
-        else:
-            rootLogger.debug("Non-AWS Host or empty metadata response detected")
-            return None
-
-
-        # res = local(
-        #     f"curl -s --connect-timeout {curl_connection_timeout} http://169.254.169.254/latest/{url_ext}",
-        #     capture=True,
-        # )
-        # rootLogger.debug(res.stdout)
-        # rootLogger.debug(res.stderr)
-
-    # if res.return_code == 0:
-    #     rootLogger.debug("AWS Host Detected")
-    #     return res.stdout
-    # else:
-    #     rootLogger.debug("Non-AWS Host Detected")
-    #     return None
+    if res.return_code == 0 and res != None:
+        rootLogger.debug("AWS Host Detected")
+        return res.stdout
+    else:
+        rootLogger.debug("Non-AWS Host Detected")
+        return None
 
 
 def get_localhost_instance_id() -> Optional[str]:

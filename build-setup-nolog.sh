@@ -139,8 +139,8 @@ fi
 # environment variable to have fab-classic depend on paramiko=2.9.0 instead, which has RSA-SHA2 support
 echo "Replacing paramiko-ng with paramiko to add rsa2 ssh support for fab-classic"
 pip uninstall -y paramiko-ng 2>/dev/null || true
-PARAMIKO_REPLACE=1 pip install --no-deps --no-binary fab-classic fab-classic>=1.19.2 #rh: see https://pypi.org/project/fab-classic/
-pip install --force-reinstall paramiko==2.9.0
+PARAMIKO_REPLACE=1 pip install --no-deps --no-binary fab-classic "fab-classic>=1.19.2" #rh: see https://pypi.org/project/fab-classic/
+pip install --force-reinstall "paramiko==2.9.0"
 
 # init all submodules except for chipyard
 git config submodule.target-design/chipyard.update none
