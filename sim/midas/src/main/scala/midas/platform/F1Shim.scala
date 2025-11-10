@@ -42,53 +42,53 @@ class F1Shim(implicit p: Parameters) extends PlatformShim {
     }
 
     val io_master = IO(Flipped(new NastiIO(p(CtrlNastiKey))))
-    // val io_pcis   = IO(Flipped(new NastiIO(CreateNastiParameters(p(CPUManagedAXI4Key).get.axi4BundleParams))))
+    val io_pcis   = IO(Flipped(new NastiIO(CreateNastiParameters(p(CPUManagedAXI4Key).get.axi4BundleParams))))
     val io_slave  = IO(Vec(p(HostMemNumChannels), AXI4Bundle(p(HostMemChannelKey).axi4BundleParams)))
 
     if (p(AXIDebugPrint)) {
       AXI4Printf(io_master, "master")
-      // AXI4Printf(io_pcis, "pcis")
+      AXI4Printf(io_pcis, "pcis")
       io_slave.zipWithIndex.foreach { case (io, idx) => AXI4Printf(io, s"slave_${idx}") }
     }
 
     top.module.ctrl <> io_master
 
     // Connect the CPU-managed stream engine if the target has one. Otherwise, cap off the connection. (PCIS)
-    // top.module.cpu_managed_axi4 match {
-    //   case None       =>
-    //     io_pcis.aw.ready := false.B
-    //     io_pcis.ar.ready := false.B
-    //     io_pcis.w.ready  := false.B
-    //     io_pcis.r.valid  := false.B
-    //     io_pcis.r.bits   := DontCare
-    //     io_pcis.b.valid  := false.B
-    //     io_pcis.b.bits   := DontCare
-    //   case Some(axi4) =>
-    //     AXI4NastiAssigner.toAXI4Slave(axi4, io_pcis)
-    // }
+    top.module.cpu_managed_axi4 match {
+      case None       =>
+        io_pcis.aw.ready := false.B
+        io_pcis.ar.ready := false.B
+        io_pcis.w.ready  := false.B
+        io_pcis.r.valid  := false.B
+        io_pcis.r.bits   := DontCare
+        io_pcis.b.valid  := false.B
+        io_pcis.b.bits   := DontCare
+      case Some(axi4) =>
+        AXI4NastiAssigner.toAXI4Slave(axi4, io_pcis)
+    }
 
-    // if (p(F1ShimHasPCIMPorts)) {
-    //   val io_pcim = IO(new NastiIO(CreateNastiParameters(p(FPGAManagedAXI4Key).get.axi4BundleParams)))
+    if (p(F1ShimHasPCIMPorts)) {
+      val io_pcim = IO(new NastiIO(CreateNastiParameters(p(FPGAManagedAXI4Key).get.axi4BundleParams)))
 
-    //   if (p(AXIDebugPrint)) {
-    //     AXI4Printf(io_pcim, "pcim")
-    //   }
+      if (p(AXIDebugPrint)) {
+        AXI4Printf(io_pcim, "pcim")
+      }
 
-    //   // Connect the FPGA-managed stream engine if the target has one. Otherwise, cap off the connection. (PCIM)
-    //   top.module.fpga_managed_axi4 match {
-    //     case None       =>
-    //       io_pcim.aw.valid := false.B
-    //       io_pcim.aw.bits  := DontCare // Leave unconnected
-    //       io_pcim.ar.valid := false.B
-    //       io_pcim.ar.bits  := DontCare
-    //       io_pcim.w.valid  := false.B
-    //       io_pcim.w.bits   := DontCare
-    //       io_pcim.r.ready  := false.B
-    //       io_pcim.b.ready  := false.B
-    //     case Some(axi4) =>
-    //       AXI4NastiAssigner.toAXI4Master(axi4, io_pcim)
-    //   }
-    // }
+      // Connect the FPGA-managed stream engine if the target has one. Otherwise, cap off the connection. (PCIM)
+      top.module.fpga_managed_axi4 match {
+        case None       =>
+          io_pcim.aw.valid := false.B
+          io_pcim.aw.bits  := DontCare // Leave unconnected
+          io_pcim.ar.valid := false.B
+          io_pcim.ar.bits  := DontCare
+          io_pcim.w.valid  := false.B
+          io_pcim.w.bits   := DontCare
+          io_pcim.r.ready  := false.B
+          io_pcim.b.ready  := false.B
+        case Some(axi4) =>
+          AXI4NastiAssigner.toAXI4Master(axi4, io_pcim)
+      }
+    }
 
     // Using last-connect semantics, first cap off all channels and then connect the ones used.
     for (slave <- io_slave) {

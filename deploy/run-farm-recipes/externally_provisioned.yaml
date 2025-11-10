@@ -9,7 +9,7 @@ args:
     default_platform: EC2InstanceDeployManager
 
     # REQUIRED: default directory where simulations are run out of on the run farm hosts
-    default_simulation_dir: /home/centos
+    default_simulation_dir: /home/ubuntu
 
     # REQUIRED: default fpga db file that enumerates what fpgas are available on the machine (used by XilinxU* Deploy Managers)
     default_fpga_db: /opt/firesim-db.json

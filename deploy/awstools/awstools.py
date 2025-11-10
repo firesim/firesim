@@ -43,7 +43,7 @@ rootLogger = logging.getLogger()
 # And whenever this changes, you also need to update deploy/tests/test_amis.json
 # by running scripts/update_test_amis.py
 # additionally, for normal use this assumes that the AMI used by the runhosts and manager instance match.
-# in the case of CI (or launching instances from a non-EC2 instance), this defaults to the centos based AMI.
+# in the case of CI (or launching instances from a non-EC2 instance), this defaults to the Ubuntu based AMI.
 def get_f1_ami_name() -> str:
     cuser = os.environ["USER"]
     if cuser == "amzn":
@@ -51,7 +51,7 @@ def get_f1_ami_name() -> str:
     else:
         if cuser != "ubuntu":
             print(
-                "Unknown $USER (expected centos/amzn). Defaulting to the Centos AWS EC2 AMI."
+                "Unknown $USER (expected ubuntu/amzn). Defaulting to the Ubuntu AWS EC2 AMI."
             )
         return "FPGA Developer AMI (Ubuntu) - 1.17.0   -prod-rhng4b6alkhdq"
 
