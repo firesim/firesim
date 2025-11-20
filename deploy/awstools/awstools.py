@@ -129,9 +129,13 @@ def get_localhost_instance_info(url_ext: str) -> Optional[str]:
     # practice it should resolve nearly instantly on an initialized EC2 instance.
     curl_connection_timeout = 10
     with settings(ok_ret_codes=[0, 7, 28]), hide("everything"):
+        # res = local(
+        #     f"curl -s --connect-timeout {curl_connection_timeout} http://169.254.169.254/latest/{url_ext}",
+        #     capture=True,
+        # )
         res = local(
-            f"curl -s --connect-timeout {curl_connection_timeout} http://169.254.169.254/latest/{url_ext}",
-            capture=True,
+            f"TOKEN=`curl -X PUT \"http://169.254.169.254/latest/api/token\" -H \"X-aws-ec2-metadata-token-ttl-seconds: 21600\"` && curl -H \"X-aws-ec2-metadata-token: $TOKEN\" http://169.254.169.254/latest/{url_ext}",
+            capture=True
         )
         rootLogger.debug(res.stdout)
         rootLogger.debug(res.stderr)
@@ -424,6 +428,7 @@ def get_aws_userid() -> str:
     """
     info = get_localhost_instance_info("dynamic/instance-identity/document")
     if info is not None:
+        rootLogger.info(f"userid: {info}")
         return json.loads(info)["accountId"].lower()
     else:
         assert False, "Unable to obtain accountId from instance metadata"
