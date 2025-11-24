@@ -172,7 +172,6 @@ def get_localhost_instance_info(url_ext: str) -> Optional[str]:
         # )
         # rootLogger.debug(res.stdout)
         # rootLogger.debug(res.stderr)
-"""
     if res.return_code == 0:
         base = "http://169.254.169.254/latest/"
         token_cmd = f"curl -S --connect-timeout {curl_connection_timeout} -X PUT -H 'X-aws-ec2-metadata-token-ttl-seconds: 21600' {base}api/token"
@@ -183,7 +182,6 @@ def get_localhost_instance_info(url_ext: str) -> Optional[str]:
         res = local(metadata_cmd, capture=True)
         rootLogger.debug(res.stdout)
         rootLogger.debug(res.stderr)
-"""
     if res.return_code == 0 and res != None:
         rootLogger.debug("AWS Host Detected")
         return res.stdout
