@@ -43,7 +43,7 @@ rootLogger = logging.getLogger()
 # And whenever this changes, you also need to update deploy/tests/test_amis.json
 # by running scripts/update_test_amis.py
 # additionally, for normal use this assumes that the AMI used by the runhosts and manager instance match.
-# in the case of CI (or launching instances from a non-EC2 instance), this defaults to the centos based AMI.
+# in the case of CI (or launching instances from a non-EC2 instance), this defaults to the Ubuntu based AMI.
 def get_f1_ami_name() -> str:
     cuser = os.environ["USER"]
     if cuser == "amzn":
@@ -51,7 +51,7 @@ def get_f1_ami_name() -> str:
     else:
         if cuser != "ubuntu":
             print(
-                "Unknown $USER (expected centos/amzn). Defaulting to the Centos AWS EC2 AMI."
+                "Unknown $USER (expected ubuntu/amzn). Defaulting to the Ubuntu AWS EC2 AMI."
             )
         return "FPGA Developer AMI (Ubuntu) - 1.17.0   -prod-rhng4b6alkhdq"
 
@@ -172,8 +172,19 @@ def get_localhost_instance_info(url_ext: str) -> Optional[str]:
         # )
         # rootLogger.debug(res.stdout)
         # rootLogger.debug(res.stderr)
-
+"""
     if res.return_code == 0:
+        base = "http://169.254.169.254/latest/"
+        token_cmd = f"curl -S --connect-timeout {curl_connection_timeout} -X PUT -H 'X-aws-ec2-metadata-token-ttl-seconds: 21600' {base}api/token"
+        token_res = local(token_cmd, capture=True)
+        token = token_res.stdout.strip()
+
+        metadata_cmd = f"curl -sS --connect-timeout {curl_connection_timeout} -H 'X-aws-ec2-metadata-token: {token}' {base}{url_ext}"
+        res = local(metadata_cmd, capture=True)
+        rootLogger.debug(res.stdout)
+        rootLogger.debug(res.stderr)
+"""
+    if res.return_code == 0 and res != None:
         rootLogger.debug("AWS Host Detected")
         return res.stdout
     else:
