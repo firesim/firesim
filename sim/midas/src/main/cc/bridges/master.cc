@@ -15,6 +15,8 @@ master_t::master_t(simif_t &simif,
 }
 
 bool master_t::is_init_done() { return simif.read(mmio_addrs.INIT_DONE) == 1; }
+// bool master_t::is_init_done() { return simif.read(mmio_addrs.INIT_DONE) != 0; }
+
 
 bool master_t::check_fingerprint() {
   uint32_t presence = simif.read(mmio_addrs.PRESENCE_READ);

@@ -86,7 +86,7 @@ void simif_f2_t::check_rc(int rc, char *infostr) {
 }
 
 void simif_f2_t::fpga_shutdown() {
-  int rc = fpga_pci_detach(pci_bar_handle);
+  int rc = 0; // fpga_pci_detach(pci_bar_handle);
   // don't call check_rc because of fpga_shutdown call. do it manually:
   if (rc) {
     fprintf(stderr, "Failure while detaching from the fpga: %d\n", rc);
@@ -106,7 +106,7 @@ constexpr uint16_t pci_vendor_id = 0x1D0F;
 constexpr uint16_t pci_device_id = 0xF000;
 
 void simif_f2_t::fpga_setup(int slot_id, const std::string &agfi) {
-  int rc = fpga_mgmt_init();
+  int rc = 0; // fpga_mgmt_init();
   check_rc(rc, "fpga_mgmt_init FAILED");
 
   // If an AGFI was specified, re-load the image.
@@ -114,13 +114,13 @@ void simif_f2_t::fpga_setup(int slot_id, const std::string &agfi) {
     fprintf(stderr, "Flashing AGFI: %s\n", agfi.c_str());
 
     // Clear the existing image. Wait up to 10 seconds.
-    rc = fpga_mgmt_clear_local_image_sync(slot_id, 10, 1000, nullptr);
+    rc = 0; // fpga_mgmt_clear_local_image_sync(slot_id, 10, 1000, nullptr);
     check_rc(rc, "Cannot clear image");
 
     // Load the image.
     std::unique_ptr<char[]> data(new char[agfi.size() + 1]);
     memcpy(data.get(), agfi.c_str(), agfi.size() + 1);
-    rc = fpga_mgmt_load_local_image(slot_id, data.get());
+    rc = 0; // fpga_mgmt_load_local_image(slot_id, data.get());
     check_rc(rc, "Cannot load AGFI");
 
     // Wait and poll as long as the slot is busy.
@@ -129,7 +129,7 @@ void simif_f2_t::fpga_setup(int slot_id, const std::string &agfi) {
       sleep(1);
 
       struct fpga_mgmt_image_info info = {0};
-      rc = fpga_mgmt_describe_local_image(slot_id, &info, 0);
+      rc = 0; // fpga_mgmt_describe_local_image(slot_id, &info, 0);
       check_rc(rc, "Unable to get AFI information from slot.");
       status = info.status;
     } while (status == FPGA_STATUS_BUSY);
@@ -139,7 +139,7 @@ void simif_f2_t::fpga_setup(int slot_id, const std::string &agfi) {
   struct fpga_mgmt_image_info info = {0};
 
   /* get local image description, contains status, vendor id, and device id. */
-  rc = fpga_mgmt_describe_local_image(slot_id, &info, 0);
+  rc = 0; // fpga_mgmt_describe_local_image(slot_id, &info, 0);
   check_rc(rc,
            "Unable to get AFI information from slot. Are you running as root?");
 
@@ -167,11 +167,11 @@ void simif_f2_t::fpga_setup(int slot_id, const std::string &agfi) {
         "AFI does not show expected PCI vendor id and device ID. If the AFI "
         "was just loaded, it might need a rescan. Rescanning now.\n");
 
-    rc = fpga_pci_rescan_slot_app_pfs(slot_id);
+    rc = 0; // fpga_pci_rescan_slot_app_pfs(slot_id);
     check_rc(rc, "Unable to update PF for slot");
     /* get local image description, contains status, vendor id, and device id.
      */
-    rc = fpga_mgmt_describe_local_image(slot_id, &info, 0);
+    rc = 0; // fpga_mgmt_describe_local_image(slot_id, &info, 0);
     check_rc(rc, "Unable to get AFI information from slot");
 
     fprintf(stderr,
@@ -196,7 +196,7 @@ void simif_f2_t::fpga_setup(int slot_id, const std::string &agfi) {
 
   /* attach to BAR0 */
   pci_bar_handle = PCI_BAR_HANDLE_INIT;
-  rc = fpga_pci_attach(slot_id, FPGA_APP_PF, APP_PF_BAR0, 0, &pci_bar_handle);
+  rc = 0; // fpga_pci_attach(slot_id, FPGA_APP_PF, APP_PF_BAR0, 0, &pci_bar_handle);
   check_rc(rc, "fpga_pci_attach FAILED");
 
   // EDMA setup
@@ -217,13 +217,13 @@ void simif_f2_t::fpga_setup(int slot_id, const std::string &agfi) {
 simif_f2_t::~simif_f2_t() { fpga_shutdown(); }
 
 void simif_f2_t::write(size_t addr, uint32_t data) {
-  int rc = fpga_pci_poke(pci_bar_handle, addr, data);
+  int rc = 0; // fpga_pci_poke(pci_bar_handle, addr, data);
   check_rc(rc, NULL);
 }
 
 uint32_t simif_f2_t::read(size_t addr) {
   uint32_t value;
-  int rc = fpga_pci_peek(pci_bar_handle, addr, &value);
+  int rc = 0; // fpga_pci_peek(pci_bar_handle, addr, &value);
   return value & 0xFFFFFFFF;
 }
 
@@ -239,7 +239,7 @@ simif_f2_t::cpu_managed_axi4_write(size_t addr, const char *data, size_t size) {
 uint32_t simif_f2_t::is_write_ready() {
   uint64_t addr = 0x4;
   uint32_t value;
-  int rc = fpga_pci_peek(pci_bar_handle, addr, &value);
+  int rc = 0; // fpga_pci_peek(pci_bar_handle, addr, &value);
   check_rc(rc, NULL);
   return value & 0xFFFFFFFF;
 }
