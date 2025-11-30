@@ -65,14 +65,18 @@ void simif_f2_xsim_t::write(size_t addr, uint32_t data) {
 
 uint32_t simif_f2_xsim_t::read(size_t addr) {
   uint64_t cmd = addr;
+  // printf("addr: %x\n", addr);
   char *buf = (char *)&cmd;
+  // printf("buf: %x, sizeof(buf): %d, buf contents: %x\n", buf, sizeof(buf), *buf);
   ::write(driver_to_xsim_fd, buf, 8);
 
   int gotdata = 0;
   while (gotdata == 0) {
     gotdata = ::read(xsim_to_driver_fd, buf, 8);
+    // printf("post-read buf: %x, sizeof(buf): %d, buf contents: %x\n", buf, sizeof(buf), *buf);
     if (gotdata != 0 && gotdata != 8) {
       printf("ERR GOTDATA %d\n", gotdata);
+      // printf("buf: %016x\n", buf);
     }
   }
   return *((uint64_t *)buf);
