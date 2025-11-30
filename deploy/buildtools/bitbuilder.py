@@ -617,8 +617,8 @@ class F2BitBuilder(BitBuilder):
 
         with InfoStreamLogger("stdout"), settings(warn_only=True):
             vivado_result = run(
-                # f"{cl_dir}/build-bitstream.sh --cl_dir {cl_dir} --frequency {fpga_frequency} --strategy {build_strategy}"
-                f"./aws_build_dcp_from_cl.py -c cl_{self.build_config.get_chisel_quintuplet()} --aws_clk_gen --clock_recipe_a A1 --clock_recipe_b B0 --clock_recipe_c C0 --mode small_shell"
+                f"{cl_dir}/build-bitstream.sh --cl_dir {cl_dir} --frequency {fpga_frequency} --strategy {build_strategy}"
+                # f"./aws_build_dcp_from_cl.py -c cl_{self.build_config.get_chisel_quintuplet()} --aws_clk_gen --clock_recipe_a A1 --clock_recipe_b B0 --clock_recipe_c C0 --mode small_shell"
 
             )
             vivado_rc = vivado_result.return_code

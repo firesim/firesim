@@ -21,8 +21,8 @@ board_dir          := $(platforms_dir)/rhsresearch_nitefury_ii/NiteFury-and-Lite
 else ifeq ($(PLATFORM), f1)
 board_dir 	   := $(platforms_dir)/f1/aws-fpga/hdk/cl/developer_designs
 # board_dir 	   := $(platforms_dir)/f2/aws-fpga-firesim-f2/hdk/cl/developer_designs  #rh: commented out to ensure f1 compatibility
-# else ifeq ($(PLATFORM), f2)
-# board_dir 	   := $(platforms_dir)/f2/aws-fpga-firesim-f2/hdk/cl/developer_designs
+else ifeq ($(PLATFORM), f2)
+board_dir 	   := $(platforms_dir)/f2/aws-fpga-firesim-f2/hdk/cl/developer_designs
 else
 $(error Invalid PLATFORM used: $(PLATFORM))
 endif
