@@ -687,8 +687,11 @@ class F2BitBuilder(BitBuilder):
             + ".tar"
         )
 
+        # with lcd(
+        #     f"{local_results_dir}/cl_{self.build_config.get_chisel_quintuplet()}/build/checkpoints/to_aws/"
+        # ):
         with lcd(
-            f"{local_results_dir}/cl_{self.build_config.get_chisel_quintuplet()}/build/checkpoints/to_aws/"
+            f"{local_results_dir}/cl_{self.build_config.get_chisel_quintuplet()}/build/checkpoints/"
         ):
             files = local("ls *.tar", capture=True)
             rootLogger.debug(files)
