@@ -16,8 +16,9 @@ usage() {
                                   See aws-fpga documentation for more info/.
                                   For this platform TIMING and AREA supported."
     echo "   --board           : FPGA board {au200,au250,au280}."
-    echo "   --pr_module_name  : Name of the PR (Partial Reconfiguration) module"
-    echo "   --pr_partition_path : Hierarchical path to the PR partition in the design"
+    echo "   --enable_pr       : Enable Partial Reconfiguration (true/false)"
+    echo "   --pr_module_name  : Name of the PR (Partial Reconfiguration) module (required if --enable_pr is true)"
+    echo "   --pr_partition_path : Hierarchical path to the PR partition in the design (required if --enable_pr is true)"
     echo "   --help            : Display this message"
     exit "$1"
 }
@@ -26,6 +27,7 @@ CL_DIR=""
 FREQUENCY=""
 STRATEGY=""
 BOARD=""
+ENABLE_PR="false"
 PR_MODULE_NAME=""
 PR_PARTITION_PATH=""
 
@@ -47,6 +49,9 @@ do
         --board )
             shift
             BOARD=$1 ;;
+        --enable_pr )
+            shift
+            ENABLE_PR=$1 ;;
         --pr_module_name )
             shift
             PR_MODULE_NAME=$1 ;;
@@ -80,16 +85,23 @@ if [ -z "$BOARD" ] ; then
     usage 1
 fi
 
-if [ -z "$PR_MODULE_NAME" ] ; then
-    echo "No --pr_module_name specified"
-    usage 1
-fi
+# Check PR arguments only if PR is enabled
+if [ "$ENABLE_PR" = "true" ] ; then
+    if [ -z "$PR_MODULE_NAME" ] ; then
+        echo "No --pr_module_name specified (required when --enable_pr is true)"
+        usage 1
+    fi
 
-if [ -z "$PR_PARTITION_PATH" ] ; then
-    echo "No --pr_partition_path specified"
-    usage 1
+    if [ -z "$PR_PARTITION_PATH" ] ; then
+        echo "No --pr_partition_path specified (required when --enable_pr is true)"
+        usage 1
+    fi
 fi
 
 # run build
 cd $CL_DIR
-vivado -mode batch -source $CL_DIR/scripts/main.tcl -tclargs $FREQUENCY $STRATEGY $BOARD $PR_MODULE_NAME $PR_PARTITION_PATH
+if [ "$ENABLE_PR" = "true" ] ; then
+    vivado -mode batch -source $CL_DIR/scripts/main_pr.tcl -tclargs $FREQUENCY $STRATEGY $BOARD $PR_MODULE_NAME $PR_PARTITION_PATH
+else
+    vivado -mode batch -source $CL_DIR/scripts/main.tcl -tclargs $FREQUENCY $STRATEGY $BOARD
+fi
