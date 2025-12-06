@@ -143,6 +143,11 @@ object MultiThreadFAME5Models extends Transform {
     val hostClock = WRef(top.ports.find(_.name == WrapTop.hostClockName).get)
     val hostReset = WRef(top.ports.find(_.name == WrapTop.hostResetName).get)
 
+    // added stuff
+    // val doNotMT = state.annotations.collect {
+    //   case FirrtlDoNotMultiThreadAnnotation(it) => it
+    // }.toSet
+
     // Populate keys from annotations, values from traversing statements
     val fame5RawInstances = new mutable.LinkedHashMap[OfModule, mutable.LinkedHashSet[Instance]]
     state.annotations.foreach {

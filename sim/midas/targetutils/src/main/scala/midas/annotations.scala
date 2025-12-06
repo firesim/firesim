@@ -544,3 +544,16 @@ case class FirrtlCombLogicInsideModuleAnno(
     Seq(this.copy(target = renameTarget))
   }
 }
+
+
+//  262 changes
+// case class DoNotMultiThreadAnnotation(target: BaseModule) extends ChiselAnnotation {
+//   def toFirrtl: FirrtlDoNotMultiThreadAnnotation = {
+//     val parent = ModuleTarget(target.toNamed.circuit.name, target.parentModName)
+//     FirrtlDoNotMultiThreadAnnotation(parent.instOf(target.instanceName, target.name))
+//   }
+// }
+
+// case class FirrtlDoNotMultiThreadAnnotation(
+//   target: InstanceTarget
+// ) extends SingleTargetAnnotation[InstanceTarget]
