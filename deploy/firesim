@@ -31,7 +31,7 @@ from awstools.awstools import valid_aws_configure_creds, get_aws_userid, subscri
 from awstools.afitools import share_agfi_in_all_regions
 
 from buildtools.buildconfigfile import BuildConfigFile
-from buildtools.bitbuilder import F1BitBuilder
+from buildtools.bitbuilder import AWSFPGABitBuilder
 
 from util.streamlogger import StreamLogger, InfoStreamLogger
 from util.filelineswap import file_line_swap
@@ -370,7 +370,7 @@ def tar2afi(build_config_file: BuildConfigFile) -> None:
     """
 
     for build_config in build_config_file.builds_list:
-        assert isinstance(build_config.bitbuilder, F1BitBuilder)
+        assert isinstance(build_config.bitbuilder, AWSFPGABitBuilder)
         execute(build_config.bitbuilder.aws_create_afi, build_config_file, build_config, hosts=['localhost'])
 
 
