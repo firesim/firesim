@@ -158,6 +158,10 @@ set phase_start [log_timing "Constraint setup" $phase_start]
 
 ########################################################
 
+update_compile_order -fileset sources_1
+set_property top $top_level_name [current_fileset]
+update_compile_order -fileset sources_1
+
 set clk_wiz_instance [get_bd_cells clk_wiz_0]
 
 # Get the actual output frequency (in MHz)
@@ -232,10 +236,6 @@ set phase_start [log_timing "PR setup" $phase_start]
 ################################################################################
 
 
-
-update_compile_order -fileset sources_1
-set_property top $top_level_name [current_fileset]
-update_compile_order -fileset sources_1
 
 foreach f [get_files -of [get_filesets synth_fileset]] {
     set_property USED_IN {synthesis} $f
