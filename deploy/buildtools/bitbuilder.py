@@ -169,14 +169,21 @@ class BitBuilder(metaclass=abc.ABCMeta):
         )
 
 
-class F1BitBuilder(BitBuilder):
-    """Bit builder class that builds a AWS EC2 F1 AGFI (bitstream) from the build config.
+class AWSFPGABitBuilder(BitBuilder):
+    """Base class for AWS EC2 FPGA bit builders (F1 and F2).
+
+    This class contains the shared logic for building AGFIs on AWS.
+    Subclasses should set the PLATFORM_DIR class attribute.
 
     Attributes:
         s3_bucketname: S3 bucketname for AFI builds.
+        PLATFORM_DIR: Platform directory name ("f1" or "f2").
+        PLATFORM_NAME: Human-readable platform name for messages.
     """
 
     s3_bucketname: str
+    PLATFORM_DIR: str = ""  # Override in subclasses
+    PLATFORM_NAME: str = ""  # Override in subclasses
 
     def __init__(self, build_config: BuildConfig, args: Dict[str, Any]) -> None:
         super().__init__(build_config, args)
@@ -212,20 +219,20 @@ class F1BitBuilder(BitBuilder):
         """
         fpga_build_postfix = f"hdk/cl/developer_designs/cl_{chisel_quintuplet}"
 
-        # local paths
-        local_awsfpga_dir = f"{get_deploy_dir()}/../platforms/f1/aws-fpga"
+        # local paths - use platform-specific directory
+        local_awsfpga_dir = f"{get_deploy_dir()}/../platforms/{self.PLATFORM_DIR}/aws-fpga"
 
-        dest_f1_platform_dir = f"{dest_build_dir}/platforms/f1/"
-        dest_awsfpga_dir = f"{dest_f1_platform_dir}/aws-fpga"
+        dest_platform_dir = f"{dest_build_dir}/platforms/{self.PLATFORM_DIR}/"
+        dest_awsfpga_dir = f"{dest_platform_dir}/aws-fpga"
 
         # copy aws-fpga to the build instance.
         # do the rsync, but ignore any checkpoints that might exist on this machine
         # (in case builds were run locally)
         # extra_opts -l preserves symlinks
-        run(f"mkdir -p {dest_f1_platform_dir}")
+        run(f"mkdir -p {dest_platform_dir}")
         rsync_cap = rsync_project(
             local_dir=local_awsfpga_dir,
-            remote_dir=dest_f1_platform_dir,
+            remote_dir=dest_platform_dir,
             ssh_opts="-o StrictHostKeyChecking=no",
             exclude=["hdk/cl/developer_designs/cl_*"],
             extra_opts="-l",
@@ -265,7 +272,7 @@ class F1BitBuilder(BitBuilder):
         def on_build_failure():
             """Terminate build host and notify user that build failed"""
 
-            message_title = "FireSim FPGA Build Failed"
+            message_title = f"FireSim {self.PLATFORM_NAME} FPGA Build Failed"
 
             message_body = (
                 "Your FPGA build failed for quintuplet: "
@@ -279,7 +286,7 @@ class F1BitBuilder(BitBuilder):
 
             build_farm.release_build_host(self.build_config)
 
-        rootLogger.info("Building AWS F1 AGFI from Verilog")
+        rootLogger.info(f"Building AWS {self.PLATFORM_NAME} AGFI from Verilog")
 
         local_deploy_dir = get_deploy_dir()
         fpga_build_postfix = (
@@ -299,7 +306,7 @@ class F1BitBuilder(BitBuilder):
 
         # copy script to the cl_dir and execute
         rsync_cap = rsync_project(
-            local_dir=f"{local_deploy_dir}/../platforms/f1/build-bitstream.sh",
+            local_dir=f"{local_deploy_dir}/../platforms/{self.PLATFORM_DIR}/build-bitstream.sh",
             remote_dir=f"{cl_dir}/",
             ssh_opts="-o StrictHostKeyChecking=no",
             extra_opts="-l",
@@ -466,167 +473,34 @@ class F1BitBuilder(BitBuilder):
             return None
 
 
-class F2BitBuilder(F1BitBuilder):
-    """Bit builder class that builds an AWS EC2 F2 AGFI (bitstream) from the build config.
+class F1BitBuilder(AWSFPGABitBuilder):
+    """Bit builder for AWS EC2 F1 AGFI (bitstream).
 
-    F2 instances use AMD Virtex UltraScale+ HBM VU47P FPGAs, which have:
-    - 10% more LUTs than F1
-    - 32% more DSPs than F1
-    - 16GB HBM (High Bandwidth Memory)
-    - 3-die stacked SLR architecture
-
-    This class inherits from F1BitBuilder since the build flow is similar.
-    The main differences are:
-    - Uses platforms/f2/aws-fpga instead of platforms/f1/aws-fpga
-    - F2's clk_main_a0 is fixed at 250MHz (vs configurable on F1)
-    - F2 build script is Python-based (vs shell script on F1)
+    F1 instances use Xilinx Virtex UltraScale+ VU9P FPGAs.
 
     Note: AWS F1 instances are deprecated (EOL December 20, 2025).
     New users should use F2 instances.
     """
 
-    def cl_dir_setup(self, chisel_quintuplet: str, dest_build_dir: str) -> str:
-        """Setup CL_DIR on build host for F2.
+    PLATFORM_DIR = "f1"
+    PLATFORM_NAME = "F1"
 
-        Args:
-            chisel_quintuplet: Build config chisel quintuplet used to uniquely identify build dir.
-            dest_build_dir: Destination base directory to use.
 
-        Returns:
-            Path to CL_DIR directory (that is setup) or `None` if invalid.
-        """
-        fpga_build_postfix = f"hdk/cl/developer_designs/cl_{chisel_quintuplet}"
+class F2BitBuilder(AWSFPGABitBuilder):
+    """Bit builder for AWS EC2 F2 AGFI (bitstream).
 
-        # local paths - use F2 platform directory
-        local_awsfpga_dir = f"{get_deploy_dir()}/../platforms/f2/aws-fpga"
+    F2 instances use AMD Virtex UltraScale+ HBM VU47P FPGAs with:
+    - 10% more LUTs than F1
+    - 32% more DSPs than F1
+    - 16GB HBM (High Bandwidth Memory)
+    - 3-die stacked SLR architecture
 
-        dest_f2_platform_dir = f"{dest_build_dir}/platforms/f2/"
-        dest_awsfpga_dir = f"{dest_f2_platform_dir}/aws-fpga"
+    F2 is available in: us-east-1, eu-west-2, us-west-2, eu-central-1,
+    ap-northeast-1, ap-southeast-2.
+    """
 
-        # copy aws-fpga to the build instance.
-        # do the rsync, but ignore any checkpoints that might exist on this machine
-        # (in case builds were run locally)
-        # extra_opts -l preserves symlinks
-        run(f"mkdir -p {dest_f2_platform_dir}")
-        rsync_cap = rsync_project(
-            local_dir=local_awsfpga_dir,
-            remote_dir=dest_f2_platform_dir,
-            ssh_opts="-o StrictHostKeyChecking=no",
-            exclude=["hdk/cl/developer_designs/cl_*"],
-            extra_opts="-l",
-            capture=True,
-        )
-        rootLogger.debug(rsync_cap)
-        rootLogger.debug(rsync_cap.stderr)
-        rsync_cap = rsync_project(
-            local_dir=f"{local_awsfpga_dir}/{fpga_build_postfix}/*",
-            remote_dir=f"{dest_awsfpga_dir}/{fpga_build_postfix}",
-            exclude=["build/checkpoints"],
-            ssh_opts="-o StrictHostKeyChecking=no",
-            extra_opts="-l",
-            capture=True,
-        )
-        rootLogger.debug(rsync_cap)
-        rootLogger.debug(rsync_cap.stderr)
-
-        return f"{dest_awsfpga_dir}/{fpga_build_postfix}"
-
-    def build_bitstream(self, bypass: bool = False) -> bool:
-        """Run Vivado, convert tar -> AGFI/AFI for F2, and then terminate the instance.
-
-        Args:
-            bypass: If true, immediately return and terminate build host. Used for testing.
-
-        Returns:
-            Boolean indicating if the build passed or failed.
-        """
-        build_farm = self.build_config.build_config_file.build_farm
-
-        if bypass:
-            build_farm.release_build_host(self.build_config)
-            return True
-
-        def on_build_failure():
-            """Terminate build host and notify user that build failed"""
-            message_title = "FireSim F2 FPGA Build Failed"
-            message_body = (
-                "Your F2 FPGA build failed for quintuplet: "
-                + self.build_config.get_chisel_quintuplet()
-            )
-            send_firesim_notification(message_title, message_body)
-            rootLogger.info(message_title)
-            rootLogger.info(message_body)
-            build_farm.release_build_host(self.build_config)
-
-        rootLogger.info("Building AWS F2 AGFI from Verilog")
-
-        local_deploy_dir = get_deploy_dir()
-        fpga_build_postfix = (
-            f"hdk/cl/developer_designs/cl_{self.build_config.get_chisel_quintuplet()}"
-        )
-        local_results_dir = (
-            f"{local_deploy_dir}/results-build/{self.build_config.get_build_dir_name()}"
-        )
-
-        # 'cl_dir' holds the eventual directory in which vivado will run.
-        cl_dir = self.cl_dir_setup(
-            self.build_config.get_chisel_quintuplet(),
-            build_farm.get_build_host(self.build_config).dest_build_dir,
-        )
-
-        vivado_rc = 0
-
-        # copy F2 build script to the cl_dir and execute
-        rsync_cap = rsync_project(
-            local_dir=f"{local_deploy_dir}/../platforms/f2/build-bitstream.sh",
-            remote_dir=f"{cl_dir}/",
-            ssh_opts="-o StrictHostKeyChecking=no",
-            extra_opts="-l",
-            capture=True,
-        )
-        rootLogger.debug(rsync_cap)
-        rootLogger.debug(rsync_cap.stderr)
-
-        # get the frequency and strategy
-        # Note: F2's clk_main_a0 is fixed at 250MHz, but we pass frequency for compatibility
-        fpga_frequency = self.build_config.get_frequency()
-        build_strategy = self.build_config.get_strategy().name
-
-        with InfoStreamLogger("stdout"), settings(warn_only=True):
-            vivado_result = run(
-                f"{cl_dir}/build-bitstream.sh --cl_dir {cl_dir} --frequency {fpga_frequency} --strategy {build_strategy}"
-            )
-            vivado_rc = vivado_result.return_code
-
-            if vivado_result != 0:
-                rootLogger.info("Printing error output:")
-                for line in vivado_result.splitlines()[-100:]:
-                    rootLogger.info(line)
-
-        # put build results in the result-build area
-        rsync_cap = rsync_project(
-            local_dir=f"{local_results_dir}/",
-            remote_dir=cl_dir,
-            ssh_opts="-o StrictHostKeyChecking=no",
-            upload=False,
-            extra_opts="-l",
-            capture=True,
-        )
-        rootLogger.debug(rsync_cap)
-        rootLogger.debug(rsync_cap.stderr)
-
-        if vivado_rc != 0:
-            on_build_failure()
-            return False
-
-        # aws_create_afi is inherited from F1BitBuilder and works the same for F2
-        if not self.aws_create_afi():
-            on_build_failure()
-            return False
-
-        build_farm.release_build_host(self.build_config)
-
-        return True
+    PLATFORM_DIR = "f2"
+    PLATFORM_NAME = "F2"
 
 
 class VitisBitBuilder(BitBuilder):
