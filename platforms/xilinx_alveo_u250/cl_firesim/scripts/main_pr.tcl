@@ -10,6 +10,32 @@ set pr_module_name       [lindex $argv 3]
 # firesim_top/top/sim/target/FireSim_/chiptop0/system/tile_prci_domain/element_reset_domain_boom_tile/dcache/mshrs
 set pr_partition_path    [lindex $argv 4]
 
+# Timing tracking
+set script_start_time [clock seconds]
+set timing_log {}
+
+proc format_time { seconds } {
+    set hours [expr {int($seconds / 3600)}]
+    set minutes [expr {int(($seconds % 3600) / 60)}]
+    set secs [expr {int($seconds % 60)}]
+    if {$hours > 0} {
+        return [format "%dh %dm %ds" $hours $minutes $secs]
+    } elseif {$minutes > 0} {
+        return [format "%dm %ds" $minutes $secs]
+    } else {
+        return [format "%ds" $secs]
+    }
+}
+
+proc log_timing { phase_name start_time } {
+    global timing_log
+    set current_time [clock seconds]
+    set elapsed [expr {$current_time - $start_time}]
+    lappend timing_log [list $phase_name $elapsed]
+    puts "TIMING: $phase_name took [format_time $elapsed]"
+    return $current_time
+}
+
 proc retrieveVersionedFile { filename version } {
   set first [file rootname $filename]
   set last [file extension $filename]
@@ -23,6 +49,11 @@ proc retrieveVersionedFile { filename version } {
 source $root_dir/scripts/utils.tcl
 
 puts "Running with Vivado $vivado_version (Major Version: $vivado_version_major)"
+puts "=========================================="
+puts "Starting build timing tracking (PR mode)"
+puts "=========================================="
+
+set phase_start [clock seconds]
 
 check_file_exists [set sourceFile [retrieveVersionedFile ${root_dir}/scripts/platform_env.tcl $vivado_version]]
 source $sourceFile
@@ -36,9 +67,11 @@ delete_files [list ${root_dir}/vivado_proj/firesim.bit]
 create_project -force firesim ${root_dir}/vivado_proj -part $part
 set_property board_part $board_part [current_project]
 set_property -name "pr_flow" -value "1" -objects [current_project]
+set phase_start [log_timing "Initialization and project creation" $phase_start]
 
 
 # Loading all the verilog files
+set phase_start [log_timing "File loading" $phase_start]
 foreach addFile [list \
     ${root_dir}/design/axi_tieoff_master.v \
     ${root_dir}/design/axi.vh \
@@ -81,6 +114,7 @@ if {[file exists $split_verilog_dir] && [file isdirectory $split_verilog_dir]} {
   check_file_exists $addFile
   add_files $addFile
 }
+set phase_start [log_timing "File loading" $phase_start]
 
 set desired_host_frequency $ifrequency
 set strategy $istrategy
@@ -92,6 +126,7 @@ source $sourceFile
 # Making wrapper around bd
 generate_target all [get_files ${root_dir}/vivado_proj/firesim.srcs/sources_1/bd/design_1/design_1.bd]
 update_compile_order -fileset sources_1
+set phase_start [log_timing "Block design creation" $phase_start]
 
 # Mark top-level name for future steps/cmds
 set top_level_name overall_fpga_top
@@ -119,6 +154,7 @@ if {[file exists [set constrFile [retrieveVersionedFile ${root_dir}/design/FireS
 if {[file exists [set constrFile [retrieveVersionedFile ${root_dir}/design/bitstream_config.xdc $vivado_version]]]} {
     add_files -fileset impl_fileset -norecurse $constrFile
 }
+set phase_start [log_timing "Constraint setup" $phase_start]
 
 ########################################################
 
@@ -146,6 +182,7 @@ if {$actual_freq_mhz == "" || $actual_freq_mhz <= 0} {
 set clock_period_ns [expr {1000.0 / $actual_freq_mhz}]
 
 # Create blockset for PR module
+set phase_start [log_timing "PR setup" $phase_start]
 # Note: -define_from requires the module to exist in the current design
 if {[catch {create_fileset -blockset -define_from $pr_module_name $pr_module_name} err]} {
     puts "ERROR: Failed to create blockset for $pr_module_name: $err"
@@ -188,7 +225,8 @@ create_pr_configuration -name config_1 -partitions [list $pr_partition_path:pref
 set_property PR_CONFIGURATION config_1 [get_runs impl_1]
 set_property DFX_MODE {ABSTRACT SHELL} [get_runs impl_1]
 
-# Add more reconfig modules for the prefetch region here if needed 
+# Add more reconfig modules for the prefetch region here if needed
+set phase_start [log_timing "PR setup" $phase_start] 
 
 
 ################################################################################
@@ -232,22 +270,59 @@ check_file_exists [set sourceFile ${root_dir}/scripts/strategies/strategy_${stra
 source $sourceFile
 
 # Run synth and generate collateral
-foreach sourceFile [list ${root_dir}/scripts/synthesis.tcl ${root_dir}/scripts/post_synth_pr.tcl ] {
-  set sourceFile [retrieveVersionedFile $sourceFile $vivado_version]
-  check_file_exists $sourceFile
-  source $sourceFile
-}
+set sourceFile [retrieveVersionedFile ${root_dir}/scripts/synthesis.tcl $vivado_version]
+check_file_exists $sourceFile
+source $sourceFile
+set phase_start [log_timing "Synthesis" $phase_start]
+
+set sourceFile [retrieveVersionedFile ${root_dir}/scripts/post_synth_pr.tcl $vivado_version]
+check_file_exists $sourceFile
+source $sourceFile
+set phase_start [log_timing "Post-synthesis (PR)" $phase_start]
 
 ################################################################################
 
 # Run impl and generate collateral
-foreach sourceFile [list ${root_dir}/scripts/implementation.tcl ${root_dir}/scripts/post_impl.tcl] {
-  set sourceFile [retrieveVersionedFile $sourceFile $vivado_version]
-  check_file_exists $sourceFile
-  source $sourceFile
-}
+set sourceFile [retrieveVersionedFile ${root_dir}/scripts/implementation.tcl $vivado_version]
+check_file_exists $sourceFile
+source $sourceFile
+set phase_start [log_timing "Implementation" $phase_start]
+
+set sourceFile [retrieveVersionedFile ${root_dir}/scripts/post_impl.tcl $vivado_version]
+check_file_exists $sourceFile
+source $sourceFile
+set phase_start [log_timing "Post-implementation" $phase_start]
 
 ################################################################################
+
+# Print timing summary
+set total_time [expr {[clock seconds] - $script_start_time}]
+puts "=========================================="
+puts "BUILD TIMING SUMMARY (PR MODE)"
+puts "=========================================="
+foreach timing_entry $timing_log {
+    set phase_name [lindex $timing_entry 0]
+    set elapsed [lindex $timing_entry 1]
+    puts [format "  %-30s %s" $phase_name [format_time $elapsed]]
+}
+puts "=========================================="
+puts [format "  %-30s %s" "TOTAL BUILD TIME" [format_time $total_time]]
+puts "=========================================="
+
+# Write timing summary to file in reports directory
+set timing_file [open ${rpt_dir}/build_timing_summary.txt w]
+puts $timing_file "BUILD TIMING SUMMARY (PR MODE)"
+puts $timing_file "=============================="
+puts $timing_file ""
+foreach timing_entry $timing_log {
+    set phase_name [lindex $timing_entry 0]
+    set elapsed [lindex $timing_entry 1]
+    puts $timing_file [format "%-40s %.2f seconds" $phase_name $elapsed]
+}
+puts $timing_file ""
+puts $timing_file [format "%-40s %.2f seconds" "TOTAL BUILD TIME" $total_time]
+close $timing_file
+puts "Timing summary written to ${rpt_dir}/build_timing_summary.txt"
 
 puts "Done!"
 exit 0
