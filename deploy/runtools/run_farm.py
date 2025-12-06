@@ -804,3 +804,23 @@ class ExternallyProvisioned(RunFarm):
             f"WARNING: Skipping terminate_by_inst since run hosts are externally provisioned."
         )
         return
+
+
+class AWSEC2F2(AWSEC2F1):
+    """AWS EC2 F2 run farm. Manages F2 FPGA instances (VU47P).
+
+    This class inherits from AWSEC2F1 since the EC2 management logic is identical.
+    The only differences are the instance types (f2.* vs f1.*) which are configured
+    via the run farm recipe YAML, not hardcoded here.
+
+    F2 instances use AMD Virtex UltraScale+ HBM VU47P FPGAs with:
+    - 10% more LUTs than F1
+    - 32% more DSPs than F1
+    - 16GB HBM (High Bandwidth Memory)
+    - 3-die stacked SLR architecture
+
+    Note: AWS F1 instances are deprecated (EOL December 20, 2025).
+    New users should use F2 instances.
+    """
+
+    pass

@@ -9,16 +9,39 @@ from awstools.awstools import depaginated_boto_query
 rootLogger = logging.getLogger()
 
 
-def get_fpga_regions():
-    """Get list of all regions with F1 support"""
-    fpga_regions = [
-        "us-east-1",  # US East (N. Virginia)
-        "us-west-2",  # US West (Oregon)
-        "eu-central-1",  # Europe (Frankfurt)
-        "eu-west-1",  # Europe (Ireland)
-        "eu-west-2",  # Europe (London)
-        "ap-southeast-2",  # Asia Pacific (Sydney)
-    ]
+def get_fpga_regions(instance_family: str = "f1") -> list:
+    """Get list of all regions with FPGA support.
+
+    Args:
+        instance_family: Either "f1" or "f2" to get regions for that instance family.
+                        Defaults to "f1" for backward compatibility.
+
+    Returns:
+        List of AWS region names that support the specified FPGA instance family.
+    """
+    if instance_family == "f2":
+        # F2 regions as of November 2025
+        # Note: F1 is deprecated (EOL December 20, 2025)
+        fpga_regions = [
+            "us-east-1",      # US East (N. Virginia)
+            "us-west-2",      # US West (Oregon)
+            "ca-central-1",   # Canada (Central)
+            "eu-central-1",   # Europe (Frankfurt)
+            "eu-west-2",      # Europe (London)
+            "ap-southeast-2", # Asia Pacific (Sydney)
+            "ap-northeast-1", # Asia Pacific (Tokyo)
+            "ap-northeast-2", # Asia Pacific (Seoul)
+        ]
+    else:
+        # F1 regions (deprecated - EOL December 20, 2025)
+        fpga_regions = [
+            "us-east-1",      # US East (N. Virginia)
+            "us-west-2",      # US West (Oregon)
+            "eu-central-1",   # Europe (Frankfurt)
+            "eu-west-1",      # Europe (Ireland)
+            "eu-west-2",      # Europe (London)
+            "ap-southeast-2", # Asia Pacific (Sydney)
+        ]
     return list(fpga_regions)
 
 
