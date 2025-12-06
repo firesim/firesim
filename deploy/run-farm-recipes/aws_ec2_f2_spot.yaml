@@ -6,7 +6,7 @@
 # Only use for testing or workloads that can tolerate interruption.
 #
 # F2 instance types available:
-#   f2.6xlarge  - 2 FPGAs, 24 vCPUs, 256 GB RAM (smallest F2)
+#   f2.6xlarge  - 1 FPGA, 24 vCPUs, 256 GB RAM (smallest F2)
 #   f2.12xlarge - 4 FPGAs, 48 vCPUs, 512 GB RAM
 #   f2.48xlarge - 8 FPGAs, 192 vCPUs, 2 TB RAM
 
@@ -32,8 +32,8 @@ args:
     # managerinit arg end
 
     run_farm_host_specs:
-      - f2.6xlarge: # 2 FPGAs, 24 vCPUs, 256 GB RAM - smallest F2
-          num_fpgas: 2
+      - f2.6xlarge: # 1 FPGA, 24 vCPUs, 256 GB RAM - smallest F2
+          num_fpgas: 1
           num_metasims: 0
           use_for_switch_only: false
       - f2.12xlarge: # 4 FPGAs, 48 vCPUs, 512 GB RAM

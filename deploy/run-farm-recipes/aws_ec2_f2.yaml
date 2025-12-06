@@ -6,7 +6,7 @@
 # New users should use F2 instances with this recipe.
 #
 # F2 instance types available:
-#   f2.6xlarge  - 2 FPGAs, 24 vCPUs, 256 GB RAM (smallest F2)
+#   f2.6xlarge  - 1 FPGA, 24 vCPUs, 256 GB RAM (smallest F2)
 #   f2.12xlarge - 4 FPGAs, 48 vCPUs, 512 GB RAM
 #   f2.48xlarge - 8 FPGAs, 192 vCPUs, 2 TB RAM
 
@@ -59,9 +59,9 @@ args:
     #       override_simulation_dir: /scratch/specific-build-host-build-dir
     #       override_platform: EC2InstanceDeployManager
     run_farm_host_specs:
-      - f2.6xlarge: # 2 FPGAs, 24 vCPUs, 256 GB RAM - smallest F2
+      - f2.6xlarge: # 1 FPGA, 24 vCPUs, 256 GB RAM - smallest F2
           # REQUIRED: number of FPGAs on the machine
-          num_fpgas: 2
+          num_fpgas: 1
           # REQUIRED: number of metasims this machine can host
           num_metasims: 0
           # REQUIRED: whether it is acceptable to use machines of this spec
