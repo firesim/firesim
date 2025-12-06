@@ -1,0 +1,108 @@
+# Validation tests for AWS F2 instance support
+name: aws-f2-validate
+
+on:
+  pull_request:
+    branches:
+      - main
+      - stable
+    paths:
+      - 'deploy/runtools/run_farm.py'
+      - 'deploy/buildtools/bitbuilder.py'
+      - 'deploy/awstools/afitools.py'
+      - 'deploy/run-farm-recipes/aws_ec2_f2*.yaml'
+      - 'platforms/f2/**'
+      - 'deploy/firesim'
+      - '.github/workflows/aws-f2-validate.yml'
+  workflow_dispatch:
+
+defaults:
+  run:
+    shell: bash -leo pipefail {0}
+
+jobs:
+  validate-f2-config:
+    name: validate-f2-config
+    runs-on: ubuntu-22.04
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.10'
+
+      - name: Install dependencies
+        run: |
+          pip install pyyaml
+
+      - name: Validate F2 run farm recipe YAML
+        run: |
+          python -c "
+          import yaml
+          import sys
+
+          for recipe in ['deploy/run-farm-recipes/aws_ec2_f2.yaml', 'deploy/run-farm-recipes/aws_ec2_f2_spot.yaml']:
+              print(f'Validating {recipe}...')
+              with open(recipe) as f:
+                  config = yaml.safe_load(f)
+
+              # Check required fields
+              assert config['run_farm_type'] == 'AWSEC2F2', f'Expected run_farm_type AWSEC2F2 in {recipe}'
+              assert 'args' in config, f'Missing args in {recipe}'
+              assert 'run_farm_host_specs' in config['args'], f'Missing run_farm_host_specs in {recipe}'
+
+              # Check F2 instance types are present
+              specs = config['args']['run_farm_host_specs']
+              spec_names = [list(s.keys())[0] for s in specs]
+              f2_instances = ['f2.2xlarge', 'f2.4xlarge', 'f2.6xlarge']
+              for inst in f2_instances:
+                  assert inst in spec_names, f'Missing {inst} in {recipe}'
+
+              print(f'  {recipe} is valid')
+
+          print('All F2 recipes validated successfully!')
+          "
+
+      - name: Check AWSEC2F2 class exists
+        run: |
+          grep -q "class AWSEC2F2" deploy/runtools/run_farm.py || (echo "ERROR: AWSEC2F2 class not found" && exit 1)
+          echo "AWSEC2F2 class found in run_farm.py"
+
+      - name: Check F2BitBuilder class exists
+        run: |
+          grep -q "class F2BitBuilder" deploy/buildtools/bitbuilder.py || (echo "ERROR: F2BitBuilder class not found" && exit 1)
+          echo "F2BitBuilder class found in bitbuilder.py"
+
+      - name: Check F2 regions in afitools
+        run: |
+          grep -q "f2" deploy/awstools/afitools.py || (echo "ERROR: F2 support not found in afitools.py" && exit 1)
+          echo "F2 support found in afitools.py"
+
+      - name: Check F2 build script exists
+        run: |
+          test -x platforms/f2/build-bitstream.sh || (echo "ERROR: F2 build script not found or not executable" && exit 1)
+          echo "F2 build script found and executable"
+
+      - name: Check managerinit F2 support
+        run: |
+          grep -q "args.platform == 'f2'" deploy/firesim || (echo "ERROR: F2 platform not in managerinit" && exit 1)
+          echo "F2 platform support found in managerinit"
+
+  python-syntax-check:
+    name: python-syntax-check
+    runs-on: ubuntu-22.04
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.10'
+
+      - name: Check Python syntax in modified files
+        run: |
+          python -m py_compile deploy/runtools/run_farm.py
+          python -m py_compile deploy/buildtools/bitbuilder.py
+          python -m py_compile deploy/awstools/afitools.py
+          echo "Python syntax check passed"

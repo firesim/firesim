@@ -184,6 +184,38 @@ def managerinit(args: argparse.Namespace):
             "managerinit replace start",
             "managerinit replace end",
             bf_recipe_lines)
+    elif args.platform == 'f2':
+        runfarm_default_file = "run-farm-recipes/aws_ec2_f2.yaml"
+        with open(runfarm_default_file, "r") as f:
+            rf_recipe_lines = f.readlines()
+        start_lines = [f"base_recipe: {runfarm_default_file}\n"]
+        start_lines += ["recipe_arg_overrides:\n"]
+
+        start_arg_idx, end_arg_idx = get_indexes(rf_recipe_lines, "managerinit arg start", "managerinit arg end")
+        rf_recipe_lines = ["  " + l for l in start_lines] + rf_recipe_lines[start_arg_idx:end_arg_idx]
+
+        file_line_swap(
+            "config_runtime.yaml",
+            "config_runtime.yaml",
+            "managerinit replace start",
+            "managerinit replace end",
+            rf_recipe_lines)
+
+        buildfarm_default_file = "build-farm-recipes/aws_ec2.yaml"
+        with open(buildfarm_default_file, "r") as f:
+            bf_recipe_lines = f.readlines()
+        start_lines = [f"base_recipe: {buildfarm_default_file}\n"]
+        start_lines += ["recipe_arg_overrides:\n"]
+
+        start_arg_idx, end_arg_idx = get_indexes(bf_recipe_lines, "managerinit arg start", "managerinit arg end")
+        bf_recipe_lines = ["  " + l for l in start_lines] + bf_recipe_lines[start_arg_idx:end_arg_idx]
+
+        file_line_swap(
+            "config_build.yaml",
+            "config_build.yaml",
+            "managerinit replace start",
+            "managerinit replace end",
+            bf_recipe_lines)
     elif args.platform == 'vitis' or args.platform == 'xilinx_alveo_u250' or args.platform == 'xilinx_alveo_u280' or args.platform == 'xilinx_alveo_u200' or args.platform == 'xilinx_vcu118' or args.platform == 'rhsresearch_nitefury_ii':
         runfarm_default_file = "run-farm-recipes/externally_provisioned.yaml"
         with open(runfarm_default_file, "r") as f:
@@ -234,7 +266,7 @@ def managerinit(args: argparse.Namespace):
     else:
         rootLogger.info(f"Unknown platform {args.platform}. Skipping default config overrides.")
 
-    if args.platform == 'f1':
+    if args.platform in ('f1', 'f2'):
         awsinit()
 
 @register_task
