@@ -12,13 +12,19 @@ object LabelMultiThreadedInstances extends Transform {
   override def execute(state: CircuitState): CircuitState = {
     val p                    = state.annotations.collectFirst({ case midas.stage.phases.ConfigParametersAnnotation(p) => p }).get
     val enableMultiThreading = p(midas.EnableModelMultiThreading)
+    
+    // Collect excluded modules from annotations
+    val excludedModules = state.annotations.collect {
+      case midas.targetutils.FirrtlExcludeFromMultiThreadingAnnotation(it) => it.ofModule
+    }.toSet
+    
     val fameModelAnnos       = new collection.mutable.LinkedHashSet[midas.targetutils.FirrtlFAMEModelAnnotation]
     val updatedAnnos         = state.annotations.flatMap {
       case fma: midas.targetutils.FirrtlFAMEModelAnnotation                      =>
         fameModelAnnos += fma
         None
       case f5a @ midas.targetutils.FirrtlEnableModelMultiThreadingAnnotation(it) =>
-        if (enableMultiThreading) {
+        if (enableMultiThreading && !excludedModules.contains(it.ofModule)) {
           fameModelAnnos += midas.targetutils.FirrtlFAMEModelAnnotation(it)
           Some(f5a)
         } else {

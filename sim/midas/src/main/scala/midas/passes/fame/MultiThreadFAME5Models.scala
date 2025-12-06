@@ -11,7 +11,7 @@ import firrtl.annotations.TargetToken.{Instance, OfModule}
 import firrtl.Utils.BoolType
 import firrtl.passes.InlineAnnotation
 
-import midas.targetutils.FirrtlEnableModelMultiThreadingAnnotation
+import midas.targetutils.{FirrtlEnableModelMultiThreadingAnnotation, FirrtlExcludeFromMultiThreadingAnnotation}
 
 import collection.mutable
 
@@ -143,12 +143,21 @@ object MultiThreadFAME5Models extends Transform {
     val hostClock = WRef(top.ports.find(_.name == WrapTop.hostClockName).get)
     val hostReset = WRef(top.ports.find(_.name == WrapTop.hostResetName).get)
 
+    // Collect excluded modules from annotations
+    val excludedModules = state.annotations.collect {
+      case FirrtlExcludeFromMultiThreadingAnnotation(it) => OfModule(it.ofModule)
+    }.toSet
+
     // Populate keys from annotations, values from traversing statements
     val fame5RawInstances = new mutable.LinkedHashMap[OfModule, mutable.LinkedHashSet[Instance]]
     state.annotations.foreach {
       case FirrtlEnableModelMultiThreadingAnnotation(it) =>
         // TODO: why not use instance name from here?
-        fame5RawInstances(OfModule(it.ofModule)) = new mutable.LinkedHashSet[Instance]
+        val module = OfModule(it.ofModule)
+        // Skip excluded modules
+        if (!excludedModules.contains(module)) {
+          fame5RawInstances(module) = new mutable.LinkedHashSet[Instance]
+        }
       case _                                             =>
     }
 
@@ -238,9 +247,15 @@ object MultiThreadFAME5Models extends Transform {
     val prologue             = insts ++: clockConns ++: resetConns ++: counters.flatMap(c => Seq(c.decl, c.assigns))
     val multiThreadedTopBody = Block(prologue ++: prunedTopoTopBody +: multiThreadedConns)
 
+    // Get excluded module names for filtering during transformation
+    val excludedModuleNames = excludedModules.map(_.value).toSet
+
     val transformedModules = state.circuit.modules.flatMap {
       case m: Module if (m.name == state.circuit.main) =>
         Seq(m.copy(body = multiThreadedTopBody))
+      case m: Module if excludedModuleNames.contains(m.name) =>
+        // Skip transformation for excluded modules
+        Seq(m)
       case m: Module                                   =>
         val threaded =
           MuxingMultiThreader(threadedModuleNames)(m, nThreads) // all threaded by same amount, many get pruned
