@@ -72,6 +72,26 @@ def get_incremented_f1_ami_name(ami_name: str, increment: int) -> str:
     return prefix + version_number_str + suffix
 
 
+def get_f2_ami_name() -> str:
+    """Get the F2 FPGA Developer AMI name. F2 uses Rocky Linux 8."""
+    return "FPGA Developer AMI 1.18.0 (Rocky Linux)-prod-rp2hq2vdpw3ri"
+
+
+def get_f2_ami_id() -> str:
+    """Get the AWS F2 Developer AMI by looking up the image name -- should be region independent."""
+    client = boto3.client("ec2")
+    response = client.describe_images(
+        Filters=[{"Name": "name", "Values": [get_f2_ami_name()]}]
+    )
+    if len(response["Images"]) == 0:
+        rootLogger.critical(
+            f"F2 FPGA Developer AMI '{get_f2_ami_name()}' not found in this region. "
+            "F2 instances are currently available in us-east-1 and eu-west-2."
+        )
+        assert False, "F2 AMI not found"
+    return response["Images"][0]["ImageId"]
+
+
 class MockBoto3Instance:
     """This is used for testing without actually launching instances."""
 
@@ -704,6 +724,7 @@ def launch_run_instances(
     spotmaxprice: str,
     timeout: timedelta,
     always_expand: bool,
+    ami_id: Optional[str] = None,
 ) -> List[EC2InstanceResource]:
     return launch_instances(
         instancetype,
@@ -723,6 +744,7 @@ def launch_run_instances(
             },
         ],
         tags={"fsimcluster": fsimclustertag},
+        ami_id=ami_id,
     )
 
 

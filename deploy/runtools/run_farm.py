@@ -823,4 +823,45 @@ class AWSEC2F2(AWSEC2F1):
     New users should use F2 instances.
     """
 
-    pass
+    def launch_run_farm(self) -> None:
+        """Launch run farm instances using F2-specific AMI."""
+        from awstools.awstools import (
+            get_f2_ami_id,
+            launch_run_instances,
+            wait_on_instance_launches,
+        )
+
+        runfarmtag = self.run_farm_tag
+        runinstancemarket = self.run_instance_market
+        spotinterruptionbehavior = self.spot_interruption_behavior
+        spotmaxprice = self.spot_max_price
+        timeout = self.launch_timeout
+        always_expand = self.always_expand_run_farm
+
+        # Get F2-specific AMI
+        f2_ami_id = get_f2_ami_id()
+
+        # actually launch the instances
+        launched_instance_objs = {}
+        for sim_host_handle in sorted(self.SIM_HOST_HANDLE_TO_MAX_FPGA_SLOTS):
+            expected_number_of_instances_of_handle = len(
+                self.run_farm_hosts_dict[sim_host_handle]
+            )
+            launched_instance_objs[sim_host_handle] = launch_run_instances(
+                sim_host_handle,
+                expected_number_of_instances_of_handle,
+                runfarmtag,
+                runinstancemarket,
+                spotinterruptionbehavior,
+                spotmaxprice,
+                timeout,
+                always_expand,
+                ami_id=f2_ami_id,
+            )
+
+        # wait for instances to get to running state, so that they have been
+        # assigned IP addresses
+        for sim_host_handle in sorted(self.SIM_HOST_HANDLE_TO_MAX_FPGA_SLOTS):
+            wait_on_instance_launches(
+                launched_instance_objs[sim_host_handle], sim_host_handle
+            )

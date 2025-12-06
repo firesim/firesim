@@ -4,6 +4,11 @@
 #
 # Note: AWS F1 instances are deprecated (EOL December 20, 2025).
 # New users should use F2 instances with this recipe.
+#
+# F2 instance types available:
+#   f2.6xlarge  - 2 FPGAs, 24 vCPUs, 256 GB RAM (smallest F2)
+#   f2.12xlarge - 4 FPGAs, 48 vCPUs, 512 GB RAM
+#   f2.48xlarge - 8 FPGAs, 192 vCPUs, 2 TB RAM
 
 run_farm_type: AWSEC2F2
 args:
@@ -21,18 +26,15 @@ args:
     # if using spot instances, determine the max price
     spot_max_price: ondemand
     # default location of the simulation directory on the run farm host
-    default_simulation_dir: /home/centos
+    default_simulation_dir: /home/rocky
 
     # run farm hosts to spawn: a mapping from a spec below (which is an EC2
     # instance type) to the number of instances of the given type that you
     # want in your runfarm.
     run_farm_hosts_to_use:
       - f2.48xlarge: 0
-      - f2.24xlarge: 0
       - f2.12xlarge: 0
-      - f2.6xlarge: 0
-      - f2.4xlarge: 0
-      - f2.2xlarge: 1
+      - f2.6xlarge: 1
       - m4.16xlarge: 0
       - z1d.3xlarge: 0
       - z1d.6xlarge: 0
@@ -45,7 +47,7 @@ args:
     # On EC2, most users will never need to edit this section,
     # unless you want to add new host instance types.
     #
-    # The "name" of a spec below (e.g. "f2.2xlarge" below) MUST be a valid EC2
+    # The "name" of a spec below (e.g. "f2.6xlarge" below) MUST be a valid EC2
     # instance type and is used to refer to the spec above.
     #
     # Besides required parameters shown below, each can have multiple OPTIONAL
@@ -57,31 +59,19 @@ args:
     #       override_simulation_dir: /scratch/specific-build-host-build-dir
     #       override_platform: EC2InstanceDeployManager
     run_farm_host_specs:
-      - f2.2xlarge: # 1 FPGA, 8 vCPUs, 32 GB RAM
+      - f2.6xlarge: # 2 FPGAs, 24 vCPUs, 256 GB RAM - smallest F2
           # REQUIRED: number of FPGAs on the machine
-          num_fpgas: 1
+          num_fpgas: 2
           # REQUIRED: number of metasims this machine can host
           num_metasims: 0
           # REQUIRED: whether it is acceptable to use machines of this spec
           # to host ONLY switches (e.g. any attached FPGAs are "wasted")
           use_for_switch_only: false
-      - f2.4xlarge: # 1 FPGA, 16 vCPUs, 64 GB RAM
-          num_fpgas: 1
-          num_metasims: 0
-          use_for_switch_only: false
-      - f2.6xlarge: # 2 FPGAs, 24 vCPUs, 96 GB RAM
-          num_fpgas: 2
-          num_metasims: 0
-          use_for_switch_only: false
-      - f2.12xlarge: # 4 FPGAs, 48 vCPUs, 192 GB RAM
+      - f2.12xlarge: # 4 FPGAs, 48 vCPUs, 512 GB RAM
           num_fpgas: 4
           num_metasims: 0
           use_for_switch_only: false
-      - f2.24xlarge: # 8 FPGAs, 96 vCPUs, 384 GB RAM
-          num_fpgas: 8
-          num_metasims: 0
-          use_for_switch_only: false
-      - f2.48xlarge: # 8 FPGAs, 192 vCPUs, 768 GB RAM
+      - f2.48xlarge: # 8 FPGAs, 192 vCPUs, 2 TB RAM
           num_fpgas: 8
           num_metasims: 0
           use_for_switch_only: false
