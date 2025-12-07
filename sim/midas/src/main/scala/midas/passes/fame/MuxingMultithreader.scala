@@ -18,6 +18,9 @@ object MuxingMultiThreader {
   val rPortName = "read"
   val wPortName = "write"
   val tIdxName  = "threadIdx"
+  
+  // Set of module names that should be replicated (not threaded) - set by MultiThreadFAME5Models
+  var excludedModuleNames: Set[String] = Set.empty
 
   def rField(mem: DefMemory, field: String): Expression = memPortField(mem, rPortName, field)
   def wField(mem: DefMemory, field: String): Expression = memPortField(mem, wPortName, field)
@@ -104,14 +107,141 @@ object MuxingMultiThreader {
     // Uses only threaded instances
     val (iDecls, threadedImpl) = SeparateInstanceDecls(threaded)
 
+    // Separate excluded instances from normal instances
+    val (excludedInsts, normalInsts) = iDecls.partition(i => excludedModuleNames.contains(i.module))
+    
     // TODO: earlier in the compiler, every module should get hostClock/hostReset ports hooked up
-    val threadedChildren = iDecls.map {
+    val threadedChildren = normalInsts.map {
       case i if (threadedModuleNames.contains(i.module)) =>
         AddHostClockAndReset(i.copy(module = threadedModuleNames(i.module)))
       case i                                             => i
     }
+    
+    // For excluded modules, create N separate instances (one per thread)
+    val replicatedInstances = excludedInsts.flatMap { inst =>
+      (0 until n.toInt).map { idx =>
+        WDefInstance(FAME5Info.info, s"${inst.name}_t${idx}", inst.module, inst.tpe)
+      }
+    }
+    
+    // Create gated clocks for each replicated instance
+    // Each prefetcher gets a clock that only toggles when threadIdx matches its index
+    // gated_clock_N = asClock(asUInt(hostClock) & (threadIdx == N))
+    case class ClockGateInfo(instName: String, idx: Int, enableName: String, gatedClockName: String)
+    
+    val clockGateInfos = excludedInsts.flatMap { inst =>
+      (0 until n.toInt).map { idx =>
+        ClockGateInfo(
+          instName = inst.name,
+          idx = idx,
+          enableName = ns.newName(s"${inst.name}_t${idx}_clk_en"),
+          gatedClockName = ns.newName(s"${inst.name}_t${idx}_gated_clk")
+        )
+      }
+    }
+    
+    // Create clock enable nodes: enable_tN = (threadIdx === N)
+    val clockEnableDecls = clockGateInfos.map { info =>
+      val enableCond = DoPrim(PrimOps.Eq, Seq(tIdxRef, UIntLiteral(info.idx)), Nil, BoolType)
+      DefNode(FAME5Info.info, info.enableName, enableCond)
+    }
+    
+    // Create gated clocks: gated_clock = asClock(asUInt(hostClock) & enable)
+    val gatedClockDecls = clockGateInfos.map { info =>
+      val enableRef = WRef(info.enableName, BoolType, NodeKind)
+      // Convert clock to UInt(1), AND with enable, convert back to clock
+      val clockAsUInt = DoPrim(PrimOps.AsUInt, Seq(hostClock), Nil, UIntType(IntWidth(1)))
+      val gatedUInt = DoPrim(PrimOps.And, Seq(clockAsUInt, enableRef), Nil, UIntType(IntWidth(1)))
+      val gatedClock = DoPrim(PrimOps.AsClock, Seq(gatedUInt), Nil, ClockType)
+      DefNode(FAME5Info.info, info.gatedClockName, gatedClock)
+    }
+    
+    // Map from (instName, idx) -> gatedClockName for use in rewriteExcludedRefs
+    val gatedClockMap = clockGateInfos.map { info =>
+      (info.instName, info.idx) -> info.gatedClockName
+    }.toMap
+    
+    // Helper to generate a zero/default value for a given type
+    def zeroValue(tpe: Type): Expression = tpe match {
+      case UIntType(w) => UIntLiteral(0, w)
+      case SIntType(w) => SIntLiteral(0, w)
+      case ClockType   => hostClock  // All prefetchers run on hostClock continuously
+      case AsyncResetType => UIntLiteral(0, IntWidth(1))
+      case ResetType   => UIntLiteral(0, IntWidth(1))
+      case _           => UIntLiteral(0)  // Default fallback
+    }
+    
+    // Rewrite references to excluded instances:
+    // - READS (outputs): mux based on threadIdx to select correct instance (except clocks)
+    // - WRITES (inputs): each instance gets value only when it's the active thread, else zero/invalid
+    def rewriteExcludedRefs(stmt: Statement): Statement = {
+      def rewriteExpr(expr: Expression): Expression = expr match {
+        case WSubField(WRef(instName, tpe, InstanceKind, flow), field, fieldTpe, fieldFlow) 
+          if excludedInsts.exists(_.name == instName) =>
+          fieldTpe match {
+            case ClockType =>
+              // Cannot mux clocks - just return hostClock
+              hostClock
+            case _ =>
+              // Create a mux expression that selects the right instance based on threadIdx
+              val instances = (0 until n.toInt).map { idx =>
+                WSubField(WRef(s"${instName}_t${idx}", tpe, InstanceKind, flow), field, fieldTpe, fieldFlow)
+              }
+              instances.zipWithIndex.tail.foldLeft(instances.head: Expression) { case (elseExpr, (thenExpr, idx)) =>
+                Mux(
+                  DoPrim(PrimOps.Eq, Seq(tIdxRef, UIntLiteral(idx)), Nil, BoolType),
+                  thenExpr,
+                  elseExpr,
+                  fieldTpe
+                )
+              }
+          }
+        case e => e.map(rewriteExpr)
+      }
+      
+      stmt match {
+        case Connect(info, WSubField(WRef(instName, tpe, InstanceKind, flow), field, fieldTpe, fieldFlow), rhs)
+          if excludedInsts.exists(_.name == instName) =>
+          fieldTpe match {
+            case ClockType =>
+              // Connect each prefetcher to its gated clock
+              // The gated clock only toggles when threadIdx matches this instance's index
+              val connects = (0 until n.toInt).map { idx =>
+                val lhs = WSubField(WRef(s"${instName}_t${idx}", tpe, InstanceKind, flow), field, fieldTpe, fieldFlow)
+                val gatedClockRef = WRef(gatedClockMap((instName, idx)), ClockType, NodeKind)
+                Connect(info, lhs, gatedClockRef)
+              }
+              Block(connects)
+            case _ =>
+              // For other signals: mux(threadIdx == myIdx, actual_value, zero)
+              // This way each prefetcher only sees valid inputs during its assigned cycle
+              val connects = (0 until n.toInt).map { idx =>
+                val lhs = WSubField(WRef(s"${instName}_t${idx}", tpe, InstanceKind, flow), field, fieldTpe, fieldFlow)
+                val cond = DoPrim(PrimOps.Eq, Seq(tIdxRef, UIntLiteral(idx)), Nil, BoolType)
+                val rhsValue = rewriteExpr(rhs)
+                val defaultVal = zeroValue(fieldTpe)
+                val muxedValue = Mux(cond, rhsValue, defaultVal, fieldTpe)
+                Connect(info, lhs, muxedValue)
+              }
+              Block(connects)
+          }
+        case s => s.map(rewriteExcludedRefs).map(rewriteExpr)
+      }
+    }
+    
+    val rewrittenImpl = if (excludedInsts.nonEmpty) rewriteExcludedRefs(threadedImpl) else threadedImpl
 
-    val threadedBody = Block(threadedChildren ++: tIdxDecl +: tIdxConn +: threadedImpl +: newResets.toSeq)
+    // Combine all statements
+    val threadedBody = Block(
+      threadedChildren ++: 
+      replicatedInstances ++: 
+      tIdxDecl +: 
+      tIdxConn +: 
+      clockEnableDecls ++:
+      gatedClockDecls ++:
+      rewrittenImpl +: 
+      newResets.toSeq
+    )
     AddHostClockAndReset(
       Module(FAME5Info.info ++ module.info, threadedModuleNames(module.name), module.ports, threadedBody)
     )
