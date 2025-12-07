@@ -64,6 +64,9 @@ class BuildConfig:
         PLATFORM_CONFIG: Platform config to build.
         fpga_frequency: Frequency for the FPGA build.
         strategy: Strategy for the FPGA build.
+        enable_pr: Whether to enable Partial Reconfiguration.
+        pr_module_name: Name of the PR (Partial Reconfiguration) module.
+        pr_partition_path: Hierarchical path to the PR partition in the design.
         post_build_hook: Post build hook script.
         bitbuilder: bitstream configuration class.
     """
@@ -77,6 +80,9 @@ class BuildConfig:
     deploy_quintuplet: Optional[str]
     frequency: float
     strategy: BuildStrategy
+    enable_pr: bool
+    pr_module_name: Optional[str]
+    pr_partition_path: Optional[str]
     launch_time: str
     PLATFORM_CONFIG: str
     post_build_hook: str
@@ -154,6 +160,10 @@ class BuildConfig:
         self.build_strategy = BuildStrategy.from_string(
             bitstream_build_args["build_strategy"]
         )
+        # retrieve PR settings (optional, defaults to false)
+        self.enable_pr = bitstream_build_args.get("enable_pr", False)
+        self.pr_module_name = bitstream_build_args.get("pr_module_name")
+        self.pr_partition_path = bitstream_build_args.get("pr_partition_path")
 
         # retrieve the bitbuilder section
         bitbuilder_conf_dict = None
@@ -242,6 +252,30 @@ class BuildConfig:
             Specified build strategy
         """
         return self.build_strategy
+
+    def get_enable_pr(self) -> bool:
+        """Get whether Partial Reconfiguration is enabled.
+
+        Returns:
+            True if PR is enabled, False otherwise
+        """
+        return self.enable_pr
+
+    def get_pr_module_name(self) -> Optional[str]:
+        """Get the PR module name.
+
+        Returns:
+            Specified PR module name, or None if not set
+        """
+        return self.pr_module_name
+
+    def get_pr_partition_path(self) -> Optional[str]:
+        """Get the PR partition path.
+
+        Returns:
+            Specified PR partition path, or None if not set
+        """
+        return self.pr_partition_path
 
     def get_build_dir_name(self) -> str:
         """Get the name of the local build directory.
