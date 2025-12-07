@@ -124,6 +124,43 @@ object MuxingMultiThreader {
       }
     }
     
+    // Create gated clocks for each replicated instance
+    // Each prefetcher gets a clock that only toggles when threadIdx matches its index
+    // gated_clock_N = asClock(asUInt(hostClock) & (threadIdx == N))
+    case class ClockGateInfo(instName: String, idx: Int, enableName: String, gatedClockName: String)
+    
+    val clockGateInfos = excludedInsts.flatMap { inst =>
+      (0 until n.toInt).map { idx =>
+        ClockGateInfo(
+          instName = inst.name,
+          idx = idx,
+          enableName = ns.newName(s"${inst.name}_t${idx}_clk_en"),
+          gatedClockName = ns.newName(s"${inst.name}_t${idx}_gated_clk")
+        )
+      }
+    }
+    
+    // Create clock enable nodes: enable_tN = (threadIdx === N)
+    val clockEnableDecls = clockGateInfos.map { info =>
+      val enableCond = DoPrim(PrimOps.Eq, Seq(tIdxRef, UIntLiteral(info.idx)), Nil, BoolType)
+      DefNode(FAME5Info.info, info.enableName, enableCond)
+    }
+    
+    // Create gated clocks: gated_clock = asClock(asUInt(hostClock) & enable)
+    val gatedClockDecls = clockGateInfos.map { info =>
+      val enableRef = WRef(info.enableName, BoolType, NodeKind)
+      // Convert clock to UInt(1), AND with enable, convert back to clock
+      val clockAsUInt = DoPrim(PrimOps.AsUInt, Seq(hostClock), Nil, UIntType(IntWidth(1)))
+      val gatedUInt = DoPrim(PrimOps.And, Seq(clockAsUInt, enableRef), Nil, UIntType(IntWidth(1)))
+      val gatedClock = DoPrim(PrimOps.AsClock, Seq(gatedUInt), Nil, ClockType)
+      DefNode(FAME5Info.info, info.gatedClockName, gatedClock)
+    }
+    
+    // Map from (instName, idx) -> gatedClockName for use in rewriteExcludedRefs
+    val gatedClockMap = clockGateInfos.map { info =>
+      (info.instName, info.idx) -> info.gatedClockName
+    }.toMap
+    
     // Helper to generate a zero/default value for a given type
     def zeroValue(tpe: Type): Expression = tpe match {
       case UIntType(w) => UIntLiteral(0, w)
@@ -167,11 +204,12 @@ object MuxingMultiThreader {
           if excludedInsts.exists(_.name == instName) =>
           fieldTpe match {
             case ClockType =>
-              // All prefetchers run on hostClock continuously (no gating)
-              // This allows multi-cycle operations to complete
+              // Connect each prefetcher to its gated clock
+              // The gated clock only toggles when threadIdx matches this instance's index
               val connects = (0 until n.toInt).map { idx =>
                 val lhs = WSubField(WRef(s"${instName}_t${idx}", tpe, InstanceKind, flow), field, fieldTpe, fieldFlow)
-                Connect(info, lhs, hostClock)
+                val gatedClockRef = WRef(gatedClockMap((instName, idx)), ClockType, NodeKind)
+                Connect(info, lhs, gatedClockRef)
               }
               Block(connects)
             case _ =>
@@ -199,6 +237,8 @@ object MuxingMultiThreader {
       replicatedInstances ++: 
       tIdxDecl +: 
       tIdxConn +: 
+      clockEnableDecls ++:
+      gatedClockDecls ++:
       rewrittenImpl +: 
       newResets.toSeq
     )
