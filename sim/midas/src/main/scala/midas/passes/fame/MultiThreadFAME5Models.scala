@@ -189,6 +189,9 @@ object MultiThreadFAME5Models extends Transform {
     val circuitNS           = Namespace(state.circuit)
     val excludedModuleNames = excludedModules.map(_.value).toSet
     
+    // Pass excluded module names to MuxingMultiThreader so it can replicate them
+    MuxingMultiThreader.excludedModuleNames = excludedModuleNames
+    
     val threadedModuleNames = state.circuit.modules
       .collect({
         case m: Module if !excludedModuleNames.contains(m.name) => 
