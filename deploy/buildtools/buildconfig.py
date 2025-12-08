@@ -15,7 +15,7 @@ from util.deepmerge import deep_merge
 from util.targetprojectutils import extra_target_project_make_args, resolve_path
 
 # imports needed for python type checking
-from typing import Set, Any, Optional, Dict, TYPE_CHECKING
+from typing import Set, Any, Optional, Dict, TYPE_CHECKING, List, Union
 
 if TYPE_CHECKING:
     from buildtools.buildconfigfile import BuildConfigFile
@@ -65,8 +65,8 @@ class BuildConfig:
         fpga_frequency: Frequency for the FPGA build.
         strategy: Strategy for the FPGA build.
         enable_pr: Whether to enable Partial Reconfiguration.
-        pr_module_name: Name of the PR (Partial Reconfiguration) module.
-        pr_partition_path: Hierarchical path to the PR partition in the design.
+        pr_module_name: Name(s) of the PR (Partial Reconfiguration) module(s). Can be a string or list of strings.
+        pr_partition_path: Hierarchical path(s) to the PR partition(s) in the design. Can be a string or list of strings.
         post_build_hook: Post build hook script.
         bitbuilder: bitstream configuration class.
     """
@@ -81,8 +81,8 @@ class BuildConfig:
     frequency: float
     strategy: BuildStrategy
     enable_pr: bool
-    pr_module_name: Optional[str]
-    pr_partition_path: Optional[str]
+    pr_module_name: Optional[Union[str, List[str]]]
+    pr_partition_path: Optional[Union[str, List[str]]]
     launch_time: str
     PLATFORM_CONFIG: str
     post_build_hook: str
@@ -162,8 +162,36 @@ class BuildConfig:
         )
         # retrieve PR settings (optional, defaults to false)
         self.enable_pr = bitstream_build_args.get("enable_pr", False)
-        self.pr_module_name = bitstream_build_args.get("pr_module_name")
-        self.pr_partition_path = bitstream_build_args.get("pr_partition_path")
+        pr_module_name_raw = bitstream_build_args.get("pr_module_name")
+        pr_partition_path_raw = bitstream_build_args.get("pr_partition_path")
+        
+        # Convert single values to lists for consistency, or keep as lists if already lists
+        if pr_module_name_raw is not None:
+            if isinstance(pr_module_name_raw, str):
+                self.pr_module_name = [pr_module_name_raw]
+            elif isinstance(pr_module_name_raw, list):
+                self.pr_module_name = pr_module_name_raw
+            else:
+                raise Exception(f"pr_module_name must be a string or list of strings, got {type(pr_module_name_raw)}")
+        else:
+            self.pr_module_name = None
+            
+        if pr_partition_path_raw is not None:
+            if isinstance(pr_partition_path_raw, str):
+                self.pr_partition_path = [pr_partition_path_raw]
+            elif isinstance(pr_partition_path_raw, list):
+                self.pr_partition_path = pr_partition_path_raw
+            else:
+                raise Exception(f"pr_partition_path must be a string or list of strings, got {type(pr_partition_path_raw)}")
+        else:
+            self.pr_partition_path = None
+        
+        # Validate that module names and partition paths have matching lengths
+        if self.enable_pr:
+            if self.pr_module_name is None or self.pr_partition_path is None:
+                raise Exception("Both pr_module_name and pr_partition_path must be specified when enable_pr is true")
+            if len(self.pr_module_name) != len(self.pr_partition_path):
+                raise Exception(f"pr_module_name and pr_partition_path must have the same length. Got {len(self.pr_module_name)} module names and {len(self.pr_partition_path)} partition paths")
 
         # retrieve the bitbuilder section
         bitbuilder_conf_dict = None
@@ -261,19 +289,19 @@ class BuildConfig:
         """
         return self.enable_pr
 
-    def get_pr_module_name(self) -> Optional[str]:
-        """Get the PR module name.
+    def get_pr_module_name(self) -> Optional[Union[str, List[str]]]:
+        """Get the PR module name(s).
 
         Returns:
-            Specified PR module name, or None if not set
+            Specified PR module name(s) as a string or list of strings, or None if not set
         """
         return self.pr_module_name
 
-    def get_pr_partition_path(self) -> Optional[str]:
-        """Get the PR partition path.
+    def get_pr_partition_path(self) -> Optional[Union[str, List[str]]]:
+        """Get the PR partition path(s).
 
         Returns:
-            Specified PR partition path, or None if not set
+            Specified PR partition path(s) as a string or list of strings, or None if not set
         """
         return self.pr_partition_path
 

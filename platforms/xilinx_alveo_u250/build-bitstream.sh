@@ -17,8 +17,8 @@ usage() {
                                   For this platform TIMING and AREA supported."
     echo "   --board           : FPGA board {au200,au250,au280}."
     echo "   --enable_pr       : Enable Partial Reconfiguration (true/false)"
-    echo "   --pr_module_name  : Name of the PR (Partial Reconfiguration) module (required if --enable_pr is true)"
-    echo "   --pr_partition_path : Hierarchical path to the PR partition in the design (required if --enable_pr is true)"
+    echo "   --pr_module_name  : Name(s) of the PR (Partial Reconfiguration) module(s), comma-separated if multiple (required if --enable_pr is true)"
+    echo "   --pr_partition_path : Hierarchical path(s) to the PR partition(s) in the design, comma-separated if multiple (required if --enable_pr is true)"
     echo "   --help            : Display this message"
     exit "$1"
 }
@@ -96,12 +96,22 @@ if [ "$ENABLE_PR" = "true" ] ; then
         echo "No --pr_partition_path specified (required when --enable_pr is true)"
         usage 1
     fi
+    
+    # Validate that module names and partition paths have matching counts
+    # Count commas + 1 to get number of items
+    module_count=$(echo "$PR_MODULE_NAME" | tr ',' '\n' | wc -l)
+    path_count=$(echo "$PR_PARTITION_PATH" | tr ',' '\n' | wc -l)
+    if [ "$module_count" -ne "$path_count" ] ; then
+        echo "Error: pr_module_name and pr_partition_path must have the same number of items"
+        echo "  Found $module_count module name(s) and $path_count partition path(s)"
+        usage 1
+    fi
 fi
 
 # run build
 cd $CL_DIR
 if [ "$ENABLE_PR" = "true" ] ; then
-    vivado -mode batch -source $CL_DIR/scripts/main_pr.tcl -tclargs $FREQUENCY $STRATEGY $BOARD $PR_MODULE_NAME $PR_PARTITION_PATH
+    vivado -mode batch -source $CL_DIR/scripts/main_pr.tcl -tclargs $FREQUENCY $STRATEGY $BOARD "$PR_MODULE_NAME" "$PR_PARTITION_PATH"
 else
     vivado -mode batch -source $CL_DIR/scripts/main.tcl -tclargs $FREQUENCY $STRATEGY $BOARD
 fi

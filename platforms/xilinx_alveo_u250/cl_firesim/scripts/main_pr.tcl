@@ -5,10 +5,35 @@ set vivado_version_major [string range $vivado_version 0 3]
 set ifrequency           [lindex $argv 0]
 set istrategy            [lindex $argv 1]
 set iboard               [lindex $argv 2]
-# BoomMSHRFile
-set pr_module_name       [lindex $argv 3]
-# firesim_top/top/sim/target/FireSim_/chiptop0/system/tile_prci_domain/element_reset_domain_boom_tile/dcache/mshrs
-set pr_partition_path    [lindex $argv 4]
+# PR module name(s) - can be comma-separated list
+set pr_module_name_str   [lindex $argv 3]
+# PR partition path(s) - can be comma-separated list
+set pr_partition_path_str [lindex $argv 4]
+
+# Parse comma-separated lists into TCL lists
+# Split on commas and trim whitespace
+set pr_module_names {}
+foreach name [split $pr_module_name_str ","] {
+    lappend pr_module_names [string trim $name]
+}
+
+set pr_partition_paths {}
+foreach path [split $pr_partition_path_str ","] {
+    lappend pr_partition_paths [string trim $path]
+}
+
+# Validate that we have matching counts
+if {[llength $pr_module_names] != [llength $pr_partition_paths]} {
+    puts "ERROR: Number of PR module names ([llength $pr_module_names]) does not match number of partition paths ([llength $pr_partition_paths])"
+    exit 1
+}
+
+puts "PR Configuration:"
+puts "  Number of PR modules: [llength $pr_module_names]"
+for {set i 0} {$i < [llength $pr_module_names]} {incr i} {
+    puts "  Module [expr {$i + 1}]: [lindex $pr_module_names $i]"
+    puts "    Partition path: [lindex $pr_partition_paths $i]"
+}
 
 # Timing tracking
 set script_start_time [clock seconds]
@@ -185,20 +210,41 @@ if {$actual_freq_mhz == "" || $actual_freq_mhz <= 0} {
 # Calculate clock period in nanoseconds (period = 1000 / frequency_MHz)
 set clock_period_ns [expr {1000.0 / $actual_freq_mhz}]
 
-# Create blockset for PR module
+# Create blocksets for all PR modules
 set phase_start [log_timing "PR setup" $phase_start]
-# Note: -define_from requires the module to exist in the current design
-if {[catch {create_fileset -blockset -define_from $pr_module_name $pr_module_name} err]} {
-    puts "ERROR: Failed to create blockset for $pr_module_name: $err"
-    puts "Make sure the module '$pr_module_name' exists in your design"
-    exit 1
-}
-file mkdir ${root_dir}/vivado_proj/firesim.srcs/$pr_module_name/new
-close [ open ${root_dir}/vivado_proj/firesim.srcs/$pr_module_name/new/${pr_module_name}_ooc.xdc w ]
-add_files -fileset $pr_module_name ${root_dir}/vivado_proj/firesim.srcs/$pr_module_name/new/${pr_module_name}_ooc.xdc
+set_property PR_FLOW 1 [current_project]
 
-# Build the constraint file content with proper variable substitution
-set data {# (c) Copyright 2014 Xilinx, Inc. All rights reserved.
+# Dictionary to map module names to reconfig module names (for sharing reconfig modules)
+set module_to_reconfig_module [dict create]
+# Dictionary to map module names to partition definitions (one per module type)
+set module_to_partition_def [dict create]
+# List to store PR configuration partitions
+set pr_config_partitions {}
+
+# First pass: Create blocksets and partition definitions for unique modules
+set unique_modules {}
+for {set i 0} {$i < [llength $pr_module_names]} {incr i} {
+    set pr_module_name [lindex $pr_module_names $i]
+    
+    # Track unique modules
+    if {[lsearch -exact $unique_modules $pr_module_name] == -1} {
+        lappend unique_modules $pr_module_name
+        
+        puts "Setting up PR module: $pr_module_name"
+        
+        # Note: -define_from requires the module to exist in the current design
+        if {[catch {create_fileset -blockset -define_from $pr_module_name $pr_module_name} err]} {
+            puts "ERROR: Failed to create blockset for $pr_module_name: $err"
+            puts "Make sure the module '$pr_module_name' exists in your design"
+            exit 1
+        }
+        
+        file mkdir ${root_dir}/vivado_proj/firesim.srcs/$pr_module_name/new
+        close [ open ${root_dir}/vivado_proj/firesim.srcs/$pr_module_name/new/${pr_module_name}_ooc.xdc w ]
+        add_files -fileset $pr_module_name ${root_dir}/vivado_proj/firesim.srcs/$pr_module_name/new/${pr_module_name}_ooc.xdc
+
+        # Build the constraint file content with proper variable substitution
+        set data {# (c) Copyright 2014 Xilinx, Inc. All rights reserved.
 
 # Add in a clock definition for each input clock to the out-of-context module.
 # The module will be synthesized as top so reference the clock origin using get_ports.
@@ -209,27 +255,53 @@ set data {# (c) Copyright 2014 Xilinx, Inc. All rights reserved.
 create_clock -name user_clock -period $clock_period_ns [get_ports clock]
 }
 
-set filename "${root_dir}/vivado_proj/firesim.srcs/$pr_module_name/new/${pr_module_name}_ooc.xdc"
-set fileId [open $filename "w"]
-puts -nonewline $fileId $data
-close $fileId
-set_property USED_IN {out_of_context synthesis implementation}  [get_files  ${root_dir}/vivado_proj/firesim.srcs/$pr_module_name/new/${pr_module_name}_ooc.xdc]
+        set filename "${root_dir}/vivado_proj/firesim.srcs/$pr_module_name/new/${pr_module_name}_ooc.xdc"
+        set fileId [open $filename "w"]
+        puts -nonewline $fileId $data
+        close $fileId
+        set_property USED_IN {out_of_context synthesis implementation}  [get_files  ${root_dir}/vivado_proj/firesim.srcs/$pr_module_name/new/${pr_module_name}_ooc.xdc]
 
-set_property PR_FLOW 1 [current_project] 
-delete_fileset [get_filesets $pr_module_name] -merge [current_fileset]
-update_compile_order -fileset sources_1
+        delete_fileset [get_filesets $pr_module_name] -merge [current_fileset]
+        update_compile_order -fileset sources_1
 
-# Create a partition for the prefetch region
-create_partition_def -name prefetch_partition -module $pr_module_name
+        # Create a partition definition for this module type (one per unique module)
+        set partition_name "pr_partition_${pr_module_name}"
+        create_partition_def -name $partition_name -module $pr_module_name
+        dict set module_to_partition_def $pr_module_name $partition_name
+    }
+}
 
-# Create a first reconfig module for the prefetch region
-create_reconfig_module -name prefetch_reconfig_module_1 -partition_def [get_partition_defs prefetch_partition ]  -define_from $pr_module_name
-update_compile_order -fileset prefetch_reconfig_module_1
-create_pr_configuration -name config_1 -partitions [list $pr_partition_path:prefetch_reconfig_module_1 ]
+# Second pass: Create reconfig modules for unique modules
+foreach pr_module_name $unique_modules {
+    set partition_name [dict get $module_to_partition_def $pr_module_name]
+    
+    # Create a reconfig module for this module type (shared across all partitions using this module)
+    set reconfig_module_name "pr_reconfig_module_${pr_module_name}"
+    create_reconfig_module -name $reconfig_module_name -partition_def [get_partition_defs $partition_name] -define_from $pr_module_name
+    update_compile_order -fileset $reconfig_module_name
+    
+    # Map module name to reconfig module name
+    dict set module_to_reconfig_module $pr_module_name $reconfig_module_name
+    
+    puts "Created reconfig module '$reconfig_module_name' for module type '$pr_module_name'"
+}
+
+# Third pass: Map each partition to its corresponding reconfig module
+for {set i 0} {$i < [llength $pr_module_names]} {incr i} {
+    set pr_module_name [lindex $pr_module_names $i]
+    set pr_partition_path [lindex $pr_partition_paths $i]
+    set reconfig_module_name [dict get $module_to_reconfig_module $pr_module_name]
+    
+    # Add to PR configuration partitions list
+    lappend pr_config_partitions "${pr_partition_path}:${reconfig_module_name}"
+    puts "Mapped partition [expr {$i + 1}] at '$pr_partition_path' to reconfig module '$reconfig_module_name'"
+}
+
+# Create PR configuration with all partitions
+create_pr_configuration -name config_1 -partitions $pr_config_partitions
 set_property PR_CONFIGURATION config_1 [get_runs impl_1]
 set_property DFX_MODE {ABSTRACT SHELL} [get_runs impl_1]
 
-# Add more reconfig modules for the prefetch region here if needed
 set phase_start [log_timing "PR setup" $phase_start] 
 
 
