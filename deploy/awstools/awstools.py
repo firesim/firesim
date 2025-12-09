@@ -43,15 +43,15 @@ rootLogger = logging.getLogger()
 # And whenever this changes, you also need to update deploy/tests/test_amis.json
 # by running scripts/update_test_amis.py
 # additionally, for normal use this assumes that the AMI used by the runhosts and manager instance match.
-# in the case of CI (or launching instances from a non-EC2 instance), this defaults to the centos based AMI.
+# in the case of CI (or launching instances from a non-EC2 instance), this defaults to the Ubuntu based AMI.
 def get_f1_ami_name() -> str:
     cuser = os.environ["USER"]
     if cuser == "amzn":
         return "FPGA Developer AMI(AL2) - 1.11.3-62ddb7b2-2f1e-4c38-a111-9093dcb1656f"
     else:
-        if cuser != "centos":
+        if cuser != "ubuntu":
             print(
-                "Unknown $USER (expected centos/amzn). Defaulting to the Centos AWS EC2 AMI."
+                "Unknown $USER (expected ubuntu/amzn). Defaulting to the Ubuntu AWS EC2 AMI."
             )
         return "FPGA Developer AMI (Ubuntu) - 1.17.0   -prod-rhng4b6alkhdq"
 
@@ -129,14 +129,60 @@ def get_localhost_instance_info(url_ext: str) -> Optional[str]:
     # practice it should resolve nearly instantly on an initialized EC2 instance.
     curl_connection_timeout = 10
     with settings(ok_ret_codes=[0, 7, 28]), hide("everything"):
+        # res = local(
+        #     f"curl -s --connect-timeout {curl_connection_timeout} http://169.254.169.254/latest/{url_ext}",
+        #     capture=True,
+        # )
         res = local(
-            f"curl -s --connect-timeout {curl_connection_timeout} http://169.254.169.254/latest/{url_ext}",
-            capture=True,
+            f"TOKEN=`curl -X PUT \"http://169.254.169.254/latest/api/token\" -H \"X-aws-ec2-metadata-token-ttl-seconds: 21600\"` && curl -H \"X-aws-ec2-metadata-token: $TOKEN\" http://169.254.169.254/latest/{url_ext}",
+            capture=True
         )
         rootLogger.debug(res.stdout)
         rootLogger.debug(res.stderr)
 
+#         connect_timeout = 2
+#         total_timeout = 3
+#         base = "http://169.254.169.254/latest/"
+#         curl_common = (f"curl -sS --connect-timeout {connect_timeout} --max-time {total_timeout} --noproxy '*'")
+
+#         token_cmd = (f"{curl_common} -X PUT -H 'X-aws-ec2-metadata-token-ttl-seconds: 21600' {base}api/token")
+
+#         token_res = local(token_cmd, capture=True)
+#         token = token_res.stdout.strip()
+
+#         meta_cmd = f"{curl_common} -H 'X-aws-ec2-metadata-token: {token}' {base}{url_ext}"
+
+#         with settings(ok_ret_codes=[0, 7, 28]), hide("everything"):
+#             res = local(meta_cmd, capture=True)
+#             rootLogger.debug(res.stdout)
+#             rootLogger.debug(res.stderr)
+
+#         # 3) Only return non-empty content on success
+#         if res.return_code == 0 and res.stdout and res.stdout.strip():
+#             rootLogger.debug("AWS Host Detected")
+#             return res.stdout
+#         else:
+#             rootLogger.debug("Non-AWS Host or empty metadata response detected")
+#             return None
+
+
+        # res = local(
+        #     f"curl -s --connect-timeout {curl_connection_timeout} http://169.254.169.254/latest/{url_ext}",
+        #     capture=True,
+        # )
+        # rootLogger.debug(res.stdout)
+        # rootLogger.debug(res.stderr)
     if res.return_code == 0:
+        base = "http://169.254.169.254/latest/"
+        token_cmd = f"curl -S --connect-timeout {curl_connection_timeout} -X PUT -H 'X-aws-ec2-metadata-token-ttl-seconds: 21600' {base}api/token"
+        token_res = local(token_cmd, capture=True)
+        token = token_res.stdout.strip()
+
+        metadata_cmd = f"curl -sS --connect-timeout {curl_connection_timeout} -H 'X-aws-ec2-metadata-token: {token}' {base}{url_ext}"
+        res = local(metadata_cmd, capture=True)
+        rootLogger.debug(res.stdout)
+        rootLogger.debug(res.stderr)
+    if res.return_code == 0 and res != None:
         rootLogger.debug("AWS Host Detected")
         return res.stdout
     else:
@@ -424,6 +470,7 @@ def get_aws_userid() -> str:
     """
     info = get_localhost_instance_info("dynamic/instance-identity/document")
     if info is not None:
+        rootLogger.info(f"userid: {info}")
         return json.loads(info)["accountId"].lower()
     else:
         assert False, "Unable to obtain accountId from instance metadata"

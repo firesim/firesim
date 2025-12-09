@@ -12,6 +12,7 @@ xsim-dut: replace-rtl $(fpga_work_dir)/stamp
 # Compile XSIM Driver #
 xsim = $(GENERATED_DIR)/$(DESIGN)-$(PLATFORM)
 
+# rh: changed from # 	$(MAKE) -C $(simif_dir) driver MAIN=f1_xsim PLATFORM=f1 \
 $(xsim): export CXXFLAGS := $(CXXFLAGS) $(common_cxx_flags)
 $(xsim): export LDFLAGS := $(LDFLAGS) $(common_ld_flags)
 $(xsim): $(header) $(DRIVER_CC) $(DRIVER_H) $(midas_cc) $(midas_h)

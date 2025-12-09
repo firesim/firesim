@@ -35,7 +35,8 @@ done
 
 unamestr=$(uname)
 RDIR=$(pwd)
-AWSFPGA=$RDIR/platforms/f1/aws-fpga
+AWSFPGA=$RDIR/platforms/f1/aws-fpga 
+# AWSFPGA=$RDIR/platforms/f2/aws-fpga-firesim-f2  #rh: commented out to ensure f1 compatibility
 export CL_DIR=$AWSFPGA/hdk/cl/developer_designs/cl_firesim
 
 # setup risc-v tools

@@ -1,4 +1,4 @@
-""" Run Farm management. """
+"""Run Farm management."""
 
 from __future__ import annotations
 
@@ -688,6 +688,7 @@ class EC2InstanceDeployManager(InstanceDeployManager):
                 # use local version of aws_fpga on run farm nodes
                 aws_fpga_upstream_version = local(
                     "git -C platforms/f1/aws-fpga describe --tags --always --dirty",
+                    # "git -C platforms/f2/aws-fpga-firesim-f2 describe --tags --always --dirty", #rh: f1 compatibility fix
                     capture=True,
                 )
                 if "-dirty" in aws_fpga_upstream_version:
@@ -713,7 +714,8 @@ class EC2InstanceDeployManager(InstanceDeployManager):
             self.instance_logger("""Copying AWS FPGA XDMA driver to remote node.""")
             run(f"mkdir -p /home/{os.environ['USER']}/xdma/")
             put(
-                "../platforms/f1/aws-fpga/sdk/linux_kernel_drivers",
+                # "../platforms/f2/aws-fpga-firesim-f2/sdk/linux_kernel_drivers",
+                "../platforms/f1/aws-fpga/sdk/linux_kernel_drivers", #rh: f1 revert
                 f"/home/{os.environ['USER']}/xdma/",
                 mirror_local_mode=True,
             )

@@ -41,8 +41,7 @@ TARGET_PROJECT ?= midasexamples
 TARGET_PROJECT_MAKEFRAG ?= $(firesim_base_dir)/src/main/makefrag/$(TARGET_PROJECT)
 
 # The host-platform type
-PLATFORM ?= f1
-
+PLATFORM ?= f2
 ####################
 #   Target Setup   #
 ####################

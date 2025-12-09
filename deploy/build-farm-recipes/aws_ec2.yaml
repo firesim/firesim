@@ -30,5 +30,5 @@ args:
     # if using spot instances, determine the max price
     spot_max_price: ondemand
     # default location of build directory on build host
-    default_build_dir: /home/centos/firesim-build
+    default_build_dir: /home/ubuntu/firesim-build
     # managerinit arg end
