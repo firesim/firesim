@@ -806,6 +806,7 @@ class XilinxAlveoBitBuilder(BitBuilder):
         enable_pr = self.build_config.get_enable_pr()
         pr_module_name = self.build_config.get_pr_module_name()
         pr_partition_path = self.build_config.get_pr_partition_path()
+        pr_project_path = self.build_config.get_pr_project_path()
 
         # Build the command with optional PR arguments
         build_cmd = f"{cl_dir}/build-bitstream.sh --cl_dir {cl_dir} --frequency {fpga_frequency} --strategy {build_strategy} --board {self.BOARD_NAME} --enable_pr {str(enable_pr).lower()}"
@@ -824,6 +825,8 @@ class XilinxAlveoBitBuilder(BitBuilder):
                     build_cmd += f" --pr_partition_path {','.join(pr_partition_path)}"
                 else:
                     build_cmd += f" --pr_partition_path {pr_partition_path}"
+            if pr_project_path:
+                build_cmd += f" --pr_project_path {pr_project_path}"
 
         with InfoStreamLogger("stdout"), settings(warn_only=True):
             alveo_result = run(build_cmd)
