@@ -25,3 +25,4 @@
 [submodule "platforms/f2/aws-fpga-firesim-f2"]
 	path = platforms/f2/aws-fpga-firesim-f2
 	url = https://github.com/rickydumplings/aws-fpga-firesim-f2.git
+	branch = bitbuild

@@ -227,13 +227,11 @@ if [ -n "$TOKEN" ]; then
             export CPPFLAGS="${CPPFLAGS/-DNDEBUG/}"
         fi
 
-
         # Source hdk_setup.sh once on this machine to pull down shell DCP and IP,
         # so we don't have to waste time doing it each time on worker instances
-        # Note: sdk_setup.sh is skipped due to header conflicts between conda and Ubuntu
         AWSFPGA="$FDIR/platforms/f2/aws-fpga-firesim-f2"
         cd "$AWSFPGA"
-        # bash -c "source ./sdk_setup.sh"  # rh: sdk_setup.sh has header conflicts
+        bash -c "source ./sdk_setup.sh"
         bash -c "source ./hdk_setup.sh"
     )
 
