@@ -687,8 +687,7 @@ class EC2InstanceDeployManager(InstanceDeployManager):
             with prefix("cd ../"):
                 # use local version of aws_fpga on run farm nodes
                 aws_fpga_upstream_version = local(
-                    "git -C platforms/f1/aws-fpga describe --tags --always --dirty",
-                    # "git -C platforms/f2/aws-fpga-firesim-f2 describe --tags --always --dirty", #rh: f1 compatibility fix
+                    "git -C platforms/f2/aws-fpga-firesim-f2 describe --tags --always --dirty", #rh: f1 compatibility fix
                     capture=True,
                 )
                 if "-dirty" in aws_fpga_upstream_version:
@@ -701,8 +700,8 @@ class EC2InstanceDeployManager(InstanceDeployManager):
                 )
             )
             with warn_only():
-                run("git clone https://github.com/aws/aws-fpga")
-                run("cd aws-fpga && git checkout " + aws_fpga_upstream_version)
+                run("git clone https://github.com/rickydumplings/aws-fpga-firesim-f2.git aws-fpga") #rh: "git clone https://github.com/aws/aws-fpga"
+                run("cd aws-fpga && git checkout " + aws_fpga_upstream_version) #rh: keep in mind that if ts says dirty it will fail but continue doing sdk_setup
             with cd(f"/home/{os.environ['USER']}/aws-fpga"):
                 run("source sdk_setup.sh")
 
@@ -714,13 +713,12 @@ class EC2InstanceDeployManager(InstanceDeployManager):
             self.instance_logger("""Copying AWS FPGA XDMA driver to remote node.""")
             run(f"mkdir -p /home/{os.environ['USER']}/xdma/")
             put(
-                # "../platforms/f2/aws-fpga-firesim-f2/sdk/linux_kernel_drivers",
-                "../platforms/f1/aws-fpga/sdk/linux_kernel_drivers", #rh: f1 revert
+                "../platforms/f2/aws-fpga-firesim-f2/sdk/dma_ip_drivers/XDMA/linux-kernel", #rh: updated to fit new submodule. why was it hardcoded?
                 f"/home/{os.environ['USER']}/xdma/",
                 mirror_local_mode=True,
             )
             with cd(
-                f"/home/{os.environ['USER']}/xdma/linux_kernel_drivers/xdma/"
+                f"/home/{os.environ['USER']}/xdma/linux-kernel/xdma/"  # rh: renamed to fit submodule 
             ), prefix("export PATH=/usr/bin:$PATH"):
                 # prefix only needed if conda env is earlier in PATH
                 # see build-setup-nolog.sh for explanation.
@@ -844,7 +842,7 @@ class EC2InstanceDeployManager(InstanceDeployManager):
             self.instance_logger("Loading XDMA Driver Kernel Module.")
             # TODO: can make these values automatically be chosen based on link lat
             run(
-                f"sudo insmod /home/{os.environ['USER']}/xdma/linux_kernel_drivers/xdma/xdma.ko poll_mode=1"
+                f"sudo insmod /home/{os.environ['USER']}/xdma/linux-kernel/xdma/xdma.ko poll_mode=1"  # rh: renamed to fit submodule 
             )
 
     def start_ila_server(self) -> None:

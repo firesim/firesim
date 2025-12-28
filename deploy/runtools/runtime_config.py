@@ -233,7 +233,7 @@ class RuntimeHWConfig:
         self.uri_list = []
 
         if self.agfi is not None:
-            self.platform = "f1"
+            self.platform = "f2"
         else:
             self.uri_list.append(
                 URIContainer("bitstream_tar", self.get_bitstream_tar_filename())
@@ -267,7 +267,7 @@ class RuntimeHWConfig:
         ):
             # convert old build_triplet into buildquintuplet
             hwconfig_override_build_quintuplet = (
-                "f1-firesim-" + hwconfig_override_build_quintuplet
+                "f2-firesim-" + hwconfig_override_build_quintuplet  # F1 deprecated
             )
 
         self.deploy_quintuplet = hwconfig_override_build_quintuplet
@@ -346,7 +346,7 @@ class RuntimeHWConfig:
         if self.deploy_quintuplet is not None:
             return self.deploy_quintuplet
 
-        if self.get_platform() == "f1":
+        if self.get_platform() == "f2":  # F1 deprecated; query AGFI for F2
             rootLogger.debug(
                 "Setting deployquintuplet by querying the AGFI's description."
             )
@@ -630,7 +630,7 @@ class RuntimeHWConfig:
         # must be done after fetch_all_URIs
         # based on the platform, read the URI, fill out values
 
-        if self.platform == "f1":
+        if self.platform == "f2":  # F1 deprecated
             return
         else:  # bitstream_tar platforms
             for container in self.uri_list:
@@ -795,7 +795,7 @@ class RuntimeBuildRecipeConfig(RuntimeHWConfig):
         self.uri_list = []
 
         self.deploy_quintuplet = (
-            build_recipe_dict.get("PLATFORM", "f1")
+            build_recipe_dict.get("PLATFORM", "f2")  # F1 deprecated
             + "-"
             + build_recipe_dict.get("TARGET_PROJECT", "firesim")
             + "-"
@@ -825,8 +825,8 @@ class RuntimeBuildRecipeConfig(RuntimeHWConfig):
         self.driver_built = False
         self.metasim_host_simulator = default_metasim_host_sim
 
-        # currently only f1 metasims supported
-        self.platform = build_recipe_dict.get("PLATFORM", "f1")
+        # currently only f2 metasims supported (f1 deprecated)
+        self.platform = build_recipe_dict.get("PLATFORM", "f2")
         self.driver_name_prefix = ""
         if self.metasim_host_simulator in ["verilator", "verilator-debug"]:
             self.driver_name_prefix = "V"
