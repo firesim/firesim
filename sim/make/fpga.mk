@@ -49,6 +49,10 @@ fpga_sim_delivery_files = $(fpga_driver_dir)/$(DESIGN)-$(PLATFORM)
 $(fpga_work_dir)/stamp: $(shell find $(board_dir)/cl_firesim -name '*')
 	mkdir -p $(@D)
 	cp -rf $(board_dir)/cl_firesim -T $(fpga_work_dir)
+ifeq ($(PLATFORM), f2)
+	# Create symlink for config-specific synth TCL (F2 build_all.tcl sources synth_$${CL}.tcl)
+	cd $(fpga_build_dir)/scripts && ln -sf synth_cl_firesim.tcl synth_cl_$(name_quintuplet).tcl
+endif
 	touch $@
 
 $(repo_state): $(simulator_verilog) $(fpga_work_dir)/stamp

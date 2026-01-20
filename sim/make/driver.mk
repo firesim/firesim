@@ -37,7 +37,7 @@ driver: $(PLATFORM)
 $(f2): export CXXFLAGS := $(CXXFLAGS) $(common_cxx_flags) $(DRIVER_CXXOPTS) \
 	-I$(platforms_dir)/f2/aws-fpga-firesim-f2/sdk/userspace/include
 # We will copy shared libs into same directory as driver on runhost, so add $ORIGIN to rpath ($$ORIGIN when given on the shell)
-$(f2): export LDFLAGS := $(LDFLAGS) $(common_ld_flags) -Wl,-rpath='$$$$ORIGIN' -L /usr/local/lib64  -lz # -lfpga_mgmt
+$(f2): export LDFLAGS := $(LDFLAGS) $(common_ld_flags) -Wl,-rpath='$$$$ORIGIN' -L /usr/local/lib64 -lfpga_mgmt -lz
 
 # Compile Driver
 $(f2): $(header) $(DRIVER_CC) $(DRIVER_H) $(midas_cc) $(midas_h)

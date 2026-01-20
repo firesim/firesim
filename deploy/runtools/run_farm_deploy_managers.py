@@ -882,10 +882,10 @@ class EC2InstanceDeployManager(InstanceDeployManager):
                 self.get_and_install_aws_fpga_sdk()
                 # unload any existing edma/xdma/xocl
                 self.unload_xrt_and_xocl()
-                # copy xdma driver
-                self.fpga_node_xdma()
-                # load xdma
-                self.load_xdma()
+                # # copy xdma driver # rh: commenting out for now to prevent loading of xdma.
+                # self.fpga_node_xdma()
+                # # load xdma
+                # self.load_xdma()
 
             # setup nbd/qcow infra
             self.sim_node_qcow()
@@ -897,8 +897,8 @@ class EC2InstanceDeployManager(InstanceDeployManager):
                 self.clear_fpgas()
                 self.flash_fpgas()
 
-                # re-load XDMA
-                self.load_xdma()
+                # # re-load XDMA # rh: commenting out for now to prevent loading of xdma.
+                # self.load_xdma()
 
                 # restart (or start form scratch) ila server
                 self.kill_ila_server()
