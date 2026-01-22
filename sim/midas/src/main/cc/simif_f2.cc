@@ -114,7 +114,7 @@ constexpr uint16_t pci_vendor_id = 0x1D0F;
 /**
  * Amazon PCI Device ID pre-assigned by for f2 applications.
  */
-constexpr uint16_t pci_device_id = 0xF000;
+constexpr uint16_t pci_device_id = 0xF002;
 
 void simif_f2_t::fpga_setup(int slot_id, const std::string &agfi) {
   // debug_enabled = debug;  
