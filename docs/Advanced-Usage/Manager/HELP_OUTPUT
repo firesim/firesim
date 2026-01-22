@@ -4,7 +4,7 @@ usage: firesim [-h] [-c RUNTIMECONFIGFILE] [-b BUILDCONFIGFILE]
                [-g TERMINATESOMEF12] [-i TERMINATESOMEF14]
                [-m TERMINATESOMEM416] [--terminatesome TERMINATESOME] [-q]
                [-t LAUNCHTIME]
-               [--platform {f1,rhsresearch_nitefury_ii,vitis,xilinx_alveo_u200,xilinx_alveo_u250,xilinx_alveo_u280,xilinx_vcu118}]
+               [--platform {f1,f2,rhsresearch_nitefury_ii,vitis,xilinx_alveo_u200,xilinx_alveo_u250,xilinx_alveo_u280,xilinx_vcu118}]
                {managerinit,infrasetup,boot,kill,runworkload,buildbitstream,builddriver,enumeratefpgas,tar2afi,runcheck,launchrunfarm,terminaterunfarm,shareagfi}
 
 FireSim Simulation Manager.

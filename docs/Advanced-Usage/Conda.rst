@@ -1,14 +1,14 @@
 Non-Source Dependency Management
 ================================
 
-In the AWS EC2 F1 setup, in
-:doc:`/AWS-EC2-F1-Initial-Setup/Setting-up-your-Manager-Instance`, we quickly
+In the AWS EC2 F2 setup, in
+:doc:`/AWS-EC2-F2-Initial-Setup/Setting-up-your-Manager-Instance`, we quickly
 copy-pasted the contents of ``scripts/machine-launch-script.sh`` into the EC2 Management
 Console and that script installed many dependencies that FireSim needs using `Conda
 <https://conda.io/en/latest/index.html>`_, a platform-agnostic package manager,
 specifically using packages from the `conda-forge community
 <https://conda-forge.org/#about>`_ (or in the case of
-:doc:`/AWS-EC2-F1-Initial-Setup/Setting-up-your-Manager-Instance`, we ran
+:doc:`/AWS-EC2-F2-Initial-Setup/Setting-up-your-Manager-Instance`, we ran
 ``scripts/machine-launch-script.sh``).
 
 In many situations, you may not need to know anything about ``conda``. By default, the
@@ -25,11 +25,11 @@ the install location. See ``machine-launch-script.sh --help`` for more details.
 
 .. warning::
 
-    To :ref:`run a simulation on a F1 FPGA <running_simulations>` , FireSim currently
+    To :ref:`run a simulation on a F2 FPGA <running_simulations>` , FireSim currently
     requires that you are able to act as root via ``sudo``.
 
     However, you can do many things without having root, like
-    :doc:`/Getting-Started-Guides/AWS-EC2-F1-Getting-Started/Building-a-FireSim-AFI`,
+    :doc:`/Getting-Started-Guides/AWS-EC2-F2-Getting-Started/Building-a-FireSim-AFI`,
     meta-simulation of a FireSim system using Verilator or even developing new features
     in FireSim.
 

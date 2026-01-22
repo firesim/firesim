@@ -158,7 +158,7 @@ manager instance:
 
 See https://docs.aws.amazon.com/AmazonS3/latest/userguide/access-bucket-intro.html for
 the bucket naming style. The bucket name is defined in
-``firesim/deploy/bit-builder-recipes/f1.yaml``
+``firesim/deploy/bit-builder-recipes/f2.yaml``
 
 6. Under "logs/agfi-<somenumber>", you will see "<date and time>_vivado.log". Select it
    and copy the S3 URI.

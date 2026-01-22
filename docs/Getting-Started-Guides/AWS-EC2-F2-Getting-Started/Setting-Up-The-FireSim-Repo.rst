@@ -49,7 +49,7 @@ rest of the FireSim setup process. To run it, do the following:
 
 .. code-block:: bash
 
-    firesim managerinit --platform f1
+    firesim managerinit --platform f2
 
 This will first prompt you to setup AWS credentials on the instance, which allows the
 manager to automatically manage build/simulation nodes. You can use the same AWS access

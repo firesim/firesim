@@ -13,7 +13,7 @@ Launching a "Manager Instance"
 
 Now, we need to launch a "Manager Instance" that acts as a "head" node that we will
 ``ssh`` or ``mosh`` into to work from. Since we will deploy the heavy lifting to
-separate ``z1d.2xlarge`` and ``f1`` instances later, the Manager Instance can be a
+separate ``z1d.2xlarge`` and ``f2`` instances later, the Manager Instance can be a
 relatively cheap instance. In this guide, however, we will use a ``c5.4xlarge``, running
 the AWS FPGA Developer AMI. (Be sure to subscribe to the AMI if you have not done so.
 See :ref:`ami-subscription`. Note that it might take a few minutes after subscribing to
@@ -108,7 +108,7 @@ On this instance, the ``mosh`` server is installed as part of the setup script w
 before, so we need to first ssh into the instance and make sure the setup is complete.
 
 In either case, ``ssh`` into your instance (e.g. ``ssh -i firesim.pem
-centos@YOUR_INSTANCE_IP``) and wait until the ``/tmp/machine-launchstatus`` file
+ubuntu@YOUR_INSTANCE_IP``) and wait until the ``/tmp/machine-launchstatus`` file
 contains all the following text:
 
 .. code-block:: bash
