@@ -44,7 +44,7 @@ rootLogger = logging.getLogger()
 # by running scripts/update_test_amis.py
 # additionally, for normal use this assumes that the AMI used by the runhosts and manager instance match.
 # in the case of CI (or launching instances from a non-EC2 instance), this defaults to the Ubuntu based AMI.
-def get_f1_ami_name() -> str:
+def get_f2_ami_name() -> str:
     cuser = os.environ["USER"]
     if cuser == "amzn":
         return "FPGA Developer AMI(AL2) - 1.11.3-62ddb7b2-2f1e-4c38-a111-9093dcb1656f"
@@ -56,7 +56,7 @@ def get_f1_ami_name() -> str:
         return "FPGA Developer AMI (Ubuntu) - 1.17.0   -prod-rhng4b6alkhdq"
 
 
-def get_incremented_f1_ami_name(ami_name: str, increment: int) -> str:
+def get_incremented_f2_ami_name(ami_name: str, increment: int) -> str:
     """For an ami_name of the format "STUFF - X.Y.Z-hash-stuff",
     return ami_name, but with Z incremented by increment for auto-bumping the AMI on hotfix releases. Uses Regex in case ami_nname has variable spaces between `-`
     """
@@ -390,17 +390,17 @@ def awsinit() -> None:
 
 
 # AMIs are region specific
-def get_f1_ami_id() -> str:
-    """Get the AWS F1 Developer AMI by looking up the image name -- should be region independent."""
+def get_f2_ami_id() -> str:
+    """Get the AWS F2 Developer AMI by looking up the image name -- should be region independent."""
     client = boto3.client("ec2")
     # Try up to MAX_ATTEMPTS additional hotfix versions of an AMI if the
     # initial one fails.
     MAX_ATTEMPTS = 10
     for increment in range(MAX_ATTEMPTS):
-        ami_search_name = get_incremented_f1_ami_name(get_f1_ami_name(), increment)
+        ami_search_name = get_incremented_f2_ami_name(get_f2_ami_name(), increment)
         if increment > 0:
             rootLogger.warning(
-                f"AMI {get_f1_ami_name()} not found. Trying: {ami_search_name}."
+                f"AMI {get_f2_ami_name()} not found. Trying: {ami_search_name}."
             )
         response = client.describe_images(
             Filters=[{"Name": "name", "Values": [ami_search_name]}]
@@ -408,7 +408,7 @@ def get_f1_ami_id() -> str:
         if len(response["Images"]) >= 1:
             if increment > 0:
                 rootLogger.warning(
-                    f"AMI {get_f1_ami_name()} not found. Successfully found: {ami_search_name}."
+                    f"AMI {get_f2_ami_name()} not found. Successfully found: {ami_search_name}."
                 )
             break
     assert len(response["Images"]) == 1
@@ -511,7 +511,7 @@ def launch_instances(
             create instances until there are `count` total instances that match `tags` and `instancetype`
             If `tags` are not passed, `always_expand` must be `True` or `ValueError` is thrown.
         ami_id: Override AMI ID to use for launching instances. `None` results in the default AMI ID specified by
-            `awstools.get_f1_ami_id()`.
+            `awstools.get_2_ami_id()`.
         use_manager_security_group: Use the manager security group instead of the run/build farm security group.
 
     Returns:
@@ -553,7 +553,7 @@ def launch_instances(
         instancemarket, spotinterruptionbehavior, spotmaxprice
     )
 
-    f1_image_id = ami_id if ami_id else get_f1_ami_id()
+    f2_image_id = ami_id if ami_id else get_f2_ami_id()
 
     if not blockdevices:
         blockdevices = []
@@ -587,7 +587,7 @@ def launch_instances(
         chosensubnet = subnets[startsubnet].subnet_id
         try:
             instance_args = {
-                "ImageId": f1_image_id,
+                "ImageId": f2_image_id,
                 "EbsOptimized": True,
                 "BlockDeviceMappings": (
                     blockdevices
@@ -610,9 +610,6 @@ def launch_instances(
                     }
                 ],
                 "KeyName": keyname,
-                # "Placement": {
-                    # 'AvailabilityZone': 'us-west-2c', # TODO: don't hardcode this? - https://docs.aws.amazon.com/global-infrastructure/latest/regions/aws-availability-zones.html#zones-north-america - want us-west-2b or us-west-2c to match f2.6xlarge
-                # }, # hindsight: no need - it'll try multiple availability zones automatically along with different subnets
                 "TagSpecifications": (
                     []
                     if tags is None
@@ -723,7 +720,6 @@ def launch_run_instances(
                 "Ebs": {
                     "VolumeSize": 300,  # TODO: make this configurable from .yaml?
                     "VolumeType": "gp2",
-                    # "AvailabilityZone": "us-west-2c",  # TODO: don't hardcode this? - https://docs.aws.amazon.com/global-infrastructure/latest/regions/aws-availability-zones.html#zones-north-america - want us-west-2b or us-west-2c to match f2.6xlarge
                 },
             },
         ],
@@ -1066,8 +1062,8 @@ def main(args: List[str]) -> int:
     )
     parser.add_argument(
         "--ami_id",
-        default=get_f1_ami_id(),
-        help="Override AMI ID used for launch. Defaults to 'awstools.get_f1_ami_id()'. Used by 'launch'.",
+        default=get_f2_ami_id(),
+        help="Override AMI ID used for launch. Defaults to 'awstools.get_f2_ami_id()'. Used by 'launch'.",
     )
     parser.add_argument(
         "--use_manager_security_group",

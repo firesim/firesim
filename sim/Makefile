@@ -2,7 +2,7 @@
 
 # Defines make targets for:
 # - invoking Golden Gate (phony: verilog / compile)
-# - building a simulation driver (phony: f1)
+# - building a simulation driver (phony: f2)
 # - populating an FPGA build directory (phony: replace-rtl)
 # - generating new runtime configurations (phony: conf)
 # - compiling meta-simulators (phony: verilator, vcs, verilator-debug, vcs-debug, xcelium)

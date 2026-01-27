@@ -14,7 +14,6 @@ TARGET_CONFIG_PACKAGE ?= firesim.midasexamples
 TARGET_CONFIG ?= NoConfig
 
 # Must correlate with the 'PLATFORM' (part of the build N-tuplet / make
-# argument). Defaults to the basic F1 config (since 'PLATFORM' should be 'f1')
+# argument). Defaults to the basic F2 config (since 'PLATFORM' should be 'f2')
 PLATFORM_CONFIG_PACKAGE ?= midas
-PLATFORM_CONFIG ?= F1Config
-# PLATFORM_CONFIG ?= F2Config
+PLATFORM_CONFIG ?= F2Config

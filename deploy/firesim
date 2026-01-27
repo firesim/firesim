@@ -31,7 +31,7 @@ from awstools.awstools import valid_aws_configure_creds, get_aws_userid, subscri
 from awstools.afitools import share_agfi_in_all_regions
 
 from buildtools.buildconfigfile import BuildConfigFile
-from buildtools.bitbuilder import F1BitBuilder, F2BitBuilder
+from buildtools.bitbuilder import F2BitBuilder
 
 from util.streamlogger import StreamLogger, InfoStreamLogger
 from util.filelineswap import file_line_swap
@@ -152,7 +152,7 @@ def managerinit(args: argparse.Namespace):
         return start_arg_idx, end_arg_idx
 
     rootLogger.info("Adding default overrides to config files")
-    if args.platform == 'f1' or args.platform == 'f2':
+    if args.platform == 'f2':
         runfarm_default_file = "run-farm-recipes/aws_ec2.yaml"
         with open(runfarm_default_file, "r") as f:
             rf_recipe_lines = f.readlines()
@@ -234,7 +234,7 @@ def managerinit(args: argparse.Namespace):
     else:
         rootLogger.info(f"Unknown platform {args.platform}. Skipping default config overrides.")
 
-    if args.platform == 'f1' or args.platform == 'f2':
+    if args.platform == 'f2':
         awsinit()
 
 @register_task
@@ -432,7 +432,7 @@ def construct_firesim_argparser() -> argparse.ArgumentParser:
                         help='For terminaterunfarm and buildbitstream, force termination without prompting user for confirmation. Defaults to False')
     parser.add_argument('-t', '--launchtime', type=str,
                         help='Give the "Y-m-d--H-M-S" prefix of results-build directory. Useful for tar2afi when finishing a partial buildbitstream')
-    parser.add_argument('--platform', type=str, choices=PLATFORM_LIST, default='f1',
+    parser.add_argument('--platform', type=str, choices=PLATFORM_LIST, default='f2',
                         help='Required argument for "managerinit" to specify which platform you will be using')
 
     argcomplete.autocomplete(parser)
@@ -444,7 +444,7 @@ def check_env() -> None:
     Raises:
         `SystemExit` if any assumption is violated
     """
-    # make sure that sourceme-f1 was sourced
+    # make sure that sourceme-f2 was sourced
     if os.environ.get('FIRESIM_SOURCED') is None:
         rootLogger.critical("ERROR: You must source firesim/sourceme-manager.sh!")
         sys.exit(1)

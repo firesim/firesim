@@ -687,7 +687,7 @@ class EC2InstanceDeployManager(InstanceDeployManager):
             with prefix("cd ../"):
                 # use local version of aws_fpga on run farm nodes
                 aws_fpga_upstream_version = local(
-                    "git -C platforms/f2/aws-fpga-firesim-f2 describe --tags --always --dirty", #rh: f1 compatibility fix
+                    "git -C platforms/f2/aws-fpga-firesim-f2 describe --tags --always --dirty",
                     capture=True,
                 )
                 if "-dirty" in aws_fpga_upstream_version:
@@ -713,12 +713,12 @@ class EC2InstanceDeployManager(InstanceDeployManager):
             self.instance_logger("""Copying AWS FPGA XDMA driver to remote node.""")
             run(f"mkdir -p /home/{os.environ['USER']}/xdma/")
             put(
-                "../platforms/f2/aws-fpga-firesim-f2/sdk/dma_ip_drivers/XDMA/linux-kernel", #rh: updated to fit new submodule. why was it hardcoded?
+                "../platforms/f2/aws-fpga-firesim-f2/sdk/dma_ip_drivers/XDMA/linux-kernel",
                 f"/home/{os.environ['USER']}/xdma/",
                 mirror_local_mode=True,
             )
             with cd(
-                f"/home/{os.environ['USER']}/xdma/linux-kernel/xdma/"  # rh: renamed to fit submodule 
+                f"/home/{os.environ['USER']}/xdma/linux-kernel/xdma/"
             ), prefix("export PATH=/usr/bin:$PATH"):
                 # prefix only needed if conda env is earlier in PATH
                 # see build-setup-nolog.sh for explanation.
@@ -914,7 +914,7 @@ class EC2InstanceDeployManager(InstanceDeployManager):
                 self.copy_pipe_slot_infrastructure(slotno)
 
     def enumerate_fpgas(self, uridir: str) -> None:
-        """FPGAs are enumerated already with F1"""
+        """FPGAs are enumerated already with F2"""
         return
 
     def terminate_instance(self) -> None:

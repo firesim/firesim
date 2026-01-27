@@ -12,9 +12,9 @@ DESIGN ?=
 
 # The host config package and class string
 PLATFORM_CONFIG_PACKAGE ?= firesim.midasexamples
-PLATFORM_CONFIG ?= DefaultF1Config
+PLATFORM_CONFIG ?= DefaultF2Config
 
-# The host platform type, currently only f1 is supported
+# The host platform type, currently only f2 is supported
 PLATFORM ?=
 
 # Driver source files

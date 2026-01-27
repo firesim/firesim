@@ -13,7 +13,7 @@
 #       # object. Determined by looking at `parse_args` function of class.
 #       <K/V pairs of args>
 
-# Note: For large designs (ones that would fill a EC2 F1.2xlarge/Xilinx VU9P)
+# Note: For large designs (ones that would fill a EC2 F2.6xlarge/Xilinx VU9P)
 # Vivado uses in excess of 32 GiB. Keep this in mind when selecting a
 # non-default instance type.
 build_farm_type: AWSEC2
