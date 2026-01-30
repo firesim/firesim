@@ -301,6 +301,12 @@ class EC2F1Config
         new F1Config
     )
 
+class EC2F2Config
+    extends Config(
+      new WithPCIMPorts ++
+        new F2Config
+    )
+
 case object FireAxeNoCPartitionPass    extends Field[Boolean](false)
 case object FireAxeQSFPConnections     extends Field[Boolean](false)
 case object FireAxePCIMConnections     extends Field[Boolean](false)
