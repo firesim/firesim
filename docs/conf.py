@@ -294,6 +294,7 @@ def gh_file_ref_role_impl(url, text_prefix, name, rawtext, text, lineno, inliner
         message = f"[Line {lineno}] :{name}:`{text}` produces URL {url} returning status code {status_code}. " \
                   "Ensure your path is correct and all commits that may have moved or renamed files have been pushed to github.com."
         logger.error(message)
+        # return [docutils.nodes.reference(rawtext, text, refuri=url, **options)], []
         sys.exit(1)
 
     docutils.parsers.rst.roles.set_classes(options)
@@ -314,6 +315,6 @@ def cy_gh_file_ref_role(name, rawtext, text, lineno, inliner, options={}, conten
 
 def setup(app):
     # Add roles to simplify github reference generation
-    app.add_role('gh-file-ref', fs_gh_file_ref_role)
-    app.add_role('cy-gh-file-ref', cy_gh_file_ref_role)
+    # app.add_role('gh-file-ref', fs_gh_file_ref_role)
+    # app.add_role('cy-gh-file-ref', cy_gh_file_ref_role)
     app.connect('build-finished', copy_legacy_redirects)

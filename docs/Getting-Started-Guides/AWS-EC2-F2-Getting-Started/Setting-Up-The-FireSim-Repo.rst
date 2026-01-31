@@ -55,8 +55,7 @@ This will first prompt you to setup AWS credentials on the instance, which allow
 manager to automatically manage build/simulation nodes. You can use the same AWS access
 key you created when running setup commands on the ``t2.nano`` instance earlier (in
 :ref:`run-scripts-t2`). When prompted, you should specify the same region that you've
-been selecting thus far (one of ``us-east-1``, ``us-west-2``, ``ap-southeast-2``,
-``eu-central-1``, ``eu-west-1`` or ``eu-west-2``) and set the default output format to
+been selecting thus far (e.g. ``us-east-1``, ``us-west-2``, etc.) and set the default output format to
 ``json``.
 
 Next, it will prompt you for an email address, which is used to send email notifications
