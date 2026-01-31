@@ -23,9 +23,9 @@ public:
   uint32_t is_write_ready();
   void check_rc(int rc, char *infostr);
   void fpga_shutdown();
-  void fpga_setup(int slot_id, const std::string &agfi);
-  // void print_debug_status();  
-  // void wait_for_ddr_ready();  
+  void fpga_setup(int slot_id, const std::string &agfi, bool debug_enabled);
+  void print_debug_status();
+  void wait_for_ddr_ready();
 
   CPUManagedStreamIO &get_cpu_managed_stream_io() override { return *this; }
   FPGAManagedStreamIO &get_fpga_managed_stream_io() override { return *this; }
@@ -47,7 +47,7 @@ private:
   // int edma_read_fd;
   pci_bar_handle_t pci_bar_handle;
   pci_bar_handle_t pci_bar4_handle;
-  // bool debug_enabled; 
+  bool debug_enabled;
 };
 
 simif_f2_t::simif_f2_t(const TargetConfig &config,
@@ -56,7 +56,7 @@ simif_f2_t::simif_f2_t(const TargetConfig &config,
 
   int slot_id = -1;
   std::string agfi;
-  // bool debug = false; 
+  bool debug = false;
   for (auto &arg : args) {
     if (arg.find("+slotid=") == 0) {
       slot_id = atoi((arg.c_str()) + 8);
@@ -69,10 +69,10 @@ simif_f2_t::simif_f2_t(const TargetConfig &config,
       }
       continue;
     }
-    // if (arg.find("+debug") == 0) {
-    //   debug = true;
-    //   continue;
-    // }
+    if (arg.find("+debug") == 0) {
+      debug = true;
+      continue;
+    }
   }
 
   if (slot_id == -1) {
@@ -80,7 +80,7 @@ simif_f2_t::simif_f2_t(const TargetConfig &config,
     slot_id = 0;
   }
 
-  fpga_setup(slot_id, agfi);
+  fpga_setup(slot_id, agfi, debug);
 }
 
 void simif_f2_t::check_rc(int rc, char *infostr) {
@@ -116,8 +116,8 @@ constexpr uint16_t pci_vendor_id = 0x1D0F;
  */
 constexpr uint16_t pci_device_id = 0xF002;
 
-void simif_f2_t::fpga_setup(int slot_id, const std::string &agfi) {
-  // debug_enabled = debug;  
+void simif_f2_t::fpga_setup(int slot_id, const std::string &agfi, bool debug) {
+  debug_enabled = debug;
   int rc = fpga_mgmt_init();
   check_rc(rc, "fpga_mgmt_init FAILED");
 
@@ -220,11 +220,151 @@ void simif_f2_t::fpga_setup(int slot_id, const std::string &agfi) {
   check_rc(rc, "fpga_pci_attach BAR4 FAILED");
   printf("Attached to BAR4 (PCIS)\n");
 
-  // if (debug_enabled) {
-  //   print_debug_status();
-  // }
+  if (debug_enabled) {
+    print_debug_status();
+  }
   
-  // wait_for_ddr_ready();  
+  wait_for_ddr_ready();
+
+  /* NOTE: SDA interface is on MgmtPF BAR4, not AppPF BAR2 accessible via standard driver.
+   * The RTL has been fixed to use gen_clk_main_a0 which has gen_rst_main_n released by default,
+   * so no SDA access is needed.
+   */
+}
+
+/**
+ * Print hardware debug registers (clock/reset status, DDR status).
+ * Only called when +debug is specified.
+ */
+void simif_f2_t::print_debug_status() {
+  int rc;
+  printf("\n=== HARDWARE DEBUG STATUS ===\n");
+  
+  uint32_t debug_status = 0;
+  uint32_t debug_counter = 0;
+  uint32_t debug_raw = 0;
+  
+  rc = fpga_pci_peek(pci_bar_handle, 0x03F00000, &debug_status);
+  if (rc == 0) {
+    printf("DEBUG[0x03F00000] status    = 0x%08x\n", debug_status);
+    printf("  Bit 0 (firesim_clocking_locked): %d\n", (debug_status >> 0) & 1);
+    printf("  Bit 1 (rst_main_n):              %d\n", (debug_status >> 1) & 1);
+    printf("  Bit 2 (rst_main_n_sync):         %d\n", (debug_status >> 2) & 1);
+    printf("  Bit 3 (rst_firesim_n_sync):      %d\n", (debug_status >> 3) & 1);
+    printf("  Bit 4 (combined_firesim_rst_n):  %d\n", (debug_status >> 4) & 1);
+    printf("  Bit 5 (ddr_ready_sync):          %d\n", (debug_status >> 5) & 1);
+    printf("  Bits 31:16 (marker):             0x%04x (expect 0xDEAD)\n", (debug_status >> 16) & 0xFFFF);
+  } else {
+    printf("DEBUG[0x03F00000] read FAILED (rc=%d) - debug registers may not be in bitstream\n", rc);
+  }
+  
+  rc = fpga_pci_peek(pci_bar_handle, 0x03F00004, &debug_counter);
+  if (rc == 0) {
+    printf("DEBUG[0x03F00004] clk_counter = 0x%08x (%u cycles)\n", debug_counter, debug_counter);
+    // Read again to see if counter is advancing
+    uint32_t debug_counter2 = 0;
+    rc = fpga_pci_peek(pci_bar_handle, 0x03F00004, &debug_counter2);
+    if (rc == 0) {
+      printf("DEBUG[0x03F00004] clk_counter = 0x%08x (2nd read, delta=%d)\n", 
+             debug_counter2, (int)(debug_counter2 - debug_counter));
+      if (debug_counter2 == debug_counter) {
+        printf("WARNING: Clock counter not advancing - firesim_internal_clock may be stuck!\n");
+      }
+    }
+  }
+  
+  rc = fpga_pci_peek(pci_bar_handle, 0x03F00008, &debug_raw);
+  if (rc == 0) {
+    printf("DEBUG[0x03F00008] raw_bits   = 0x%08x\n", debug_raw);
+  }
+  
+  /* DDR Debug Registers */
+  uint32_t ddr_status = 0;
+  uint32_t ddr_aw_count = 0;
+  uint32_t ddr_ar_count = 0;
+  uint32_t ddr_b_count = 0;
+  uint32_t ddr_r_count = 0;
+  uint32_t ddr_slave0_status = 0;
+  
+  rc = fpga_pci_peek(pci_bar_handle, 0x03F00020, &ddr_status);
+  if (rc == 0) {
+    printf("DEBUG[0x03F00020] DDR_status = 0x%08x\n", ddr_status);
+    printf("  Bit 0 (ddr_ready):      %d\n", (ddr_status >> 0) & 1);
+    printf("  Bit 1 (aw_pending):     %d\n", (ddr_status >> 1) & 1);
+    printf("  Bit 2 (ar_pending):     %d\n", (ddr_status >> 2) & 1);
+    printf("  Bit 3 (awvalid):        %d\n", (ddr_status >> 3) & 1);
+    printf("  Bit 4 (wvalid):         %d\n", (ddr_status >> 4) & 1);
+    printf("  Bit 5 (bvalid):         %d\n", (ddr_status >> 5) & 1);
+    printf("  Bit 6 (arvalid):        %d\n", (ddr_status >> 6) & 1);
+    printf("  Bit 7 (rvalid):         %d\n", (ddr_status >> 7) & 1);
+    printf("  Bits 31:16 (marker):    0x%04x (expect 0xDDDD)\n", (ddr_status >> 16) & 0xFFFF);
+  } else {
+    printf("DEBUG[0x03F00020] DDR_status read FAILED (rc=%d) - DDR debug may not be in bitstream\n", rc);
+  }
+  
+  rc = fpga_pci_peek(pci_bar_handle, 0x03F00024, &ddr_aw_count);
+  if (rc == 0) {
+    printf("DEBUG[0x03F00024] DDR_AW_cnt = %u\n", ddr_aw_count);
+  }
+  
+  rc = fpga_pci_peek(pci_bar_handle, 0x03F00028, &ddr_ar_count);
+  if (rc == 0) {
+    printf("DEBUG[0x03F00028] DDR_AR_cnt = %u\n", ddr_ar_count);
+  }
+  
+  rc = fpga_pci_peek(pci_bar_handle, 0x03F0002C, &ddr_b_count);
+  if (rc == 0) {
+    printf("DEBUG[0x03F0002C] DDR_B_cnt  = %u\n", ddr_b_count);
+  }
+  
+  rc = fpga_pci_peek(pci_bar_handle, 0x03F00030, &ddr_r_count);
+  if (rc == 0) {
+    printf("DEBUG[0x03F00030] DDR_R_cnt  = %u\n", ddr_r_count);
+  }
+  
+  rc = fpga_pci_peek(pci_bar_handle, 0x03F00034, &ddr_slave0_status);
+  if (rc == 0) {
+    printf("DEBUG[0x03F00034] slave0_st  = 0x%08x\n", ddr_slave0_status);
+    printf("  Bit 0 (awready):    %d\n", (ddr_slave0_status >> 0) & 1);
+    printf("  Bit 1 (arready):    %d\n", (ddr_slave0_status >> 1) & 1);
+    printf("  Bit 2 (rready):     %d\n", (ddr_slave0_status >> 2) & 1);
+    printf("  Bit 3 (awvalid):    %d\n", (ddr_slave0_status >> 3) & 1);
+    printf("  Bit 4 (wvalid):     %d\n", (ddr_slave0_status >> 4) & 1);
+    printf("  Bit 5 (bvalid):     %d\n", (ddr_slave0_status >> 5) & 1);
+    printf("  Bit 6 (arvalid):    %d\n", (ddr_slave0_status >> 6) & 1);
+    printf("  Bit 7 (rvalid):     %d\n", (ddr_slave0_status >> 7) & 1);
+    printf("  Bits 31:16 (marker): 0x%04x (expect 0xF1F1)\n", (ddr_slave0_status >> 16) & 0xFFFF);
+  }
+
+  printf("=== END DEBUG STATUS ===\n\n");
+}
+
+// rh: wait for the ddr_ready signal to be asserted to start sending, else deadlock (?)
+void simif_f2_t::wait_for_ddr_ready() {
+  int rc;
+  uint32_t ddr_status = 0;
+
+  if (debug_enabled) {
+    printf("Waiting for DDR ready...\n");
+  }
+
+  int ddr_wait_attempts = 0;
+  const int MAX_DDR_WAIT_MS = 5000;
+  while (ddr_wait_attempts < MAX_DDR_WAIT_MS) {
+    rc = fpga_pci_peek(pci_bar_handle, 0x03F00020, &ddr_status);
+    if (rc == 0 && (ddr_status & 0x1)) {  // Bit 0 is ddr_ready
+      if (debug_enabled) {
+        printf("DDR ready after %d ms (status=0x%08x)\n", ddr_wait_attempts, ddr_status);
+      }
+      return;
+    }
+    usleep(1000);
+    ddr_wait_attempts++;
+  }
+
+  fprintf(stderr, "WARNING: DDR not ready after %d ms timeout (status=0x%08x)\n",
+          MAX_DDR_WAIT_MS, ddr_status);
+  fprintf(stderr, "         Continuing anyway - RTL reset gate should prevent issues\n");
 }
 
 simif_f2_t::~simif_f2_t() { fpga_shutdown(); }
