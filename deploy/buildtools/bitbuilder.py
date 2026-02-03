@@ -169,14 +169,21 @@ class BitBuilder(metaclass=abc.ABCMeta):
         )
 
 
-class F1BitBuilder(BitBuilder):
-    """Bit builder class that builds a AWS EC2 F1 AGFI (bitstream) from the build config.
+class AWSFPGABitBuilder(BitBuilder):
+    """Base class for AWS EC2 FPGA bit builders (F1 and F2).
+
+    This class contains the shared logic for building AGFIs on AWS.
+    Subclasses should set the PLATFORM_DIR class attribute.
 
     Attributes:
         s3_bucketname: S3 bucketname for AFI builds.
+        PLATFORM_DIR: Platform directory name ("f1" or "f2").
+        PLATFORM_NAME: Human-readable platform name for messages.
     """
 
     s3_bucketname: str
+    PLATFORM_DIR: str = ""  # Override in subclasses
+    PLATFORM_NAME: str = ""  # Override in subclasses
 
     def __init__(self, build_config: BuildConfig, args: Dict[str, Any]) -> None:
         super().__init__(build_config, args)
@@ -212,20 +219,20 @@ class F1BitBuilder(BitBuilder):
         """
         fpga_build_postfix = f"hdk/cl/developer_designs/cl_{chisel_quintuplet}"
 
-        # local paths
-        local_awsfpga_dir = f"{get_deploy_dir()}/../platforms/f1/aws-fpga"
+        # local paths - use platform-specific directory
+        local_awsfpga_dir = f"{get_deploy_dir()}/../platforms/{self.PLATFORM_DIR}/aws-fpga"
 
-        dest_f1_platform_dir = f"{dest_build_dir}/platforms/f1/"
-        dest_awsfpga_dir = f"{dest_f1_platform_dir}/aws-fpga"
+        dest_platform_dir = f"{dest_build_dir}/platforms/{self.PLATFORM_DIR}/"
+        dest_awsfpga_dir = f"{dest_platform_dir}/aws-fpga"
 
         # copy aws-fpga to the build instance.
         # do the rsync, but ignore any checkpoints that might exist on this machine
         # (in case builds were run locally)
         # extra_opts -l preserves symlinks
-        run(f"mkdir -p {dest_f1_platform_dir}")
+        run(f"mkdir -p {dest_platform_dir}")
         rsync_cap = rsync_project(
             local_dir=local_awsfpga_dir,
-            remote_dir=dest_f1_platform_dir,
+            remote_dir=dest_platform_dir,
             ssh_opts="-o StrictHostKeyChecking=no",
             exclude=["hdk/cl/developer_designs/cl_*"],
             extra_opts="-l",
@@ -265,7 +272,7 @@ class F1BitBuilder(BitBuilder):
         def on_build_failure():
             """Terminate build host and notify user that build failed"""
 
-            message_title = "FireSim FPGA Build Failed"
+            message_title = f"FireSim {self.PLATFORM_NAME} FPGA Build Failed"
 
             message_body = (
                 "Your FPGA build failed for quintuplet: "
@@ -279,7 +286,7 @@ class F1BitBuilder(BitBuilder):
 
             build_farm.release_build_host(self.build_config)
 
-        rootLogger.info("Building AWS F1 AGFI from Verilog")
+        rootLogger.info(f"Building AWS {self.PLATFORM_NAME} AGFI from Verilog")
 
         local_deploy_dir = get_deploy_dir()
         fpga_build_postfix = (
@@ -299,7 +306,7 @@ class F1BitBuilder(BitBuilder):
 
         # copy script to the cl_dir and execute
         rsync_cap = rsync_project(
-            local_dir=f"{local_deploy_dir}/../platforms/f1/build-bitstream.sh",
+            local_dir=f"{local_deploy_dir}/../platforms/{self.PLATFORM_DIR}/build-bitstream.sh",
             remote_dir=f"{cl_dir}/",
             ssh_opts="-o StrictHostKeyChecking=no",
             extra_opts="-l",
@@ -464,6 +471,36 @@ class F1BitBuilder(BitBuilder):
             return True
         else:
             return None
+
+
+class F1BitBuilder(AWSFPGABitBuilder):
+    """Bit builder for AWS EC2 F1 AGFI (bitstream).
+
+    F1 instances use Xilinx Virtex UltraScale+ VU9P FPGAs.
+
+    Note: AWS F1 instances are deprecated (EOL December 20, 2025).
+    New users should use F2 instances.
+    """
+
+    PLATFORM_DIR = "f1"
+    PLATFORM_NAME = "F1"
+
+
+class F2BitBuilder(AWSFPGABitBuilder):
+    """Bit builder for AWS EC2 F2 AGFI (bitstream).
+
+    F2 instances use AMD Virtex UltraScale+ HBM VU47P FPGAs with:
+    - 10% more LUTs than F1
+    - 32% more DSPs than F1
+    - 16GB HBM (High Bandwidth Memory)
+    - 3-die stacked SLR architecture
+
+    F2 is available in: us-east-1, eu-west-2, us-west-2, eu-central-1,
+    ap-northeast-1, ap-southeast-2.
+    """
+
+    PLATFORM_DIR = "f2"
+    PLATFORM_NAME = "F2"
 
 
 class VitisBitBuilder(BitBuilder):

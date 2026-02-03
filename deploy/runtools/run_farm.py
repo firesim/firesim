@@ -346,8 +346,11 @@ def invert_filter_sort(input_dict: Dict[str, int]) -> List[Tuple[int, str]]:
     return sorted(out_list, key=lambda x: x[0])
 
 
-class AWSEC2F1(RunFarm):
-    """This manages the set of AWS resources requested for the run farm.
+class AWSEC2FPGA(RunFarm):
+    """Base class for AWS EC2 FPGA run farms (F1 and F2).
+
+    This class contains the shared logic for managing AWS EC2 FPGA instances.
+    Subclasses should override get_ami_id() to return the appropriate AMI.
 
     Attributes:
         run_farm_tag: tag given to instances launched in this run farm
@@ -371,6 +374,14 @@ class AWSEC2F1(RunFarm):
         self._parse_args()
 
         self.init_postprocess()
+
+    @abc.abstractmethod
+    def get_ami_id(self) -> Optional[str]:
+        """Return the AMI ID to use for launching instances.
+
+        Returns None to use the default AMI for the instance type.
+        """
+        raise NotImplementedError
 
     def _parse_args(self) -> None:
         run_farm_tag_prefix = (
@@ -551,6 +562,9 @@ class AWSEC2F1(RunFarm):
         timeout = self.launch_timeout
         always_expand = self.always_expand_run_farm
 
+        # Get AMI ID (None means use default for instance type)
+        ami_id = self.get_ami_id()
+
         # actually launch the instances
         launched_instance_objs = {}
         for sim_host_handle in sorted(self.SIM_HOST_HANDLE_TO_MAX_FPGA_SLOTS):
@@ -566,6 +580,7 @@ class AWSEC2F1(RunFarm):
                 spotmaxprice,
                 timeout,
                 always_expand,
+                ami_id=ami_id,
             )
 
         # wait for instances to get to running state, so that they have been
@@ -804,3 +819,36 @@ class ExternallyProvisioned(RunFarm):
             f"WARNING: Skipping terminate_by_inst since run hosts are externally provisioned."
         )
         return
+
+
+class AWSEC2F1(AWSEC2FPGA):
+    """AWS EC2 F1 run farm. Manages F1 FPGA instances (VU9P).
+
+    F1 instances use Xilinx Virtex UltraScale+ VU9P FPGAs.
+
+    Note: AWS F1 instances are deprecated (EOL December 20, 2025).
+    New users should use F2 instances.
+    """
+
+    def get_ami_id(self) -> Optional[str]:
+        """F1 uses the default FPGA Developer AMI."""
+        return None
+
+
+class AWSEC2F2(AWSEC2FPGA):
+    """AWS EC2 F2 run farm. Manages F2 FPGA instances (VU47P).
+
+    F2 instances use AMD Virtex UltraScale+ HBM VU47P FPGAs with:
+    - 10% more LUTs than F1
+    - 32% more DSPs than F1
+    - 16GB HBM (High Bandwidth Memory)
+    - 3-die stacked SLR architecture
+
+    F2 is available in: us-east-1, eu-west-2, us-west-2, eu-central-1,
+    ap-northeast-1, ap-southeast-2.
+    """
+
+    def get_ami_id(self) -> Optional[str]:
+        """F2 uses a specific Rocky Linux 8 FPGA Developer AMI."""
+        from awstools.awstools import get_f2_ami_id
+        return get_f2_ami_id()

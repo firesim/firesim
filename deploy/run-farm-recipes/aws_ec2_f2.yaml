@@ -1,0 +1,93 @@
+# AWS EC2 F2 run farm hosts recipe.
+# For use with AWS F2 instances (AMD Virtex UltraScale+ HBM VU47P FPGAs).
+# All fields are required but can be overridden in the `*_runtime.yaml`
+#
+# Note: AWS F1 instances are deprecated (EOL December 20, 2025).
+# New users should use F2 instances with this recipe.
+#
+# F2 instance types available:
+#   f2.6xlarge  - 1 FPGA, 24 vCPUs, 256 GB RAM (smallest F2)
+#   f2.12xlarge - 4 FPGAs, 48 vCPUs, 512 GB RAM
+#   f2.48xlarge - 8 FPGAs, 192 vCPUs, 2 TB RAM
+
+run_farm_type: AWSEC2F2
+args:
+    # managerinit arg start
+    # tag to apply to run farm hosts
+    run_farm_tag: mainrunfarm
+    # enable expanding run farm by run_farm_hosts given
+    always_expand_run_farm: true
+    # minutes to retry attempting to request instances
+    launch_instances_timeout_minutes: 60
+    # run farm host market to use (ondemand, spot)
+    run_instance_market: ondemand
+    # if using spot instances, determine the interrupt behavior (terminate, stop, hibernate)
+    spot_interruption_behavior: terminate
+    # if using spot instances, determine the max price
+    spot_max_price: ondemand
+    # default location of the simulation directory on the run farm host
+    default_simulation_dir: /home/rocky
+
+    # run farm hosts to spawn: a mapping from a spec below (which is an EC2
+    # instance type) to the number of instances of the given type that you
+    # want in your runfarm.
+    run_farm_hosts_to_use:
+      - f2.48xlarge: 0
+      - f2.12xlarge: 0
+      - f2.6xlarge: 1
+      - m4.16xlarge: 0
+      - z1d.3xlarge: 0
+      - z1d.6xlarge: 0
+      - z1d.12xlarge: 0
+    # managerinit arg end
+
+    # REQUIRED: List of host "specifications", i.e. re-usable collections of
+    # host parameters.
+    #
+    # On EC2, most users will never need to edit this section,
+    # unless you want to add new host instance types.
+    #
+    # The "name" of a spec below (e.g. "f2.6xlarge" below) MUST be a valid EC2
+    # instance type and is used to refer to the spec above.
+    #
+    # Besides required parameters shown below, each can have multiple OPTIONAL
+    # arguments, called "override_*", corresponding to the "default_*" arguments
+    # specified above. Each "override_*" argument overrides the corresponding
+    # "default_*" argument in that run host spec.
+    #
+    # Optional params include:
+    #       override_simulation_dir: /scratch/specific-build-host-build-dir
+    #       override_platform: EC2InstanceDeployManager
+    run_farm_host_specs:
+      - f2.6xlarge: # 1 FPGA, 24 vCPUs, 256 GB RAM - smallest F2
+          # REQUIRED: number of FPGAs on the machine
+          num_fpgas: 1
+          # REQUIRED: number of metasims this machine can host
+          num_metasims: 0
+          # REQUIRED: whether it is acceptable to use machines of this spec
+          # to host ONLY switches (e.g. any attached FPGAs are "wasted")
+          use_for_switch_only: false
+      - f2.12xlarge: # 4 FPGAs, 48 vCPUs, 512 GB RAM
+          num_fpgas: 4
+          num_metasims: 0
+          use_for_switch_only: false
+      - f2.48xlarge: # 8 FPGAs, 192 vCPUs, 2 TB RAM
+          num_fpgas: 8
+          num_metasims: 0
+          use_for_switch_only: false
+      - m4.16xlarge:
+          num_fpgas: 0
+          num_metasims: 0
+          use_for_switch_only: true
+      - z1d.3xlarge:
+          num_fpgas: 0
+          num_metasims: 1
+          use_for_switch_only: false
+      - z1d.6xlarge:
+          num_fpgas: 0
+          num_metasims: 2
+          use_for_switch_only: false
+      - z1d.12xlarge:
+          num_fpgas: 0
+          num_metasims: 8
+          use_for_switch_only: false

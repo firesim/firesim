@@ -1,0 +1,54 @@
+# AWS EC2 F2 run farm hosts recipe - SPOT INSTANCES
+# For testing/development with reduced costs.
+# Use aws_ec2_f2.yaml for production workloads.
+#
+# WARNING: Spot instances can be interrupted at any time!
+# Only use for testing or workloads that can tolerate interruption.
+#
+# F2 instance types available:
+#   f2.6xlarge  - 1 FPGA, 24 vCPUs, 256 GB RAM (smallest F2)
+#   f2.12xlarge - 4 FPGAs, 48 vCPUs, 512 GB RAM
+#   f2.48xlarge - 8 FPGAs, 192 vCPUs, 2 TB RAM
+
+run_farm_type: AWSEC2F2
+args:
+    # managerinit arg start
+    run_farm_tag: f2spotrunfarm
+    always_expand_run_farm: true
+    launch_instances_timeout_minutes: 60
+    # Use SPOT instances for cost savings
+    run_instance_market: spot
+    spot_interruption_behavior: terminate
+    spot_max_price: ondemand
+    default_simulation_dir: /home/rocky
+
+    # Start with smallest F2 instance for testing
+    run_farm_hosts_to_use:
+      - f2.6xlarge: 1
+      - f2.12xlarge: 0
+      - f2.48xlarge: 0
+      - m4.16xlarge: 0
+      - z1d.3xlarge: 0
+    # managerinit arg end
+
+    run_farm_host_specs:
+      - f2.6xlarge: # 1 FPGA, 24 vCPUs, 256 GB RAM - smallest F2
+          num_fpgas: 1
+          num_metasims: 0
+          use_for_switch_only: false
+      - f2.12xlarge: # 4 FPGAs, 48 vCPUs, 512 GB RAM
+          num_fpgas: 4
+          num_metasims: 0
+          use_for_switch_only: false
+      - f2.48xlarge: # 8 FPGAs, 192 vCPUs, 2 TB RAM
+          num_fpgas: 8
+          num_metasims: 0
+          use_for_switch_only: false
+      - m4.16xlarge:
+          num_fpgas: 0
+          num_metasims: 0
+          use_for_switch_only: true
+      - z1d.3xlarge:
+          num_fpgas: 0
+          num_metasims: 1
+          use_for_switch_only: false
