@@ -35,6 +35,12 @@ class DefaultF1Config
         new midas.F1Config
     )
 
+class DefaultF2Config
+    extends Config(
+      new BaseMidasExamplesConfig ++
+        new midas.F2Config
+    )
+
 class DefaultVitisConfig
     extends Config(
       new BaseMidasExamplesConfig ++

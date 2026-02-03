@@ -100,7 +100,7 @@ class BuildConfig:
         self.build_config_file = build_config_file
 
         # default provided for old build recipes that don't specify TARGET_PROJECT, PLATFORM
-        self.PLATFORM = recipe_config_dict.get("PLATFORM", "f1")
+        self.PLATFORM = recipe_config_dict.get("PLATFORM", "f2")
         self.TARGET_PROJECT = recipe_config_dict.get("TARGET_PROJECT", "firesim")
 
         # resolve the path as an absolute path if set
@@ -140,7 +140,7 @@ class BuildConfig:
             self.deploy_quintuplet is not None
             and len(self.deploy_quintuplet.split("-")) == 3
         ):
-            self.deploy_quintuplet = "f1-firesim-" + self.deploy_quintuplet
+            self.deploy_quintuplet = "f2-firesim-" + self.deploy_quintuplet
 
         self.launch_time = launch_time
 

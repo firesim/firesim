@@ -11,6 +11,7 @@ from itertools import chain
 import time
 import sys
 import json
+import re
 
 import boto3
 import botocore
@@ -42,35 +43,29 @@ rootLogger = logging.getLogger()
 # And whenever this changes, you also need to update deploy/tests/test_amis.json
 # by running scripts/update_test_amis.py
 # additionally, for normal use this assumes that the AMI used by the runhosts and manager instance match.
-# in the case of CI (or launching instances from a non-EC2 instance), this defaults to the centos based AMI.
-def get_f1_ami_name() -> str:
+# in the case of CI (or launching instances from a non-EC2 instance), this defaults to the Ubuntu based AMI.
+def get_f2_ami_name() -> str:
     cuser = os.environ["USER"]
     if cuser == "amzn":
         return "FPGA Developer AMI(AL2) - 1.11.3-62ddb7b2-2f1e-4c38-a111-9093dcb1656f"
     else:
-        if cuser != "centos":
+        if cuser != "ubuntu":
             print(
-                "Unknown $USER (expected centos/amzn). Defaulting to the Centos AWS EC2 AMI."
+                "Unknown $USER (expected ubuntu/amzn). Defaulting to the Ubuntu AWS EC2 AMI."
             )
-        return "FPGA Developer AMI - 1.12.2-40257ab5-6688-4c95-97d1-e251a40fd1fc"
+        return "FPGA Developer AMI (Ubuntu) - 1.17.0   -prod-rhng4b6alkhdq"
 
 
-def get_incremented_f1_ami_name(ami_name: str, increment: int) -> str:
+def get_incremented_f2_ami_name(ami_name: str, increment: int) -> str:
     """For an ami_name of the format "STUFF - X.Y.Z-hash-stuff",
-    return ami_name, but with Z incremented by increment for auto-bumping
-    the AMI on hotfix releases."""
-    base_name = get_f1_ami_name()
-    split1 = base_name.split(" - ")
-    prefix = split1[0] + " - "
+    return ami_name, but with Z incremented by increment for auto-bumping the AMI on hotfix releases. Uses Regex in case ami_nname has variable spaces between `-`
+    """
+    def replacer(match):
+        x, y, z = map(int, match.group().split("."))
+        return f"{x}.{y}.{z + increment}"
 
-    split2 = split1[1].split("-")
-    suffix = "-" + "-".join(split2[1:])
-
-    version_number = list(map(int, split2[0].split(".")))
-    version_number[-1] += increment
-    version_number_str = ".".join(map(str, version_number))
-    return prefix + version_number_str + suffix
-
+    # Replace the first occurrence of a version number like X.Y.Z
+    return re.sub(r"\b\d+\.\d+\.\d+\b", replacer, ami_name, count=1)
 
 class MockBoto3Instance:
     """This is used for testing without actually launching instances."""
@@ -129,15 +124,19 @@ def get_localhost_instance_info(url_ext: str) -> Optional[str]:
     Returns:
         Data obtained in string form or None
     """
-    res = None
     # This takes multiple minutes without a timeout from the CI container. In
     # practice it should resolve nearly instantly on an initialized EC2 instance.
     curl_connection_timeout = 10
+    res = None
+
     with settings(ok_ret_codes=[0, 7, 28]), hide("everything"):
-        res = local(
-            f"curl -s --connect-timeout {curl_connection_timeout} http://169.254.169.254/latest/{url_ext}",
-            capture=True,
-        )
+        base = "http://169.254.169.254/latest/" #rh: new method for IMDSv2 compatibility on f2. check later, should 21600 be increased?
+        token_cmd = f"curl -S --connect-timeout {curl_connection_timeout} -X PUT -H 'X-aws-ec2-metadata-token-ttl-seconds: 21600' {base}api/token"
+        token_res = local(token_cmd, capture=True)
+        token = token_res.stdout.strip()
+
+        metadata_cmd = f"curl -sS --connect-timeout {curl_connection_timeout} -H 'X-aws-ec2-metadata-token: {token}' {base}{url_ext}"
+        res = local(metadata_cmd, capture=True)
         rootLogger.debug(res.stdout)
         rootLogger.debug(res.stderr)
 
@@ -147,7 +146,6 @@ def get_localhost_instance_info(url_ext: str) -> Optional[str]:
     else:
         rootLogger.debug("Non-AWS Host Detected")
         return None
-
 
 def get_localhost_instance_id() -> Optional[str]:
     """Get current manager instance id, if applicable.
@@ -392,17 +390,17 @@ def awsinit() -> None:
 
 
 # AMIs are region specific
-def get_f1_ami_id() -> str:
-    """Get the AWS F1 Developer AMI by looking up the image name -- should be region independent."""
+def get_f2_ami_id() -> str:
+    """Get the AWS F2 Developer AMI by looking up the image name -- should be region independent."""
     client = boto3.client("ec2")
     # Try up to MAX_ATTEMPTS additional hotfix versions of an AMI if the
     # initial one fails.
     MAX_ATTEMPTS = 10
     for increment in range(MAX_ATTEMPTS):
-        ami_search_name = get_incremented_f1_ami_name(get_f1_ami_name(), increment)
+        ami_search_name = get_incremented_f2_ami_name(get_f2_ami_name(), increment)
         if increment > 0:
             rootLogger.warning(
-                f"AMI {get_f1_ami_name()} not found. Trying: {ami_search_name}."
+                f"AMI {get_f2_ami_name()} not found. Trying: {ami_search_name}."
             )
         response = client.describe_images(
             Filters=[{"Name": "name", "Values": [ami_search_name]}]
@@ -410,7 +408,7 @@ def get_f1_ami_id() -> str:
         if len(response["Images"]) >= 1:
             if increment > 0:
                 rootLogger.warning(
-                    f"AMI {get_f1_ami_name()} not found. Successfully found: {ami_search_name}."
+                    f"AMI {get_f2_ami_name()} not found. Successfully found: {ami_search_name}."
                 )
             break
     assert len(response["Images"]) == 1
@@ -429,6 +427,7 @@ def get_aws_userid() -> str:
     """
     info = get_localhost_instance_info("dynamic/instance-identity/document")
     if info is not None:
+        rootLogger.info(f"userid: {info}")
         return json.loads(info)["accountId"].lower()
     else:
         assert False, "Unable to obtain accountId from instance metadata"
@@ -512,7 +511,7 @@ def launch_instances(
             create instances until there are `count` total instances that match `tags` and `instancetype`
             If `tags` are not passed, `always_expand` must be `True` or `ValueError` is thrown.
         ami_id: Override AMI ID to use for launching instances. `None` results in the default AMI ID specified by
-            `awstools.get_f1_ami_id()`.
+            `awstools.get_2_ami_id()`.
         use_manager_security_group: Use the manager security group instead of the run/build farm security group.
 
     Returns:
@@ -554,7 +553,7 @@ def launch_instances(
         instancemarket, spotinterruptionbehavior, spotmaxprice
     )
 
-    f1_image_id = ami_id if ami_id else get_f1_ami_id()
+    f2_image_id = ami_id if ami_id else get_f2_ami_id()
 
     if not blockdevices:
         blockdevices = []
@@ -588,7 +587,7 @@ def launch_instances(
         chosensubnet = subnets[startsubnet].subnet_id
         try:
             instance_args = {
-                "ImageId": f1_image_id,
+                "ImageId": f2_image_id,
                 "EbsOptimized": True,
                 "BlockDeviceMappings": (
                     blockdevices
@@ -627,6 +626,8 @@ def launch_instances(
                 with open(user_data_file, "r") as f:
                     instance_args["UserData"] = "".join(f.readlines())
 
+            # print instance_args
+            rootLogger.info(f"LAUNCHING: {instance_args}")
             instance = ec2.create_instances(**instance_args)
             instances += instance
 
@@ -1061,8 +1062,8 @@ def main(args: List[str]) -> int:
     )
     parser.add_argument(
         "--ami_id",
-        default=get_f1_ami_id(),
-        help="Override AMI ID used for launch. Defaults to 'awstools.get_f1_ami_id()'. Used by 'launch'.",
+        default=get_f2_ami_id(),
+        help="Override AMI ID used for launch. Defaults to 'awstools.get_f2_ami_id()'. Used by 'launch'.",
     )
     parser.add_argument(
         "--use_manager_security_group",

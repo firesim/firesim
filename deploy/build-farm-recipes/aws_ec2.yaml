@@ -13,7 +13,7 @@
 #       # object. Determined by looking at `parse_args` function of class.
 #       <K/V pairs of args>
 
-# Note: For large designs (ones that would fill a EC2 F1.2xlarge/Xilinx VU9P)
+# Note: For large designs (ones that would fill a EC2 F2.6xlarge/Xilinx VU9P)
 # Vivado uses in excess of 32 GiB. Keep this in mind when selecting a
 # non-default instance type.
 build_farm_type: AWSEC2
@@ -30,5 +30,5 @@ args:
     # if using spot instances, determine the max price
     spot_max_price: ondemand
     # default location of build directory on build host
-    default_build_dir: /home/centos/firesim-build
+    default_build_dir: /home/ubuntu/firesim-build
     # managerinit arg end

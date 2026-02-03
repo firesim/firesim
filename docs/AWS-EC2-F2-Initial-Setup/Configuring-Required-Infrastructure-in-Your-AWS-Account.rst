@@ -10,10 +10,10 @@ Select a region
 
 Head to the `EC2 Management Console <https://console.aws.amazon.com/ec2/v2/home>`__. In
 the top right corner, ensure that the correct region is selected. You should select one
-of: ``us-east-1`` (N. Virginia), ``us-west-2`` (Oregon), ``ap-southeast-2`` (Sydney),
-``eu-central-1`` (Frankfurt), ``eu-west-1`` (Ireland), ``eu-west-2`` (London), since F1
-instances are only available in those regions. For the most current list of regions
-supporting F1 instance, see `Amazon EC2 instance types by Region
+of: ``us-east-1`` (N. Virginia), ``us-west-2`` (Oregon), ``ap-northeast-1`` (Tokyo), 
+``ap-northeast-2`` (Seoul), ``ap-southeast-2`` (Sydney), ``eu-central-1`` (Frankfurt), 
+``eu-west-2`` (London), since F2 instances are only available in those regions. 
+For the most current list of regions supporting F2 instance, see `Amazon EC2 instance types by Region
 <https://docs.aws.amazon.com/ec2/latest/instancetypes/ec2-instance-regions.html>`__.
 
 Once you select a region, it's useful to bookmark the link to the EC2 console, so that
@@ -118,8 +118,8 @@ On this machine, run the following:
     aws configure
     [follow prompts]
 
-Within the prompt, you should specify the same region that you chose above (one of
-``us-east-1``, ``us-west-2``, ``eu-west-1``) and set the default output format to
+Within the prompt, you should specify the same region that you chose above (e.g.,
+``us-east-1``, ``us-west-2``) and set the default output format to
 ``json``. You will need to generate an AWS access key in the "Security Credentials" menu
 of your AWS settings (as instructed in
 https://docs.aws.amazon.com/IAM/latest/UserGuide/id_credentials_access-keys.html#Using_CreateAccessKey
@@ -167,7 +167,7 @@ Subscribe to the AWS FPGA Developer AMI
 ---------------------------------------
 
 Go to the `AWS Marketplace page for the FPGA Developer AMI
-<https://aws.amazon.com/marketplace/pp/B06VVYBLZZ>`__. Click the button to subscribe to
+<https://aws.amazon.com/marketplace/pp/prodview-tcl7sjgreh6bq>`__. Click the button to subscribe to
 the FPGA Dev AMI (it should be free) and follow the prompts to accept the EULA (but do
 not launch any instances).
 

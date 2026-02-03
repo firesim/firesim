@@ -93,8 +93,8 @@ resources on a host.
 
 For example, in the case of the AWS EC2 run farm (``aws_ec2.yaml``), we define three
 instance types (``z1d.{3, 6, 12}xlarge``) by default that loosely correspond with
-``f1.{2, 4, 16}xlarge`` instances, but instead have no FPGAs and run only metasims (of
-course, the ``f1.*`` instances could run metasims, but this would be wasteful):
+``2.{6, 12, 48}xlarge`` instances, but instead have no FPGAs and run only metasims (of
+course, the ``f2.*`` instances could run metasims, but this would be wasteful):
 
 .. code-block:: yaml
 
@@ -161,7 +161,7 @@ Module Hierarchy
 To build out a simulator, Golden Gate adds multiple layers of module hierarchy to the
 target design and performs additional hierarchy mutations to implement bridges and
 resource optimizations. Metasimulation uses the ``FPGATop`` module as the top-level
-module, which excludes the platform shim layer (``F1Shim``, for EC2 F1). The original
+module, which excludes the platform shim layer (``F1Shim``, for EC2 F2). The original
 top-level of the input design is nested three levels below FPGATop:
 
 .. figure:: /img/metasim-module-hierarchy.png
@@ -237,7 +237,7 @@ To compile a simulator with full-visibility waveforms, type:
 
 As part of target-generation, Rocket Chip emits a make fragment with recipes for running
 suites of assembly tests. MIDAS puts this in
-``firesim/sim/generated-src/f1/<DESIGN>-<TARGET_CONFIG>-<PLATFORM_CONFIG>/firesim.d``.
+``firesim/sim/generated-src/f2/<DESIGN>-<TARGET_CONFIG>-<PLATFORM_CONFIG>/firesim.d``.
 Make sure your ``$RISCV`` environment variable is set by sourcing
 ``firesim/sourceme-manager.sh`` or ``firesim/env.sh``, and type:
 
@@ -249,7 +249,7 @@ To run only a single test, the make target is the full path to the output. Speci
 
 .. code-block:: bash
 
-    make EMUL=<vcs|verilator> $PWD/output/f1/<DESIGN>-<TARGET_CONFIG>-<PLATFORM_CONFIG>/<RISCV-TEST-NAME>.<vpd|out>
+    make EMUL=<vcs|verilator> $PWD/output/f2/<DESIGN>-<TARGET_CONFIG>-<PLATFORM_CONFIG>/<RISCV-TEST-NAME>.<vpd|out>
 
 A ``.vpd`` target will use (and, if required, build) a simulator with waveform dumping
 enabled, whereas a ``.out`` target will use the faster waveform-less simulator.
@@ -287,7 +287,7 @@ Run ``rv64ui-p-simple`` (a single assembly test) on a Verilated simulator.
 .. code-block:: bash
 
     make
-    make $(pwd)/output/f1/FireSim-FireSimRocketConfig-BaseF1Config/rv64ui-p-simple.out
+    make $(pwd)/output/f2/FireSim-FireSimRocketConfig-BaseF1Config/rv64ui-p-simple.out
 
 Run ``rv64ui-p-simple`` (a single assembly test) on a VCS simulator with waveform
 dumping.
@@ -295,7 +295,7 @@ dumping.
 .. code-block:: bash
 
     make vcs-debug
-    make EMUL=vcs $(pwd)/output/f1/FireSim-FireSimRocketConfig-BaseF1Config/rv64ui-p-simple.vpd
+    make EMUL=vcs $(pwd)/output/f2/FireSim-FireSimRocketConfig-BaseF1Config/rv64ui-p-simple.vpd
 
 .. _metasimulation-performance:
 

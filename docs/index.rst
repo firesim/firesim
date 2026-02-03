@@ -14,14 +14,14 @@ New to FireSim? Jump to the :doc:`/FireSim-Basics` page for more info.
     :maxdepth: 3
     :caption: Initial Setup:
 
-    AWS-EC2-F1-Initial-Setup/index
+    AWS-EC2-F2-Initial-Setup/index
     Local-FPGA-Initial-Setup
 
 .. toctree::
     :maxdepth: 3
     :caption: Chipyard-based Starter Tutorials:
 
-    Getting-Started-Guides/AWS-EC2-F1-Getting-Started/index
+    Getting-Started-Guides/AWS-EC2-F2-Getting-Started/index
     Getting-Started-Guides/On-Premises-FPGA-Getting-Started/Xilinx-Alveo-U200-FPGAs
     Getting-Started-Guides/On-Premises-FPGA-Getting-Started/Xilinx-Alveo-U250-FPGAs
     Getting-Started-Guides/On-Premises-FPGA-Getting-Started/Xilinx-Alveo-U280-FPGAs

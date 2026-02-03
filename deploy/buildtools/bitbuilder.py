@@ -169,8 +169,8 @@ class BitBuilder(metaclass=abc.ABCMeta):
         )
 
 
-class F1BitBuilder(BitBuilder):
-    """Bit builder class that builds a AWS EC2 F1 AGFI (bitstream) from the build config.
+class F2BitBuilder(BitBuilder):
+    """Bit builder class that builds a AWS EC2 F2 AGFI (bitstream) from the build config.
 
     Attributes:
         s3_bucketname: S3 bucketname for AFI builds.
@@ -213,19 +213,19 @@ class F1BitBuilder(BitBuilder):
         fpga_build_postfix = f"hdk/cl/developer_designs/cl_{chisel_quintuplet}"
 
         # local paths
-        local_awsfpga_dir = f"{get_deploy_dir()}/../platforms/f1/aws-fpga"
+        local_awsfpga_dir = f"{get_deploy_dir()}/../platforms/f2/aws-fpga-firesim-f2"
 
-        dest_f1_platform_dir = f"{dest_build_dir}/platforms/f1/"
-        dest_awsfpga_dir = f"{dest_f1_platform_dir}/aws-fpga"
+        dest_f2_platform_dir = f"{dest_build_dir}/platforms/f2/"
+        dest_awsfpga_dir = f"{dest_f2_platform_dir}/aws-fpga-firesim-f2"
 
         # copy aws-fpga to the build instance.
         # do the rsync, but ignore any checkpoints that might exist on this machine
         # (in case builds were run locally)
         # extra_opts -l preserves symlinks
-        run(f"mkdir -p {dest_f1_platform_dir}")
+        run(f"mkdir -p {dest_f2_platform_dir}")
         rsync_cap = rsync_project(
             local_dir=local_awsfpga_dir,
-            remote_dir=dest_f1_platform_dir,
+            remote_dir=dest_f2_platform_dir,
             ssh_opts="-o StrictHostKeyChecking=no",
             exclude=["hdk/cl/developer_designs/cl_*"],
             extra_opts="-l",
@@ -279,7 +279,7 @@ class F1BitBuilder(BitBuilder):
 
             build_farm.release_build_host(self.build_config)
 
-        rootLogger.info("Building AWS F1 AGFI from Verilog")
+        rootLogger.info("Building AWS F2 AGFI from Verilog")
 
         local_deploy_dir = get_deploy_dir()
         fpga_build_postfix = (
@@ -299,7 +299,7 @@ class F1BitBuilder(BitBuilder):
 
         # copy script to the cl_dir and execute
         rsync_cap = rsync_project(
-            local_dir=f"{local_deploy_dir}/../platforms/f1/build-bitstream.sh",
+            local_dir=f"{local_deploy_dir}/../platforms/f2/build-bitstream.sh",
             remote_dir=f"{cl_dir}/",
             ssh_opts="-o StrictHostKeyChecking=no",
             extra_opts="-l",
@@ -383,7 +383,7 @@ class F1BitBuilder(BitBuilder):
         )
 
         with lcd(
-            f"{local_results_dir}/cl_{self.build_config.get_chisel_quintuplet()}/build/checkpoints/to_aws/"
+            f"{local_results_dir}/cl_{self.build_config.get_chisel_quintuplet()}/build/checkpoints/"
         ):
             files = local("ls *.tar", capture=True)
             rootLogger.debug(files)
@@ -464,7 +464,6 @@ class F1BitBuilder(BitBuilder):
             return True
         else:
             return None
-
 
 class VitisBitBuilder(BitBuilder):
     """Bit builder class that builds a Vitis bitstream from the build config.

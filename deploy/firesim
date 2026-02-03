@@ -15,7 +15,7 @@ from datetime import date
 import warnings
 from cryptography.utils import CryptographyDeprecationWarning
 with warnings.catch_warnings():
-    if date.today() < date(2025, 1, 1):
+    if date.today() < date(2026, 1, 1):
         # Temporarily wave CryptographyDeprecationWarning while we wait on a paramiko-ng release
         warnings.filterwarnings('ignore', category=CryptographyDeprecationWarning)
     from fabric.api import local, hide, warn_only, env, execute, parallel # type: ignore
@@ -31,7 +31,7 @@ from awstools.awstools import valid_aws_configure_creds, get_aws_userid, subscri
 from awstools.afitools import share_agfi_in_all_regions
 
 from buildtools.buildconfigfile import BuildConfigFile
-from buildtools.bitbuilder import F1BitBuilder
+from buildtools.bitbuilder import F2BitBuilder
 
 from util.streamlogger import StreamLogger, InfoStreamLogger
 from util.filelineswap import file_line_swap
@@ -152,7 +152,7 @@ def managerinit(args: argparse.Namespace):
         return start_arg_idx, end_arg_idx
 
     rootLogger.info("Adding default overrides to config files")
-    if args.platform == 'f1':
+    if args.platform == 'f2':
         runfarm_default_file = "run-farm-recipes/aws_ec2.yaml"
         with open(runfarm_default_file, "r") as f:
             rf_recipe_lines = f.readlines()
@@ -234,7 +234,7 @@ def managerinit(args: argparse.Namespace):
     else:
         rootLogger.info(f"Unknown platform {args.platform}. Skipping default config overrides.")
 
-    if args.platform == 'f1':
+    if args.platform == 'f2':
         awsinit()
 
 @register_task
@@ -338,7 +338,7 @@ def tar2afi(build_config_file: BuildConfigFile) -> None:
     """
 
     for build_config in build_config_file.builds_list:
-        assert isinstance(build_config.bitbuilder, F1BitBuilder)
+        assert isinstance(build_config.bitbuilder, F2BitBuilder)
         execute(build_config.bitbuilder.aws_create_afi, build_config_file, build_config, hosts=['localhost'])
 
 
@@ -432,7 +432,7 @@ def construct_firesim_argparser() -> argparse.ArgumentParser:
                         help='For terminaterunfarm and buildbitstream, force termination without prompting user for confirmation. Defaults to False')
     parser.add_argument('-t', '--launchtime', type=str,
                         help='Give the "Y-m-d--H-M-S" prefix of results-build directory. Useful for tar2afi when finishing a partial buildbitstream')
-    parser.add_argument('--platform', type=str, choices=PLATFORM_LIST, default='f1',
+    parser.add_argument('--platform', type=str, choices=PLATFORM_LIST, default='f2',
                         help='Required argument for "managerinit" to specify which platform you will be using')
 
     argcomplete.autocomplete(parser)
@@ -444,7 +444,7 @@ def check_env() -> None:
     Raises:
         `SystemExit` if any assumption is violated
     """
-    # make sure that sourceme-f1 was sourced
+    # make sure that sourceme-f2 was sourced
     if os.environ.get('FIRESIM_SOURCED') is None:
         rootLogger.critical("ERROR: You must source firesim/sourceme-manager.sh!")
         sys.exit(1)
@@ -458,6 +458,8 @@ def main(args: argparse.Namespace) -> None:
     # we elastically spin instances up/down. we can easily get re-used IPs with
     # different keys. also, probably won't get MITM'd
     env.disable_known_hosts = True
+    env.key_filename = os.path.expanduser("~/firesim.pem") #rh: okay so /firesim.pem does work for infrasetup, need to bump paramiko though to support rsa2
+
 
     rootLogger.info("FireSim Manager. Docs: https://docs.fires.im\nRunning: %s\n", str(args.task))
 

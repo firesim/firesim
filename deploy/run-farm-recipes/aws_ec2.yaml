@@ -1,7 +1,7 @@
 # AWS EC2 run farm hosts recipe.
 # all fields are required but can be overridden in the `*_runtime.yaml`
 
-run_farm_type: AWSEC2F1
+run_farm_type: AWSEC2F2
 args:
     # managerinit arg start
     # tag to apply to run farm hosts
@@ -17,15 +17,15 @@ args:
     # if using spot instances, determine the max price
     spot_max_price: ondemand
     # default location of the simulation directory on the run farm host
-    default_simulation_dir: /home/centos
+    default_simulation_dir: /home/ubuntu
 
     # run farm hosts to spawn: a mapping from a spec below (which is an EC2
     # instance type) to the number of instances of the given type that you
     # want in your runfarm.
     run_farm_hosts_to_use:
-      - f1.16xlarge: 0
-      - f1.4xlarge: 0
-      - f1.2xlarge: 1
+      - f2.6xlarge: 1
+      - f2.12xlarge: 0
+      - f2.48xlarge : 0
       - m4.16xlarge: 0
       - z1d.3xlarge: 0
       - z1d.6xlarge: 0
@@ -38,7 +38,7 @@ args:
     # On EC2, most users will never need to edit this section,
     # unless you want to add new host instance types.
     #
-    # The "name" of a spec below (e.g. "f1.2xlarge" below) MUST be a valid EC2
+    # The "name" of a spec below (e.g. "f2.6xlarge" below) MUST be a valid EC2
     # instance type and is used to refer to the spec above.
     #
     # Besides required parameters shown below, each can have multiple OPTIONAL
@@ -50,7 +50,7 @@ args:
     #       override_simulation_dir: /scratch/specific-build-host-build-dir
     #       override_platform: EC2InstanceDeployManager
     run_farm_host_specs:
-      - f1.2xlarge: # REQUIRED: On EC2, the spec name MUST be an EC2 instance type.
+      - f2.6xlarge: # REQUIRED: On EC2, the spec name MUST be an EC2 instance type.
           # REQUIRED: number of FPGAs on the machine
           num_fpgas: 1
           # REQUIRED: number of metasims this machine can host
@@ -58,11 +58,11 @@ args:
           # REQUIRED: whether it is acceptable to use machines of this spec
           # to host ONLY switches (e.g. any attached FPGAs are "wasted")
           use_for_switch_only: false
-      - f1.4xlarge:
+      - f2.12xlarge:
           num_fpgas: 2
           num_metasims: 0
           use_for_switch_only: false
-      - f1.16xlarge:
+      - f2.48xlarge:
           num_fpgas: 8
           num_metasims: 0
           use_for_switch_only: false

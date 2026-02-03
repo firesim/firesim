@@ -5,7 +5,7 @@ Running a Single Node Simulation
 
 Now that we've completed the setup of our manager instance, it's time to run a
 simulation! In this section, we will simulate **1 target node**, for which we will need
-a single ``f1.2xlarge`` (1 FPGA) instance.
+a single ``f2.6xlarge`` (1 FPGA) instance.
 
 Make sure you are ``ssh`` or ``mosh``'d into your manager instance and have sourced
 ``sourceme-manager.sh`` before running any of these commands.
@@ -61,7 +61,7 @@ manager:
   (each running some workload on some target design) that you may be operating. In this
   case, the default is fine since we're only running a single run farm.
 - Notice that under ``run_farm_hosts_to_use``, the only non-zero value is for
-  ``f1.2xlarge``, which should be set to ``1``. This is exactly what we'll need for this
+  ``f2.6xlarge``, which should be set to ``1``. This is exactly what we'll need for this
   guide.
 - You'll see other parameters in the ``run_farm`` mapping, like ``run_instance_market``,
   ``spot_interruption_behavior``, and ``spot_max_price``. If you're an experienced AWS
@@ -154,16 +154,16 @@ You should expect output like the following:
     FireSim Manager. Docs: http://docs.fires.im
     Running: launchrunfarm
 
-    Waiting for instance boots: f1.16xlarges
-    Waiting for instance boots: f1.4xlarges
+    Waiting for instance boots: f2.6xlarges
+    Waiting for instance boots: f2.12xlarges
     Waiting for instance boots: m4.16xlarges
-    Waiting for instance boots: f1.2xlarges
+    Waiting for instance boots: f2.48xlarges
     i-0d6c29ac507139163 booted!
     The full log of this run is:
     /home/centos/firesim-new/deploy/logs/2018-05-19--00-19-43-launchrunfarm-B4Q2ROAK0JN9EDE4.log
 
-The output will rapidly progress to ``Waiting for instance boots: f1.2xlarges`` and then
-take a minute or two while your ``f1.2xlarge`` instance launches. Once the launches
+The output will rapidly progress to ``Waiting for instance boots: f2.6xlarges`` and then
+take a minute or two while your ``f2.48xlarge`` instance launches. Once the launches
 complete, you should see the instance id printed and the instance will also be visible
 in your AWS EC2 Management console. The manager will tag the instances launched with
 this operation with the value you specified above as the ``run_farm_tag`` parameter from
@@ -212,7 +212,7 @@ The console output here contains the "user-friendly" version of the output. If y
 to see detailed progress as it happens, ``tail -f`` the latest logfile in
 ``firesim/deploy/logs/``.
 
-At this point, the ``f1.2xlarge`` instance in our Run Farm has all the infrastructure
+At this point, the ``f2.6xlarge`` instance in our Run Farm has all the infrastructure
 necessary to run a simulation.
 
 So, let's launch our simulation!
@@ -411,7 +411,7 @@ back to our manager after we run a simulation, which is useful for running bench
 automatically. The :ref:`deprecated-defining-custom-workloads` section describes this
 process in detail.
 
-For now, let's wrap-up our guide by terminating the ``f1.2xlarge`` instance that we
+For now, let's wrap-up our guide by terminating the ``f2.6xlarge`` instance that we
 launched. To do so, run:
 
 .. code-block:: bash
@@ -426,13 +426,13 @@ Which should present you with the following:
     Running: terminaterunfarm
 
     IMPORTANT!: This will terminate the following instances:
-    f1.16xlarges
+    f2.6xlarges
     []
-    f1.4xlarges
+    f2.12xlarges
     []
     m4.16xlarges
     []
-    f1.2xlarges
+    f2.48xlarges
     ['i-0d6c29ac507139163']
     Type yes, then press enter, to continue. Otherwise, the operation will be cancelled.
 

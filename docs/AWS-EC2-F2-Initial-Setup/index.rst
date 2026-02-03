@@ -1,6 +1,6 @@
 .. _initial-aws-setup:
 
-AWS EC2 F1 System Setup
+AWS EC2 F2 System Setup
 =======================
 
 This section will guide you through initial setup of your AWS account to support

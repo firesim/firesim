@@ -8,4 +8,4 @@ TARGET_CONFIG_PACKAGE ?= firesim.midasexamples
 TARGET_CONFIG ?= NoConfig
 
 PLATFORM_CONFIG_PACKAGE ?= firesim.midasexamples
-PLATFORM_CONFIG ?= DefaultF1Config
+PLATFORM_CONFIG ?= DefaultF2Config
