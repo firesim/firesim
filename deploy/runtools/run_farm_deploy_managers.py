@@ -524,7 +524,7 @@ class InstanceDeployManager(metaclass=abc.ABCMeta):
 
                 do_terminate()
 
-                return {"switches": {}, "sims": {}}
+                return {"switches": {}, "sims": {}, "pipes": {}}
             else:
                 # get the status of the switch sims
                 switchescompleteddict = {
@@ -573,7 +573,7 @@ class InstanceDeployManager(metaclass=abc.ABCMeta):
                 # this can never happen in the cycle-accurate case at a point where we care
                 # about switch status, so don't bother to populate it
                 jobnames_to_completed = {jname: True for jname in jobnames}
-                return {"sims": jobnames_to_completed, "switches": {}}
+                return {"sims": jobnames_to_completed, "switches": {}, "pipes": {}}
 
             # at this point, all jobs are NOT completed. so, see how they're doing now:
             instance_screen_status = self.running_simulations()
