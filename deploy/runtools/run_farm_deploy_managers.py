@@ -381,7 +381,11 @@ class InstanceDeployManager(metaclass=abc.ABCMeta):
 
                 do_terminate()
 
+<<<<<<< HEAD
                 return {'switches': {}, 'sims': {}}
+=======
+                return {"switches": {}, "sims": {}, "pipes": {}}
+>>>>>>> a900379e ([run_farm_deploy_manager.py] Fixes monitor_job_instance to return all exepected keys)
             else:
                 # get the status of the switch sims
                 switchescompleteddict = {k: False for k in self.running_simulations()['switches']}
@@ -411,7 +415,11 @@ class InstanceDeployManager(metaclass=abc.ABCMeta):
                 # this can never happen in the cycle-accurate case at a point where we care
                 # about switch status, so don't bother to populate it
                 jobnames_to_completed = {jname: True for jname in jobnames}
+<<<<<<< HEAD
                 return {'sims': jobnames_to_completed, 'switches': {}}
+=======
+                return {"sims": jobnames_to_completed, "switches": {}, "pipes": {}}
+>>>>>>> a900379e ([run_farm_deploy_manager.py] Fixes monitor_job_instance to return all exepected keys)
 
             # at this point, all jobs are NOT completed. so, see how they're doing now:
             instance_screen_status = self.running_simulations()
