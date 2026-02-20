@@ -1,7 +1,8 @@
 Building Docs
 --------------
 
-    sudo -E $CONDA_EXE install --file ./requirements.txt
+To generate the documentation run the following command (ensure you've sourced the `sourceme-manager.sh` script to obtain the documentation Conda dependencies):
+
     make html
 
 Look in the `_build/html` directory for output. You can also run
