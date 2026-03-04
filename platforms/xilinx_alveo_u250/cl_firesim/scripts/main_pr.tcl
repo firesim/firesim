@@ -18,21 +18,30 @@ foreach name [split $pr_module_name_str ","] {
 }
 
 set pr_partition_paths {}
-foreach path [split $pr_partition_path_str ","] {
-    lappend pr_partition_paths [string trim $path]
+if {[string trim $pr_partition_path_str] ne ""} {
+    foreach path [split $pr_partition_path_str ","] {
+        lappend pr_partition_paths [string trim $path]
+    }
 }
 
-# Validate that we have matching counts
-if {[llength $pr_module_names] != [llength $pr_partition_paths]} {
+# If paths were provided, validate counts match
+if {[llength $pr_partition_paths] > 0 && [llength $pr_module_names] != [llength $pr_partition_paths]} {
     puts "ERROR: Number of PR module names ([llength $pr_module_names]) does not match number of partition paths ([llength $pr_partition_paths])"
     exit 1
 }
 
 puts "PR Configuration:"
-puts "  Number of PR modules: [llength $pr_module_names]"
-for {set i 0} {$i < [llength $pr_module_names]} {incr i} {
-    puts "  Module [expr {$i + 1}]: [lindex $pr_module_names $i]"
-    puts "    Partition path: [lindex $pr_partition_paths $i]"
+puts "  Number of PR module types: [llength $pr_module_names]"
+if {[llength $pr_partition_paths] > 0} {
+    for {set i 0} {$i < [llength $pr_module_names]} {incr i} {
+        puts "  Module [expr {$i + 1}]: [lindex $pr_module_names $i]"
+        puts "    Partition path: [lindex $pr_partition_paths $i]"
+    }
+} else {
+    puts "  Partition paths will be discovered from design"
+    for {set i 0} {$i < [llength $pr_module_names]} {incr i} {
+        puts "  Module type [expr {$i + 1}]: [lindex $pr_module_names $i]"
+    }
 }
 
 # Timing tracking
@@ -209,6 +218,33 @@ if {$actual_freq_mhz == "" || $actual_freq_mhz <= 0} {
 
 # Calculate clock period in nanoseconds (period = 1000 / frequency_MHz)
 set clock_period_ns [expr {1000.0 / $actual_freq_mhz}]
+
+# If partition paths were not provided, discover all instances of each module from the design
+if {[llength $pr_partition_paths] == 0} {
+    puts "Discovering PR partition paths from design (elaborating...)"
+    synth_design -mode elaborate -top $top_level_name
+    set discovered_module_names {}
+    set discovered_partition_paths {}
+    foreach pr_module_name $pr_module_names {
+        set cells [get_cells -hierarchical -quiet -filter "REF_NAME == $pr_module_name"]
+        if {[llength $cells] == 0} {
+            puts "ERROR: No instances of module '$pr_module_name' found in the design"
+            close_design -quiet
+            exit 1
+        }
+        puts "  Found [llength $cells] instance(s) of module '$pr_module_name'"
+        foreach cell $cells {
+            set path [get_property NAME $cell]
+            lappend discovered_module_names $pr_module_name
+            lappend discovered_partition_paths $path
+            puts "    -> $path"
+        }
+    }
+    set pr_module_names $discovered_module_names
+    set pr_partition_paths $discovered_partition_paths
+    puts "Total PR partitions discovered: [llength $pr_partition_paths]"
+    close_design -quiet
+}
 
 # Create blocksets for all PR modules
 set phase_start [log_timing "PR setup" $phase_start]

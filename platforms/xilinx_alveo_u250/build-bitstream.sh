@@ -18,7 +18,7 @@ usage() {
     echo "   --board           : FPGA board {au200,au250,au280}."
     echo "   --enable_pr       : Enable Partial Reconfiguration (true/false)"
     echo "   --pr_module_name  : Name(s) of the PR (Partial Reconfiguration) module(s), comma-separated if multiple (required if --enable_pr is true)"
-    echo "   --pr_partition_path : Hierarchical path(s) to the PR partition(s) in the design, comma-separated if multiple (required if --enable_pr is true)"
+    echo "   --pr_partition_path : Hierarchical path(s) to the PR partition(s), comma-separated if multiple (optional for main_pr; required for main_pr_rm)"
     echo "   --pr_project_path : Path to a previous .xpr project file (optional, if specified uses main_pr_rm.tcl instead of main_pr.tcl)"
     echo "   --help            : Display this message"
     exit "$1"
@@ -97,19 +97,15 @@ if [ "$ENABLE_PR" = "true" ] ; then
         usage 1
     fi
 
-    if [ -z "$PR_PARTITION_PATH" ] ; then
-        echo "No --pr_partition_path specified (required when --enable_pr is true)"
-        usage 1
-    fi
-    
-    # Validate that module names and partition paths have matching counts
-    # Count commas + 1 to get number of items
-    module_count=$(echo "$PR_MODULE_NAME" | tr ',' '\n' | wc -l)
-    path_count=$(echo "$PR_PARTITION_PATH" | tr ',' '\n' | wc -l)
-    if [ "$module_count" -ne "$path_count" ] ; then
-        echo "Error: pr_module_name and pr_partition_path must have the same number of items"
-        echo "  Found $module_count module name(s) and $path_count partition path(s)"
-        usage 1
+    # pr_partition_path is optional for main_pr (discovery mode); validate counts only when provided
+    if [ -n "$PR_PARTITION_PATH" ] ; then
+        module_count=$(echo "$PR_MODULE_NAME" | tr ',' '\n' | wc -l)
+        path_count=$(echo "$PR_PARTITION_PATH" | tr ',' '\n' | wc -l)
+        if [ "$module_count" -ne "$path_count" ] ; then
+            echo "Error: pr_module_name and pr_partition_path must have the same number of items"
+            echo "  Found $module_count module name(s) and $path_count partition path(s)"
+            usage 1
+        fi
     fi
 fi
 
@@ -120,7 +116,7 @@ if [ "$ENABLE_PR" = "true" ] ; then
     if [ -n "$PR_PROJECT_PATH" ] ; then
         vivado -mode batch -source $CL_DIR/scripts/main_pr_rm.tcl -tclargs $FREQUENCY $STRATEGY $BOARD "$PR_MODULE_NAME" "$PR_PARTITION_PATH" "$PR_PROJECT_PATH"
     else
-        vivado -mode batch -source $CL_DIR/scripts/main_pr.tcl -tclargs $FREQUENCY $STRATEGY $BOARD "$PR_MODULE_NAME" "$PR_PARTITION_PATH"
+        vivado -mode batch -source $CL_DIR/scripts/main_pr.tcl -tclargs $FREQUENCY $STRATEGY $BOARD "$PR_MODULE_NAME" "${PR_PARTITION_PATH:-}"
     fi
 else
     vivado -mode batch -source $CL_DIR/scripts/main.tcl -tclargs $FREQUENCY $STRATEGY $BOARD

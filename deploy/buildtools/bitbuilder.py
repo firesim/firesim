@@ -819,9 +819,7 @@ class XilinxAlveoBitBuilder(BitBuilder):
                 else:
                     build_cmd += f" --pr_module_name {pr_module_name}"
             if pr_partition_path:
-                # Handle both single string and list of strings
                 if isinstance(pr_partition_path, list):
-                    # Join list with comma separator
                     build_cmd += f" --pr_partition_path {','.join(pr_partition_path)}"
                 else:
                     build_cmd += f" --pr_partition_path {pr_partition_path}"
