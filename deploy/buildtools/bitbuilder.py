@@ -26,7 +26,7 @@ from awstools.awstools import (
 )
 
 # imports needed for python type checking
-from typing import Optional, Dict, Any, TYPE_CHECKING
+from typing import Optional, Dict, Any, TYPE_CHECKING, List
 
 if TYPE_CHECKING:
     from buildtools.buildconfig import BuildConfig
@@ -803,11 +803,30 @@ class XilinxAlveoBitBuilder(BitBuilder):
 
         fpga_frequency = self.build_config.get_frequency()
         build_strategy = self.build_config.get_strategy().name
+        enable_pr = self.build_config.get_enable_pr()
+        pr_module_name = self.build_config.get_pr_module_name()
+        pr_partition_path = self.build_config.get_pr_partition_path()
+
+        # Build the command with optional PR arguments
+        build_cmd = f"{cl_dir}/build-bitstream.sh --cl_dir {cl_dir} --frequency {fpga_frequency} --strategy {build_strategy} --board {self.BOARD_NAME} --enable_pr {str(enable_pr).lower()}"
+        if enable_pr:
+            if pr_module_name:
+                # Handle both single string and list of strings
+                if isinstance(pr_module_name, list):
+                    # Join list with comma separator
+                    build_cmd += f" --pr_module_name {','.join(pr_module_name)}"
+                else:
+                    build_cmd += f" --pr_module_name {pr_module_name}"
+            if pr_partition_path:
+                # Handle both single string and list of strings
+                if isinstance(pr_partition_path, list):
+                    # Join list with comma separator
+                    build_cmd += f" --pr_partition_path {','.join(pr_partition_path)}"
+                else:
+                    build_cmd += f" --pr_partition_path {pr_partition_path}"
 
         with InfoStreamLogger("stdout"), settings(warn_only=True):
-            alveo_result = run(
-                f"{cl_dir}/build-bitstream.sh --cl_dir {cl_dir} --frequency {fpga_frequency} --strategy {build_strategy} --board {self.BOARD_NAME}"
-            )
+            alveo_result = run(build_cmd)
             alveo_rc = alveo_result.return_code
 
             if alveo_rc != 0:

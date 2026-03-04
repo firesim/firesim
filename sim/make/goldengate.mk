@@ -36,6 +36,25 @@ $(simulator_verilog) $(simulator_xdc) $(header) $(fame_annos) &: $(FIRRTL_FILE) 
 		xargs cat >> $(simulator_verilog) # Append blackboxes to FPGA wrapper, if any
 
 ####################################
+# Split Verilog into Module Files  #
+####################################
+
+# Directory for split module files
+SPLIT_VERILOG_DIR := $(GENERATED_DIR)/split-verilog
+SPLIT_VERILOG_FILELIST := $(SPLIT_VERILOG_DIR)/modules.f
+
+.PHONY: split-verilog
+split-verilog: $(simulator_verilog)
+	@echo "[split-verilog] Splitting $(simulator_verilog) into separate module files..."
+	@mkdir -p $(SPLIT_VERILOG_DIR)
+	@python3 $(firesim_base_dir)/scripts/split-verilog.py \
+		$(simulator_verilog) \
+		-o $(SPLIT_VERILOG_DIR) \
+		--filelist $(SPLIT_VERILOG_FILELIST)
+	@echo "[split-verilog] Done. Module files in $(SPLIT_VERILOG_DIR)"
+	@echo "[split-verilog] Filelist: $(SPLIT_VERILOG_FILELIST)"
+
+####################################
 # Runtime-Configuration Generation #
 ####################################
 
