@@ -12,11 +12,11 @@ set place_directive  "ExtraNetDelay_high"
 
 set phys_opt 1
 set phys_options     ""
-set phys_directive   "AggressiveExplore"
+set phys_directive   "Explore"
 
 set route_options    "-tns_cleanup"
 set route_directive  "Explore"
 
 set route_phys_opt 1
 set post_phys_options     ""
-set post_phys_directive   "AggressiveExplore"
+set post_phys_directive   "Explore"

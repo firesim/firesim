@@ -66,7 +66,8 @@ class BuildConfig:
         strategy: Strategy for the FPGA build.
         enable_pr: Whether to enable Partial Reconfiguration.
         pr_module_name: Name(s) of the PR (Partial Reconfiguration) module(s). Can be a string or list of strings.
-        pr_partition_path: Hierarchical path(s) to the PR partition(s) in the design. Can be a string or list of strings.
+        pr_partition_path: Hierarchical path(s) to the PR partition(s). Optional for main_pr.tcl (paths discovered from design); required for main_pr_rm.tcl.
+        pr_project_path: Path to a previous .xpr project file. If specified, uses main_pr_rm.tcl instead of main_pr.tcl.
         post_build_hook: Post build hook script.
         bitbuilder: bitstream configuration class.
     """
@@ -83,6 +84,7 @@ class BuildConfig:
     enable_pr: bool
     pr_module_name: Optional[Union[str, List[str]]]
     pr_partition_path: Optional[Union[str, List[str]]]
+    pr_project_path: Optional[str]
     launch_time: str
     PLATFORM_CONFIG: str
     post_build_hook: str
@@ -164,6 +166,7 @@ class BuildConfig:
         self.enable_pr = bitstream_build_args.get("enable_pr", False)
         pr_module_name_raw = bitstream_build_args.get("pr_module_name")
         pr_partition_path_raw = bitstream_build_args.get("pr_partition_path")
+        self.pr_project_path = bitstream_build_args.get("pr_project_path")
         
         # Convert single values to lists for consistency, or keep as lists if already lists
         if pr_module_name_raw is not None:
@@ -186,12 +189,13 @@ class BuildConfig:
         else:
             self.pr_partition_path = None
         
-        # Validate that module names and partition paths have matching lengths
         if self.enable_pr:
-            if self.pr_module_name is None or self.pr_partition_path is None:
-                raise Exception("Both pr_module_name and pr_partition_path must be specified when enable_pr is true")
-            if len(self.pr_module_name) != len(self.pr_partition_path):
-                raise Exception(f"pr_module_name and pr_partition_path must have the same length. Got {len(self.pr_module_name)} module names and {len(self.pr_partition_path)} partition paths")
+            if self.pr_module_name is None:
+                raise Exception("pr_module_name must be specified when enable_pr is true")
+            if self.pr_partition_path is not None and len(self.pr_module_name) != len(self.pr_partition_path):
+                raise Exception(f"pr_module_name and pr_partition_path must have the same length when both are specified. Got {len(self.pr_module_name)} module name(s) and {len(self.pr_partition_path)} partition path(s)")
+            if self.pr_partition_path is None and self.pr_project_path is not None:
+                raise Exception("pr_partition_path is required when using pr_project_path (main_pr_rm flow). Only the initial build (main_pr) supports auto-discovery.")
 
         # retrieve the bitbuilder section
         bitbuilder_conf_dict = None
@@ -304,6 +308,14 @@ class BuildConfig:
             Specified PR partition path(s) as a string or list of strings, or None if not set
         """
         return self.pr_partition_path
+
+    def get_pr_project_path(self) -> Optional[str]:
+        """Get the PR project path.
+
+        Returns:
+            Specified PR project path (.xpr file), or None if not set
+        """
+        return self.pr_project_path
 
     def get_build_dir_name(self) -> str:
         """Get the name of the local build directory.

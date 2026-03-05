@@ -100,9 +100,6 @@ set phase_start [log_timing "Block design creation" $phase_start]
 # Mark top-level name for future steps/cmds
 set top_level_name overall_fpga_top
 
-# Report if any IPs need to be updated
-report_ip_status
-
 # Adding additional constraint sets
 create_fileset -constrset synth_fileset
 create_fileset -constrset impl_fileset
@@ -158,6 +155,14 @@ file mkdir ${rpt_dir}
 # Set synth/impl strategy vars
 check_file_exists [set sourceFile ${root_dir}/scripts/strategies/strategy_${strategy}.tcl]
 source $sourceFile
+
+# Delete all default report configs to reduce build time.
+# We generate utilization and timing reports manually in post_synth/post_impl scripts.
+foreach run [get_runs] {
+    foreach rc [get_report_configs -of_objects [get_runs $run] -quiet] {
+        delete_report_config $rc
+    }
+}
 
 # Run synth/impl and generate collateral
 set sourceFile [retrieveVersionedFile ${root_dir}/scripts/synthesis.tcl $vivado_version]
