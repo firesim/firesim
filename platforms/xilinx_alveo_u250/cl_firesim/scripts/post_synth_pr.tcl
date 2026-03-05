@@ -2,20 +2,62 @@
 
 open_run synth_1
 
-# Report utilization
-report_utilization -hierarchical -hierarchical_percentages -file ${rpt_dir}/post_synth_utilization.rpt
+# Discover partition paths via get_cells if they were not provided.
+# The design is already open so this adds no extra open/close overhead.
+if {[llength $pr_partition_paths] == 0} {
+    puts "Discovering PR partition paths from synthesized design..."
 
-# Report control sets
-report_control_sets -verbose -file ${rpt_dir}/post_synth_control_sets.rpt
+    set discovered_module_names {}
+    set discovered_partition_paths {}
+    foreach pr_module_name $pr_module_names {
+        set cells [get_cells -hierarchical -filter "REF_NAME == $pr_module_name" -quiet]
+        if {[llength $cells] == 0} {
+            puts "ERROR: No instances of module '$pr_module_name' found in synthesized design"
+            exit 1
+        }
+        puts "  Found [llength $cells] instance(s) of module '$pr_module_name':"
+        foreach cell $cells {
+            set cell_name [get_property NAME $cell]
+            lappend discovered_module_names $pr_module_name
+            lappend discovered_partition_paths $cell_name
+            puts "    -> $cell_name"
+        }
+    }
+    set pr_module_names $discovered_module_names
+    set pr_partition_paths $discovered_partition_paths
+    puts "Total PR partitions discovered: [llength $pr_partition_paths]"
+
+    # Write discovered paths for pr_metadata.py to read after Vivado exits
+    set dpf [open ${root_dir}/vivado_proj/discovered_pr_paths.txt w]
+    for {set j 0} {$j < [llength $pr_module_names]} {incr j} {
+        puts $dpf "[lindex $pr_module_names $j]:[lindex $pr_partition_paths $j]"
+    }
+    close $dpf
+
+    set pr_config_partitions {}
+    for {set i 0} {$i < [llength $pr_module_names]} {incr i} {
+        set mn [lindex $pr_module_names $i]
+        set pp [lindex $pr_partition_paths $i]
+        set rm [dict get $module_to_reconfig_module $mn]
+        lappend pr_config_partitions "${pp}:${rm}"
+        puts "Mapped partition [expr {$i + 1}] at '$pp' to reconfig module '$rm'"
+    }
+    create_pr_configuration -name config_1 -partitions $pr_config_partitions
+    set_property PR_CONFIGURATION config_1 [get_runs impl_1]
+    set_property DFX_MODE {ABSTRACT SHELL} [get_runs impl_1]
+}
+
+report_utilization -hierarchical -hierarchical_percentages -file ${rpt_dir}/post_synth_utilization.rpt
 write_checkpoint ${root_dir}/vivado_proj/firesim.runs/synth_1/synth.dcp
 
 # Define pblock regions for PR partitions
 # Each element corresponds to a PR partition in order
 set pr_pblock_regions [list \
-    {SLICE_X117Y453:SLICE_X144Y476 DSP48E2_X16Y182:DSP48E2_X18Y189 RAMB18_X8Y182:RAMB18_X9Y189 RAMB36_X8Y91:RAMB36_X9Y94} \
+    {SLICE_X117Y424:SLICE_X144Y476 DSP48E2_X16Y170:DSP48E2_X18Y189 LAGUNA_X16Y368:LAGUNA_X19Y473 RAMB18_X8Y170:RAMB18_X9Y189 RAMB36_X8Y85:RAMB36_X9Y94 URAM288_X2Y116:URAM288_X2Y123} \
+    # {SLICE_X117Y453:SLICE_X144Y476 DSP48E2_X16Y182:DSP48E2_X18Y189 RAMB18_X8Y182:RAMB18_X9Y189 RAMB36_X8Y91:RAMB36_X9Y94} \
     {SLICE_X148Y392:SLICE_X174Y415 DSP48E2_X20Y158:DSP48E2_X23Y165 RAMB18_X10Y158:RAMB18_X10Y165 RAMB36_X10Y79:RAMB36_X10Y82} \
     {SLICE_X117Y392:SLICE_X144Y415 DSP48E2_X16Y158:DSP48E2_X18Y165 RAMB18_X8Y158:RAMB18_X9Y165 RAMB36_X8Y79:RAMB36_X9Y82} \
-    {SLICE_X148Y453:SLICE_X175Y478 DSP48E2_X20Y182:DSP48E2_X23Y189} \
+    {SLICE_X148Y453:SLICE_X175Y478 DSP48E2_X20Y182:DSP48E2_X23Y189} 
 ]
 
 # Get the number of PR partitions

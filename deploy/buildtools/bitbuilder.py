@@ -875,6 +875,9 @@ class XilinxAlveoBitBuilder(BitBuilder):
         # store metadata string
         local(f"""echo '{self.get_metadata_string()}' >> {tar_staging_path}/metadata""")
 
+        # store PR metadata if present (for querying compatible projects)
+        local(f"cp {local_cl_dir}/vivado_proj/pr_metadata.json {tar_staging_path}/ 2>/dev/null || true")
+
         # form tar.gz
         with prefix(f"cd {local_cl_dir}"):
             local(f"tar zcvf {tar_name} {self.build_config.PLATFORM}/")

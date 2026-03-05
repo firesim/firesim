@@ -165,9 +165,6 @@ set phase_start [log_timing "Block design creation" $phase_start]
 # Mark top-level name for future steps/cmds
 set top_level_name overall_fpga_top
 
-# Report if any IPs need to be updated
-report_ip_status
-
 # Adding additional constraint sets
 create_fileset -constrset synth_fileset
 create_fileset -constrset impl_fileset
@@ -219,56 +216,22 @@ if {$actual_freq_mhz == "" || $actual_freq_mhz <= 0} {
 # Calculate clock period in nanoseconds (period = 1000 / frequency_MHz)
 set clock_period_ns [expr {1000.0 / $actual_freq_mhz}]
 
-# If partition paths were not provided, discover all instances of each module from the design
-if {[llength $pr_partition_paths] == 0} {
-    puts "Discovering PR partition paths from design (elaborating...)"
-    synth_design -mode elaborate -top $top_level_name
-    set discovered_module_names {}
-    set discovered_partition_paths {}
-    foreach pr_module_name $pr_module_names {
-        set cells [get_cells -hierarchical -quiet -filter "REF_NAME == $pr_module_name"]
-        if {[llength $cells] == 0} {
-            puts "ERROR: No instances of module '$pr_module_name' found in the design"
-            close_design -quiet
-            exit 1
-        }
-        puts "  Found [llength $cells] instance(s) of module '$pr_module_name'"
-        foreach cell $cells {
-            set path [get_property NAME $cell]
-            lappend discovered_module_names $pr_module_name
-            lappend discovered_partition_paths $path
-            puts "    -> $path"
-        }
-    }
-    set pr_module_names $discovered_module_names
-    set pr_partition_paths $discovered_partition_paths
-    puts "Total PR partitions discovered: [llength $pr_partition_paths]"
-    close_design -quiet
-}
-
-# Create blocksets for all PR modules
+# Pre-synthesis PR setup: blocksets, partition defs, and reconfig modules
 set phase_start [log_timing "PR setup" $phase_start]
 set_property PR_FLOW 1 [current_project]
 
-# Dictionary to map module names to reconfig module names (for sharing reconfig modules)
 set module_to_reconfig_module [dict create]
-# Dictionary to map module names to partition definitions (one per module type)
 set module_to_partition_def [dict create]
-# List to store PR configuration partitions
-set pr_config_partitions {}
 
-# First pass: Create blocksets and partition definitions for unique modules
 set unique_modules {}
 for {set i 0} {$i < [llength $pr_module_names]} {incr i} {
     set pr_module_name [lindex $pr_module_names $i]
     
-    # Track unique modules
     if {[lsearch -exact $unique_modules $pr_module_name] == -1} {
         lappend unique_modules $pr_module_name
         
         puts "Setting up PR module: $pr_module_name"
         
-        # Note: -define_from requires the module to exist in the current design
         if {[catch {create_fileset -blockset -define_from $pr_module_name $pr_module_name} err]} {
             puts "ERROR: Failed to create blockset for $pr_module_name: $err"
             puts "Make sure the module '$pr_module_name' exists in your design"
@@ -279,7 +242,6 @@ for {set i 0} {$i < [llength $pr_module_names]} {incr i} {
         close [ open ${root_dir}/vivado_proj/firesim.srcs/$pr_module_name/new/${pr_module_name}_ooc.xdc w ]
         add_files -fileset $pr_module_name ${root_dir}/vivado_proj/firesim.srcs/$pr_module_name/new/${pr_module_name}_ooc.xdc
 
-        # Build the constraint file content with proper variable substitution
         set data {# (c) Copyright 2014 Xilinx, Inc. All rights reserved.
 
 # Add in a clock definition for each input clock to the out-of-context module.
@@ -300,45 +262,40 @@ create_clock -name user_clock -period $clock_period_ns [get_ports clock]
         delete_fileset [get_filesets $pr_module_name] -merge [current_fileset]
         update_compile_order -fileset sources_1
 
-        # Create a partition definition for this module type (one per unique module)
         set partition_name "pr_partition_${pr_module_name}"
         create_partition_def -name $partition_name -module $pr_module_name
         dict set module_to_partition_def $pr_module_name $partition_name
     }
 }
 
-# Second pass: Create reconfig modules for unique modules
 foreach pr_module_name $unique_modules {
     set partition_name [dict get $module_to_partition_def $pr_module_name]
-    
-    # Create a reconfig module for this module type (shared across all partitions using this module)
     set reconfig_module_name "pr_reconfig_module_${pr_module_name}"
     create_reconfig_module -name $reconfig_module_name -partition_def [get_partition_defs $partition_name] -define_from $pr_module_name
     update_compile_order -fileset $reconfig_module_name
-    
-    # Map module name to reconfig module name
     dict set module_to_reconfig_module $pr_module_name $reconfig_module_name
-    
     puts "Created reconfig module '$reconfig_module_name' for module type '$pr_module_name'"
 }
 
-# Third pass: Map each partition to its corresponding reconfig module
-for {set i 0} {$i < [llength $pr_module_names]} {incr i} {
-    set pr_module_name [lindex $pr_module_names $i]
-    set pr_partition_path [lindex $pr_partition_paths $i]
-    set reconfig_module_name [dict get $module_to_reconfig_module $pr_module_name]
-    
-    # Add to PR configuration partitions list
-    lappend pr_config_partitions "${pr_partition_path}:${reconfig_module_name}"
-    puts "Mapped partition [expr {$i + 1}] at '$pr_partition_path' to reconfig module '$reconfig_module_name'"
+# If paths were explicitly provided, create the PR configuration now (pre-synthesis).
+# Otherwise, defer until after synthesis so we can discover paths via get_cells.
+if {[llength $pr_partition_paths] > 0} {
+    set pr_config_partitions {}
+    for {set i 0} {$i < [llength $pr_module_names]} {incr i} {
+        set pr_module_name [lindex $pr_module_names $i]
+        set pr_partition_path [lindex $pr_partition_paths $i]
+        set reconfig_module_name [dict get $module_to_reconfig_module $pr_module_name]
+        lappend pr_config_partitions "${pr_partition_path}:${reconfig_module_name}"
+        puts "Mapped partition [expr {$i + 1}] at '$pr_partition_path' to reconfig module '$reconfig_module_name'"
+    }
+    create_pr_configuration -name config_1 -partitions $pr_config_partitions
+    set_property PR_CONFIGURATION config_1 [get_runs impl_1]
+    set_property DFX_MODE {ABSTRACT SHELL} [get_runs impl_1]
+} else {
+    puts "Partition paths not provided; will discover from synthesized design."
 }
 
-# Create PR configuration with all partitions
-create_pr_configuration -name config_1 -partitions $pr_config_partitions
-set_property PR_CONFIGURATION config_1 [get_runs impl_1]
-set_property DFX_MODE {ABSTRACT SHELL} [get_runs impl_1]
-
-set phase_start [log_timing "PR setup" $phase_start] 
+set phase_start [log_timing "PR setup" $phase_start]
 
 
 ################################################################################
@@ -371,13 +328,19 @@ set_fileset_for_run_or_delete impl_fileset impl_1
 set rpt_dir ${root_dir}/vivado_proj/reports
 file mkdir ${rpt_dir}
 
-# save_project_as -force ${root_dir}/vivado_proj/pre_synth.xpr
-
 # Set synth/impl strategy vars
 check_file_exists [set sourceFile ${root_dir}/scripts/strategies/strategy_${strategy}.tcl]
 source $sourceFile
 
-# Run synth and generate collateral
+# Delete all default report configs to reduce build time.
+# We generate utilization and timing reports manually in post_synth/post_impl scripts.
+foreach run [get_runs] {
+    foreach rc [get_report_configs -of_objects [get_runs $run] -quiet] {
+        delete_report_config $rc
+    }
+}
+
+# Run synthesis
 set sourceFile [retrieveVersionedFile ${root_dir}/scripts/synthesis.tcl $vivado_version]
 check_file_exists $sourceFile
 source $sourceFile
@@ -430,15 +393,16 @@ if {$WNS < 0 || $WHS < 0} {
   # expects that $WHS/WNS is re-set
 }
 
-if {$WNS < 0 || $WHS < 0} {
-  puts "ERROR: did not meet timing!"
-  exit 1
-}
+# Adjust MMCM frequency to match actual timing slack, then write bitstream.
+set run_dir [get_property DIRECTORY [get_runs ${impl_run}]]
+set bitstream_path "${run_dir}/${top_level_name}.bit"
 
-puts "INFO: generate bitstream"
-launch_runs ${impl_run} -to_step write_bitstream -jobs ${jobs}
-wait_on_run ${impl_run}
-check_progress ${impl_run} "bitstream generation failed"
+set adjusted_freq [adjust_frequency_and_bitstream ${impl_run} $bitstream_path]
+if {$adjusted_freq eq ""} {
+    puts "ERROR: Frequency adjustment failed — cannot meet timing."
+    exit 1
+}
+puts "INFO: Requested frequency: ${ifrequency} MHz -> Actual frequency: ${adjusted_freq} MHz"
 
 set phase_start [log_timing "Implementation" $phase_start]
 
@@ -448,6 +412,14 @@ source $sourceFile
 set phase_start [log_timing "Post-implementation" $phase_start]
 
 ################################################################################
+
+# Write Vivado-specific build info for pr_metadata.py (called after Vivado exits)
+set info_fh [open ${root_dir}/vivado_proj/vivado_build_info.txt w]
+puts $info_fh "vivado_version=$vivado_version"
+puts $info_fh "part=$part"
+puts $info_fh "board_part=$board_part"
+puts $info_fh "actual_frequency_mhz=$adjusted_freq"
+close $info_fh
 
 # Print timing summary
 set total_time [expr {[clock seconds] - $script_start_time}]

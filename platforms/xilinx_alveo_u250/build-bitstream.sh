@@ -109,14 +109,63 @@ if [ "$ENABLE_PR" = "true" ] ; then
     fi
 fi
 
+PR_METADATA_SCRIPT="$CL_DIR/scripts/pr_metadata.py"
+
 # run build
 cd $CL_DIR
 if [ "$ENABLE_PR" = "true" ] ; then
     # Use main_pr_rm.tcl if pr_project_path is specified, otherwise use main_pr.tcl
     if [ -n "$PR_PROJECT_PATH" ] ; then
+        # Validate sources against original build's metadata before launching Vivado
+        python3 "$PR_METADATA_SCRIPT" validate \
+            --root_dir "$CL_DIR" \
+            --project_path "$PR_PROJECT_PATH" \
+            --pr_module_names "$PR_MODULE_NAME" \
+            --pr_partition_paths "$PR_PARTITION_PATH" \
+            --frequency "$FREQUENCY" \
+            || echo "WARNING: PR metadata validation returned warnings (see above). Continuing build..."
+
         vivado -mode batch -source $CL_DIR/scripts/main_pr_rm.tcl -tclargs $FREQUENCY $STRATEGY $BOARD "$PR_MODULE_NAME" "$PR_PARTITION_PATH" "$PR_PROJECT_PATH"
     else
         vivado -mode batch -source $CL_DIR/scripts/main_pr.tcl -tclargs $FREQUENCY $STRATEGY $BOARD "$PR_MODULE_NAME" "${PR_PARTITION_PATH:-}"
+
+        # Generate PR metadata after successful build
+        DISCOVERED_PATHS_FILE="$CL_DIR/vivado_proj/discovered_pr_paths.txt"
+        VIVADO_INFO_FILE="$CL_DIR/vivado_proj/vivado_build_info.txt"
+
+        # Read Vivado-specific info written by main_pr.tcl
+        VIVADO_VERSION=""
+        PART=""
+        BOARD_PART_VAL=""
+        ACTUAL_FREQ=""
+        if [ -f "$VIVADO_INFO_FILE" ] ; then
+            VIVADO_VERSION=$(grep '^vivado_version=' "$VIVADO_INFO_FILE" | cut -d= -f2)
+            PART=$(grep '^part=' "$VIVADO_INFO_FILE" | cut -d= -f2)
+            BOARD_PART_VAL=$(grep '^board_part=' "$VIVADO_INFO_FILE" | cut -d= -f2)
+            ACTUAL_FREQ=$(grep '^actual_frequency_mhz=' "$VIVADO_INFO_FILE" | cut -d= -f2)
+        fi
+
+        # Use actual (post-adjustment) frequency if available, otherwise requested
+        METADATA_FREQ="${ACTUAL_FREQ:-$FREQUENCY}"
+
+        GEN_CMD=(python3 "$PR_METADATA_SCRIPT" generate
+            --root_dir "$CL_DIR"
+            --frequency "$METADATA_FREQ"
+            --strategy "$STRATEGY"
+            --pr_module_names "$PR_MODULE_NAME"
+            --vivado_version "$VIVADO_VERSION"
+            --part "$PART"
+            --board_part "$BOARD_PART_VAL"
+        )
+
+        if [ -n "$PR_PARTITION_PATH" ] ; then
+            GEN_CMD+=(--pr_partition_paths "$PR_PARTITION_PATH")
+        fi
+        if [ -f "$DISCOVERED_PATHS_FILE" ] ; then
+            GEN_CMD+=(--discovered_paths_file "$DISCOVERED_PATHS_FILE")
+        fi
+
+        "${GEN_CMD[@]}" || echo "WARNING: PR metadata generation failed (see above). Bitstream was built successfully."
     fi
 else
     vivado -mode batch -source $CL_DIR/scripts/main.tcl -tclargs $FREQUENCY $STRATEGY $BOARD
