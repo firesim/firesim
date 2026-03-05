@@ -91,6 +91,14 @@ class BaseF1Config
         new midas.EC2F1Config
     )
 
+class BaseF2Config
+    extends Config(
+      new WithDefaultMemModel ++
+        new WithWiringTransform ++
+        new WithAsyncResetReplacement ++
+        new midas.EC2F2Config
+    )
+
 class BaseXilinxAlveoU200Config
     extends Config(
       new WithDefaultMemModel ++

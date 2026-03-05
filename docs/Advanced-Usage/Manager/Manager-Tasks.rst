@@ -21,7 +21,7 @@ Then, do platform-specific init steps for the given ``--platform``.
 
     .. tab::
 
-       ``f1``
+       ``f2``
 
        -  Run ``aws configure``, prompt for credentials
        -  Prompt the user for email address and subscribe them to
@@ -44,7 +44,7 @@ You can re-run this whenever you want to get clean configuration files.
 
 .. note::
 
-    For ``f1``, you can just hit Enter when prompted for ``aws configure`` credentials
+    For ``f2``, you can just hit Enter when prompted for ``aws configure`` credentials
     and your email address, and both will keep your previously specified values.
 
 If you run this command by accident and didn't mean to overwrite your configuration
@@ -66,7 +66,7 @@ For each config, the build process entails:
 
     .. tab::
 
-       F1
+       F2
 
        #. [Locally] Run the elaboration process for your hardware
           configuration
@@ -135,7 +135,7 @@ For each config, the build process entails:
 
 This process happens in parallel for all of the builds you specify. The command will
 exit when all builds are completed (but you will get notified as INDIVIDUAL builds
-complete if on F1) and indicate whether all builds passed or a build failed by the exit
+complete if on F2) and indicate whether all builds passed or a build failed by the exit
 code.
 
 .. note::
@@ -152,7 +152,7 @@ When you run a build for a particular configuration, a directory named
 
     .. tab::
 
-       F1
+       F2
 
        -  ``AGFI_INFO``: Describes the state of the AFI being built,
           while the manager is running. Upon build completion, this
@@ -225,10 +225,10 @@ your design without launching/setting up extra machines to run simulations.
 
 .. note::
 
-    Can only be used for the F1 platform.
+    Can only be used for the F2 platform.
 
 This command can be used to run only steps 9 & 10 from an aborted ``firesim
-buildbitstream`` for F1 that has been manually corrected. ``firesim tar2afi`` assumes
+buildbitstream`` for F2 that has been manually corrected. ``firesim tar2afi`` assumes
 that you have a
 ``firesim/deploy/results-build/LAUNCHTIME-CONFIG_TRIPLET-BUILD_NAME/cl_firesim``
 directory tree that can be submitted to the AWS backend for conversion to an AFI.
@@ -248,12 +248,12 @@ may want to comment out build recipe names that successfully completed the
 
 .. note::
 
-    Can only be used for the F1 platform.
+    Can only be used for the F2 platform.
 
 This command allows you to share AGFIs that you have already built (that are listed in
 :ref:`config-hwdb`) with other users. It will take the named hardware configurations
 that you list in the ``agfis_to_share`` section of ``config_build.yaml``, grab the
-respective AGFIs for each from ``config_hwdb.yaml``, and share them across all F1
+respective AGFIs for each from ``config_hwdb.yaml``, and share them across all F2
 regions with the users listed in the ``share_with_accounts`` section of
 ``config_build.yaml``. You can also specify ``public: public`` in
 ``share_with_accounts`` to make the AGFIs public.
@@ -268,7 +268,7 @@ someone else owns and gave you access to.
 
 .. note::
 
-    Can only be used for the F1 platform.
+    Can only be used for the F2 platform.
 
 This command launches a **Run Farm** on AWS EC2 on which you run simulations. Run farms
 consist of a set of **run farm instances** that can be spawned on AWS EC2. The
@@ -283,8 +283,8 @@ all key/values present in the override args replace the default arguments given 
 ``base_recipe``. In the case of sequences, a overridden sequence completely replaces the
 corresponding sequence in the default args.
 
-An AWS EC2 run farm consists of AWS instances like ``f1.16xlarge``, ``f1.4xlarge``,
-``f1.2xlarge``, and ``m4.16xlarge`` instances. Before you run the command, you define
+An AWS EC2 run farm consists of AWS instances like ``f2.48xlarge``, ``f2.12xlarge``,
+``f2.4xlarge``, and ``m4.16xlarge`` instances. Before you run the command, you define
 the number of each that you want in the ``recipe_arg_overrides`` section of
 ``config_runtime.yaml`` or in the ``base_recipe`` itself.
 
@@ -326,7 +326,7 @@ record them). If an error occurs, it will be printed to console.
 
 .. note::
 
-    Can only be used for the F1 platform.
+    Can only be used for the F2 platform.
 
 This command terminates some or all of the instances in the Run Farm defined in your
 ``config_runtime.yaml`` file by the ``run_farm`` ``base_recipe``, depending on the
@@ -354,19 +354,19 @@ Here are some examples:
 
 .. code-block:: bash
 
-    [ start with 2 f1.16xlarges, 2 f1.2xlarges, 2 m4.16xlarges ]
+    [ start with 2 f2.48xlarges, 2 f2.12xlarges, 2 m4.16xlarges ]
 
-    firesim terminaterunfarm --terminatesome=f1.16xlarge:1 --forceterminate
+    firesim terminaterunfarm --terminatesome=f2.48xlarge:1 --forceterminate
 
-    [ now, we have: 1 f1.16xlarges, 2 f1.2xlarges, 2 m4.16xlarges ]
+    [ now, we have: 1 f2.48xlarges, 2 f2.12xlarges, 2 m4.16xlarges ]
 
 .. code-block:: bash
 
-    [ start with 2 f1.16xlarges, 2 f1.2xlarges, 2 m4.16xlarges ]
+    [ start with 2 f2.48xlarges, 2 f2.12xlarges, 2 m4.16xlarges ]
 
-    firesim terminaterunfarm --terminatesome=f1.16xlarge:1 --terminatesome=f1.2xlarge:2 --forceterminate
+    firesim terminaterunfarm --terminatesome=f2.48xlarge:1 --terminatesome=f2.12xlarge:2 --forceterminate
 
-    [ now, we have: 1 f1.16xlarges, 0 f1.2xlarges, 2 m4.16xlarges ]
+    [ now, we have: 1 f2.48xlarges, 0 f2.12xlarges, 2 m4.16xlarges ]
 
 .. warning::
 

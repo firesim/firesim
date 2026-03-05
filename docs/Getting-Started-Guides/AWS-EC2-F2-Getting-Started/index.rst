@@ -1,11 +1,11 @@
-.. _aws-f1-getting-started-guide:
+.. _aws-f2-getting-started-guide:
 
-AWS EC2 F1 Getting Started Guide
+AWS EC2 F2 Getting Started Guide
 ================================
 
 The getting started guides that follow this page will guide you through the complete
 flow for getting an example Chipyard-based SoC FireSim simulation up and running using
-AWS EC2 F1. At the end of this guide, you'll have a simulation that simulates a single
+AWS EC2 F2. At the end of this guide, you'll have a simulation that simulates a single
 quad-core Rocket Chip-based node with a 4 MB last level cache, 16 GB DDR3, and no NIC.
 After this, you can continue to a guide that shows you how to simulate a
 globally-cycle-accurate cluster-scale FireSim simulation. The final guide will show you
@@ -15,12 +15,12 @@ guides, you can look at the "Advanced Docs" in the sidebar to the left.
 Make sure you have run/done the steps listed in :ref:`initial-aws-setup` before running
 this guide.
 
-Here's a high-level outline of what we'll be doing in our AWS EC2 F1 getting started
+Here's a high-level outline of what we'll be doing in our AWS EC2 F2 getting started
 guides:
 
 1. **Setting up the FireSim repo**: Cloning the repository needed for this guide.
 2. **Single-node simulation guide**: This guide walks you through the process of running
-   one simulation on a Run Farm consisting of a single ``f1.2xlarge``, using Chipyard's
+   one simulation on a Run Farm consisting of a single ``f2.6xlarge``, using Chipyard's
    pre-built public AGFIs.
 3. **Cluster simulation guide**: This guide walks you through the process of running an
    8-node cluster simulation on a Run Farm consisting of one ``f1.16xlarge``, using

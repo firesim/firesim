@@ -30,42 +30,42 @@
 
 # MIDAS Examples -- BUILD SUPPORT ONLY; Can't launch driver correctly on run farm
 midasexamples_gcd:
-    PLATFORM: f1
+    PLATFORM: f2
     TARGET_PROJECT: midasexamples
     TARGET_PROJECT_MAKEFRAG: null
     DESIGN: GCD
     TARGET_CONFIG: NoConfig
-    PLATFORM_CONFIG: DefaultF1Config
+    PLATFORM_CONFIG: DefaultF2Config
     deploy_quintuplet: null
     platform_config_args:
         fpga_frequency: 75
         build_strategy: TIMING
     post_build_hook: null
     metasim_customruntimeconfig: null
-    bit_builder_recipe: bit-builder-recipes/f1.yaml
+    bit_builder_recipe: bit-builder-recipes/f2.yaml
 
 ################################################################################################
 # FireAxe Examples
 ################################################################################################
 
-# DOC include start: F1 Rocket Partition Build Recipe
+# DOC include start: f2 Rocket Partition Build Recipe
 ################################################################################################
 # Fast-mode : pull out a RocketTile out from your SoC
 ################################################################################################
-# f1_rocket_split_soc_fast:
+# f2_rocket_split_soc_fast:
 #     ...
-#     PLATFORM: f1
+#     PLATFORM: f2
 #     TARGET_CONFIG: FireSimRocketConfig
 #     PLATFORM_CONFIG: RocketTileF1PCIMBase
-#     bit_builder_recipe: bit-builder-recipes/f1.yaml
+#     bit_builder_recipe: bit-builder-recipes/f2.yaml
 #     ...
 #
-# f1_rocket_split_tile_fast:
+# f2_rocket_split_tile_fast:
 #     ...
-#     PLATFORM: f1
+#     PLATFORM: f2
 #     TARGET_CONFIG: FireSimRocketConfig
 #     PLATFORM_CONFIG: RocketTileF1PCIMPartition0
-#     bit_builder_recipe: bit-builder-recipes/f1.yaml
+#     bit_builder_recipe: bit-builder-recipes/f2.yaml
 #     ...
 # DOC include end: F1 Rocket Partition Build Recipe
 
@@ -73,20 +73,20 @@ midasexamples_gcd:
 ################################################################################################
 # Exact-mode : pull out a RocketTile out from your SoC
 ################################################################################################
-# f1_firesim_rocket_soc_exact:
+# f2_firesim_rocket_soc_exact:
 #     ...
-#     PLATFORM: f1
+#     PLATFORM: f2
 #     TARGET_CONFIG: FireSimRocketConfig
 #     PLATFORM_CONFIG: ExactMode_RocketTileF1PCIMBase
-#     bit_builder_recipe: bit-builder-recipes/f1.yaml
+#     bit_builder_recipe: bit-builder-recipes/f2.yaml
 #     ...
 #
-# f1_firesim_rocket_tile_exact:
+# f2_firesim_rocket_tile_exact:
 #     ...
-#     PLATFORM: f1
+#     PLATFORM: f2
 #     TARGET_CONFIG: FireSimRocketConfig
 #     PLATFORM_CONFIG: ExactMode_RocketTileF1PCIMPartition0
-#     bit_builder_recipe: bit-builder-recipes/f1.yaml
+#     bit_builder_recipe: bit-builder-recipes/f2.yaml
 #     ...
 # DOC include end: F1 Exact Rocket Partition Build Recipe
 

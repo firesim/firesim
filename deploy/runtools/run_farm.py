@@ -346,7 +346,7 @@ def invert_filter_sort(input_dict: Dict[str, int]) -> List[Tuple[int, str]]:
     return sorted(out_list, key=lambda x: x[0])
 
 
-class AWSEC2F1(RunFarm):
+class AWSEC2F2(RunFarm):
     """This manages the set of AWS resources requested for the run farm.
 
     Attributes:

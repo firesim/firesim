@@ -19,7 +19,7 @@ manager will notice and complain when you tell it to build an AFI.
 
 In the unlikely event that you need to change the bucket name from the aforementioned
 default, you can edit the ``s3_bucket_name`` value in
-:gh-file-ref:`deploy/bit-builder-recipes/f1.yaml` and set ``append_userid_region`` to
+:gh-file-ref:`deploy/bit-builder-recipes/f2.yaml` and set ``append_userid_region`` to
 ``false``.
 
 Build Recipes
@@ -91,7 +91,7 @@ In addition to being included in the email, the manager will also print the entr
 can be added to ``config_hwdb.yaml`` so that the generated AGFI can be used to run
 simulations. Note that on AWS, you will **not** have access to a physical bitstream
 file. The final bitstream is stored in a backend managed by AWS and the only piece of
-information we need to program the bitstream onto AWS F1 FPGAs is the value of the
+information we need to program the bitstream onto AWS F2 FPGAs is the value of the
 ``agfi:`` key in the ``config_hwdb.yaml`` entry.
 
 Now that you know how to generate your own FPGA image, you can modify the target-design

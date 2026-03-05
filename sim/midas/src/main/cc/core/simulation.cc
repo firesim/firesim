@@ -100,7 +100,9 @@ void simulation_t::simulation_finish() {
 }
 
 int simulation_t::execute_simulation_flow() {
+  fprintf(stderr, "entered simulation flow execution\n");
   wait_for_init();
+  fprintf(stderr, "finished waiting\n");
 
   // following fingerprint logic uses 'exit' instead of 'return' to avoid
   // issues w/ deconstructors not having initialized values

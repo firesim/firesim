@@ -10,6 +10,7 @@ dependencies:
     #   instructions on adding a recipe
     # https://docs.conda.io/projects/conda/en/latest/user-guide/concepts/pkg-specs.html#package-match-specifications
     #   documentation on package_spec syntax for constraining versions
+    - python=3.12
 
     - sphinx
     - Pygments
@@ -18,6 +19,9 @@ dependencies:
     - requests
     - sphinx-tabs
     - sphinx-copybutton
+
+    - setuptools<82.0.0
+
     - pip
     - pip:
         - Sphinx-Substitution-Extensions

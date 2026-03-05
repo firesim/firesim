@@ -58,11 +58,11 @@ class UserTopologies:
         and each leaf switch has a link to each root switch.
 
         With the default mapping specified below, you will need:
-        m switch nodes (on F1: m4.16xlarges).
-        n fpga nodes (on F1: f1.16xlarges).
+        m switch nodes (on F2: m4.16xlarges).
+        n fpga nodes (on F2: f2.48xlarges).
 
         TODO: improve this later to pack leaf switches with <= 4 downlinks onto
-        one 16x.large.
+        one 48x.large.
         """
 
         rootswitches = [FireSimSwitchNode() for x in range(m)]
@@ -155,7 +155,7 @@ class UserTopologies:
 
             # map the fat tree onto one switch host instance (for core switches)
             # and two 8-sim-slot (e.g. 8-fpga) instances
-            # (e.g., two pods of aggr/edge/4sims per f1.16xlarge)
+            # (e.g., two pods of aggr/edge/4sims per f2.48xlarge)
 
             switch_inst_handle = (
                 fsim_topol_with_passes.run_farm.get_switch_only_host_handle()

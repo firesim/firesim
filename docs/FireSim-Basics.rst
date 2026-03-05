@@ -9,7 +9,7 @@ makes it easy to validate, profile, and debug RTL hardware implementations at 10
 software models for other system components (e.g. I/Os). FireSim can productively scale
 from individual SoC simulations hosted on on-prem FPGAs (e.g., a single Xilinx Alveo
 board attached to a desktop) to massive datacenter-scale simulations harnessing hundreds
-of cloud FPGAs (e.g., on Amazon EC2 F1).
+of cloud FPGAs (e.g., on Amazon EC2 F2).
 
 FireSim users across academia and industry (at 20+ institutions) have published over 40
 papers using FireSim in many areas, including computer architecture, systems,
@@ -50,7 +50,7 @@ workloads like SPECInt2017 with full reference inputs.
 This usage model is similar to the previous on-premises case, but instead deploys
 simulations on FPGAs attached to cloud instances, rather than requiring users to obtain
 and set-up on-premises FPGAs. This allows for dynamically scaling the number of FPGAs
-in-use to match workload requirements. For example, on AWS EC2 F1, it is just as cost
+in-use to match workload requirements. For example, on AWS EC2 F2, it is just as cost
 effective to run the 10 workloads in SPECInt2017 in parallel on 10 cloud FPGAs vs.
 running them serially on one cloud FPGA.
 
@@ -90,7 +90,7 @@ Choose your platform to get started
 FireSim supports many types of FPGAs and FPGA platforms! Click one of the following
 links to work through the getting started guide for your particular platform.
 
-- :doc:`/Getting-Started-Guides/AWS-EC2-F1-Getting-Started/index`
+- :doc:`/Getting-Started-Guides/AWS-EC2-F2-Getting-Started/index`
 
   - Status: ✅ All FireSim Features Supported. ⚠️  F1 instances will be discontinued by AWS on Dec. 20, 2025.
     We expect support for F1 instances and collateral (AMI's, etc) to slowly be removed/degraded over time.

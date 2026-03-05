@@ -73,7 +73,7 @@ class AbstractPipeToPipeConfig:
         self.server_boundary_widths = []
         self.server_cutbridge_idx_map = {}
 
-    # FIXME: get_local_driver_dir returns ../output in f1 while it returns ../sim/generated-src in local metasims
+    # FIXME: get_local_driver_dir returns ../output in f2 while it returns ../sim/generated-src in local metasims
     # Just set it to user ../sim/generated-src for now
     def partition_config_file(self, hwconfig: RuntimeHWConfig) -> str:
         runtime_conf_path = os.path.join(

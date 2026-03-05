@@ -2,7 +2,7 @@
 
 # Defines make targets for:
 # - invoking Golden Gate (phony: verilog / compile)
-# - building a simulation driver (phony: f1)
+# - building a simulation driver (phony: f2)
 # - populating an FPGA build directory (phony: replace-rtl)
 # - generating new runtime configurations (phony: conf)
 # - compiling meta-simulators (phony: verilator, vcs, verilator-debug, vcs-debug, xcelium)
@@ -41,8 +41,7 @@ TARGET_PROJECT ?= midasexamples
 TARGET_PROJECT_MAKEFRAG ?= $(firesim_base_dir)/src/main/makefrag/$(TARGET_PROJECT)
 
 # The host-platform type
-PLATFORM ?= f1
-
+PLATFORM ?= f2
 ####################
 #   Target Setup   #
 ####################

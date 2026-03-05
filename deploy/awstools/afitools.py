@@ -10,7 +10,7 @@ rootLogger = logging.getLogger()
 
 
 def get_fpga_regions():
-    """Get list of all regions with F1 support"""
+    """Get list of all regions with F2 support"""
     fpga_regions = [
         "us-east-1",  # US East (N. Virginia)
         "us-west-2",  # US West (Oregon)
@@ -162,7 +162,7 @@ def get_firesim_deploy_quintuplet_for_agfi(agfi_id):
         quin = get_firesim_tagval_for_agfi(agfi_id, "firesim-deploytriplet")
     if len(quin.split("-")) == 3:
         # handle old AGFIs that only have triplet value:
-        return "f1-firesim-" + quin
+        return "f2-firesim-" + quin
     return quin
 
 
