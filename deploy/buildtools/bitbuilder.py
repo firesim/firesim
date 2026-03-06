@@ -806,17 +806,62 @@ class XilinxAlveoBitBuilder(BitBuilder):
         pr_module_name = self.build_config.get_pr_module_name()
         pr_partition_path = self.build_config.get_pr_partition_path()
         pr_project_path = self.build_config.get_pr_project_path()
+        pr_base_recipe = self.build_config.get_pr_base_recipe()
+        pr_partition_module_name = self.build_config.get_pr_partition_module_name()
+
+        # Resolve pr_base_recipe → pr_project_path + pr_partition_path + pr_partition_module_name
+        if enable_pr and pr_base_recipe and not pr_project_path:
+            all_recipes = self.build_config.build_config_file.all_build_recipes
+            if pr_base_recipe not in all_recipes:
+                raise Exception(
+                    f"pr_base_recipe '{pr_base_recipe}' not found in config_build_recipes.yaml"
+                )
+            base = all_recipes[pr_base_recipe]
+            base_quintuplet = (
+                f"{self.build_config.PLATFORM}-{base['TARGET_PROJECT']}-"
+                f"{base['DESIGN']}-{base['TARGET_CONFIG']}-{base['PLATFORM_CONFIG']}"
+            )
+            dest_build_dir = build_farm.get_build_host(self.build_config).dest_build_dir
+            base_cl_dir = f"{dest_build_dir}/platforms/{self.build_config.PLATFORM}/cl_{base_quintuplet}"
+            pr_project_path = f"{base_cl_dir}/vivado_proj/firesim.xpr"
+            rootLogger.info(f"Resolved pr_base_recipe '{pr_base_recipe}' -> pr_project_path: {pr_project_path}")
+
+            # Auto-read partition paths from pr_metadata.json if not explicitly provided
+            if not pr_partition_path:
+                metadata_path = f"{base_cl_dir}/vivado_proj/pr_metadata.json"
+                with settings(warn_only=True):
+                    metadata_result = run(f"cat {metadata_path}")
+                if metadata_result.return_code == 0:
+                    metadata = json.loads(str(metadata_result))
+                    paths = []
+                    for mod in metadata.get("pr_modules", []):
+                        paths.extend(mod.get("partition_paths", []))
+                    if paths:
+                        pr_partition_path = paths
+                        rootLogger.info(f"Auto-read pr_partition_path from pr_metadata.json: {pr_partition_path}")
+                    else:
+                        raise Exception(
+                            f"pr_metadata.json at {metadata_path} contains no partition paths. "
+                            "Specify pr_partition_path explicitly."
+                        )
+                else:
+                    raise Exception(
+                        f"Could not read pr_metadata.json from base build: {metadata_path}. "
+                        f"Has the base recipe '{pr_base_recipe}' been built successfully?"
+                    )
+
+            # Auto-derive pr_partition_module_name from base recipe if not provided
+            if not pr_partition_module_name:
+                base_pr_module = base.get("platform_config_args", {}).get("pr_module_name")
+                if base_pr_module:
+                    pr_partition_module_name = [base_pr_module] if isinstance(base_pr_module, str) else base_pr_module
+                    rootLogger.info(f"Auto-derived pr_partition_module_name from base recipe: {pr_partition_module_name}")
 
         # Build the command with optional PR arguments
         build_cmd = f"{cl_dir}/build-bitstream.sh --cl_dir {cl_dir} --frequency {fpga_frequency} --strategy {build_strategy} --board {self.BOARD_NAME} --enable_pr {str(enable_pr).lower()}"
         if enable_pr:
             if pr_module_name:
-                # Handle both single string and list of strings
-                if isinstance(pr_module_name, list):
-                    # Join list with comma separator
-                    build_cmd += f" --pr_module_name {','.join(pr_module_name)}"
-                else:
-                    build_cmd += f" --pr_module_name {pr_module_name}"
+                build_cmd += f" --pr_module_name {','.join(pr_module_name)}"
             if pr_partition_path:
                 if isinstance(pr_partition_path, list):
                     build_cmd += f" --pr_partition_path {','.join(pr_partition_path)}"
@@ -824,6 +869,8 @@ class XilinxAlveoBitBuilder(BitBuilder):
                     build_cmd += f" --pr_partition_path {pr_partition_path}"
             if pr_project_path:
                 build_cmd += f" --pr_project_path {pr_project_path}"
+            if pr_partition_module_name:
+                build_cmd += f" --pr_partition_module_name {','.join(pr_partition_module_name)}"
 
         with InfoStreamLogger("stdout"), settings(warn_only=True):
             alveo_result = run(build_cmd)

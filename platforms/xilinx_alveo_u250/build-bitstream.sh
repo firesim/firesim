@@ -20,6 +20,8 @@ usage() {
     echo "   --pr_module_name  : Name(s) of the PR (Partial Reconfiguration) module(s), comma-separated if multiple (required if --enable_pr is true)"
     echo "   --pr_partition_path : Hierarchical path(s) to the PR partition(s), comma-separated if multiple (optional for main_pr; required for main_pr_rm)"
     echo "   --pr_project_path : Path to a previous .xpr project file (optional, if specified uses main_pr_rm.tcl instead of main_pr.tcl)"
+    echo "   --pr_partition_module_name : Original module name(s) used in the main_pr.tcl build (for partition def lookup in main_pr_rm.tcl)."
+    echo "                               Comma-separated if multiple. Defaults to --pr_module_name if omitted (backward compatible)."
     echo "   --help            : Display this message"
     exit "$1"
 }
@@ -32,6 +34,7 @@ ENABLE_PR="false"
 PR_MODULE_NAME=""
 PR_PARTITION_PATH=""
 PR_PROJECT_PATH=""
+PR_PARTITION_MODULE_NAME=""
 
 # getopts does not support long options, and is inflexible
 while [ "$1" != "" ];
@@ -63,6 +66,9 @@ do
         --pr_project_path )
             shift
             PR_PROJECT_PATH=$1 ;;
+        --pr_partition_module_name )
+            shift
+            PR_PARTITION_MODULE_NAME=$1 ;;
         * )
             echo "invalid option $1"
             usage 1 ;;
@@ -125,7 +131,7 @@ if [ "$ENABLE_PR" = "true" ] ; then
             --frequency "$FREQUENCY" \
             || echo "WARNING: PR metadata validation returned warnings (see above). Continuing build..."
 
-        vivado -mode batch -source $CL_DIR/scripts/main_pr_rm.tcl -tclargs $FREQUENCY $STRATEGY $BOARD "$PR_MODULE_NAME" "$PR_PARTITION_PATH" "$PR_PROJECT_PATH"
+        vivado -mode batch -source $CL_DIR/scripts/main_pr_rm.tcl -tclargs $FREQUENCY $STRATEGY $BOARD "$PR_MODULE_NAME" "$PR_PARTITION_PATH" "$PR_PROJECT_PATH" "${PR_PARTITION_MODULE_NAME}"
     else
         vivado -mode batch -source $CL_DIR/scripts/main_pr.tcl -tclargs $FREQUENCY $STRATEGY $BOARD "$PR_MODULE_NAME" "${PR_PARTITION_PATH:-}"
 

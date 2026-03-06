@@ -5,12 +5,15 @@ set vivado_version_major [string range $vivado_version 0 3]
 set ifrequency           [lindex $argv 0]
 set istrategy            [lindex $argv 1]
 set iboard               [lindex $argv 2]
-# PR module name(s) - can be comma-separated list
+# PR module name(s) - can be comma-separated list (new RM module names)
 set pr_module_name_str   [lindex $argv 3]
 # PR partition path(s) - can be comma-separated list
 set pr_partition_path_str [lindex $argv 4]
 # PR project path (existing .xpr to reuse)
 set pr_project_path       [lindex $argv 5]
+# PR partition module name(s) - module names used in original main_pr.tcl to name
+# the partition defs (pr_partition_<name>). If empty, falls back to pr_module_names.
+set pr_partition_module_name_str [lindex $argv 6]
 
 # Parse comma-separated lists into TCL lists
 # Split on commas and trim whitespace
@@ -22,6 +25,21 @@ foreach name [split $pr_module_name_str ","] {
 set pr_partition_paths {}
 foreach path [split $pr_partition_path_str ","] {
     lappend pr_partition_paths [string trim $path]
+}
+
+# Build pr_partition_module_names: used for partition def lookup.
+# Falls back to pr_module_names when not provided (backward compatible).
+set pr_partition_module_names {}
+if {[string trim $pr_partition_module_name_str] ne ""} {
+    foreach name [split $pr_partition_module_name_str ","] {
+        lappend pr_partition_module_names [string trim $name]
+    }
+    if {[llength $pr_partition_module_names] != [llength $pr_module_names]} {
+        puts "ERROR: pr_partition_module_names count ([llength $pr_partition_module_names]) does not match pr_module_names count ([llength $pr_module_names])"
+        exit 1
+    }
+} else {
+    set pr_partition_module_names $pr_module_names
 }
 
 # Validate that we have matching counts
@@ -172,11 +190,13 @@ set rm_synth_runs {}
 set unique_modules {}
 set module_to_partition_def [dict create]
 for {set i 0} {$i < [llength $pr_module_names]} {incr i} {
-    set pr_module_name    [lindex $pr_module_names $i]
-    set pr_partition_path [lindex $pr_partition_paths $i]
+    set pr_module_name           [lindex $pr_module_names $i]
+    set pr_partition_module_name [lindex $pr_partition_module_names $i]
+    set pr_partition_path        [lindex $pr_partition_paths $i]
 
-    # Partition definitions were named pr_partition_<module> in main_pr.tcl
-    set partition_def_name "pr_partition_${pr_module_name}"
+    # Partition definitions were named pr_partition_<original_module> in main_pr.tcl.
+    # Use pr_partition_module_name (which may differ from pr_module_name) for lookup.
+    set partition_def_name "pr_partition_${pr_partition_module_name}"
     if {[lsearch -exact $unique_modules $pr_module_name] == -1} {
         lappend unique_modules $pr_module_name
         dict set module_to_partition_def $pr_module_name $partition_def_name
@@ -185,7 +205,7 @@ for {set i 0} {$i < [llength $pr_module_names]} {incr i} {
     set rm_idx [expr {$rm_next_idx + $i}]
     set reconfig_module_name "pr_reconfig_module_${rm_idx}"
 
-    puts "Creating reconfig module '$reconfig_module_name' for partition '$pr_partition_path' using partition def '$partition_def_name'"
+    puts "Creating reconfig module '$reconfig_module_name' (-define_from '$pr_module_name') for partition '$pr_partition_path' using partition def '$partition_def_name'"
 
     create_reconfig_module -name $reconfig_module_name \
         -partition_def [get_partition_defs $partition_def_name] \
