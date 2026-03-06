@@ -164,7 +164,7 @@ cd "$FDIR"
 # see if the instance info page exists. if not, we are not on ec2.
 # rh: yet another HTTPS issue that needs to be fixed. i swear on god they use this for the most random things sometimes
 TOKEN=$(curl -X PUT "http://169.254.169.254/latest/api/token" -H "X-aws-ec2-metadata-token-ttl-seconds: 21600"\
-         --connect-timeout 1 -m 3)
+         --connect-timeout 1 -m 3) || true
 if [ -n "$TOKEN" ]; then
 
     (
