@@ -810,6 +810,7 @@ class XilinxAlveoBitBuilder(BitBuilder):
         pr_partition_module_name = self.build_config.get_pr_partition_module_name()
 
         # Resolve pr_base_recipe → pr_project_path + pr_partition_path + pr_partition_module_name
+        # Searches results-build/ for the most recent completed build of the base recipe.
         if enable_pr and pr_base_recipe and not pr_project_path:
             all_recipes = self.build_config.build_config_file.all_build_recipes
             if pr_base_recipe not in all_recipes:
@@ -821,8 +822,20 @@ class XilinxAlveoBitBuilder(BitBuilder):
                 f"{self.build_config.PLATFORM}-{base['TARGET_PROJECT']}-"
                 f"{base['DESIGN']}-{base['TARGET_CONFIG']}-{base['PLATFORM_CONFIG']}"
             )
-            dest_build_dir = build_farm.get_build_host(self.build_config).dest_build_dir
-            base_cl_dir = f"{dest_build_dir}/platforms/{self.build_config.PLATFORM}/cl_{base_quintuplet}"
+
+            # Find the most recent results-build directory for the base recipe.
+            # Directory names are timestamped (YYYY-MM-DD--HH-MM-SS-<recipe_name>),
+            # so sorting gives us the latest build last.
+            results_build_dir = f"{local_deploy_dir}/results-build"
+            with settings(warn_only=True):
+                find_result = run(f"ls -d {results_build_dir}/*-{pr_base_recipe} 2>/dev/null | sort | tail -1")
+            if find_result.return_code != 0 or not str(find_result).strip():
+                raise Exception(
+                    f"No completed build found for base recipe '{pr_base_recipe}' in {results_build_dir}. "
+                    f"Has the base recipe been built successfully?"
+                )
+            base_results_entry = str(find_result).strip()
+            base_cl_dir = f"{base_results_entry}/cl_{base_quintuplet}"
             pr_project_path = f"{base_cl_dir}/vivado_proj/firesim.xpr"
             rootLogger.info(f"Resolved pr_base_recipe '{pr_base_recipe}' -> pr_project_path: {pr_project_path}")
 
