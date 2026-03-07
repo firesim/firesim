@@ -53,24 +53,11 @@ if {![file exists $pr_project_path]} {
     exit 1
 }
 
-# Copy vivado_proj/ so that RM operations (create_reconfig_module, etc.)
-# don't corrupt the original. Vivado modifies the .xpr in-place, so a failed
-# run would leave the original in a broken state.
-# The .xpr uses $PPRDIR-relative paths, so it works from any location.
-# Source file refs ($PPRDIR/../design/) resolve to ${root_dir}/design/ which
-# has the current build's split-verilog files.
-set orig_vivado_proj [file dirname $pr_project_path]
-set orig_project_name [file tail $pr_project_path]
-set local_vivado_proj "${root_dir}/vivado_proj"
-
-puts "Copying base project to: $local_vivado_proj"
-if {[file exists $local_vivado_proj]} {
-    file delete -force $local_vivado_proj
-}
-file copy $orig_vivado_proj $local_vivado_proj
-
-set pr_project_path "${local_vivado_proj}/${orig_project_name}"
-puts "Using local project copy: $pr_project_path"
+# The base project is already a copy (bitbuilder.py copies it into cl_dir/base_project/
+# to protect the original in results-build from corruption by create_reconfig_module).
+# $PPRDIR-relative source file references resolve correctly because the full
+# cl_* directory structure (vivado_proj/ + design/) was copied together.
+set local_vivado_proj [file dirname $pr_project_path]
 
 # RM source files live in split-verilog/. Only the RM .sv is added to the
 # RM fileset; the static shell is a locked routed checkpoint and does not
@@ -246,31 +233,55 @@ if {[llength $rm_runs] > 0} {
         puts "  $run_name WNS: [get_property STATS.WNS [get_runs $run_name]] ns"
     }
 
-    # Write full bitstreams by opening the routed checkpoint directly.
-    # open_run opens the abstract shell view which can't produce a full bitstream.
-    # Instead, open_checkpoint loads the full routed DCP (static + RM merged),
-    # which supports write_bitstream without -cell.
-    # No frequency adjustment — the MMCM was already tuned during the base build
-    # and the static shell is locked.
+    # Write full bitstreams by merging the new RM into the base full design.
+    # The impl_rm child run operates on the abstract shell — its checkpoint
+    # can only produce partial bitstreams. To get a full bitstream:
+    # 1. Open the base impl_1's full routed checkpoint
+    # 2. Black-box the old RM cell and lock the static routing
+    # 3. Read in the new RM's cell-level routed checkpoint
+    # 4. Write the complete bitstream
     set top_level_name overall_fpga_top
+    set base_impl1_dir "${local_vivado_proj}/firesim.runs/impl_1"
+    set base_routed_dcp "${base_impl1_dir}/${top_level_name}_routed.dcp"
+    file mkdir ${root_dir}/vivado_proj
+
+    if {![file exists $base_routed_dcp]} {
+        puts "ERROR: Base routed checkpoint not found: $base_routed_dcp"
+        exit 1
+    }
 
     for {set i 0} {$i < [llength $rm_runs]} {incr i} {
         set run_name [lindex $rm_runs $i]
-        set run_dir "${local_vivado_proj}/firesim.runs/${run_name}"
-        set routed_dcp "${run_dir}/${top_level_name}_routed.dcp"
+        lassign [lindex $rm_impl_info $i] pr_partition_path reconfig_module_name impl_idx
 
-        if {![file exists $routed_dcp]} {
-            puts "ERROR: Routed checkpoint not found: $routed_dcp"
+        # Find the RM cell-level routed checkpoint (named after the partition path + RM)
+        set rm_run_dir "${local_vivado_proj}/firesim.runs/${run_name}"
+        set rm_cell_dcp [glob -nocomplain "${rm_run_dir}/*_${reconfig_module_name}_routed.dcp"]
+        if {[llength $rm_cell_dcp] == 0} {
+            puts "ERROR: RM cell routed checkpoint not found in: $rm_run_dir"
+            puts "  Available files:"
+            foreach f [glob -nocomplain "${rm_run_dir}/*.dcp"] {
+                puts "    [file tail $f]"
+            }
             exit 1
         }
+        set rm_cell_dcp [lindex $rm_cell_dcp 0]
 
-        puts "Opening routed checkpoint for $run_name: $routed_dcp"
-        open_checkpoint $routed_dcp
+        puts "Generating full bitstream for $run_name..."
+        puts "  Base checkpoint: $base_routed_dcp"
+        puts "  RM cell checkpoint: $rm_cell_dcp"
+
+        # Open base full design, swap RM, write bitstream
+        open_checkpoint $base_routed_dcp
+        update_design -cell $pr_partition_path -black_box
+        lock_design -level routing
+        read_checkpoint -cell $pr_partition_path $rm_cell_dcp
+
         set bitstream_path "${root_dir}/vivado_proj/firesim_${run_name}.bit"
-        puts "Writing full bitstream for $run_name..."
+        puts "  Writing bitstream: $bitstream_path"
         write_bitstream -force $bitstream_path
         close_design
-        puts "  Wrote: $bitstream_path"
+        puts "  Done."
     }
 
     # Use the first bitstream as the main firesim.bit

@@ -870,6 +870,21 @@ class XilinxAlveoBitBuilder(BitBuilder):
                     pr_partition_module_name = [base_pr_module] if isinstance(base_pr_module, str) else base_pr_module
                     rootLogger.info(f"Auto-derived pr_partition_module_name from base recipe: {pr_partition_module_name}")
 
+        # For RM flow, copy the base project into cl_dir so Vivado operates
+        # on a copy (protecting the original in results-build from corruption).
+        # The copy goes into cl_dir/base_project/ which preserves the full
+        # directory structure (vivado_proj/ + design/) so that $PPRDIR-relative
+        # source file references in the .xpr resolve correctly.
+        if enable_pr and pr_project_path:
+            base_cl_dir_for_copy = os.path.dirname(os.path.dirname(pr_project_path))  # cl_*/
+            local_base_copy = f"{cl_dir}/base_project"
+            rootLogger.info(f"Copying base project to: {local_base_copy}")
+            run(f"rm -rf {local_base_copy}")
+            run(f"cp -r {base_cl_dir_for_copy} {local_base_copy}")
+            base_project_name = os.path.basename(pr_project_path)
+            pr_project_path = f"{local_base_copy}/vivado_proj/{base_project_name}"
+            rootLogger.info(f"Using local project copy: {pr_project_path}")
+
         # Build the command with optional PR arguments
         build_cmd = f"{cl_dir}/build-bitstream.sh --cl_dir {cl_dir} --frequency {fpga_frequency} --strategy {build_strategy} --board {self.BOARD_NAME} --enable_pr {str(enable_pr).lower()}"
         if enable_pr:
