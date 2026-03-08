@@ -1,1 +1,1 @@
-/scratch/jfx/aurora-ip-fix-fsim-verify/sims/firesim/platforms/xilinx_alveo_u250/cl_firesim/scripts/bd_lib/2022.1/create_aurora_exdes.tcl
+../2022.1/create_aurora_exdes.tcl
