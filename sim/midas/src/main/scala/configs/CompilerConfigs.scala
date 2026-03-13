@@ -178,17 +178,23 @@ class DefaultF1Config
         new midas.F1Config
     )
 
-// F1 platform configs with LLC timing models
-class DefaultF1LLCConfig
+class DefaultF2Config
     extends Config(
-      new FRFCFS16GBQuadRankLLC4MB ++
-        new midas.F1Config
+      new BaseBridgesConfig ++
+        new midas.F2Config
     )
 
-class DefaultF1BankedLLCConfig
+// F2 platform configs with LLC + FR-FCFS DDR3 DRAM timing
+class DefaultF2LLCConfig
+    extends Config(
+      new FRFCFS16GBQuadRankLLC4MB ++
+        new midas.F2Config
+    )
+
+class DefaultF2BankedLLCConfig
     extends Config(
       new FRFCFS16GBQuadRankBankedLLC6MB ++
-        new midas.F1Config
+        new midas.F2Config
     )
 
 class DefaultVitisConfig
