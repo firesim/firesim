@@ -177,6 +177,20 @@ class DefaultF1Config
       new BaseBridgesConfig ++
         new midas.F1Config
     )
+
+// F1 platform configs with LLC timing models
+class DefaultF1LLCConfig
+    extends Config(
+      new FRFCFS16GBQuadRankLLC4MB ++
+        new midas.F1Config
+    )
+
+class DefaultF1BankedLLCConfig
+    extends Config(
+      new FRFCFS16GBQuadRankBankedLLC6MB ++
+        new midas.F1Config
+    )
+
 class DefaultVitisConfig
     extends Config(
       new BaseBridgesConfig ++
