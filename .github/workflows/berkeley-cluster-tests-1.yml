@@ -132,7 +132,7 @@ jobs:
         run: |
           python3 -m sphinx.ext.intersphinx docs/_build/html/objects.inv
           cat /tmp/sphinx-err*.log
-
+#does not fail anymore 
   setup-persistent-repo:
     name: setup-persistent-repo
     runs-on: local-fpga
