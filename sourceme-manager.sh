@@ -58,3 +58,15 @@ export FIRESIM_RUNFARM_PREFIX=""
 
 # put FlameGraph/other fireperf utils on the user path
 export PATH=$(pwd)/utils/fireperf:$(pwd)/utils/fireperf/FlameGraph:$PATH
+
+# generate ssh keys for ExternallyProvisionedWithVMIsolation & ssh-add automatically
+# only generate if one doesnt exist already
+KEY_FILE="$(pwd)/deploy/vm-cloud-init-configs/firesim_vm_ed25519"
+if [ ! -f "$KEY_FILE" ]; then
+    ssh-keygen -t ed25519 -f "$KEY_FILE" -C "ExternallyProvisionedWithVMIsolation" -N ""    
+else
+    echo "SSH key already exists at $KEY_FILE. Skipping generation."
+fi
+grep -qxFf "$KEY_FILE.pub" ~/.ssh/authorized_keys || cat "$KEY_FILE.pub" >> ~/.ssh/authorized_keys # only add if not already present
+eval "$(ssh-agent -s)"
+ssh-add "$KEY_FILE"
