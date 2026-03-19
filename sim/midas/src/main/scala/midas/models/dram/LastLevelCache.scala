@@ -559,8 +559,17 @@ class BankedLLCModel(nastiParams: NastiParameters, cfg: BaseConfig, nBanks: Int)
 
   // ========== Target-side response mux ==========
 
+  // 1-entry queues break the combinational loop between rResp.valid and rResp.ready.
+  // Inside LLCModel, can_refill depends on io.rResp.ready, which feeds refill_start,
+  // which feeds io.rResp.valid. The RRArbiter closes the loop (ready depends on valid).
+  // The queue decouples them: bank sees queue.enq.ready = !full (independent of valid).
   val rRespArb = Module(new RRArbiter(new ReadResponseMetaData(nastiParams), nBanks))
-  banks.zipWithIndex.foreach { case (bank, i) => rRespArb.io.in(i) <> bank.io.rResp }
+  banks.zipWithIndex.foreach { case (bank, i) =>
+    val q = Module(new Queue(new ReadResponseMetaData(nastiParams), 1))
+    q.suggestName(s"rRespQueue_$i")
+    q.io.enq <> bank.io.rResp
+    rRespArb.io.in(i) <> q.io.deq
+  }
   io.rResp <> rRespArb.io.out
 
   val wRespArb = Module(new RRArbiter(new WriteResponseMetaData(nastiParams), nBanks))
