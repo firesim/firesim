@@ -184,6 +184,13 @@ class DefaultF2Config
         new midas.F2Config
     )
 
+// F2 platform config with FR-FCFS DDR3 DRAM timing, no LLC
+class DefaultF2FRFCFS16GBQuadRankConfig
+    extends Config(
+      new FRFCFS16GBQuadRank ++
+        new DefaultF2Config
+    )
+
 // F2 platform configs with LLC + FR-FCFS DDR3 DRAM timing
 class DefaultF2LLCConfig
     extends Config(
