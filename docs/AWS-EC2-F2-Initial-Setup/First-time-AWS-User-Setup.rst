@@ -49,7 +49,16 @@ If you have insufficient limits, request a limit increase by following these ste
 https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/ec2-resource-limits.html#request-increase
 
 In your request, enter the vCPU limits for the two instance classes shown above. This
-process sometimes has a human in the loop, so you should submit it ASAP. At this point,
-you should wait for the response to this request.
+process sometimes has a human in the loop, so you should submit it ASAP.
+
+.. note::
+
+    You do not need to wait for the F-instance quota increase to be approved before
+    continuing. You can proceed with the remaining account setup and infrastructure
+    preparation steps (key setup, VPC/security group creation, manager instance launch,
+    etc.) while the quota request is pending. The F-instance quota is only required later,
+    when you actually launch F2-backed run farm instances for simulations. The
+    ``Running On-Demand Standard`` quota **is** needed to launch the manager and build
+    farm instances, so ensure that quota is sufficient before proceeding.
 
 Hit Next below to continue.

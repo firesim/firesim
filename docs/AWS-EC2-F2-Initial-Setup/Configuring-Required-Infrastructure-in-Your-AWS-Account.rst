@@ -95,6 +95,9 @@ SSH into the ``t2.nano`` like so:
 
     ssh -i firesim.pem ec2-user@INSTANCE_PUBLIC_IP
 
+Replace ``INSTANCE_PUBLIC_IP`` with the **Public IPv4 address** shown in the EC2 console
+for your ``t2.nano`` instance.
+
 Which should present you with something like:
 
 .. code-block:: text
@@ -120,12 +123,23 @@ On this machine, run the following:
 
 Within the prompt, you should specify the same region that you chose above (e.g.,
 ``us-east-1``, ``us-west-2``) and set the default output format to
-``json``. You will need to generate an AWS access key in the "Security Credentials" menu
-of your AWS settings (as instructed in
+``json``. You will also need to provide an AWS access key ID and secret access key for
+programmatic access. There are two ways to obtain these credentials:
+
+- **IAM user (recommended):** Create an IAM user with programmatic access in the
+  `IAM Console <https://console.aws.amazon.com/iam/>`__, attach appropriate permissions
+  (e.g., ``AdministratorAccess`` for simplicity during initial setup), and generate an
+  access key for that user under its *Security credentials* tab. Using an IAM user is
+  the AWS-recommended approach for CLI/programmatic access.
+- **Root user:** You can generate an access key under *Security credentials* in the
+  account dropdown menu at the top-right of the AWS console. However, AWS recommends
+  against using root credentials for day-to-day programmatic access.
+
+See
 https://docs.aws.amazon.com/IAM/latest/UserGuide/id_credentials_access-keys.html#Using_CreateAccessKey
-). You should keep the AWS access key information in a safe place, so that you can refer
-to it again when setting up the manager instance. You can learn more about the ``aws
-configure`` command on the following page:
+for detailed instructions. You should keep the AWS access key information in a safe
+place, so that you can refer to it again when setting up the manager instance. You can
+learn more about the ``aws configure`` command on the following page:
 https://docs.aws.amazon.com/cli/latest/reference/configure/index.html
 
 Again on the ``t2.nano`` instance, do the following:

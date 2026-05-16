@@ -51,8 +51,19 @@ To launch a manager instance, follow these steps:
 7.  In the *Configure storage* section, increase the size of the root volume to at least
    300GB. The default of 120GB can quickly become too small as you accumulate large
    Vivado reports/outputs, large waveforms, XSim outputs, and large root filesystems for
-   simulations. You should remove the small (5-8GB) secondary volume that is added by
-   default.
+   simulations. You should also remove the small secondary EBS volume (typically 5-8GB,
+   though the exact size may vary by AMI version) that is added by default — this is a
+   non-root data volume that is not needed for FireSim.
+
+   .. note::
+
+      If the EC2 launch wizard does not provide a clear option to remove the secondary
+      volume, you can proceed with the launch as-is. After the instance is running, go
+      to the **Volumes** section of the EC2 console, identify the small non-root volume
+      attached to your instance (it will not be the volume mounted as ``/``), detach it,
+      and then delete it. This is a pragmatic workaround — removing it during launch is
+      still preferred when the UI allows it.
+
 8.  In the *Advanced details* drop-down, change the following:
 
    1. Under *Termination protection*, select Enable. This adds a layer of protection to
@@ -100,8 +111,9 @@ On this instance, the ``mosh`` server is installed as part of the setup script w
 before, so we need to first ssh into the instance and make sure the setup is complete.
 
 In either case, ``ssh`` into your instance (e.g. ``ssh -i firesim.pem
-ubuntu@YOUR_INSTANCE_IP``) and wait until the ``/tmp/machine-launchstatus`` file
-contains all the following text:
+ubuntu@YOUR_INSTANCE_IP``, where ``YOUR_INSTANCE_IP`` is the **Public IPv4 address**
+shown in the EC2 console for your instance) and wait until the
+``/tmp/machine-launchstatus`` file contains all the following text:
 
 .. code-block:: bash
 
@@ -122,3 +134,12 @@ Key Setup, Part 2
 Now that our manager instance is started, copy the private key that you downloaded from
 AWS earlier (``firesim.pem``) to ``~/firesim.pem`` on your manager instance. This step
 is required to give the manager access to the instances it launches for you.
+
+From your local machine, you can use ``scp`` to copy the key:
+
+.. code-block:: bash
+
+    scp -i /path/to/firesim.pem /path/to/firesim.pem ubuntu@YOUR_INSTANCE_IP:~/firesim.pem
+
+Replace ``/path/to/firesim.pem`` with the local path to your downloaded key file and
+``YOUR_INSTANCE_IP`` with the **Public IPv4 address** of your manager instance.

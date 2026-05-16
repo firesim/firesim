@@ -9,6 +9,16 @@ machine in your setup**; in this case, you should follow all the installation
 instructions on your single machine, without duplication (i.e., don't re-run a step on
 the same machine if it is required on multiple machine types).
 
+.. note::
+
+    **Machine roles in this guide:**
+    Throughout this page, instructions are labeled with the machine type they apply to
+    (e.g., "Manager Machine", "Run Farm Machines", "Build Farm Machines"). These refer
+    to the actual machines participating in the FireSim deployment — not your personal
+    laptop or workstation. Your laptop/workstation is simply the client you use to SSH
+    into these machines. If all three roles are served by a single physical machine,
+    follow all instructions on that machine.
+
 .. warning::
 
     **We highly recommend using Ubuntu 20.04 LTS as the host operating system for all
@@ -261,7 +271,8 @@ Non-``sudo`` Setup
 **Machines:** Manager Machine, Run Farm Machines, Build Farm Machines.
 
 We need various parts of the ``~/.bashrc`` file to execute even in non-interactive mode.
-To do so, edit your ``~/.bashrc`` file so that the following section is removed:
+To do so, check your ``~/.bashrc`` file for the following section and remove it if
+present:
 
 .. code-block:: bash
 
@@ -270,6 +281,8 @@ To do so, edit your ``~/.bashrc`` file so that the following section is removed:
          *i*) ;;
            *) return;;
     esac
+
+If this block is not present in your ``~/.bashrc``, you can skip this step.
 
 **2. Set up SSH Keys**
 
@@ -282,15 +295,22 @@ machines:
 .. code-block:: bash
 
     cd ~/.ssh
-    ssh-keygen -t ed25519 -C "firesim.pem" -f firesim.pem
+    ssh-keygen -t ed25519 -C "firesim-local" -f firesim-local
     [create passphrase]
+
+.. note::
+
+    We use the key name ``firesim-local`` (rather than ``firesim.pem``) to avoid a
+    naming collision with the AWS EC2 key pair file also called ``firesim.pem``. If you
+    are also following the AWS setup flow, using a distinct name here prevents
+    accidentally overwriting your AWS key.
 
 Next, add this key to the ``authorized_keys`` file on the manager machine:
 
 .. code-block:: bash
 
     cd ~/.ssh
-    cat firesim.pem.pub >> authorized_keys
+    cat firesim-local.pub >> authorized_keys
     chmod 0600 authorized_keys
 
 You should also copy this public key into the ``~/.ssh/authorized_keys`` files on all of
@@ -303,7 +323,7 @@ Returning to the Manager Machine, let's set up an ``ssh-agent``:
     cd ~/.ssh
     ssh-agent -s > AGENT_VARS
     source AGENT_VARS
-    ssh-add firesim.pem
+    ssh-add firesim-local
 
 If you reboot your machine (or otherwise kill the ``ssh-agent``), you will need to
 re-run the above four commands before using FireSim. If you open a new terminal (and
