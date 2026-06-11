@@ -434,6 +434,8 @@ def construct_firesim_argparser() -> argparse.ArgumentParser:
                         help='Give the "Y-m-d--H-M-S" prefix of results-build directory. Useful for tar2afi when finishing a partial buildbitstream')
     parser.add_argument('--platform', type=str, choices=PLATFORM_LIST, default='f2',
                         help='Required argument for "managerinit" to specify which platform you will be using')
+    parser.add_argument('--ssh-key-file', type=str, default=None,
+                        help='Path to SSH private key file for connecting to run farm hosts. If not specified, checks ~/firesim.pem and ~/.ssh/firesim.pem, then falls back to SSH agent or ~/.ssh/id_rsa')
 
     argcomplete.autocomplete(parser)
     return parser
@@ -458,8 +460,18 @@ def main(args: argparse.Namespace) -> None:
     # we elastically spin instances up/down. we can easily get re-used IPs with
     # different keys. also, probably won't get MITM'd
     env.disable_known_hosts = True
-    env.key_filename = os.path.expanduser("~/firesim.pem") #rh: okay so /firesim.pem does work for infrasetup, need to bump paramiko though to support rsa2
 
+    # Set SSH key if found. Check common locations, or use --ssh-key argument to override.
+    # If no key isfound use the default SSH agent or ~/.ssh/id_rsa
+    ssh_key_locations = [
+        args.ssh_key_file,  # command line override (highest priority)
+        os.path.expanduser("~/firesim.pem"),      # AWS default location
+        os.path.expanduser("~/.ssh/firesim.pem"), # alternative location
+    ]
+    for key_path in ssh_key_locations:
+        if key_path and os.path.exists(key_path):
+            env.key_filename = key_path
+            break
 
     rootLogger.info("FireSim Manager. Docs: https://docs.fires.im\nRunning: %s\n", str(args.task))
 
