@@ -53,7 +53,7 @@ def get_f2_ami_name() -> str:
             print(
                 "Unknown $USER (expected ubuntu/amzn). Defaulting to the Ubuntu AWS EC2 AMI."
             )
-        return "FPGA Developer AMI (Ubuntu) - 1.17.0   -prod-rhng4b6alkhdq"
+        return "FPGA Developer AMI (Ubuntu) - 1.17.0-prod-rhng4b6alkhdq"
 
 
 def get_incremented_f2_ami_name(ami_name: str, increment: int) -> str:
@@ -511,7 +511,7 @@ def launch_instances(
             create instances until there are `count` total instances that match `tags` and `instancetype`
             If `tags` are not passed, `always_expand` must be `True` or `ValueError` is thrown.
         ami_id: Override AMI ID to use for launching instances. `None` results in the default AMI ID specified by
-            `awstools.get_2_ami_id()`.
+            `awstools.get_f2_ami_id()`.
         use_manager_security_group: Use the manager security group instead of the run/build farm security group.
 
     Returns:
