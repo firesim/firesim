@@ -25,6 +25,8 @@ def run_docs_generated_components_check():
                     subpath = 'AWS-EC2-F1-Getting-Started'
                 elif args.platform == FpgaPlatform.xilinx_alveo_u250:
                     subpath = 'On-Premises-FPGA-Getting-Started'
+                elif args.platform == FpgaPlatform.corigine_xb10:
+                    subpath = 'On-Premises-FPGA-Getting-Started'
                 else:
                     raise Exception(f"Unable to run this script with {args.platform}")
                 path = f'docs/Getting-Started-Guides/{subpath}/Running-Simulations/DOCS_EXAMPLE_config_runtime.yaml'

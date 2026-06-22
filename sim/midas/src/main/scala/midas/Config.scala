@@ -175,6 +175,17 @@ class XilinxAlveoU200Config
 
 class XilinxAlveoU280Config extends XilinxAlveoU200Config
 
+class CorigineXB10Config
+    extends Config(new Config((_, _, _) => {
+      case HostMemChannelKey   =>
+        HostMemChannelParams(
+          size      = 0x200000000L, // 8 GiB — XB-10 has 4× MT40A1G16KD (8 GB total)
+          beatBytes = 8,
+          idBits    = 16,
+        )
+      case F1ShimHasQSFPPorts  => false
+    }) ++ new XilinxAlveoU250Config)
+
 class NitefuryConfig
     extends Config(new Config((_, _, _) => {
       case Platform                    => (p: Parameters) => new F1Shim()(p)
