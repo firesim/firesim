@@ -62,9 +62,10 @@ fi
 
 AWS_FPGA_DIR=$CL_DIR/../../../..
 
-# setup hdk # rh: -s is a flag that skips some git initialization on device, unnecessary as files already present on manager 
 cd $AWS_FPGA_DIR
-source hdk_setup.sh -s
+echo $AWS_FPGA_DIR
+
+source hdk_setup.sh
 
 export CL_DIR=$CL_DIR
 

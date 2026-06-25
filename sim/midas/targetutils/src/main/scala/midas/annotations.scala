@@ -177,6 +177,25 @@ case class FirrtlEnableModelMultiThreadingAnnotation(
   def duplicate(n: InstanceTarget) = this.copy(n)
 }
 
+/** This specifies that the module should be excluded from multi-threading (Chisel annotator).
+  */
+case class ExcludeFromMultiThreadingAnnotation(target: BaseModule) extends ChiselAnnotation {
+  def toFirrtl: FirrtlExcludeFromMultiThreadingAnnotation = {
+    val parent = ModuleTarget(target.toNamed.circuit.name, target.parentModName)
+    FirrtlExcludeFromMultiThreadingAnnotation(parent.instOf(target.instanceName, target.name))
+  }
+}
+
+/** This specifies that the module should be excluded from multi-threading (FIRRTL annotation).
+  */
+case class FirrtlExcludeFromMultiThreadingAnnotation(
+  target: InstanceTarget
+) extends SingleTargetAnnotation[InstanceTarget]
+    with FAMEAnnotation {
+  def targets = Seq(target)
+  def duplicate(n: InstanceTarget) = this.copy(n)
+}
+
 /** This labels a target Mem so that it is extracted and replaced with a separate model.
   */
 case class MemModelAnnotation[T <: Data](target: MemBase[T]) extends ChiselAnnotation {
@@ -544,3 +563,16 @@ case class FirrtlCombLogicInsideModuleAnno(
     Seq(this.copy(target = renameTarget))
   }
 }
+
+
+//  262 changes
+// case class DoNotMultiThreadAnnotation(target: BaseModule) extends ChiselAnnotation {
+//   def toFirrtl: FirrtlDoNotMultiThreadAnnotation = {
+//     val parent = ModuleTarget(target.toNamed.circuit.name, target.parentModName)
+//     FirrtlDoNotMultiThreadAnnotation(parent.instOf(target.instanceName, target.name))
+//   }
+// }
+
+// case class FirrtlDoNotMultiThreadAnnotation(
+//   target: InstanceTarget
+// ) extends SingleTargetAnnotation[InstanceTarget]

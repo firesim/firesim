@@ -140,6 +140,13 @@ class LLCDRAMConfig
         new DefaultConfig
     )
 
+class BankedLLCDRAMConfig
+    extends Config(
+      new WithLLCModel(4096, 8, banks = 2) ++
+        new FRFCFS16GBQuadRank ++
+        new DefaultConfig
+    )
+
 /** Host memory system fragments
   */
 

@@ -53,7 +53,9 @@ def get_f2_ami_name() -> str:
             print(
                 "Unknown $USER (expected ubuntu/amzn). Defaulting to the Ubuntu AWS EC2 AMI."
             )
-        return "FPGA Developer AMI (Ubuntu) - 1.17.0   -prod-rhng4b6alkhdq"
+        # Bumped to 1.19.1 alongside the aws-fpga 2.3.2 bump (firesim PR #1879):
+        # the 2.3.2 F2 HDK supports the Vivado shipped in AMI 1.19.1.
+        return "FPGA Developer AMI (Ubuntu) - 1.19.1-prod-rhng4b6alkhdq"
 
 
 def get_incremented_f2_ami_name(ami_name: str, increment: int) -> str:

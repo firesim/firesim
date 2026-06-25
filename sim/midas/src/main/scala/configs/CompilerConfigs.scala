@@ -159,6 +159,39 @@ class DefaultF1Config
       new BaseBridgesConfig ++
         new midas.F1Config
     )
+
+class DefaultF2Config
+    extends Config(
+      new BaseBridgesConfig ++
+        new midas.F2Config
+    )
+
+class BaseU250FRFCFS16GBQuadRankConfig
+    extends Config(
+      new FRFCFS16GBQuadRank ++
+        new BaseXilinxAlveoU250Config
+    )
+
+// F2 platform config with FR-FCFS DDR3 DRAM timing, no LLC
+class DefaultF2FRFCFS16GBQuadRankConfig
+    extends Config(
+      new FRFCFS16GBQuadRank ++
+        new DefaultF2Config
+    )
+
+// F2 platform configs with LLC + FR-FCFS DDR3 DRAM timing
+class DefaultF2LLCConfig
+    extends Config(
+      new FRFCFS16GBQuadRankLLC4MB ++
+        new midas.F2Config
+    )
+
+class DefaultF2BankedLLCConfig
+    extends Config(
+      new FRFCFS16GBQuadRankBankedLLC6MB ++
+        new midas.F2Config
+    )
+
 class DefaultVitisConfig
     extends Config(
       new BaseBridgesConfig ++

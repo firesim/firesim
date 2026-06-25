@@ -80,6 +80,8 @@ class BuildConfigFile:
 
         self.build_config_file_path = args.buildconfigfile
         self.build_config_recipes_file_path = args.buildrecipesconfigfile
+        # Full recipe dict (all recipes, not just builds_to_run) — used for pr_base_recipe lookup
+        self.all_build_recipes = build_recipes_config_file
 
         build_recipes = dict()
         for section_name, section_dict in build_recipes_config_file.items():

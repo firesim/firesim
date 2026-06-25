@@ -6,6 +6,32 @@ set ifrequency           [lindex $argv 0]
 set istrategy            [lindex $argv 1]
 set iboard               [lindex $argv 2]
 
+# Timing tracking
+set script_start_time [clock seconds]
+set timing_log {}
+
+proc format_time { seconds } {
+    set hours [expr {int($seconds / 3600)}]
+    set minutes [expr {int(($seconds % 3600) / 60)}]
+    set secs [expr {int($seconds % 60)}]
+    if {$hours > 0} {
+        return [format "%dh %dm %ds" $hours $minutes $secs]
+    } elseif {$minutes > 0} {
+        return [format "%dm %ds" $minutes $secs]
+    } else {
+        return [format "%ds" $secs]
+    }
+}
+
+proc log_timing { phase_name start_time } {
+    global timing_log
+    set current_time [clock seconds]
+    set elapsed [expr {$current_time - $start_time}]
+    lappend timing_log [list $phase_name $elapsed]
+    puts "TIMING: $phase_name took [format_time $elapsed]"
+    return $current_time
+}
+
 proc retrieveVersionedFile { filename version } {
   set first [file rootname $filename]
   set last [file extension $filename]
@@ -19,6 +45,11 @@ proc retrieveVersionedFile { filename version } {
 source $root_dir/scripts/utils.tcl
 
 puts "Running with Vivado $vivado_version (Major Version: $vivado_version_major)"
+puts "=========================================="
+puts "Starting build timing tracking"
+puts "=========================================="
+
+set phase_start [clock seconds]
 
 check_file_exists [set sourceFile [retrieveVersionedFile ${root_dir}/scripts/platform_env.tcl $vivado_version]]
 source $sourceFile
@@ -31,6 +62,7 @@ delete_files [list ${root_dir}/vivado_proj/firesim.bit]
 
 create_project -force firesim ${root_dir}/vivado_proj -part $part
 set_property board_part $board_part [current_project]
+set phase_start [log_timing "Initialization and project creation" $phase_start]
 
 # Loading all the verilog files
 foreach addFile [list \
@@ -51,6 +83,7 @@ foreach addFile [list \
     set_property IS_GLOBAL_INCLUDE 1 [get_files $addFile]
   }
 }
+set phase_start [log_timing "File loading" $phase_start]
 
 set desired_host_frequency $ifrequency
 set strategy $istrategy
@@ -62,12 +95,10 @@ source $sourceFile
 # Making wrapper around bd
 generate_target all [get_files ${root_dir}/vivado_proj/firesim.srcs/sources_1/bd/design_1/design_1.bd]
 update_compile_order -fileset sources_1
+set phase_start [log_timing "Block design creation" $phase_start]
 
 # Mark top-level name for future steps/cmds
 set top_level_name overall_fpga_top
-
-# Report if any IPs need to be updated
-report_ip_status
 
 # Adding additional constraint sets
 create_fileset -constrset synth_fileset
@@ -89,6 +120,7 @@ if {[file exists [set constrFile [retrieveVersionedFile ${root_dir}/design/FireS
 if {[file exists [set constrFile [retrieveVersionedFile ${root_dir}/design/bitstream_config.xdc $vivado_version]]]} {
     add_files -fileset impl_fileset -norecurse $constrFile
 }
+set phase_start [log_timing "Constraint setup" $phase_start]
 
 update_compile_order -fileset sources_1
 set_property top $top_level_name [current_fileset]
@@ -124,12 +156,63 @@ file mkdir ${rpt_dir}
 check_file_exists [set sourceFile ${root_dir}/scripts/strategies/strategy_${strategy}.tcl]
 source $sourceFile
 
-# Run synth/impl and generate collateral
-foreach sourceFile [list ${root_dir}/scripts/synthesis.tcl ${root_dir}/scripts/post_synth.tcl ${root_dir}/scripts/implementation.tcl ${root_dir}/scripts/post_impl.tcl] {
-  set sourceFile [retrieveVersionedFile $sourceFile $vivado_version]
-  check_file_exists $sourceFile
-  source $sourceFile
+# Delete all default report configs to reduce build time.
+# We generate utilization and timing reports manually in post_synth/post_impl scripts.
+foreach run [get_runs] {
+    foreach rc [get_report_configs -of_objects [get_runs $run] -quiet] {
+        delete_report_config $rc
+    }
 }
+
+# Run synth/impl and generate collateral
+set sourceFile [retrieveVersionedFile ${root_dir}/scripts/synthesis.tcl $vivado_version]
+check_file_exists $sourceFile
+source $sourceFile
+set phase_start [log_timing "Synthesis" $phase_start]
+
+set sourceFile [retrieveVersionedFile ${root_dir}/scripts/post_synth.tcl $vivado_version]
+check_file_exists $sourceFile
+source $sourceFile
+set phase_start [log_timing "Post-synthesis" $phase_start]
+
+set sourceFile [retrieveVersionedFile ${root_dir}/scripts/implementation.tcl $vivado_version]
+check_file_exists $sourceFile
+source $sourceFile
+set phase_start [log_timing "Implementation" $phase_start]
+
+set sourceFile [retrieveVersionedFile ${root_dir}/scripts/post_impl.tcl $vivado_version]
+check_file_exists $sourceFile
+source $sourceFile
+set phase_start [log_timing "Post-implementation" $phase_start]
+
+# Print timing summary
+set total_time [expr {[clock seconds] - $script_start_time}]
+puts "=========================================="
+puts "BUILD TIMING SUMMARY"
+puts "=========================================="
+foreach timing_entry $timing_log {
+    set phase_name [lindex $timing_entry 0]
+    set elapsed [lindex $timing_entry 1]
+    puts [format "  %-30s %s" $phase_name [format_time $elapsed]]
+}
+puts "=========================================="
+puts [format "  %-30s %s" "TOTAL BUILD TIME" [format_time $total_time]]
+puts "=========================================="
+
+# Write timing summary to file in reports directory
+set timing_file [open ${rpt_dir}/build_timing_summary.txt w]
+puts $timing_file "BUILD TIMING SUMMARY"
+puts $timing_file "===================="
+puts $timing_file ""
+foreach timing_entry $timing_log {
+    set phase_name [lindex $timing_entry 0]
+    set elapsed [lindex $timing_entry 1]
+    puts $timing_file [format "%-40s %.2f seconds" $phase_name $elapsed]
+}
+puts $timing_file ""
+puts $timing_file [format "%-40s %.2f seconds" "TOTAL BUILD TIME" $total_time]
+close $timing_file
+puts "Timing summary written to ${rpt_dir}/build_timing_summary.txt"
 
 puts "Done!"
 exit 0

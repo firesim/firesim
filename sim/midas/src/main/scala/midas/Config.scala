@@ -142,20 +142,20 @@ class F2Config
           CPUManagedAXI4Params(
             addrBits = 64,
             dataBits = 512,
-            idBits   = 6,
+            idBits   = 16,
           )
         )
       case FPGAManagedAXI4Key          => None
-      case CtrlNastiKey                => NastiParameters(32, 25, 12)
+      case CtrlNastiKey                => NastiParameters(32, 32, 12)
       case HostMemChannelKey           =>
         HostMemChannelParams(
           size      = 0x400000000L, // 16 GiB
           beatBytes = 8,
           idBits    = 16,
         )
-      case HostMemNumChannels          => 4
+      case HostMemNumChannels          => 1
       case PreLinkCircuitPath          => Some("firesim_top")
-      case PostLinkCircuitPath         => Some("WRAPPER_INST/CL/firesim_top")
+      case PostLinkCircuitPath         => Some("WRAPPER/CL/firesim_top")
     }) ++ new SimConfig)
 
 class XilinxAlveoU250Config

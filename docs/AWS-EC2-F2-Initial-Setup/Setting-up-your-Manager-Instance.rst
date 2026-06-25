@@ -24,7 +24,7 @@ To launch a manager instance, follow these steps:
 2. In the *Launch FPGA Developer AMI (Ubuntu)* window:
 
    1. Set the launch method to *Launch from EC2 Console*. 
-   2. Set the version to *1.17.0*.
+   2. Set the version to *1.19.1*.
       **If you do not change the version, you will likely get an incorrect version of the AMI.**
    
    3. Select the region that corresponds to the region you selected in :ref:`configuring-required-infrastructure-in-your-aws-account`.

@@ -44,6 +44,98 @@ midasexamples_gcd:
     metasim_customruntimeconfig: null
     bit_builder_recipe: bit-builder-recipes/f2.yaml
 
+firesim_megaboom_chia:
+    PLATFORM: f2
+    TARGET_PROJECT: firesim
+    TARGET_PROJECT_MAKEFRAG: ../../../generators/firechip/chip/src/main/makefrag/firesim
+    DESIGN: FireSim
+    TARGET_CONFIG: FireSimMegaBoomChiaConfig
+    PLATFORM_CONFIG: DefaultF2Config
+    deploy_quintuplet: null
+    platform_config_args:
+        fpga_frequency: 50
+        build_strategy: TIMING
+    post_build_hook: null
+    metasim_customruntimeconfig: null
+    bit_builder_recipe: bit-builder-recipes/f2.yaml
+
+firesim_megaboom_chia_bigcache:
+    PLATFORM: f2
+    TARGET_PROJECT: firesim
+    TARGET_PROJECT_MAKEFRAG: ../../../generators/firechip/chip/src/main/makefrag/firesim
+    DESIGN: FireSim
+    TARGET_CONFIG: FireSimMegaBoomChiaBigCacheConfig
+    PLATFORM_CONFIG: DefaultF2Config
+    deploy_quintuplet: null
+    platform_config_args:
+        fpga_frequency: 50
+        build_strategy: TIMING
+    post_build_hook: null
+    metasim_customruntimeconfig: null
+    bit_builder_recipe: bit-builder-recipes/f2.yaml
+
+
+firesim_megaboom_chia_llc:
+    PLATFORM: f2
+    TARGET_PROJECT: firesim
+    TARGET_PROJECT_MAKEFRAG: ../../../generators/firechip/chip/src/main/makefrag/firesim
+    DESIGN: FireSim
+    TARGET_CONFIG: FireSimMegaBoomChiaConfig
+    PLATFORM_CONFIG: DefaultF2LLCConfig
+    deploy_quintuplet: null
+    platform_config_args:
+        fpga_frequency: 50
+        build_strategy: TIMING
+    post_build_hook: null
+    metasim_customruntimeconfig: null
+    bit_builder_recipe: bit-builder-recipes/f2.yaml
+
+firesim_megaboom_chia_banked_llc:
+    PLATFORM: f2
+    TARGET_PROJECT: firesim
+    TARGET_PROJECT_MAKEFRAG: ../../../generators/firechip/chip/src/main/makefrag/firesim
+    DESIGN: FireSim
+    TARGET_CONFIG: FireSimMegaBoomChiaConfig
+    PLATFORM_CONFIG: DefaultF2BankedLLCConfig
+    deploy_quintuplet: null
+    platform_config_args:
+        fpga_frequency: 50
+        build_strategy: TIMING
+    post_build_hook: null
+    metasim_customruntimeconfig: null
+    bit_builder_recipe: bit-builder-recipes/f2.yaml
+
+firesim_megaboom_chia_bigcache_llc:
+    PLATFORM: f2
+    TARGET_PROJECT: firesim
+    TARGET_PROJECT_MAKEFRAG: ../../../generators/firechip/chip/src/main/makefrag/firesim
+    DESIGN: FireSim
+    TARGET_CONFIG: FireSimMegaBoomChiaBigCacheConfig
+    PLATFORM_CONFIG: DefaultF2LLCConfig
+    deploy_quintuplet: null
+    platform_config_args:
+        fpga_frequency: 50
+        build_strategy: TIMING
+    post_build_hook: null
+    metasim_customruntimeconfig: null
+    bit_builder_recipe: bit-builder-recipes/f2.yaml
+
+firesim_megaboom_chia_bigcache_banked_llc:
+    PLATFORM: f2
+    TARGET_PROJECT: firesim
+    TARGET_PROJECT_MAKEFRAG: ../../../generators/firechip/chip/src/main/makefrag/firesim
+    DESIGN: FireSim
+    TARGET_CONFIG: FireSimMegaBoomChiaBigCacheConfig
+    PLATFORM_CONFIG: DefaultF2BankedLLCConfig
+    deploy_quintuplet: null
+    platform_config_args:
+        fpga_frequency: 50
+        build_strategy: TIMING
+    post_build_hook: null
+    metasim_customruntimeconfig: null
+    bit_builder_recipe: bit-builder-recipes/f2.yaml
+
+
 ################################################################################################
 # FireAxe Examples
 ################################################################################################

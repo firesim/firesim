@@ -133,6 +133,7 @@ case class LLCParams(
   sets:       WRange = WRange(32, 4096),
   blockBytes: WRange = WRange(8, 128),
   mshrs:      WRange = WRange(1, 8),// TODO: check against AXI ID width
+  banks:      Int    = 1,           // Number of independent LLC banks (must be power of 2)
 ) {
 
   def maxTagBits(addrWidth: Int): Int = addrWidth - blockBytes.minBits - sets.minBits
@@ -143,6 +144,7 @@ case class LLCParams(
     println("    Associativity:     " + ways)
     println("    Block Size (B):    " + blockBytes)
     println("    MSHRs:             " + mshrs)
+    println("    Banks:             " + banks)
     println("    Replacement Policy: Random\n")
   }
 }
@@ -469,4 +471,187 @@ class LLCModel(nastiParams: NastiParameters, cfg: BaseConfig)(implicit p: Parame
   when(peak_mshrs_used < mshrs_allocated) { peak_mshrs_used := mshrs_allocated }
   io.settings.peakMSHRsUsed := peak_mshrs_used
 
+}
+
+// Banked LLC model: wraps N independent LLCModel instances to eliminate
+// head-of-line blocking across banks. Requests are routed to banks based
+// on address bits; each bank has its own state machine, tag array, and MSHRs.
+class BankedLLCModel(nastiParams: NastiParameters, cfg: BaseConfig, nBanks: Int)(implicit p: Parameters)
+    extends NastiModule(nastiParams) {
+
+  require(isPow2(nBanks) && nBanks >= 2, s"nBanks must be a power of 2 >= 2, got $nBanks")
+
+  val llcKey   = cfg.params.llcKey.get
+  val io       = IO(new LLCModelIO(nastiParams, llcKey))
+  val bankBits = log2Ceil(nBanks)
+  val mshrBits = log2Ceil(llcKey.mshrs.max)
+
+  require(
+    bankBits + mshrBits <= nastiXIdBits,
+    s"Need ${bankBits + mshrBits} AXI ID bits (bank=$bankBits + mshr=$mshrBits) but only have $nastiXIdBits",
+  )
+
+  // Instantiate N independent LLC banks
+  val banks = Seq.tabulate(nBanks) { i =>
+    val bank = Module(new LLCModel(nastiParams, cfg))
+    bank.suggestName(s"llc_bank_$i")
+    bank
+  }
+
+  // Bank selection: lowest bits of cache-line index (addr >> blockBits)
+  def bankSelect(addr: UInt): UInt =
+    (addr >> io.settings.blockBits)(bankBits - 1, 0)
+
+  // Wire shared runtime settings to all banks
+  banks.foreach { bank =>
+    bank.io.settings.wayBits     := io.settings.wayBits
+    bank.io.settings.setBits     := io.settings.setBits
+    bank.io.settings.blockBits   := io.settings.blockBits
+    bank.io.settings.activeMSHRs := io.settings.activeMSHRs
+  }
+
+  // Aggregate instrumentation counters across banks
+  io.settings.misses        := banks.map(_.io.settings.misses).reduce(_ +& _)
+  io.settings.writebacks    := banks.map(_.io.settings.writebacks).reduce(_ +& _)
+  io.settings.refills       := banks.map(_.io.settings.refills).reduce(_ +& _)
+  io.settings.peakMSHRsUsed := banks.map(_.io.settings.peakMSHRsUsed).reduce(_ max _)
+
+  // ========== Target-side request demux ==========
+
+  // W bank-tracking FIFO: records which bank each AW was sent to,
+  // so W data beats can be routed to the matching bank.
+  val wBankFifo = Module(new Queue(UInt(bankBits.W), 2 * nBanks))
+
+  // AR (read address) demux by address
+  val readBankSel = bankSelect(io.req.ar.bits.addr)
+  banks.zipWithIndex.foreach { case (bank, i) =>
+    bank.io.req.ar.valid := io.req.ar.valid && readBankSel === i.U
+    bank.io.req.ar.bits  := io.req.ar.bits
+  }
+  io.req.ar.ready := banks.zipWithIndex.map { case (bank, i) =>
+    bank.io.req.ar.ready && readBankSel === i.U
+  }.reduce(_ || _)
+
+  // AW (write address) demux by address; gated on W FIFO having space
+  val writeBankSel = bankSelect(io.req.aw.bits.addr)
+  banks.zipWithIndex.foreach { case (bank, i) =>
+    bank.io.req.aw.valid := io.req.aw.valid && writeBankSel === i.U && wBankFifo.io.enq.ready
+    bank.io.req.aw.bits  := io.req.aw.bits
+  }
+  io.req.aw.ready := wBankFifo.io.enq.ready && banks.zipWithIndex.map { case (bank, i) =>
+    bank.io.req.aw.ready && writeBankSel === i.U
+  }.reduce(_ || _)
+
+  wBankFifo.io.enq.valid := io.req.aw.fire
+  wBankFifo.io.enq.bits  := writeBankSel
+
+  // W (write data) routing: send beats to the bank at the FIFO head
+  val currentWBank = wBankFifo.io.deq.bits
+  val wFifoValid   = wBankFifo.io.deq.valid
+  banks.zipWithIndex.foreach { case (bank, i) =>
+    bank.io.req.w.valid := io.req.w.valid && wFifoValid && currentWBank === i.U
+    bank.io.req.w.bits  := io.req.w.bits
+  }
+  io.req.w.ready         := wFifoValid && banks.zipWithIndex.map { case (bank, i) =>
+    bank.io.req.w.ready && currentWBank === i.U
+  }.reduce(_ || _)
+  wBankFifo.io.deq.ready := io.req.w.fire && io.req.w.bits.last
+
+  // ========== Target-side response mux ==========
+
+  // 1-entry queues break the combinational loop between rResp.valid and rResp.ready.
+  // Inside LLCModel, can_refill depends on io.rResp.ready, which feeds refill_start,
+  // which feeds io.rResp.valid. The RRArbiter closes the loop (ready depends on valid).
+  // The queue decouples them: bank sees queue.enq.ready = !full (independent of valid).
+  val rRespArb = Module(new RRArbiter(new ReadResponseMetaData(nastiParams), nBanks))
+  banks.zipWithIndex.foreach { case (bank, i) =>
+    val q = Module(new Queue(new ReadResponseMetaData(nastiParams), 1))
+    q.suggestName(s"rRespQueue_$i")
+    q.io.enq <> bank.io.rResp
+    rRespArb.io.in(i) <> q.io.deq
+  }
+  io.rResp <> rRespArb.io.out
+
+  val wRespArb = Module(new RRArbiter(new WriteResponseMetaData(nastiParams), nBanks))
+  banks.zipWithIndex.foreach { case (bank, i) => wRespArb.io.in(i) <> bank.io.wResp }
+  io.wResp <> wRespArb.io.out
+
+  // ========== Memory-side request mux ==========
+
+  // Encode bank ID in upper bits of DRAM-side AXI ID: {bankId, mshrIdx}
+  def encodeMemId(bankIdx: Int, origId: UInt): UInt = {
+    if (mshrBits > 0) Cat(bankIdx.U(bankBits.W), origId(mshrBits - 1, 0))
+    else bankIdx.U(bankBits.W)
+  }
+
+  // AR (read address) arbiter with ID rewriting
+  val memArArb = Module(new RRArbiter(new NastiReadAddressChannel(nastiParams), nBanks))
+  banks.zipWithIndex.foreach { case (bank, i) =>
+    memArArb.io.in(i).valid := bank.io.memReq.ar.valid
+    memArArb.io.in(i).bits  := bank.io.memReq.ar.bits
+    memArArb.io.in(i).bits.id := encodeMemId(i, bank.io.memReq.ar.bits.id)
+    bank.io.memReq.ar.ready := memArArb.io.in(i).ready
+  }
+  io.memReq.ar <> memArArb.io.out
+
+  // AW (write address) arbiter with ID rewriting; gated on memory W FIFO space
+  val memWBankFifo = Module(new Queue(UInt(bankBits.W), 2 * nBanks))
+
+  val memAwArb = Module(new RRArbiter(new NastiWriteAddressChannel(nastiParams), nBanks))
+  banks.zipWithIndex.foreach { case (bank, i) =>
+    memAwArb.io.in(i).valid := bank.io.memReq.aw.valid
+    memAwArb.io.in(i).bits  := bank.io.memReq.aw.bits
+    memAwArb.io.in(i).bits.id := encodeMemId(i, bank.io.memReq.aw.bits.id)
+    bank.io.memReq.aw.ready := memAwArb.io.in(i).ready && memWBankFifo.io.enq.ready
+  }
+  io.memReq.aw.valid       := memAwArb.io.out.valid && memWBankFifo.io.enq.ready
+  io.memReq.aw.bits        := memAwArb.io.out.bits
+  memAwArb.io.out.ready    := io.memReq.aw.ready && memWBankFifo.io.enq.ready
+  memWBankFifo.io.enq.valid := io.memReq.aw.fire
+  memWBankFifo.io.enq.bits  := memAwArb.io.chosen
+
+  // W (write data) routing from banks to DRAM, ordered by AW grant sequence
+  val currentMemWBank = memWBankFifo.io.deq.bits
+  val memWFifoValid   = memWBankFifo.io.deq.valid
+  io.memReq.w.valid := memWFifoValid && Mux1H(
+    UIntToOH(currentMemWBank),
+    banks.map(_.io.memReq.w.valid),
+  )
+  io.memReq.w.bits := Mux1H(
+    UIntToOH(currentMemWBank),
+    banks.map(_.io.memReq.w.bits),
+  )
+  banks.zipWithIndex.foreach { case (bank, i) =>
+    bank.io.memReq.w.ready := io.memReq.w.ready && memWFifoValid && currentMemWBank === i.U
+  }
+  memWBankFifo.io.deq.ready := io.memReq.w.fire && io.memReq.w.bits.last
+
+  // ========== Memory-side response demux ==========
+
+  // Decode {bankId, mshrIdx} from DRAM response AXI IDs
+  def decodeMemBankId(id: UInt): UInt = id >> mshrBits
+  def decodeMemMshrId(id: UInt): UInt =
+    if (mshrBits > 0) id(mshrBits - 1, 0) else 0.U
+
+  // Read response demux
+  val rRespBankId = decodeMemBankId(io.memRResp.bits.id)
+  banks.zipWithIndex.foreach { case (bank, i) =>
+    bank.io.memRResp.valid   := io.memRResp.valid && rRespBankId === i.U
+    bank.io.memRResp.bits    := io.memRResp.bits
+    bank.io.memRResp.bits.id := decodeMemMshrId(io.memRResp.bits.id)
+  }
+  io.memRResp.ready := banks.zipWithIndex.map { case (bank, i) =>
+    bank.io.memRResp.ready && rRespBankId === i.U
+  }.reduce(_ || _)
+
+  // Write response demux
+  val wRespBankId = decodeMemBankId(io.memWResp.bits.id)
+  banks.zipWithIndex.foreach { case (bank, i) =>
+    bank.io.memWResp.valid   := io.memWResp.valid && wRespBankId === i.U
+    bank.io.memWResp.bits    := io.memWResp.bits
+    bank.io.memWResp.bits.id := decodeMemMshrId(io.memWResp.bits.id)
+  }
+  io.memWResp.ready := banks.zipWithIndex.map { case (bank, i) =>
+    bank.io.memWResp.ready && wRespBankId === i.U
+  }.reduce(_ || _)
 }

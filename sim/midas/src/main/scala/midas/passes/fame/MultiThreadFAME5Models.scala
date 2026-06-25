@@ -6,12 +6,13 @@ import firrtl._
 import firrtl.ir._
 import firrtl.Mappers._
 import firrtl.traversals.Foreachers._
-import firrtl.annotations.{CircuitName, ModuleName}
+import firrtl.annotations.{CircuitName, ModuleName, ReferenceTarget, Annotation}
 import firrtl.annotations.TargetToken.{Instance, OfModule}
 import firrtl.Utils.BoolType
 import firrtl.passes.InlineAnnotation
+import firrtl.transforms.DontTouchAnnotation
 
-import midas.targetutils.FirrtlEnableModelMultiThreadingAnnotation
+import midas.targetutils.{FirrtlEnableModelMultiThreadingAnnotation, FirrtlExcludeFromMultiThreadingAnnotation}
 
 import collection.mutable
 
@@ -143,12 +144,21 @@ object MultiThreadFAME5Models extends Transform {
     val hostClock = WRef(top.ports.find(_.name == WrapTop.hostClockName).get)
     val hostReset = WRef(top.ports.find(_.name == WrapTop.hostResetName).get)
 
+    // Collect excluded modules from annotations
+    val excludedModules = state.annotations.collect {
+      case FirrtlExcludeFromMultiThreadingAnnotation(it) => OfModule(it.ofModule)
+    }.toSet
+
     // Populate keys from annotations, values from traversing statements
     val fame5RawInstances = new mutable.LinkedHashMap[OfModule, mutable.LinkedHashSet[Instance]]
     state.annotations.foreach {
       case FirrtlEnableModelMultiThreadingAnnotation(it) =>
         // TODO: why not use instance name from here?
-        fame5RawInstances(OfModule(it.ofModule)) = new mutable.LinkedHashSet[Instance]
+        val module = OfModule(it.ofModule)
+        // Skip excluded modules
+        if (!excludedModules.contains(module)) {
+          fame5RawInstances(module) = new mutable.LinkedHashSet[Instance]
+        }
       case _                                             =>
     }
 
@@ -178,10 +188,15 @@ object MultiThreadFAME5Models extends Transform {
 
     val nThreads            = fame5InstancesByModule.headOption.map(_._2.size).getOrElse(1)
     val circuitNS           = Namespace(state.circuit)
+    val excludedModuleNames = excludedModules.map(_.value).toSet
+    
+    // Pass excluded module names to MuxingMultiThreader so it can replicate them
+    MuxingMultiThreader.excludedModuleNames = excludedModuleNames
+    
     val threadedModuleNames = state.circuit.modules
       .collect({
-        // Don't replace blackbox instances! TODO: Check for illegal blackboxes.
-        case m: Module => m.name -> circuitNS.newName(s"${m.name}_threaded")
+        case m: Module if !excludedModuleNames.contains(m.name) => 
+          m.name -> circuitNS.newName(s"${m.name}_threaded")
       })
       .toMap
 
@@ -241,6 +256,9 @@ object MultiThreadFAME5Models extends Transform {
     val transformedModules = state.circuit.modules.flatMap {
       case m: Module if (m.name == state.circuit.main) =>
         Seq(m.copy(body = multiThreadedTopBody))
+      case m: Module if excludedModuleNames.contains(m.name) =>
+        // Skip transformation for excluded modules
+        Seq(m)
       case m: Module                                   =>
         val threaded =
           MuxingMultiThreader(threadedModuleNames)(m, nThreads) // all threaded by same amount, many get pruned
@@ -255,6 +273,84 @@ object MultiThreadFAME5Models extends Transform {
     val memImplNames           = withMemImpls.modules.map(_.name).toSet -- threadedCircuit.modules.map(_.name).toSet
     val inlineThreadedMemAnnos = memImplNames.map(s => InlineAnnotation(ModuleName(s, CircuitName(withMemImpls.main))))
 
-    state.copy(circuit = withMemImpls, annotations = state.annotations ++ inlineThreadedMemAnnos)
+    // Propagate DontTouch annotations for FAME5 transformed modules
+    // Two cases:
+    // 1. Excluded modules: instances are replicated (prefModules -> prefModules_t0, _t1, etc.)
+    //    - Need to create N copies of annotations with updated instance names
+    // 2. Threaded modules: module becomes _threaded, instance name stays same
+    //    - Need to update containing module name and path module types to _threaded versions
+    //
+    // DontTouch targets have:
+    // - module: the containing module name  
+    // - path: sequence of (Instance, OfModule) pairs leading to the target
+    // - ref: the signal name within the final module
+    val updatedDontTouchAnnos: Seq[Annotation] = if (nThreads > 1) {
+      state.annotations.flatMap {
+        case dt @ DontTouchAnnotation(rt) =>
+          // Check if this annotation's path contains an instance of an excluded module
+          val excludedPathEntries = rt.path.filter { case (_, ofMod) =>
+            excludedModuleNames.contains(ofMod.value)
+          }
+          
+          if (excludedPathEntries.nonEmpty) {
+            // CASE 1: Excluded modules - replicate annotations for each thread
+            (0 until nThreads).map { idx =>
+              val newPath = rt.path.map { case (inst, ofMod) =>
+                if (excludedModuleNames.contains(ofMod.value)) {
+                  // This instance is of an excluded module type - rename instance
+                  (Instance(s"${inst.value}_t${idx}"), ofMod)
+                } else {
+                  // Update module type to _threaded if applicable
+                  val newOfMod = threadedModuleNames.get(ofMod.value).map(OfModule(_)).getOrElse(ofMod)
+                  (inst, newOfMod)
+                }
+              }
+              // Update the containing module name if it was threaded
+              val newModule = threadedModuleNames.getOrElse(rt.module, rt.module)
+              val newRt = rt.copy(module = newModule, path = newPath)
+              DontTouchAnnotation(newRt)
+            }
+          } else {
+            // CASE 2: No excluded modules in path - just update module names to _threaded
+            val needsUpdate = threadedModuleNames.contains(rt.module) || 
+              rt.path.exists { case (_, ofMod) => threadedModuleNames.contains(ofMod.value) }
+            
+            if (needsUpdate) {
+              val newModule = threadedModuleNames.getOrElse(rt.module, rt.module)
+              val newPath = rt.path.map { case (inst, ofMod) =>
+                val newOfMod = threadedModuleNames.get(ofMod.value).map(OfModule(_)).getOrElse(ofMod)
+                (inst, newOfMod)
+              }
+              Seq(DontTouchAnnotation(rt.copy(module = newModule, path = newPath)))
+            } else {
+              Seq(dt) // No changes needed
+            }
+          }
+        case _ => Seq.empty
+      }
+    } else {
+      Seq.empty
+    }
+    
+    // Filter out original DontTouch annotations that were updated
+    val filteredAnnos: Seq[Annotation] = if (nThreads > 1) {
+      state.annotations.filter {
+        case DontTouchAnnotation(rt) =>
+          val pathContainsExcluded = rt.path.exists { case (_, ofMod) =>
+            excludedModuleNames.contains(ofMod.value)
+          }
+          val pathContainsThreaded = rt.path.exists { case (_, ofMod) =>
+            threadedModuleNames.contains(ofMod.value)
+          }
+          val moduleIsThreaded = threadedModuleNames.contains(rt.module)
+          // Keep only if not updated (no excluded, no threaded in path or module)
+          !pathContainsExcluded && !pathContainsThreaded && !moduleIsThreaded
+        case _ => true
+      }
+    } else {
+      state.annotations
+    }
+
+    state.copy(circuit = withMemImpls, annotations = filteredAnnos ++ inlineThreadedMemAnnos ++ updatedDontTouchAnnos)
   }
 }

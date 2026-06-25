@@ -37,12 +37,16 @@ if {$WNS < 0 || $WHS < 0} {
   # expects that $WHS/WNS is re-set
 }
 
-if {$WNS < 0 || $WHS < 0} {
-  puts "ERROR: did not meet timing!"
-  exit 1
-}
+# Adjust MMCM frequency to match actual timing slack, then write bitstream.
+# Opens the routed design, modifies the MMCM divider if needed, and writes
+# the bitstream directly from the open design (bypasses launch_runs to
+# guarantee the MMCM change is captured in the bitstream).
+set run_dir [get_property DIRECTORY [get_runs ${impl_run}]]
+set bitstream_path "${run_dir}/${top_level_name}.bit"
 
-puts "INFO: generate bitstream"
-launch_runs ${impl_run} -to_step write_bitstream -jobs ${jobs}
-wait_on_run ${impl_run}
-check_progress ${impl_run} "bitstream generation failed"
+set adjusted_freq [adjust_frequency_and_bitstream ${impl_run} $bitstream_path]
+if {$adjusted_freq eq ""} {
+    puts "ERROR: Frequency adjustment failed — cannot meet timing."
+    exit 1
+}
+puts "INFO: Requested frequency: ${ifrequency} MHz -> Actual frequency: ${adjusted_freq} MHz"

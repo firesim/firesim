@@ -1,12 +1,12 @@
 [submodule "platforms/f1/aws-fpga"]
 	path = platforms/f1/aws-fpga
-	url = https://github.com/firesim/aws-fpga-firesim
+	url = https://github.com/firesim/aws-fpga-firesim.git
 [submodule "utils/FlameGraph"]
 	path = utils/fireperf/FlameGraph
 	url = https://github.com/brendangregg/FlameGraph.git
 [submodule "platforms/xilinx_vcu118/garnet-firesim"]
 	path = platforms/xilinx_vcu118/garnet-firesim
-	url = https://github.com/firesim/garnet-firesim
+	url = https://github.com/firesim/garnet-firesim.git
 [submodule "platforms/rhsresearch_nitefury_ii/NiteFury-and-LiteFury-firesim"]
 	path = platforms/rhsresearch_nitefury_ii/NiteFury-and-LiteFury-firesim
 	url = https://github.com/firesim/NiteFury-and-LiteFury-firesim.git
@@ -25,4 +25,3 @@
 [submodule "platforms/f2/aws-fpga-firesim-f2"]
 	path = platforms/f2/aws-fpga-firesim-f2
 	url = https://github.com/firesim/aws-fpga-firesim-f2.git
-	branch = rocket

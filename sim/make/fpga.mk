@@ -67,9 +67,24 @@ $(fpga_driver_dir)/$(DESIGN)-$(PLATFORM): $($(PLATFORM))
 	mkdir -p $(@D)
 	cp -f $< $@
 
+# Copy split-verilog directory to FPGA delivery directory
+$(fpga_delivery_dir)/split-verilog: $(SPLIT_VERILOG_FILELIST) $(fpga_work_dir)/stamp
+	@echo "[fpga.mk] Copying split-verilog directory to $(fpga_delivery_dir)/split-verilog"
+	mkdir -p $@
+	if [ -d "$(SPLIT_VERILOG_DIR)" ] && [ -n "$$(ls -A $(SPLIT_VERILOG_DIR)/*.sv 2>/dev/null)" ]; then \
+		cp -f $(SPLIT_VERILOG_DIR)/*.sv $@/; \
+		echo "[fpga.mk] Copied $$(ls -1 $(SPLIT_VERILOG_DIR)/*.sv | wc -l) module files"; \
+	else \
+		echo "[fpga.mk] Warning: No split-verilog files found in $(SPLIT_VERILOG_DIR)"; \
+	fi
+	if [ -f "$(SPLIT_VERILOG_FILELIST)" ]; then \
+		cp -f $(SPLIT_VERILOG_FILELIST) $@/modules.f; \
+		echo "[fpga.mk] Copied filelist to $@/modules.f"; \
+	fi
+
 # Goes as far as setting up the build directory without running the cad job
 # Used by the manager before passing a build to a remote machine
-replace-rtl: $(fpga_delivery_files) $(fpga_sim_delivery_files)
+replace-rtl: $(fpga_delivery_files) $(fpga_sim_delivery_files) split-verilog $(fpga_delivery_dir)/split-verilog
 
 .PHONY: replace-rtl
 

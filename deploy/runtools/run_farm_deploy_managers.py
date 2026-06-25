@@ -691,6 +691,7 @@ class EC2InstanceDeployManager(InstanceDeployManager):
                     capture=True,
                 )
                 if "-dirty" in aws_fpga_upstream_version:
+                    aws_fpga_upstream_version = aws_fpga_upstream_version.replace("-dirty", "")
                     rootLogger.critical(
                         "Unable to use local changes to aws-fpga. Continuing without them."
                     )
@@ -700,8 +701,8 @@ class EC2InstanceDeployManager(InstanceDeployManager):
                 )
             )
             with warn_only():
-                run("git clone https://github.com/firesim/aws-fpga-firesim-f2.git aws-fpga") #rh: "git clone https://github.com/aws/aws-fpga"
-                run("cd aws-fpga && git checkout " + aws_fpga_upstream_version) #rh: keep in mind that if ts says dirty it will fail but continue doing sdk_setup
+                run("git clone https://github.com/firesim/aws-fpga-firesim-f2.git aws-fpga")
+                run("cd aws-fpga && git checkout " + aws_fpga_upstream_version)
             with cd(f"/home/{os.environ['USER']}/aws-fpga"):
                 run("source sdk_setup.sh")
 

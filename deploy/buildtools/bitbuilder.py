@@ -26,7 +26,7 @@ from awstools.awstools import (
 )
 
 # imports needed for python type checking
-from typing import Optional, Dict, Any, TYPE_CHECKING
+from typing import Optional, Dict, Any, TYPE_CHECKING, List
 
 if TYPE_CHECKING:
     from buildtools.buildconfig import BuildConfig
@@ -222,12 +222,29 @@ class F2BitBuilder(BitBuilder):
         # do the rsync, but ignore any checkpoints that might exist on this machine
         # (in case builds were run locally)
         # extra_opts -l preserves symlinks
+        with prefix("cd ../"):
+            # use local version of aws_fpga on build farm nodes
+            aws_fpga_upstream_version = local(
+                "git -C platforms/f2/aws-fpga-firesim-f2 describe --tags --always --dirty",
+                capture=True,
+            )
+            if "-dirty" in aws_fpga_upstream_version:
+                aws_fpga_upstream_version = aws_fpga_upstream_version.replace("-dirty", "")
+                rootLogger.critical(
+                    "Unable to use local changes to aws-fpga. Continuing without them."
+                )
+
         run(f"mkdir -p {dest_f2_platform_dir}")
+        with prefix("cd " + dest_f2_platform_dir):
+            run("git clone https://github.com/firesim/aws-fpga-firesim-f2.git")
+        with prefix("cd " + dest_awsfpga_dir):
+            run("git checkout " + aws_fpga_upstream_version)
+
         rsync_cap = rsync_project(
             local_dir=local_awsfpga_dir,
             remote_dir=dest_f2_platform_dir,
             ssh_opts="-o StrictHostKeyChecking=no",
-            exclude=["hdk/cl/developer_designs/cl_*"],
+            exclude=["hdk/cl/developer_designs/cl_*", ".git", "hdk/common/ip", "hdk/common/shell_stable/hlx"],
             extra_opts="-l",
             capture=True,
         )
@@ -236,7 +253,7 @@ class F2BitBuilder(BitBuilder):
         rsync_cap = rsync_project(
             local_dir=f"{local_awsfpga_dir}/{fpga_build_postfix}/*",
             remote_dir=f"{dest_awsfpga_dir}/{fpga_build_postfix}",
-            exclude=["build/checkpoints"],
+            exclude=["build/checkpoints", ".git", "hdk/common/ip", "hdk/common/shell_stable/hlx"],
             ssh_opts="-o StrictHostKeyChecking=no",
             extra_opts="-l",
             capture=True,
@@ -802,11 +819,106 @@ class XilinxAlveoBitBuilder(BitBuilder):
 
         fpga_frequency = self.build_config.get_frequency()
         build_strategy = self.build_config.get_strategy().name
+        enable_pr = self.build_config.get_enable_pr()
+        pr_module_name = self.build_config.get_pr_module_name()
+        pr_partition_path = self.build_config.get_pr_partition_path()
+        pr_project_path = self.build_config.get_pr_project_path()
+        pr_base_recipe = self.build_config.get_pr_base_recipe()
+        pr_partition_module_name = self.build_config.get_pr_partition_module_name()
+
+        # Resolve pr_base_recipe → pr_project_path + pr_partition_path + pr_partition_module_name
+        # Searches results-build/ for the most recent completed build of the base recipe.
+        if enable_pr and pr_base_recipe and not pr_project_path:
+            all_recipes = self.build_config.build_config_file.all_build_recipes
+            if pr_base_recipe not in all_recipes:
+                raise Exception(
+                    f"pr_base_recipe '{pr_base_recipe}' not found in config_build_recipes.yaml"
+                )
+            base = all_recipes[pr_base_recipe]
+            base_quintuplet = (
+                f"{self.build_config.PLATFORM}-{base['TARGET_PROJECT']}-"
+                f"{base['DESIGN']}-{base['TARGET_CONFIG']}-{base['PLATFORM_CONFIG']}"
+            )
+
+            # Find the most recent results-build directory for the base recipe.
+            # Directory names are timestamped (YYYY-MM-DD--HH-MM-SS-<recipe_name>),
+            # so sorting gives us the latest build last.
+            results_build_dir = f"{local_deploy_dir}/results-build"
+            with settings(warn_only=True):
+                find_result = run(f"ls -d {results_build_dir}/*-{pr_base_recipe} 2>/dev/null | sort | tail -1")
+            if find_result.return_code != 0 or not str(find_result).strip():
+                raise Exception(
+                    f"No completed build found for base recipe '{pr_base_recipe}' in {results_build_dir}. "
+                    f"Has the base recipe been built successfully?"
+                )
+            base_results_entry = str(find_result).strip()
+            base_cl_dir = f"{base_results_entry}/cl_{base_quintuplet}"
+            pr_project_path = f"{base_cl_dir}/vivado_proj/firesim.xpr"
+            rootLogger.info(f"Resolved pr_base_recipe '{pr_base_recipe}' -> pr_project_path: {pr_project_path}")
+
+            # Auto-read partition paths from pr_metadata.json if not explicitly provided
+            if not pr_partition_path:
+                metadata_path = f"{base_cl_dir}/vivado_proj/pr_metadata.json"
+                with settings(warn_only=True):
+                    metadata_result = run(f"cat {metadata_path}")
+                if metadata_result.return_code == 0:
+                    metadata = json.loads(str(metadata_result))
+                    paths = []
+                    for mod in metadata.get("pr_modules", []):
+                        paths.extend(mod.get("partition_paths", []))
+                    if paths:
+                        pr_partition_path = paths
+                        rootLogger.info(f"Auto-read pr_partition_path from pr_metadata.json: {pr_partition_path}")
+                    else:
+                        raise Exception(
+                            f"pr_metadata.json at {metadata_path} contains no partition paths. "
+                            "Specify pr_partition_path explicitly."
+                        )
+                else:
+                    raise Exception(
+                        f"Could not read pr_metadata.json from base build: {metadata_path}. "
+                        f"Has the base recipe '{pr_base_recipe}' been built successfully?"
+                    )
+
+            # Auto-derive pr_partition_module_name from base recipe if not provided
+            if not pr_partition_module_name:
+                base_pr_module = base.get("platform_config_args", {}).get("pr_module_name")
+                if base_pr_module:
+                    pr_partition_module_name = [base_pr_module] if isinstance(base_pr_module, str) else base_pr_module
+                    rootLogger.info(f"Auto-derived pr_partition_module_name from base recipe: {pr_partition_module_name}")
+
+        # For RM flow, copy the base project into cl_dir so Vivado operates
+        # on a copy (protecting the original in results-build from corruption).
+        # The copy goes into cl_dir/base_project/ which preserves the full
+        # directory structure (vivado_proj/ + design/) so that $PPRDIR-relative
+        # source file references in the .xpr resolve correctly.
+        if enable_pr and pr_project_path:
+            base_cl_dir_for_copy = os.path.dirname(os.path.dirname(pr_project_path))  # cl_*/
+            local_base_copy = f"{cl_dir}/base_project"
+            rootLogger.info(f"Copying base project to: {local_base_copy}")
+            run(f"rm -rf {local_base_copy}")
+            run(f"cp -r {base_cl_dir_for_copy} {local_base_copy}")
+            base_project_name = os.path.basename(pr_project_path)
+            pr_project_path = f"{local_base_copy}/vivado_proj/{base_project_name}"
+            rootLogger.info(f"Using local project copy: {pr_project_path}")
+
+        # Build the command with optional PR arguments
+        build_cmd = f"{cl_dir}/build-bitstream.sh --cl_dir {cl_dir} --frequency {fpga_frequency} --strategy {build_strategy} --board {self.BOARD_NAME} --enable_pr {str(enable_pr).lower()}"
+        if enable_pr:
+            if pr_module_name:
+                build_cmd += f" --pr_module_name {','.join(pr_module_name)}"
+            if pr_partition_path:
+                if isinstance(pr_partition_path, list):
+                    build_cmd += f" --pr_partition_path {','.join(pr_partition_path)}"
+                else:
+                    build_cmd += f" --pr_partition_path {pr_partition_path}"
+            if pr_project_path:
+                build_cmd += f" --pr_project_path {pr_project_path}"
+            if pr_partition_module_name:
+                build_cmd += f" --pr_partition_module_name {','.join(pr_partition_module_name)}"
 
         with InfoStreamLogger("stdout"), settings(warn_only=True):
-            alveo_result = run(
-                f"{cl_dir}/build-bitstream.sh --cl_dir {cl_dir} --frequency {fpga_frequency} --strategy {build_strategy} --board {self.BOARD_NAME}"
-            )
+            alveo_result = run(build_cmd)
             alveo_rc = alveo_result.return_code
 
             if alveo_rc != 0:
@@ -853,6 +965,9 @@ class XilinxAlveoBitBuilder(BitBuilder):
 
         # store metadata string
         local(f"""echo '{self.get_metadata_string()}' >> {tar_staging_path}/metadata""")
+
+        # store PR metadata if present (for querying compatible projects)
+        local(f"cp {local_cl_dir}/vivado_proj/pr_metadata.json {tar_staging_path}/ 2>/dev/null || true")
 
         # form tar.gz
         with prefix(f"cd {local_cl_dir}"):

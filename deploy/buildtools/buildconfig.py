@@ -15,7 +15,7 @@ from util.deepmerge import deep_merge
 from util.targetprojectutils import extra_target_project_make_args, resolve_path
 
 # imports needed for python type checking
-from typing import Set, Any, Optional, Dict, TYPE_CHECKING
+from typing import Set, Any, Optional, Dict, TYPE_CHECKING, List, Union
 
 if TYPE_CHECKING:
     from buildtools.buildconfigfile import BuildConfigFile
@@ -64,6 +64,12 @@ class BuildConfig:
         PLATFORM_CONFIG: Platform config to build.
         fpga_frequency: Frequency for the FPGA build.
         strategy: Strategy for the FPGA build.
+        enable_pr: Whether to enable Partial Reconfiguration.
+        pr_module_name: Name(s) of the PR (Partial Reconfiguration) module(s). Can be a string or list of strings.
+        pr_partition_path: Hierarchical path(s) to the PR partition(s). Optional for main_pr.tcl (paths discovered from design); required for main_pr_rm.tcl.
+        pr_project_path: Path to a previous .xpr project file. If specified, uses main_pr_rm.tcl instead of main_pr.tcl.
+        pr_base_recipe: Name of a previous recipe whose static shell to reuse. The bit builder resolves this to pr_project_path at build time and auto-reads partition paths from pr_metadata.json.
+        pr_partition_module_name: Original module name(s) used in the main_pr.tcl build (for partition def lookup). Defaults to pr_module_name if not set.
         post_build_hook: Post build hook script.
         bitbuilder: bitstream configuration class.
     """
@@ -77,6 +83,12 @@ class BuildConfig:
     deploy_quintuplet: Optional[str]
     frequency: float
     strategy: BuildStrategy
+    enable_pr: bool
+    pr_module_name: Optional[Union[str, List[str]]]
+    pr_partition_path: Optional[Union[str, List[str]]]
+    pr_project_path: Optional[str]
+    pr_base_recipe: Optional[str]
+    pr_partition_module_name: Optional[List[str]]
     launch_time: str
     PLATFORM_CONFIG: str
     post_build_hook: str
@@ -154,6 +166,42 @@ class BuildConfig:
         self.build_strategy = BuildStrategy.from_string(
             bitstream_build_args["build_strategy"]
         )
+        # retrieve PR settings (optional, defaults to false)
+        self.enable_pr = bitstream_build_args.get("enable_pr", False)
+        pr_module_name_raw = bitstream_build_args.get("pr_module_name")
+        pr_partition_path_raw = bitstream_build_args.get("pr_partition_path")
+        self.pr_project_path = bitstream_build_args.get("pr_project_path")
+        # pr_base_recipe: name of a previous recipe whose static shell to reuse.
+        # The bit builder resolves this to pr_project_path at build time.
+        self.pr_base_recipe = bitstream_build_args.get("pr_base_recipe")
+        # pr_partition_module_name: module name(s) used in the original main_pr.tcl build
+        # (for partition def lookup). Defaults to pr_module_name if not set.
+        pr_partition_module_name_raw = bitstream_build_args.get("pr_partition_module_name")
+
+        # Convert single values to lists for consistency, or keep as lists if already lists
+        def _to_str_list(val, field_name):
+            if val is None:
+                return None
+            if isinstance(val, str):
+                return [val]
+            if isinstance(val, list):
+                return val
+            raise Exception(f"{field_name} must be a string or list of strings, got {type(val)}")
+
+        self.pr_module_name = _to_str_list(pr_module_name_raw, "pr_module_name")
+        self.pr_partition_path = _to_str_list(pr_partition_path_raw, "pr_partition_path")
+        self.pr_partition_module_name = _to_str_list(pr_partition_module_name_raw, "pr_partition_module_name")
+
+        if self.enable_pr:
+            if self.pr_module_name is None:
+                raise Exception("pr_module_name must be specified when enable_pr is true")
+            if self.pr_partition_path is not None and len(self.pr_module_name) != len(self.pr_partition_path):
+                raise Exception(f"pr_module_name and pr_partition_path must have the same length when both are specified. Got {len(self.pr_module_name)} module name(s) and {len(self.pr_partition_path)} partition path(s)")
+            if self.pr_project_path is not None and self.pr_base_recipe is not None:
+                raise Exception("Specify either pr_project_path or pr_base_recipe, not both")
+            # pr_partition_path may be None when pr_base_recipe is set (auto-read from pr_metadata.json)
+            if self.pr_partition_path is None and self.pr_project_path is not None:
+                raise Exception("pr_partition_path is required when using pr_project_path (main_pr_rm flow). Only the initial build (main_pr) supports auto-discovery.")
 
         # retrieve the bitbuilder section
         bitbuilder_conf_dict = None
@@ -242,6 +290,54 @@ class BuildConfig:
             Specified build strategy
         """
         return self.build_strategy
+
+    def get_enable_pr(self) -> bool:
+        """Get whether Partial Reconfiguration is enabled.
+
+        Returns:
+            True if PR is enabled, False otherwise
+        """
+        return self.enable_pr
+
+    def get_pr_module_name(self) -> Optional[Union[str, List[str]]]:
+        """Get the PR module name(s).
+
+        Returns:
+            Specified PR module name(s) as a string or list of strings, or None if not set
+        """
+        return self.pr_module_name
+
+    def get_pr_partition_path(self) -> Optional[Union[str, List[str]]]:
+        """Get the PR partition path(s).
+
+        Returns:
+            Specified PR partition path(s) as a string or list of strings, or None if not set
+        """
+        return self.pr_partition_path
+
+    def get_pr_project_path(self) -> Optional[str]:
+        """Get the PR project path.
+
+        Returns:
+            Specified PR project path (.xpr file), or None if not set
+        """
+        return self.pr_project_path
+
+    def get_pr_base_recipe(self) -> Optional[str]:
+        """Get the PR base recipe name.
+
+        Returns:
+            Name of a previous recipe whose static shell to reuse, or None if not set
+        """
+        return self.pr_base_recipe
+
+    def get_pr_partition_module_name(self) -> Optional[List[str]]:
+        """Get the PR partition module name(s) (original names used in main_pr.tcl).
+
+        Returns:
+            List of original module names for partition def lookup, or None if not set
+        """
+        return self.pr_partition_module_name
 
     def get_build_dir_name(self) -> str:
         """Get the name of the local build directory.
