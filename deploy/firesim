@@ -436,6 +436,8 @@ def construct_firesim_argparser() -> argparse.ArgumentParser:
                         help='Required argument for "managerinit" to specify which platform you will be using')
     parser.add_argument('--ssh-key-file', type=str, default=None,
                         help='Path to SSH private key file for connecting to run farm hosts. If not specified, checks ~/firesim.pem and ~/.ssh/firesim.pem, then falls back to SSH agent or ~/.ssh/id_rsa')
+    parser.add_argument('--ssh-user', type=str, default=None,
+                        help='use a different user for ssh connections like ec2_user, if not specified default is current user')
 
     argcomplete.autocomplete(parser)
     return parser
@@ -460,6 +462,9 @@ def main(args: argparse.Namespace) -> None:
     # we elastically spin instances up/down. we can easily get re-used IPs with
     # different keys. also, probably won't get MITM'd
     env.disable_known_hosts = True
+    # if user option given, override default
+    if args.ssh_user:
+        env.user = args.ssh_user
 
     # Set SSH key if found. Check common locations, or use --ssh-key argument to override.
     # If no key isfound use the default SSH agent or ~/.ssh/id_rsa
