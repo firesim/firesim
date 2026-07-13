@@ -1,0 +1,26 @@
+{
+  "directory":"data",
+  "suite":"speed",
+  "benchmarks":[
+    {
+      "name":"No Cache",
+      "directory":"2018-03-22--22-46-43-spec17-intspeed-working-set-experiment-config-64K"
+    },
+    {
+      "name":"64K",
+      "directory":"2018-03-29--03-23-32-spec17-intspeed-rerun-64K"
+    },
+    {
+      "name":"256K",
+      "directory":"2018-03-29--03-25-28-spec17-intspeed-rerun-256K"
+    },
+    {
+      "name":"1M",
+      "directory":"intspeed-1M-LLC"
+    },
+    {
+      "name":"Single Cycle",
+      "directory":"2018-03-19--00-21-41-spec17-intspeed-singlecore-LBP-8W1C-8R1C"
+    }
+  ]
+}
