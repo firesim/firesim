@@ -6,12 +6,16 @@ set script_dir [file dirname $script_path]
 set root_dir [file dirname $script_dir]
 
 # Loading options
-#   bitstream_path   Path to the bitstream
-#   serial           Serial number of FPGA board (without trailing A)
+#   bitstream_path         Path to the full bitstream
+#   partial_bitstream_path Path to a DFX partial bitstream (reconfigures just
+#                          the RP; static region keeps running, PCIe/DDR4 stay
+#                          alive). Skips refresh_hw_device.
+#   serial                 Serial number of FPGA board (without trailing A)
 array set options {
-    -bitstream_path ""
-    -probes_path    ""
-    -serial         ""
+    -bitstream_path         ""
+    -partial_bitstream_path ""
+    -probes_path            ""
+    -serial                 ""
 }
 
 # Expect arguments in the form of `-argument value`
@@ -57,13 +61,26 @@ if {$final_hw_target == ""} {
     exit 1
 }
 
-puts "Programming $final_hw_target with ${options(-bitstream_path)}"
 open_hw_target $final_hw_target
-set_property PROBES.FILE ${options(-probes_path)} [get_hw_device]
-set_property FULL_PROBES.FILE ${options(-probes_path)} [get_hw_device]
-set_property PROGRAM.FILE ${options(-bitstream_path)} [get_hw_device]
-program_hw_devices [get_hw_device]
-refresh_hw_device [get_hw_device]
+
+# Pick full or partial path based on which argument was provided. Exactly one
+# of bitstream_path / partial_bitstream_path is required.
+if {$options(-partial_bitstream_path) ne ""} {
+    puts "Programming $final_hw_target with PARTIAL bitstream ${options(-partial_bitstream_path)}"
+    set_property PROGRAM.FILE ${options(-partial_bitstream_path)} [get_hw_device]
+    program_hw_devices [get_hw_device]
+    # No refresh_hw_device — that would re-init the device; the static region
+    # (PCIe, DDR4, NIC, etc.) must keep running across the partial swap.
+    puts "Partial bitstream load complete; static region preserved."
+} else {
+    puts "Programming $final_hw_target with FULL bitstream ${options(-bitstream_path)}"
+    set_property PROBES.FILE ${options(-probes_path)} [get_hw_device]
+    set_property FULL_PROBES.FILE ${options(-probes_path)} [get_hw_device]
+    set_property PROGRAM.FILE ${options(-bitstream_path)} [get_hw_device]
+    program_hw_devices [get_hw_device]
+    refresh_hw_device [get_hw_device]
+}
+
 close_hw_target
 
 exit
