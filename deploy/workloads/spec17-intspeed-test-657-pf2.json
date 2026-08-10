@@ -1,0 +1,17 @@
+{
+	"benchmark_name": "spec17-intspeed-test-657-pf2",
+	"common_simulation_outputs": [
+		"uartlog"
+	],
+	"post_run_hook": "../../../../../software/spec2017/handle-results.py -d test -s intspeed",
+	"workloads": [
+		{
+			"name": "spec17-intspeed-test-657-pf2-657.xz_s",
+			"bootbinary": "../../../../../software/firemarshal/images/firechip/spec17-intspeed-test-657-pf2-657.xz_s/spec17-intspeed-test-657-pf2-657.xz_s-bin",
+			"rootfs": "../../../../../software/firemarshal/images/firechip/spec17-intspeed-test-657-pf2-657.xz_s/spec17-intspeed-test-657-pf2-657.xz_s.img",
+			"outputs": [
+				"/output"
+			]
+		}
+	]
+}

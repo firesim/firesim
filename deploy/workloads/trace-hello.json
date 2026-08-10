@@ -1,0 +1,22 @@
+{
+	"benchmark_name": "trace-hello",
+	"common_simulation_outputs": [
+		"uartlog"
+	],
+	"workloads": [
+		{
+			"name": "trace-hello-run-chores",
+			"bootbinary": "../../../../../software/firemarshal/images/firechip/trace-hello-run-chores/trace-hello-run-chores-bin",
+			"rootfs": "../../../../../software/firemarshal/images/firechip/trace-hello-run-chores/trace-hello-run-chores.img",
+			"outputs": [
+				"/root/chores/driver_map.txt",
+				"/root/chores/jump_label_patch_map.txt"
+			]
+		},
+		{
+			"name": "trace-hello-trace-hello",
+			"bootbinary": "../../../../../software/firemarshal/images/firechip/trace-hello-trace-hello/trace-hello-trace-hello-bin",
+			"rootfs": "../../../../../software/firemarshal/images/firechip/trace-hello-trace-hello/trace-hello-trace-hello.img"
+		}
+	]
+}

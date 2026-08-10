@@ -1,0 +1,8 @@
+{
+	"benchmark_name": "coremark",
+	"common_simulation_outputs": [
+		"uartlog"
+	],
+	"common_bootbinary": "../../../../../software/firemarshal/images/firechip/coremark/coremark-bin",
+	"common_rootfs": "../../../../../software/firemarshal/images/firechip/coremark/coremark.img"
+}

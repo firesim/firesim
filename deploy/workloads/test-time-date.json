@@ -1,0 +1,13 @@
+{
+	"benchmark_name": "test-time-date",
+	"common_simulation_outputs": [
+		"uartlog"
+	],
+	"workloads": [
+		{
+			"name": "test-time-date-prefetch-bench",
+			"bootbinary": "../../../../../software/firemarshal/images/firechip/test-time-date-prefetch-bench/test-time-date-prefetch-bench-bin",
+			"rootfs": "../../../../../software/firemarshal/images/firechip/test-time-date-prefetch-bench/test-time-date-prefetch-bench.img"
+		}
+	]
+}

@@ -1,0 +1,25 @@
+{
+	"benchmark_name": "spec17-intspeed-traced-605-v0",
+	"common_simulation_outputs": [
+		"uartlog"
+	],
+	"workloads": [
+		{
+			"name": "spec17-intspeed-traced-605-v0-605.mcf_s-traced",
+			"bootbinary": "../../../../../software/firemarshal/images/firechip/spec17-intspeed-traced-605-v0-605.mcf_s-traced/spec17-intspeed-traced-605-v0-605.mcf_s-traced-bin",
+			"rootfs": "../../../../../software/firemarshal/images/firechip/spec17-intspeed-traced-605-v0-605.mcf_s-traced/spec17-intspeed-traced-605-v0-605.mcf_s-traced.img",
+			"outputs": [
+				"/output"
+			]
+		},
+		{
+			"name": "spec17-intspeed-traced-605-v0-chores",
+			"bootbinary": "../../../../../software/firemarshal/images/firechip/spec17-intspeed-traced-605-v0-chores/spec17-intspeed-traced-605-v0-chores-bin",
+			"rootfs": "../../../../../software/firemarshal/images/firechip/spec17-intspeed-traced-605-v0-chores/spec17-intspeed-traced-605-v0-chores.img",
+			"outputs": [
+				"/root/chores/driver_map.txt",
+				"/root/chores/jump_label_patch_map.txt"
+			]
+		}
+	]
+}

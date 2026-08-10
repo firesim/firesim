@@ -1,0 +1,56 @@
+{
+ "benchmark_name": "process-launch-tp6",
+ "common_simulation_outputs": [
+  "uartlog"
+ ],
+ "workloads": [
+  {
+   "name": "pl-tp6-256",
+   "bootbinary": "../../../../../software/firemarshal/images/firechip/process-launch-process-launch-tp-trace-256/process-launch-process-launch-tp-trace-256-bin",
+   "rootfs": "../../../../../software/firemarshal/images/firechip/process-launch-process-launch-tp-trace-256/process-launch-process-launch-tp-trace-256.img",
+   "simulation_outputs": [
+    "tacit0.out"
+   ]
+  },
+  {
+   "name": "pl-tp6-272",
+   "bootbinary": "../../../../../software/firemarshal/images/firechip/process-launch-process-launch-tp-trace-272/process-launch-process-launch-tp-trace-272-bin",
+   "rootfs": "../../../../../software/firemarshal/images/firechip/process-launch-process-launch-tp-trace-272/process-launch-process-launch-tp-trace-272.img",
+   "simulation_outputs": [
+    "tacit0.out"
+   ]
+  },
+  {
+   "name": "pl-tp6-288",
+   "bootbinary": "../../../../../software/firemarshal/images/firechip/process-launch-process-launch-tp-trace-288/process-launch-process-launch-tp-trace-288-bin",
+   "rootfs": "../../../../../software/firemarshal/images/firechip/process-launch-process-launch-tp-trace-288/process-launch-process-launch-tp-trace-288.img",
+   "simulation_outputs": [
+    "tacit0.out"
+   ]
+  },
+  {
+   "name": "pl-tp6-304",
+   "bootbinary": "../../../../../software/firemarshal/images/firechip/process-launch-process-launch-tp-trace-304/process-launch-process-launch-tp-trace-304-bin",
+   "rootfs": "../../../../../software/firemarshal/images/firechip/process-launch-process-launch-tp-trace-304/process-launch-process-launch-tp-trace-304.img",
+   "simulation_outputs": [
+    "tacit0.out"
+   ]
+  },
+  {
+   "name": "pl-tp6-320",
+   "bootbinary": "../../../../../software/firemarshal/images/firechip/process-launch-process-launch-tp-trace-320/process-launch-process-launch-tp-trace-320-bin",
+   "rootfs": "../../../../../software/firemarshal/images/firechip/process-launch-process-launch-tp-trace-320/process-launch-process-launch-tp-trace-320.img",
+   "simulation_outputs": [
+    "tacit0.out"
+   ]
+  },
+  {
+   "name": "pl-tp6-336",
+   "bootbinary": "../../../../../software/firemarshal/images/firechip/process-launch-process-launch-tp-trace-336/process-launch-process-launch-tp-trace-336-bin",
+   "rootfs": "../../../../../software/firemarshal/images/firechip/process-launch-process-launch-tp-trace-336/process-launch-process-launch-tp-trace-336.img",
+   "simulation_outputs": [
+    "tacit0.out"
+   ]
+  }
+ ]
+}

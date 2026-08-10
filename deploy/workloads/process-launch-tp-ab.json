@@ -1,0 +1,23 @@
+{
+	"benchmark_name": "process-launch-tp-ab",
+	"common_simulation_outputs": [
+		"uartlog"
+	],
+	"workloads": [
+		{
+			"name": "pl-10k-tp-ctrl",
+			"bootbinary": "../../../../../software/firemarshal/images/firechip/process-launch-process-launch-collect-10k/process-launch-process-launch-collect-10k-bin",
+			"rootfs": "../../../../../software/firemarshal/images/firechip/process-launch-process-launch-collect-10k/process-launch-process-launch-collect-10k.img"
+		},
+		{
+			"name": "pl-10k-tp-full",
+			"bootbinary": "../../../../../software/firemarshal/images/firechip/process-launch-process-launch-collect-10k-tp/process-launch-process-launch-collect-10k-tp-bin",
+			"rootfs": "../../../../../software/firemarshal/images/firechip/process-launch-process-launch-collect-10k-tp/process-launch-process-launch-collect-10k-tp.img"
+		},
+		{
+			"name": "pl-10k-tp-lite",
+			"bootbinary": "../../../../../software/firemarshal/images/firechip/process-launch-process-launch-collect-10k-tp-lite/process-launch-process-launch-collect-10k-tp-lite-bin",
+			"rootfs": "../../../../../software/firemarshal/images/firechip/process-launch-process-launch-collect-10k-tp-lite/process-launch-process-launch-collect-10k-tp-lite.img"
+		}
+	]
+}

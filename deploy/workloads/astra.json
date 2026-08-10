@@ -1,0 +1,13 @@
+{
+	"benchmark_name": "astra",
+	"common_simulation_outputs": [
+		"uartlog"
+	],
+	"workloads": [
+		{
+			"name": "astra-astra",
+			"bootbinary": "../../../../../software/firemarshal/images/firechip/astra-astra/astra-astra-bin",
+			"rootfs": "../../../../../software/firemarshal/images/firechip/astra-astra/astra-astra.img"
+		}
+	]
+}

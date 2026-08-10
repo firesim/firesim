@@ -1,0 +1,19 @@
+{
+	"benchmark_name": "process-launch-patcha",
+	"common_simulation_outputs": [
+		"uartlog"
+	],
+	"workloads": [
+		{
+			"name": "pl-patcha-traced",
+			"bootbinary": "../../../../../software/firemarshal/images/patcha-snapshot/patcha-process-launch-process-launch-bin",
+			"rootfs": "../../../../../software/firemarshal/images/patcha-snapshot/patcha-process-launch-process-launch.img",
+			"simulation_outputs": ["tacit0.out"]
+		},
+		{
+			"name": "pl-patcha-10k",
+			"bootbinary": "../../../../../software/firemarshal/images/patcha-snapshot/patcha-process-launch-process-launch-collect-10k-bin",
+			"rootfs": "../../../../../software/firemarshal/images/patcha-snapshot/patcha-process-launch-process-launch-collect-10k.img"
+		}
+	]
+}

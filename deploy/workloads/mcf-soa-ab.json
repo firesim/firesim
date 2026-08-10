@@ -1,0 +1,24 @@
+{
+  "benchmark_name": "mcf-soa-ab",
+  "common_simulation_outputs": [
+    "uartlog"
+  ],
+  "workloads": [
+    {
+      "name": "mcf-V0",
+      "bootbinary": "../../../../../software/firemarshal/images/firechip/spec17-intspeed-test-605-v0-605.mcf_s/spec17-intspeed-test-605-v0-605.mcf_s-bin",
+      "rootfs": "../../../../../software/firemarshal/images/firechip/spec17-intspeed-test-605-v0-605.mcf_s/spec17-intspeed-test-605-v0-605.mcf_s.img",
+      "outputs": [
+        "/output"
+      ]
+    },
+    {
+      "name": "mcf-SOA",
+      "bootbinary": "../../../../../software/firemarshal/images/firechip/spec17-intspeed-test-605-soa-605.mcf_s/spec17-intspeed-test-605-soa-605.mcf_s-bin",
+      "rootfs": "../../../../../software/firemarshal/images/firechip/spec17-intspeed-test-605-soa-605.mcf_s/spec17-intspeed-test-605-soa-605.mcf_s.img",
+      "outputs": [
+        "/output"
+      ]
+    }
+  ]
+}

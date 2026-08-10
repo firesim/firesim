@@ -1,0 +1,18 @@
+{
+	"benchmark_name": "process-launch",
+	"common_simulation_outputs": [
+		"uartlog"
+	],
+	"workloads": [
+		{
+			"name": "process-launch-process-launch-collect",
+			"bootbinary": "../../../../../software/firemarshal/images/firechip/process-launch-process-launch-collect/process-launch-process-launch-collect-bin",
+			"rootfs": "../../../../../software/firemarshal/images/firechip/process-launch-process-launch-collect/process-launch-process-launch-collect.img"
+		},
+		{
+			"name": "process-launch-process-launch",
+			"bootbinary": "../../../../../software/firemarshal/images/firechip/process-launch-process-launch/process-launch-process-launch-bin",
+			"rootfs": "../../../../../software/firemarshal/images/firechip/process-launch-process-launch/process-launch-process-launch.img"
+		}
+	]
+}

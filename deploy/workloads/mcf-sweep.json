@@ -1,0 +1,6 @@
+{
+    "benchmark_name": "mcf-sweep",
+    "common_simulation_outputs": ["uartlog"],
+    "common_bootbinary": "../../../../../build/mcf-sweep.riscv",
+    "common_rootfs": "../../../../../software/firemarshal/boards/default/installers/firesim/dummy.rootfs"
+}

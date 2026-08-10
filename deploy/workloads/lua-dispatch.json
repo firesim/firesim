@@ -1,0 +1,49 @@
+{
+	"benchmark_name": "lua-dispatch",
+	"common_simulation_outputs": [
+		"uartlog"
+	],
+	"workloads": [
+		{
+			"name": "lua-dispatch-lua-nbody-traced",
+			"bootbinary": "../../../../../software/firemarshal/images/firechip/lua-dispatch-lua-nbody-traced/lua-dispatch-lua-nbody-traced-bin",
+			"rootfs": "../../../../../software/firemarshal/images/firechip/lua-dispatch-lua-nbody-traced/lua-dispatch-lua-nbody-traced.img",
+			"simulation_outputs": [
+				"tacit0.out"
+			]
+		},
+		{
+			"name": "lua-dispatch-lua-fannkuch-traced",
+			"bootbinary": "../../../../../software/firemarshal/images/firechip/lua-dispatch-lua-fannkuch-traced/lua-dispatch-lua-fannkuch-traced-bin",
+			"rootfs": "../../../../../software/firemarshal/images/firechip/lua-dispatch-lua-fannkuch-traced/lua-dispatch-lua-fannkuch-traced.img",
+			"simulation_outputs": [
+				"tacit0.out"
+			]
+		},
+		{
+			"name": "lua-dispatch-lua-binarytrees-traced",
+			"bootbinary": "../../../../../software/firemarshal/images/firechip/lua-dispatch-lua-binarytrees-traced/lua-dispatch-lua-binarytrees-traced-bin",
+			"rootfs": "../../../../../software/firemarshal/images/firechip/lua-dispatch-lua-binarytrees-traced/lua-dispatch-lua-binarytrees-traced.img",
+			"simulation_outputs": [
+				"tacit0.out"
+			]
+		},
+		{
+			"name": "lua-dispatch-lua-sieve-traced",
+			"bootbinary": "../../../../../software/firemarshal/images/firechip/lua-dispatch-lua-sieve-traced/lua-dispatch-lua-sieve-traced-bin",
+			"rootfs": "../../../../../software/firemarshal/images/firechip/lua-dispatch-lua-sieve-traced/lua-dispatch-lua-sieve-traced.img",
+			"simulation_outputs": [
+				"tacit0.out"
+			]
+		},
+		{
+			"name": "lua-dispatch-lua-chores",
+			"bootbinary": "../../../../../software/firemarshal/images/firechip/lua-dispatch-lua-chores/lua-dispatch-lua-chores-bin",
+			"rootfs": "../../../../../software/firemarshal/images/firechip/lua-dispatch-lua-chores/lua-dispatch-lua-chores.img",
+			"outputs": [
+				"/root/chores/driver_map.txt",
+				"/root/chores/jump_label_patch_map.txt"
+			]
+		}
+	]
+}

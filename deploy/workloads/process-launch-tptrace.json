@@ -1,0 +1,14 @@
+{
+	"benchmark_name": "process-launch-tptrace",
+	"common_simulation_outputs": [
+		"uartlog"
+	],
+	"workloads": [
+		{
+			"name": "pl-tp-trace-256",
+			"bootbinary": "../../../../../software/firemarshal/images/firechip/process-launch-process-launch-tp-trace-256/process-launch-process-launch-tp-trace-256-bin",
+			"rootfs": "../../../../../software/firemarshal/images/firechip/process-launch-process-launch-tp-trace-256/process-launch-process-launch-tp-trace-256.img",
+			"simulation_outputs": ["tacit0.out"]
+		}
+	]
+}

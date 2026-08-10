@@ -1,0 +1,24 @@
+{
+  "benchmark_name": "leela-pf-depth",
+  "common_simulation_outputs": [
+    "uartlog"
+  ],
+  "workloads": [
+    {
+      "name": "leela-D2",
+      "bootbinary": "../../../../../software/firemarshal/images/firechip/spec17-intspeed-test-641-d2-641.leela_s/spec17-intspeed-test-641-d2-641.leela_s-bin",
+      "rootfs": "../../../../../software/firemarshal/images/firechip/spec17-intspeed-test-641-d2-641.leela_s/spec17-intspeed-test-641-d2-641.leela_s.img",
+      "outputs": [
+        "/output"
+      ]
+    },
+    {
+      "name": "leela-D3",
+      "bootbinary": "../../../../../software/firemarshal/images/firechip/spec17-intspeed-test-641-d3-641.leela_s/spec17-intspeed-test-641-d3-641.leela_s-bin",
+      "rootfs": "../../../../../software/firemarshal/images/firechip/spec17-intspeed-test-641-d3-641.leela_s/spec17-intspeed-test-641-d3-641.leela_s.img",
+      "outputs": [
+        "/output"
+      ]
+    }
+  ]
+}

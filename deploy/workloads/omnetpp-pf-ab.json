@@ -1,0 +1,24 @@
+{
+  "benchmark_name": "omnetpp-pf-ab",
+  "common_simulation_outputs": [
+    "uartlog"
+  ],
+  "workloads": [
+    {
+      "name": "omnetpp-V0",
+      "bootbinary": "../../../../../software/firemarshal/images/firechip/spec17-intspeed-test-620-v0-620.omnetpp_s/spec17-intspeed-test-620-v0-620.omnetpp_s-bin",
+      "rootfs": "../../../../../software/firemarshal/images/firechip/spec17-intspeed-test-620-v0-620.omnetpp_s/spec17-intspeed-test-620-v0-620.omnetpp_s.img",
+      "outputs": [
+        "/output"
+      ]
+    },
+    {
+      "name": "omnetpp-PF",
+      "bootbinary": "../../../../../software/firemarshal/images/firechip/spec17-intspeed-test-620-pf-620.omnetpp_s/spec17-intspeed-test-620-pf-620.omnetpp_s-bin",
+      "rootfs": "../../../../../software/firemarshal/images/firechip/spec17-intspeed-test-620-pf-620.omnetpp_s/spec17-intspeed-test-620-pf-620.omnetpp_s.img",
+      "outputs": [
+        "/output"
+      ]
+    }
+  ]
+}

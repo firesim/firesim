@@ -1,0 +1,28 @@
+{
+	"benchmark_name": "process-launch-10k-ab",
+	"common_simulation_outputs": [
+		"uartlog"
+	],
+	"workloads": [
+		{
+			"name": "pl-10k-head-ctrl",
+			"bootbinary": "../../../../../software/firemarshal/images/firechip/process-launch-process-launch-collect-10k/process-launch-process-launch-collect-10k-bin",
+			"rootfs": "../../../../../software/firemarshal/images/firechip/process-launch-process-launch-collect-10k/process-launch-process-launch-collect-10k.img"
+		},
+		{
+			"name": "pl-10k-head-fix",
+			"bootbinary": "../../../../../software/firemarshal/images/firechip/process-launch-process-launch-collect-10k-fix/process-launch-process-launch-collect-10k-fix-bin",
+			"rootfs": "../../../../../software/firemarshal/images/firechip/process-launch-process-launch-collect-10k-fix/process-launch-process-launch-collect-10k-fix.img"
+		},
+		{
+			"name": "pl-10k-march-ctrl",
+			"bootbinary": "../../../../../software/firemarshal/images/march-snapshot/march-process-launch-process-launch-collect-10k-bin",
+			"rootfs": "../../../../../software/firemarshal/images/march-snapshot/march-process-launch-process-launch-collect-10k.img"
+		},
+		{
+			"name": "pl-10k-march-fix",
+			"bootbinary": "../../../../../software/firemarshal/images/march-snapshot/march-process-launch-process-launch-collect-10k-fix-bin",
+			"rootfs": "../../../../../software/firemarshal/images/march-snapshot/march-process-launch-process-launch-collect-10k-fix.img"
+		}
+	]
+}
