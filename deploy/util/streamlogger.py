@@ -12,6 +12,18 @@ import io
 
 from typing import Any, Optional, Tuple
 
+# FIX (2026-07-08): StreamLogger intercepts sys.stdout/stderr and routes every
+# line back through `logging`. If a logging emit ever fails (e.g. a disk-full
+# write error on a long run, or an odd byte in streamed sim output),
+# Handler.handleError() writes "--- Logging error ---" to sys.stderr — which is
+# THIS intercepted stream — re-entering write()->flush()->logger()->emit()->
+# handleError()-> ... until RecursionError kills the manager. Observed when a
+# 641GB TracerV trace filled /scratch mid-run. Disabling logging.raiseExceptions
+# makes handleError a no-op (the rare failing record is dropped, not recursed);
+# combined with the reentrancy guard in flush() below. The uartlog is captured
+# independently by `script`, so nothing important is lost.
+logging.raiseExceptions = False
+
 
 class StreamLogger:
     """
@@ -55,6 +67,7 @@ class StreamLogger:
         self.__buffer = io.StringIO()
         self.__unbuffered = unbuffered
         self.__flush_on_new_line = flush_on_new_line
+        self.__reentrant = False
 
     def write(self, data: str) -> None:
         """Write data to the stream."""
@@ -66,6 +79,25 @@ class StreamLogger:
 
     def flush(self) -> None:
         """Flush the stream."""
+        # Reentrancy guard: if the logger() call below fails and its handler's
+        # handleError() writes to this same intercepted stream, we'd recurse
+        # forever. When re-entered, dump straight to the real stream and return.
+        if self.__reentrant:
+            try:
+                self.__stream.write(self.__buffer.getvalue())
+                self.__stream.flush()
+                self.__buffer.seek(0)
+                self.__buffer.truncate()
+            except Exception:
+                pass
+            return
+        self.__reentrant = True
+        try:
+            self._flush_impl()
+        finally:
+            self.__reentrant = False
+
+    def _flush_impl(self) -> None:
         self.__buffer.seek(0)
         while True:
             line = self.__buffer.readline()
