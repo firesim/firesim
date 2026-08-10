@@ -868,6 +868,68 @@ class FireSimTopologyWithPasses:
                 )
             )
 
+    def collect_results_passes(self, use_mock_instances_for_testing: bool) -> None:
+        """Copy back results from all sim slots, regardless of simulation state.
+        Useful for recovering partial results from killed/failed simulations."""
+        self.run_farm.post_launch_binding(use_mock_instances_for_testing)
+
+        all_run_farm_ips = [
+            x.get_host() for x in self.run_farm.get_all_bound_host_nodes()
+        ]
+
+        rootLogger.info(
+            """Creating the directory: {}""".format(self.workload.job_results_dir)
+        )
+        localcap = local(
+            """mkdir -p {}""".format(self.workload.job_results_dir), capture=True
+        )
+        rootLogger.debug("[localhost] " + str(localcap))
+        rootLogger.debug("[localhost] " + str(localcap.stderr))
+
+        localcap = local(
+            """mkdir -p {}""".format(self.workload.job_monitoring_dir), capture=True
+        )
+        rootLogger.debug("[localhost] " + str(localcap))
+        rootLogger.debug("[localhost] " + str(localcap.stderr))
+
+        # Steps occur within the context of a tempdir.
+        with TemporaryDirectory() as uridir:
+            self.pass_fetch_URI_resolve_runtime_cfg(uridir)
+
+        @parallel
+        def collect_results_wrapper(run_farm: RunFarm, job_results_dir: str) -> None:
+            my_node = run_farm.lookup_by_host(env.host_string)
+            assert my_node.instance_deploy_manager is not None
+            idm = my_node.instance_deploy_manager
+
+            if idm.instance_assigned_simulations():
+                sim_slots = idm.parent_node.sim_slots
+                for slotno, sim in enumerate(sim_slots):
+                    rootLogger.info(f"Collecting results for slot {slotno}, job {sim.get_job_name()}")
+                    sim.mkdir_and_prep_local_job_results_dir()
+                    with warn_only():
+                        sim.copy_back_job_results_from_run(slotno)
+
+            if idm.instance_assigned_switches():
+                for counter, switch_slot in enumerate(idm.parent_node.switch_slots):
+                    with warn_only():
+                        switch_slot.copy_back_switchlog_from_run(job_results_dir, counter)
+
+            if idm.instance_assigned_pipes():
+                for counter, pipe_slot in enumerate(idm.parent_node.pipe_slots):
+                    with warn_only():
+                        pipe_slot.copy_back_pipelog_from_run(job_results_dir, counter)
+
+        execute(
+            collect_results_wrapper,
+            self.run_farm,
+            self.workload.job_results_dir,
+            hosts=all_run_farm_ips,
+        )
+        rootLogger.info("Results collection complete. Output is in: {}".format(
+            self.workload.job_results_dir
+        ))
+
     def run_workload_passes(self, use_mock_instances_for_testing: bool) -> None:
         """extra passes needed to do runworkload."""
         self.run_farm.post_launch_binding(use_mock_instances_for_testing)

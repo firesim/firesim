@@ -253,6 +253,12 @@ def kill(runtime_conf: RuntimeConfig) -> None:
     runtime_conf.kill()
 
 @register_task
+def collectresults(runtime_conf: RuntimeConfig) -> None:
+    """ Copy back results from all sim slots. Useful for recovering partial
+    results from killed or failed simulations. """
+    runtime_conf.collect_results()
+
+@register_task
 def runworkload(runtime_conf: RuntimeConfig) -> None:
     """ do runworkload. """
     runtime_conf.run_workload()
