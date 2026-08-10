@@ -1,0 +1,13 @@
+{
+	"benchmark_name": "ipi-storm",
+	"common_simulation_outputs": [
+		"uartlog"
+	],
+	"workloads": [
+		{
+			"name": "ipi-storm-ipi-storm",
+			"bootbinary": "../../../../../software/firemarshal/images/firechip/ipi-storm-ipi-storm/ipi-storm-ipi-storm-bin",
+			"rootfs": "../../../../../software/firemarshal/images/firechip/ipi-storm-ipi-storm/ipi-storm-ipi-storm.img"
+		}
+	]
+}

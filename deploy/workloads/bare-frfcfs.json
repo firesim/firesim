@@ -1,0 +1,8 @@
+{
+	"benchmark_name": "bare-frfcfs",
+	"common_simulation_outputs": [
+		"uartlog"
+	],
+	"common_bootbinary": "../../../../../software/firemarshal/example-workloads/bare-frfcfs/prefetch-bench.elf",
+	"common_rootfs": "../../../../../software/firemarshal/boards/default/installers/firesim/dummy.rootfs"
+}

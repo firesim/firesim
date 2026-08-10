@@ -1,0 +1,48 @@
+{
+	"benchmark_name": "spec17-intspeed-traced-wave2",
+	"common_simulation_outputs": [
+		"uartlog"
+	],
+	"workloads": [
+		{
+			"name": "spec17-intspeed-traced-wave2-641.leela_s-traced",
+			"bootbinary": "../../../../../software/firemarshal/images/firechip/spec17-intspeed-traced-wave2-641.leela_s-traced/spec17-intspeed-traced-wave2-641.leela_s-traced-bin",
+			"rootfs": "../../../../../software/firemarshal/images/firechip/spec17-intspeed-traced-wave2-641.leela_s-traced/spec17-intspeed-traced-wave2-641.leela_s-traced.img",
+			"outputs": [
+				"/output"
+			]
+		},
+		{
+			"name": "spec17-intspeed-traced-wave2-648.exchange2_s-traced",
+			"bootbinary": "../../../../../software/firemarshal/images/firechip/spec17-intspeed-traced-wave2-648.exchange2_s-traced/spec17-intspeed-traced-wave2-648.exchange2_s-traced-bin",
+			"rootfs": "../../../../../software/firemarshal/images/firechip/spec17-intspeed-traced-wave2-648.exchange2_s-traced/spec17-intspeed-traced-wave2-648.exchange2_s-traced.img",
+			"outputs": [
+				"/output"
+			]
+		},
+		{
+			"name": "spec17-intspeed-traced-wave2-657.xz_s-traced-dma",
+			"bootbinary": "../../../../../software/firemarshal/images/firechip/spec17-intspeed-traced-wave2-657.xz_s-traced-dma/spec17-intspeed-traced-wave2-657.xz_s-traced-dma-bin",
+			"rootfs": "../../../../../software/firemarshal/images/firechip/spec17-intspeed-traced-wave2-657.xz_s-traced-dma/spec17-intspeed-traced-wave2-657.xz_s-traced-dma.img",
+			"outputs": [
+				"/output"
+			]
+		},
+		{
+			"name": "spec17-intspeed-traced-wave2-657.xz_s-cld-traced-dma",
+			"bootbinary": "../../../../../software/firemarshal/images/firechip/spec17-intspeed-traced-wave2-657.xz_s-cld-traced-dma/spec17-intspeed-traced-wave2-657.xz_s-cld-traced-dma-bin",
+			"rootfs": "../../../../../software/firemarshal/images/firechip/spec17-intspeed-traced-wave2-657.xz_s-cld-traced-dma/spec17-intspeed-traced-wave2-657.xz_s-cld-traced-dma.img",
+			"outputs": [
+				"/output"
+			]
+		},
+		{
+			"name": "spec17-intspeed-traced-wave2-chores",
+			"bootbinary": "../../../../../software/firemarshal/images/firechip/spec17-intspeed-traced-wave2-chores/spec17-intspeed-traced-wave2-chores-bin",
+			"rootfs": "../../../../../software/firemarshal/images/firechip/spec17-intspeed-traced-wave2-chores/spec17-intspeed-traced-wave2-chores.img",
+			"outputs": [
+				"/output"
+			]
+		}
+	]
+}

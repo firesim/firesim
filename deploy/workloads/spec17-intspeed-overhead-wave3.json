@@ -1,0 +1,40 @@
+{
+	"benchmark_name": "spec17-intspeed-overhead-wave3",
+	"common_simulation_outputs": [
+		"uartlog"
+	],
+	"workloads": [
+		{
+			"name": "spec17-intspeed-overhead-wave3-641.leela_s",
+			"bootbinary": "../../../../../software/firemarshal/images/firechip/spec17-intspeed-overhead-wave3-641.leela_s/spec17-intspeed-overhead-wave3-641.leela_s-bin",
+			"rootfs": "../../../../../software/firemarshal/images/firechip/spec17-intspeed-overhead-wave3-641.leela_s/spec17-intspeed-overhead-wave3-641.leela_s.img",
+			"outputs": [
+				"/output"
+			]
+		},
+		{
+			"name": "spec17-intspeed-overhead-wave3-648.exchange2_s",
+			"bootbinary": "../../../../../software/firemarshal/images/firechip/spec17-intspeed-overhead-wave3-648.exchange2_s/spec17-intspeed-overhead-wave3-648.exchange2_s-bin",
+			"rootfs": "../../../../../software/firemarshal/images/firechip/spec17-intspeed-overhead-wave3-648.exchange2_s/spec17-intspeed-overhead-wave3-648.exchange2_s.img",
+			"outputs": [
+				"/output"
+			]
+		},
+		{
+			"name": "spec17-intspeed-overhead-wave3-641.leela_s-traced-dma",
+			"bootbinary": "../../../../../software/firemarshal/images/firechip/spec17-intspeed-overhead-wave3-641.leela_s-traced-dma/spec17-intspeed-overhead-wave3-641.leela_s-traced-dma-bin",
+			"rootfs": "../../../../../software/firemarshal/images/firechip/spec17-intspeed-overhead-wave3-641.leela_s-traced-dma/spec17-intspeed-overhead-wave3-641.leela_s-traced-dma.img",
+			"outputs": [
+				"/output"
+			]
+		},
+		{
+			"name": "spec17-intspeed-overhead-wave3-648.exchange2_s-traced-dma",
+			"bootbinary": "../../../../../software/firemarshal/images/firechip/spec17-intspeed-overhead-wave3-648.exchange2_s-traced-dma/spec17-intspeed-overhead-wave3-648.exchange2_s-traced-dma-bin",
+			"rootfs": "../../../../../software/firemarshal/images/firechip/spec17-intspeed-overhead-wave3-648.exchange2_s-traced-dma/spec17-intspeed-overhead-wave3-648.exchange2_s-traced-dma.img",
+			"outputs": [
+				"/output"
+			]
+		}
+	]
+}

@@ -1,0 +1,25 @@
+{
+	"benchmark_name": "xz-pf-ab",
+	"common_simulation_outputs": [
+		"uartlog"
+	],
+	"post_run_hook": "../../../../../software/spec2017/handle-results.py -d test -s intspeed",
+	"workloads": [
+		{
+			"name": "xz-V0",
+			"bootbinary": "../../../../../software/firemarshal/images/firechip/spec17-intspeed-test-657-v0-657.xz_s/spec17-intspeed-test-657-v0-657.xz_s-bin",
+			"rootfs": "../../../../../software/firemarshal/images/firechip/spec17-intspeed-test-657-v0-657.xz_s/spec17-intspeed-test-657-v0-657.xz_s.img",
+			"outputs": [
+				"/output"
+			]
+		},
+		{
+			"name": "xz-PF8",
+			"bootbinary": "../../../../../software/firemarshal/images/firechip/spec17-intspeed-test-657-pf8-657.xz_s/spec17-intspeed-test-657-pf8-657.xz_s-bin",
+			"rootfs": "../../../../../software/firemarshal/images/firechip/spec17-intspeed-test-657-pf8-657.xz_s/spec17-intspeed-test-657-pf8-657.xz_s.img",
+			"outputs": [
+				"/output"
+			]
+		}
+	]
+}

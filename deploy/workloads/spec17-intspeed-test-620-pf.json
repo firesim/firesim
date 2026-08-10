@@ -1,0 +1,17 @@
+{
+	"benchmark_name": "spec17-intspeed-test-620-pf",
+	"common_simulation_outputs": [
+		"uartlog"
+	],
+	"post_run_hook": "../../../../../software/spec2017/handle-results.py -d test -s intspeed",
+	"workloads": [
+		{
+			"name": "spec17-intspeed-test-620-pf-620.omnetpp_s",
+			"bootbinary": "../../../../../software/firemarshal/images/firechip/spec17-intspeed-test-620-pf-620.omnetpp_s/spec17-intspeed-test-620-pf-620.omnetpp_s-bin",
+			"rootfs": "../../../../../software/firemarshal/images/firechip/spec17-intspeed-test-620-pf-620.omnetpp_s/spec17-intspeed-test-620-pf-620.omnetpp_s.img",
+			"outputs": [
+				"/output"
+			]
+		}
+	]
+}

@@ -1,0 +1,49 @@
+{
+	"benchmark_name": "lua-dispatch-ncj",
+	"common_simulation_outputs": [
+		"uartlog"
+	],
+	"workloads": [
+		{
+			"name": "lua-dispatch-ncj-ncj-nbody-traced",
+			"bootbinary": "../../../../../software/firemarshal/images/firechip/lua-dispatch-ncj-ncj-nbody-traced/lua-dispatch-ncj-ncj-nbody-traced-bin",
+			"rootfs": "../../../../../software/firemarshal/images/firechip/lua-dispatch-ncj-ncj-nbody-traced/lua-dispatch-ncj-ncj-nbody-traced.img",
+			"simulation_outputs": [
+				"tacit0.out"
+			]
+		},
+		{
+			"name": "lua-dispatch-ncj-ncj-fannkuch-traced",
+			"bootbinary": "../../../../../software/firemarshal/images/firechip/lua-dispatch-ncj-ncj-fannkuch-traced/lua-dispatch-ncj-ncj-fannkuch-traced-bin",
+			"rootfs": "../../../../../software/firemarshal/images/firechip/lua-dispatch-ncj-ncj-fannkuch-traced/lua-dispatch-ncj-ncj-fannkuch-traced.img",
+			"simulation_outputs": [
+				"tacit0.out"
+			]
+		},
+		{
+			"name": "lua-dispatch-ncj-ncj-binarytrees-traced",
+			"bootbinary": "../../../../../software/firemarshal/images/firechip/lua-dispatch-ncj-ncj-binarytrees-traced/lua-dispatch-ncj-ncj-binarytrees-traced-bin",
+			"rootfs": "../../../../../software/firemarshal/images/firechip/lua-dispatch-ncj-ncj-binarytrees-traced/lua-dispatch-ncj-ncj-binarytrees-traced.img",
+			"simulation_outputs": [
+				"tacit0.out"
+			]
+		},
+		{
+			"name": "lua-dispatch-ncj-ncj-sieve-traced",
+			"bootbinary": "../../../../../software/firemarshal/images/firechip/lua-dispatch-ncj-ncj-sieve-traced/lua-dispatch-ncj-ncj-sieve-traced-bin",
+			"rootfs": "../../../../../software/firemarshal/images/firechip/lua-dispatch-ncj-ncj-sieve-traced/lua-dispatch-ncj-ncj-sieve-traced.img",
+			"simulation_outputs": [
+				"tacit0.out"
+			]
+		},
+		{
+			"name": "lua-dispatch-ncj-ncj-chores",
+			"bootbinary": "../../../../../software/firemarshal/images/firechip/lua-dispatch-ncj-ncj-chores/lua-dispatch-ncj-ncj-chores-bin",
+			"rootfs": "../../../../../software/firemarshal/images/firechip/lua-dispatch-ncj-ncj-chores/lua-dispatch-ncj-ncj-chores.img",
+			"outputs": [
+				"/root/chores/driver_map.txt",
+				"/root/chores/jump_label_patch_map.txt"
+			]
+		}
+	]
+}

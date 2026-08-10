@@ -1,0 +1,49 @@
+{
+	"benchmark_name": "lua-microbench-fused",
+	"common_simulation_outputs": [
+		"uartlog"
+	],
+	"workloads": [
+		{
+			"name": "lua-microbench-fused-microF-spectralnorm-traced",
+			"bootbinary": "../../../../../software/firemarshal/images/firechip/lua-microbench-fused-microF-spectralnorm-traced/lua-microbench-fused-microF-spectralnorm-traced-bin",
+			"rootfs": "../../../../../software/firemarshal/images/firechip/lua-microbench-fused-microF-spectralnorm-traced/lua-microbench-fused-microF-spectralnorm-traced.img",
+			"simulation_outputs": [
+				"tacit0.out"
+			]
+		},
+		{
+			"name": "lua-microbench-fused-microF-mandelbrot-traced",
+			"bootbinary": "../../../../../software/firemarshal/images/firechip/lua-microbench-fused-microF-mandelbrot-traced/lua-microbench-fused-microF-mandelbrot-traced-bin",
+			"rootfs": "../../../../../software/firemarshal/images/firechip/lua-microbench-fused-microF-mandelbrot-traced/lua-microbench-fused-microF-mandelbrot-traced.img",
+			"simulation_outputs": [
+				"tacit0.out"
+			]
+		},
+		{
+			"name": "lua-microbench-fused-microF-fasta-traced",
+			"bootbinary": "../../../../../software/firemarshal/images/firechip/lua-microbench-fused-microF-fasta-traced/lua-microbench-fused-microF-fasta-traced-bin",
+			"rootfs": "../../../../../software/firemarshal/images/firechip/lua-microbench-fused-microF-fasta-traced/lua-microbench-fused-microF-fasta-traced.img",
+			"simulation_outputs": [
+				"tacit0.out"
+			]
+		},
+		{
+			"name": "lua-microbench-fused-microF-queens-traced",
+			"bootbinary": "../../../../../software/firemarshal/images/firechip/lua-microbench-fused-microF-queens-traced/lua-microbench-fused-microF-queens-traced-bin",
+			"rootfs": "../../../../../software/firemarshal/images/firechip/lua-microbench-fused-microF-queens-traced/lua-microbench-fused-microF-queens-traced.img",
+			"simulation_outputs": [
+				"tacit0.out"
+			]
+		},
+		{
+			"name": "lua-microbench-fused-microF-chores",
+			"bootbinary": "../../../../../software/firemarshal/images/firechip/lua-microbench-fused-microF-chores/lua-microbench-fused-microF-chores-bin",
+			"rootfs": "../../../../../software/firemarshal/images/firechip/lua-microbench-fused-microF-chores/lua-microbench-fused-microF-chores.img",
+			"outputs": [
+				"/root/chores/driver_map.txt",
+				"/root/chores/jump_label_patch_map.txt"
+			]
+		}
+	]
+}

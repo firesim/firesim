@@ -1,0 +1,18 @@
+{
+	"benchmark_name": "spec17-intspeed-test-chores",
+	"common_simulation_outputs": [
+		"uartlog"
+	],
+	"post_run_hook": "../../../../../software/spec2017/handle-results.py -d test -s intspeed",
+	"workloads": [
+		{
+			"name": "spec17-intspeed-test-chores-run-chores",
+			"bootbinary": "../../../../../software/firemarshal/images/firechip/spec17-intspeed-test-chores-run-chores/spec17-intspeed-test-chores-run-chores-bin",
+			"rootfs": "../../../../../software/firemarshal/images/firechip/spec17-intspeed-test-chores-run-chores/spec17-intspeed-test-chores-run-chores.img",
+			"outputs": [
+				"/root/chores/driver_map.txt",
+				"/root/chores/jump_label_patch_map.txt"
+			]
+		}
+	]
+}

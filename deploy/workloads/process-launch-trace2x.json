@@ -1,0 +1,20 @@
+{
+	"benchmark_name": "process-launch-trace2x",
+	"common_simulation_outputs": [
+		"uartlog"
+	],
+	"workloads": [
+		{
+			"name": "pl-trace-256",
+			"bootbinary": "../../../../../software/firemarshal/images/firechip/process-launch-process-launch-256/process-launch-process-launch-256-bin",
+			"rootfs": "../../../../../software/firemarshal/images/firechip/process-launch-process-launch-256/process-launch-process-launch-256.img",
+			"simulation_outputs": ["tacit0.out"]
+		},
+		{
+			"name": "pl-trace-320",
+			"bootbinary": "../../../../../software/firemarshal/images/firechip/process-launch-process-launch-320/process-launch-process-launch-320-bin",
+			"rootfs": "../../../../../software/firemarshal/images/firechip/process-launch-process-launch-320/process-launch-process-launch-320.img",
+			"simulation_outputs": ["tacit0.out"]
+		}
+	]
+}

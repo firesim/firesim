@@ -1,0 +1,49 @@
+{
+	"benchmark_name": "lua-dispatch-fused",
+	"common_simulation_outputs": [
+		"uartlog"
+	],
+	"workloads": [
+		{
+			"name": "lua-dispatch-fused-fused-nbody-traced",
+			"bootbinary": "../../../../../software/firemarshal/images/firechip/lua-dispatch-fused-fused-nbody-traced/lua-dispatch-fused-fused-nbody-traced-bin",
+			"rootfs": "../../../../../software/firemarshal/images/firechip/lua-dispatch-fused-fused-nbody-traced/lua-dispatch-fused-fused-nbody-traced.img",
+			"simulation_outputs": [
+				"tacit0.out"
+			]
+		},
+		{
+			"name": "lua-dispatch-fused-fused-fannkuch-traced",
+			"bootbinary": "../../../../../software/firemarshal/images/firechip/lua-dispatch-fused-fused-fannkuch-traced/lua-dispatch-fused-fused-fannkuch-traced-bin",
+			"rootfs": "../../../../../software/firemarshal/images/firechip/lua-dispatch-fused-fused-fannkuch-traced/lua-dispatch-fused-fused-fannkuch-traced.img",
+			"simulation_outputs": [
+				"tacit0.out"
+			]
+		},
+		{
+			"name": "lua-dispatch-fused-fused-binarytrees-traced",
+			"bootbinary": "../../../../../software/firemarshal/images/firechip/lua-dispatch-fused-fused-binarytrees-traced/lua-dispatch-fused-fused-binarytrees-traced-bin",
+			"rootfs": "../../../../../software/firemarshal/images/firechip/lua-dispatch-fused-fused-binarytrees-traced/lua-dispatch-fused-fused-binarytrees-traced.img",
+			"simulation_outputs": [
+				"tacit0.out"
+			]
+		},
+		{
+			"name": "lua-dispatch-fused-fused-sieve-traced",
+			"bootbinary": "../../../../../software/firemarshal/images/firechip/lua-dispatch-fused-fused-sieve-traced/lua-dispatch-fused-fused-sieve-traced-bin",
+			"rootfs": "../../../../../software/firemarshal/images/firechip/lua-dispatch-fused-fused-sieve-traced/lua-dispatch-fused-fused-sieve-traced.img",
+			"simulation_outputs": [
+				"tacit0.out"
+			]
+		},
+		{
+			"name": "lua-dispatch-fused-fused-chores",
+			"bootbinary": "../../../../../software/firemarshal/images/firechip/lua-dispatch-fused-fused-chores/lua-dispatch-fused-fused-chores-bin",
+			"rootfs": "../../../../../software/firemarshal/images/firechip/lua-dispatch-fused-fused-chores/lua-dispatch-fused-fused-chores.img",
+			"outputs": [
+				"/root/chores/driver_map.txt",
+				"/root/chores/jump_label_patch_map.txt"
+			]
+		}
+	]
+}

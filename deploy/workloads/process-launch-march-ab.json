@@ -1,0 +1,18 @@
+{
+	"benchmark_name": "process-launch-march-ab",
+	"common_simulation_outputs": [
+		"uartlog"
+	],
+	"workloads": [
+		{
+			"name": "pl-10k-march-ctrl",
+			"bootbinary": "../../../../../software/firemarshal/images/march-snapshot/march-process-launch-process-launch-collect-10k-bin",
+			"rootfs": "../../../../../software/firemarshal/images/march-snapshot/march-process-launch-process-launch-collect-10k.img"
+		},
+		{
+			"name": "pl-10k-march-fix",
+			"bootbinary": "../../../../../software/firemarshal/images/march-snapshot/march-process-launch-process-launch-collect-10k-fix-bin",
+			"rootfs": "../../../../../software/firemarshal/images/march-snapshot/march-process-launch-process-launch-collect-10k-fix.img"
+		}
+	]
+}

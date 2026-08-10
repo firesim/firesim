@@ -1,0 +1,56 @@
+{
+	"benchmark_name": "spec17-intspeed-overhead-wave1-debug",
+	"common_simulation_outputs": [
+		"uartlog"
+	],
+	"workloads": [
+		{
+			"name": "spec17-intspeed-overhead-wave1-debug-600.perlbench_s-traced-dma",
+			"bootbinary": "../../../../../software/firemarshal/images/firechip/spec17-intspeed-overhead-wave1-debug-600.perlbench_s-traced-dma/spec17-intspeed-overhead-wave1-debug-600.perlbench_s-traced-dma-bin",
+			"rootfs": "../../../../../software/firemarshal/images/firechip/spec17-intspeed-overhead-wave1-debug-600.perlbench_s-traced-dma/spec17-intspeed-overhead-wave1-debug-600.perlbench_s-traced-dma.img",
+			"outputs": [
+				"/output"
+			]
+		},
+		{
+			"name": "spec17-intspeed-overhead-wave1-debug-602.gcc_s-traced-dma",
+			"bootbinary": "../../../../../software/firemarshal/images/firechip/spec17-intspeed-overhead-wave1-debug-602.gcc_s-traced-dma/spec17-intspeed-overhead-wave1-debug-602.gcc_s-traced-dma-bin",
+			"rootfs": "../../../../../software/firemarshal/images/firechip/spec17-intspeed-overhead-wave1-debug-602.gcc_s-traced-dma/spec17-intspeed-overhead-wave1-debug-602.gcc_s-traced-dma.img",
+			"outputs": [
+				"/output"
+			]
+		},
+		{
+			"name": "spec17-intspeed-overhead-wave1-debug-605.mcf_s-traced-dma",
+			"bootbinary": "../../../../../software/firemarshal/images/firechip/spec17-intspeed-overhead-wave1-debug-605.mcf_s-traced-dma/spec17-intspeed-overhead-wave1-debug-605.mcf_s-traced-dma-bin",
+			"rootfs": "../../../../../software/firemarshal/images/firechip/spec17-intspeed-overhead-wave1-debug-605.mcf_s-traced-dma/spec17-intspeed-overhead-wave1-debug-605.mcf_s-traced-dma.img",
+			"outputs": [
+				"/output"
+			]
+		},
+		{
+			"name": "spec17-intspeed-overhead-wave1-debug-600.perlbench_s",
+			"bootbinary": "../../../../../software/firemarshal/images/firechip/spec17-intspeed-overhead-wave1-debug-600.perlbench_s/spec17-intspeed-overhead-wave1-debug-600.perlbench_s-bin",
+			"rootfs": "../../../../../software/firemarshal/images/firechip/spec17-intspeed-overhead-wave1-debug-600.perlbench_s/spec17-intspeed-overhead-wave1-debug-600.perlbench_s.img",
+			"outputs": [
+				"/output"
+			]
+		},
+		{
+			"name": "spec17-intspeed-overhead-wave1-debug-602.gcc_s",
+			"bootbinary": "../../../../../software/firemarshal/images/firechip/spec17-intspeed-overhead-wave1-debug-602.gcc_s/spec17-intspeed-overhead-wave1-debug-602.gcc_s-bin",
+			"rootfs": "../../../../../software/firemarshal/images/firechip/spec17-intspeed-overhead-wave1-debug-602.gcc_s/spec17-intspeed-overhead-wave1-debug-602.gcc_s.img",
+			"outputs": [
+				"/output"
+			]
+		},
+		{
+			"name": "spec17-intspeed-overhead-wave1-debug-605.mcf_s",
+			"bootbinary": "../../../../../software/firemarshal/images/firechip/spec17-intspeed-overhead-wave1-debug-605.mcf_s/spec17-intspeed-overhead-wave1-debug-605.mcf_s-bin",
+			"rootfs": "../../../../../software/firemarshal/images/firechip/spec17-intspeed-overhead-wave1-debug-605.mcf_s/spec17-intspeed-overhead-wave1-debug-605.mcf_s.img",
+			"outputs": [
+				"/output"
+			]
+		}
+	]
+}

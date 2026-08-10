@@ -1,0 +1,18 @@
+{
+	"benchmark_name": "process-launch-vdso-ab",
+	"common_simulation_outputs": [
+		"uartlog"
+	],
+	"workloads": [
+		{
+			"name": "pl-10k-vdso-ctrl",
+			"bootbinary": "../../../../../software/firemarshal/images/vdso-snapshot/vdso-process-launch-process-launch-collect-10k-bin",
+			"rootfs": "../../../../../software/firemarshal/images/vdso-snapshot/vdso-process-launch-process-launch-collect-10k.img"
+		},
+		{
+			"name": "pl-10k-vdso-fix",
+			"bootbinary": "../../../../../software/firemarshal/images/vdso-snapshot/vdso-process-launch-process-launch-collect-10k-fix-bin",
+			"rootfs": "../../../../../software/firemarshal/images/vdso-snapshot/vdso-process-launch-process-launch-collect-10k-fix.img"
+		}
+	]
+}

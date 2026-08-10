@@ -1,0 +1,40 @@
+{
+  "benchmark_name": "mcf-pf-sweep",
+  "common_simulation_outputs": [
+    "uartlog"
+  ],
+  "workloads": [
+    {
+      "name": "mcf-NOPF",
+      "bootbinary": "../../../../../software/firemarshal/images/firechip/spec17-intspeed-test-605-full-nopf-605.mcf_s/spec17-intspeed-test-605-full-nopf-605.mcf_s-bin",
+      "rootfs": "../../../../../software/firemarshal/images/firechip/spec17-intspeed-test-605-full-nopf-605.mcf_s/spec17-intspeed-test-605-full-nopf-605.mcf_s.img",
+      "outputs": [
+        "/output"
+      ]
+    },
+    {
+      "name": "mcf-D4",
+      "bootbinary": "../../../../../software/firemarshal/images/firechip/spec17-intspeed-test-605-full-d4-605.mcf_s/spec17-intspeed-test-605-full-d4-605.mcf_s-bin",
+      "rootfs": "../../../../../software/firemarshal/images/firechip/spec17-intspeed-test-605-full-d4-605.mcf_s/spec17-intspeed-test-605-full-d4-605.mcf_s.img",
+      "outputs": [
+        "/output"
+      ]
+    },
+    {
+      "name": "mcf-D8",
+      "bootbinary": "../../../../../software/firemarshal/images/firechip/spec17-intspeed-test-605-full-d8-605.mcf_s/spec17-intspeed-test-605-full-d8-605.mcf_s-bin",
+      "rootfs": "../../../../../software/firemarshal/images/firechip/spec17-intspeed-test-605-full-d8-605.mcf_s/spec17-intspeed-test-605-full-d8-605.mcf_s.img",
+      "outputs": [
+        "/output"
+      ]
+    },
+    {
+      "name": "mcf-D16",
+      "bootbinary": "../../../../../software/firemarshal/images/firechip/spec17-intspeed-test-605-full-605.mcf_s/spec17-intspeed-test-605-full-605.mcf_s-bin",
+      "rootfs": "../../../../../software/firemarshal/images/firechip/spec17-intspeed-test-605-full-605.mcf_s/spec17-intspeed-test-605-full-605.mcf_s.img",
+      "outputs": [
+        "/output"
+      ]
+    }
+  ]
+}

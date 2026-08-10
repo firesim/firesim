@@ -1,0 +1,49 @@
+{
+	"benchmark_name": "lua-microbench",
+	"common_simulation_outputs": [
+		"uartlog"
+	],
+	"workloads": [
+		{
+			"name": "lua-microbench-micro-spectralnorm-traced",
+			"bootbinary": "../../../../../software/firemarshal/images/firechip/lua-microbench-micro-spectralnorm-traced/lua-microbench-micro-spectralnorm-traced-bin",
+			"rootfs": "../../../../../software/firemarshal/images/firechip/lua-microbench-micro-spectralnorm-traced/lua-microbench-micro-spectralnorm-traced.img",
+			"simulation_outputs": [
+				"tacit0.out"
+			]
+		},
+		{
+			"name": "lua-microbench-micro-mandelbrot-traced",
+			"bootbinary": "../../../../../software/firemarshal/images/firechip/lua-microbench-micro-mandelbrot-traced/lua-microbench-micro-mandelbrot-traced-bin",
+			"rootfs": "../../../../../software/firemarshal/images/firechip/lua-microbench-micro-mandelbrot-traced/lua-microbench-micro-mandelbrot-traced.img",
+			"simulation_outputs": [
+				"tacit0.out"
+			]
+		},
+		{
+			"name": "lua-microbench-micro-fasta-traced",
+			"bootbinary": "../../../../../software/firemarshal/images/firechip/lua-microbench-micro-fasta-traced/lua-microbench-micro-fasta-traced-bin",
+			"rootfs": "../../../../../software/firemarshal/images/firechip/lua-microbench-micro-fasta-traced/lua-microbench-micro-fasta-traced.img",
+			"simulation_outputs": [
+				"tacit0.out"
+			]
+		},
+		{
+			"name": "lua-microbench-micro-queens-traced",
+			"bootbinary": "../../../../../software/firemarshal/images/firechip/lua-microbench-micro-queens-traced/lua-microbench-micro-queens-traced-bin",
+			"rootfs": "../../../../../software/firemarshal/images/firechip/lua-microbench-micro-queens-traced/lua-microbench-micro-queens-traced.img",
+			"simulation_outputs": [
+				"tacit0.out"
+			]
+		},
+		{
+			"name": "lua-microbench-micro-chores",
+			"bootbinary": "../../../../../software/firemarshal/images/firechip/lua-microbench-micro-chores/lua-microbench-micro-chores-bin",
+			"rootfs": "../../../../../software/firemarshal/images/firechip/lua-microbench-micro-chores/lua-microbench-micro-chores.img",
+			"outputs": [
+				"/root/chores/driver_map.txt",
+				"/root/chores/jump_label_patch_map.txt"
+			]
+		}
+	]
+}

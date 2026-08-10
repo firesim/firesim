@@ -1,0 +1,40 @@
+{
+	"benchmark_name": "spec17-intspeed-overhead-wave4",
+	"common_simulation_outputs": [
+		"uartlog"
+	],
+	"workloads": [
+		{
+			"name": "spec17-intspeed-overhead-wave4-657.xz_s-cpu2006docs",
+			"bootbinary": "../../../../../software/firemarshal/images/firechip/spec17-intspeed-overhead-wave4-657.xz_s-cpu2006docs/spec17-intspeed-overhead-wave4-657.xz_s-cpu2006docs-bin",
+			"rootfs": "../../../../../software/firemarshal/images/firechip/spec17-intspeed-overhead-wave4-657.xz_s-cpu2006docs/spec17-intspeed-overhead-wave4-657.xz_s-cpu2006docs.img",
+			"outputs": [
+				"/output"
+			]
+		},
+		{
+			"name": "spec17-intspeed-overhead-wave4-657.xz_s-cld",
+			"bootbinary": "../../../../../software/firemarshal/images/firechip/spec17-intspeed-overhead-wave4-657.xz_s-cld/spec17-intspeed-overhead-wave4-657.xz_s-cld-bin",
+			"rootfs": "../../../../../software/firemarshal/images/firechip/spec17-intspeed-overhead-wave4-657.xz_s-cld/spec17-intspeed-overhead-wave4-657.xz_s-cld.img",
+			"outputs": [
+				"/output"
+			]
+		},
+		{
+			"name": "spec17-intspeed-overhead-wave4-657.xz_s-cpu2006docs-traced-dma",
+			"bootbinary": "../../../../../software/firemarshal/images/firechip/spec17-intspeed-overhead-wave4-657.xz_s-cpu2006docs-traced-dma/spec17-intspeed-overhead-wave4-657.xz_s-cpu2006docs-traced-dma-bin",
+			"rootfs": "../../../../../software/firemarshal/images/firechip/spec17-intspeed-overhead-wave4-657.xz_s-cpu2006docs-traced-dma/spec17-intspeed-overhead-wave4-657.xz_s-cpu2006docs-traced-dma.img",
+			"outputs": [
+				"/output"
+			]
+		},
+		{
+			"name": "spec17-intspeed-overhead-wave4-657.xz_s-cld-traced-dma",
+			"bootbinary": "../../../../../software/firemarshal/images/firechip/spec17-intspeed-overhead-wave4-657.xz_s-cld-traced-dma/spec17-intspeed-overhead-wave4-657.xz_s-cld-traced-dma-bin",
+			"rootfs": "../../../../../software/firemarshal/images/firechip/spec17-intspeed-overhead-wave4-657.xz_s-cld-traced-dma/spec17-intspeed-overhead-wave4-657.xz_s-cld-traced-dma.img",
+			"outputs": [
+				"/output"
+			]
+		}
+	]
+}

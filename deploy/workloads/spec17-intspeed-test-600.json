@@ -1,0 +1,17 @@
+{
+	"benchmark_name": "spec17-intspeed-test-600",
+	"common_simulation_outputs": [
+		"uartlog"
+	],
+	"post_run_hook": "../../../../../software/spec2017/handle-results.py -d test -s intspeed",
+	"workloads": [
+		{
+			"name": "spec17-intspeed-test-600-600.perlbench_s",
+			"bootbinary": "../../../../../software/firemarshal/images/firechip/spec17-intspeed-test-600-600.perlbench_s/spec17-intspeed-test-600-600.perlbench_s-bin",
+			"rootfs": "../../../../../software/firemarshal/images/firechip/spec17-intspeed-test-600-600.perlbench_s/spec17-intspeed-test-600-600.perlbench_s.img",
+			"outputs": [
+				"/output"
+			]
+		}
+	]
+}
