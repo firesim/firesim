@@ -140,6 +140,35 @@ class LLCDRAMConfig
         new DefaultConfig
     )
 
+// DMA starvation test configs: no fuzzer needed, DUT has its own traffic generators
+class DMAStarvationBaseConfig
+    extends Config(
+      new WithoutTLMonitors ++
+        new WithDefaultMemPort ++
+        new Config((site, _, _) => {
+          case junctions.NastiKey =>
+            NastiParameters(site(BeatBytes) * 8, site(AddrBits), site(IDBits))
+          case FuzzerParametersKey => Seq()  // unused, DUT has its own generators
+        })
+    )
+
+class DMAStarvationFRFCFSConfig
+    extends Config(
+      new FRFCFS16GBQuadRank ++
+        new DMAStarvationBaseConfig
+    )
+
+class DMAStarvationFCFSConfig
+    extends Config(
+      new FCFS16GBQuadRank ++
+        new DMAStarvationBaseConfig
+    )
+
+class DMAStarvationLBPConfig
+    extends Config(
+      new DMAStarvationBaseConfig
+    )
+
 /** Host memory system fragments
   */
 

@@ -193,6 +193,9 @@ void FASEDMemoryTimingModel::init() {
 }
 
 void FASEDMemoryTimingModel::finish() {
+  // Dump all readable registers at finish time for debugging
+  profile();
+
   for (auto &hist : histograms) {
     hist.finish();
   }

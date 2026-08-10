@@ -140,6 +140,11 @@ class BaselineMultichannelTest
 // Checks that id-reallocation works for platforms with limited ID space
 class NarrowIdConstraint extends FASEDTest("AXI4Fuzzer", "DefaultConfig", Seq("ConstrainedIdHostConfig"))
 
+// DMA starvation tests: sequential writer + random reader
+class DMAStarvationFRFCFSTest extends FASEDTest("DMAStarvationFuzzer", "DMAStarvationFRFCFSConfig")
+class DMAStarvationFCFSTest   extends FASEDTest("DMAStarvationFuzzer", "DMAStarvationFCFSConfig")
+class DMAStarvationLBPTest    extends FASEDTest("DMAStarvationFuzzer", "DMAStarvationLBPConfig")
+
 // Suite Collections for CI
 class CIGroupA
     extends Suites(
