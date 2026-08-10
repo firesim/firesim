@@ -1244,6 +1244,12 @@ class RuntimeConfig:
             use_mock_instances_for_testing
         )
 
+    def collect_results(self) -> None:
+        use_mock_instances_for_testing = False
+        self.firesim_topology_with_passes.collect_results_passes(
+            use_mock_instances_for_testing
+        )
+
     def run_workload(self) -> None:
         use_mock_instances_for_testing = False
         self.firesim_topology_with_passes.run_workload_passes(
