@@ -125,6 +125,35 @@ abstract class TimingModel(val cfg: BaseConfig)(implicit val p: Parameters)
     "Illegal aw request: memory model only supports incrementing or fixed (len=0) bursts",
   )
 
+  // BEGIN: claude assertion (part 1 - counters)
+  val readStallCounter = RegInit(0.U(14.W))
+  when (!pendingReads.empty && !tNasti.r.fire) {
+    readStallCounter := readStallCounter + 1.U
+  } .otherwise {
+    readStallCounter := 0.U
+  }
+  assert(readStallCounter < 8000.U,
+    "FASED: read pending for 8000+ target cycles without response")
+
+  val writeStallCounter = RegInit(0.U(14.W))
+  when (!pendingAWReq.empty && !tNasti.b.fire) {
+    writeStallCounter := writeStallCounter + 1.U
+  } .otherwise {
+    writeStallCounter := 0.U
+  }
+  assert(writeStallCounter < 8000.U,
+    "FASED: write pending for 8000+ target cycles without response")
+
+  val arBlockedCounter = RegInit(0.U(14.W))
+  when (nastiReq.ar.valid && !nastiReq.ar.ready) {
+    arBlockedCounter := arBlockedCounter + 1.U
+  } .otherwise {
+    arBlockedCounter := 0.U
+  }
+  assert(arBlockedCounter < 8000.U,
+    "FASED: AR request blocked at scheduler input for 8000+ target cycles")
+  // END: claude assertion (part 1)
+
   // Release; returns responses to target
   val xactionRelease = Module(new AXI4Releaser(p(NastiKey)))
   tNasti.b                     <> xactionRelease.io.b
@@ -147,6 +176,15 @@ abstract class TimingModel(val cfg: BaseConfig)(implicit val p: Parameters)
     xactionRelease.io.nextWrite <> wResp
     xactionRelease.io.nextRead  <> rResp
   }
+
+  // BEGIN: claude assertion (part 2 - after xactionRelease defined)
+  when (readStallCounter >= 7999.U) {
+    assert(!xactionRelease.io.r.valid || tNasti.r.ready,
+      "FASED: read response valid but tNasti.r not ready (target backpressure)")
+    assert(!rResp.valid || rResp.ready,
+      "FASED: rResp valid but AXI4Releaser not ready")
+  }
+  // END: claude assertion (part 2)
 
   if (cfg.params.xactionCounters) {
     val totalReads  = RegInit(0.U(32.W))
