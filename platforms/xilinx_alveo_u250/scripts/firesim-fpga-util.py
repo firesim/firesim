@@ -31,6 +31,25 @@ def program_fpga(vivado: Path, serial: str, bitstream: str) -> None:
     if rc != 0:
         sys.exit(f":ERROR: Unable to flash FPGA {serial} with {bitstream}.\nstdout:\n{stdout}\nstderr:\n{stderr}")
 
+def program_fpga_partial(vivado: Path, serial: str, partial_bitstream: str) -> None:
+    """Program only the DFX reconfigurable partition. The static region
+    (PCIe, DDR4, NIC, FireSim top) keeps running across the swap. Requires
+    that a compatible full bitstream was previously loaded (i.e. same base
+    build produced this partial)."""
+    progTcl = scriptPath / 'program_fpga.tcl'
+    assert progTcl.exists(), f"Unable to find {progTcl}"
+    rc, stdout, stderr = util.call_vivado(
+        vivado,
+        [
+            '-source', str(progTcl),
+            '-tclargs',
+                '-serial', serial,
+                '-partial_bitstream_path', partial_bitstream,
+        ]
+    )
+    if rc != 0:
+        sys.exit(f":ERROR: Unable to partial-program FPGA {serial} with {partial_bitstream}.\nstdout:\n{stdout}\nstderr:\n{stderr}")
+
 # mapping functions
 
 def set_fpga_db(db: Path) -> None:
@@ -79,11 +98,20 @@ def main(args: List[str]) -> int:
     parser.add_argument("--vivado-bin", help="Explicit path to 'vivado'", type=Path)
     parser.add_argument("--hw-server-bin", help="Explicit path to 'hw_server'", type=Path)
     parser.add_argument("--fpga-db", help="Explicit path to FPGA DB file (used to resolve BDFs to serial numbers or obtain all serial numbers of FPGAs)", type=Path, required=True)
-    megroup2 = parser.add_mutually_exclusive_group(required=True)
-    megroup2.add_argument("--bitstream", help="The bitstream to flash onto FPGA(s)", type=Path)
+    # --bitstream and --partial-bitstream may be used independently OR together.
+    # Together = "safe DFX iteration": load the known-good full bit first (hard
+    # reset of static + RM), then overlay the new partial (RM swap) on top.
+    # This is robust to any static-state drift that pure partial swaps could
+    # leave behind at the cost of ~30-60s JTAG programming per iteration.
+    parser.add_argument("--bitstream", help="Full bitstream to flash onto FPGA(s). Required for the first iteration, safe to include every iteration.", type=Path)
+    parser.add_argument("--partial-bitstream", help="DFX partial bitstream to swap into the reconfigurable partition. If --bitstream is also given, the full bit is loaded first for a clean start, then the partial swaps the RM in.", type=Path)
+    megroup2 = parser.add_mutually_exclusive_group(required=False)
     megroup2.add_argument("--disconnect-bdf", help="Disconnect BDF(s)", action="store_true")
     megroup2.add_argument("--reconnect-bdf", help="Reconnect BDF(s)", action="store_true")
     parsed_args = parser.parse_args(args)
+
+    if not (parsed_args.bitstream or parsed_args.partial_bitstream or parsed_args.disconnect_bdf or parsed_args.reconnect_bdf):
+        parser.error("one of --bitstream / --partial-bitstream / --disconnect-bdf / --reconnect-bdf is required")
 
     if parsed_args.hw_server_bin is None:
         parsed_args.hw_server_bin = shutil.which('hw_server')
@@ -102,13 +130,30 @@ def main(args: List[str]) -> int:
     parsed_args.vivado_bin = Path(parsed_args.vivado_bin).absolute()
     parsed_args.hw_server_bin = Path(parsed_args.hw_server_bin).absolute()
 
+    # Defined here (before needs_sudo references it) because Python's scoping
+    # treats a later `def is_bdf_arg` in this function as a LOCAL name, so any
+    # earlier reference raises UnboundLocalError even though it looks like
+    # forward-reference. Keep this above the needs_sudo computation.
+    def is_bdf_arg(parsed_args) -> bool:
+        return parsed_args.bus_id or parsed_args.bdf or parsed_args.extended_bdf or parsed_args.all_bdfs
+
     eUserId = os.geteuid()
     sudoUserId = os.getenv('SUDO_UID')
     isAdmin = (eUserId == 0) and (sudoUserId is None)
     userId = eUserId if sudoUserId is None else int(sudoUserId)
 
-    # if not sudoer, spawn w/ sudo
-    if eUserId != 0:
+    # Sudo is only required for paths that manipulate /sys/bus/pci (disconnect,
+    # reconnect, full-bit flow that disconnects PCIe first). Pure partial
+    # reconfig only talks to Vivado's hw_server over JTAG — no sysfs writes,
+    # no /dev/xdma* access — so it can run unprivileged.
+    needs_sudo = (
+        parsed_args.disconnect_bdf
+        or parsed_args.reconnect_bdf
+        or (parsed_args.bitstream is not None and is_bdf_arg(parsed_args))
+    )
+
+    # if not sudoer, spawn w/ sudo only when needed
+    if eUserId != 0 and needs_sudo:
         execvArgs  = ['/usr/bin/sudo', str(Path(__file__).absolute())] + sys.argv[1:]
         execvArgs += ['--vivado-bin', str(parsed_args.vivado_bin), '--hw-server-bin', str(parsed_args.hw_server_bin)]
         print(f":INFO: Running: {execvArgs}")
@@ -116,9 +161,6 @@ def main(args: List[str]) -> int:
 
     # use cmdline db file
     set_fpga_db(parsed_args.fpga_db)
-
-    def is_bdf_arg(parsed_args) -> bool:
-        return parsed_args.bus_id or parsed_args.bdf or parsed_args.extended_bdf or parsed_args.all_bdfs
 
     def get_bus_ids_from_args(parsed_args) -> List[str]:
         bus_ids = []
@@ -181,6 +223,31 @@ def main(args: List[str]) -> int:
                 program_fpga(parsed_args.vivado_bin, serial, parsed_args.bitstream)
                 print(f":INFO: Successfully programmed FPGA {serial} with {parsed_args.bitstream}")
             print(":WARNING: Please warm reboot the machine")
+
+    # partial-bitstream path: runs AFTER any full-bit load in the same call.
+    # Does NOT disconnect PCIe (static is already live post-full-load, and
+    # partial reconfig preserves the static region).
+    if parsed_args.partial_bitstream is not None:
+        if not parsed_args.partial_bitstream.is_file() or not parsed_args.partial_bitstream.exists():
+            sys.exit(f":ERROR: Invalid partial bitstream: {parsed_args.partial_bitstream}")
+        parsed_args.partial_bitstream = parsed_args.partial_bitstream.absolute()
+
+        if is_bdf_arg(parsed_args):
+            bus_ids = get_bus_ids_from_args(parsed_args)
+            serialNums = [get_serial_from_bus_id(bid) for bid in bus_ids]
+            for i, bus_id in enumerate(bus_ids):
+                program_fpga_partial(parsed_args.vivado_bin, serialNums[i], parsed_args.partial_bitstream)
+                print(f":INFO: Successfully partial-programmed FPGA {bus_id} with {parsed_args.partial_bitstream}")
+
+        if parsed_args.serial or parsed_args.all_serials:
+            serials = []
+            if parsed_args.serial:
+                serials.append(parsed_args.serial)
+            if parsed_args.all_serials:
+                serials.extend(get_serials())
+            for serial in serials:
+                program_fpga_partial(parsed_args.vivado_bin, serial, parsed_args.partial_bitstream)
+                print(f":INFO: Successfully partial-programmed FPGA {serial} with {parsed_args.partial_bitstream}")
 
     # disconnect bdfs
     if parsed_args.disconnect_bdf:
