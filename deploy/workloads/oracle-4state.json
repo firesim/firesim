@@ -1,0 +1,10 @@
+{
+	"benchmark_name": "oracle-4state",
+	"common_simulation_outputs": [
+		"uartlog",
+		"tokens.bin",
+		"oracle_pcs.csv"
+	],
+	"common_bootbinary": "../../../../../build/oracle-4state-ubench.riscv",
+	"common_rootfs": "../../../../../software/firemarshal/boards/default/installers/firesim/dummy.rootfs"
+}

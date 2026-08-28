@@ -1,0 +1,9 @@
+{
+	"benchmark_name": "statemate-smoke",
+	"common_simulation_outputs": [
+		"uartlog",
+		"tacit0.out"
+	],
+	"common_bootbinary": "../../../../../software/embench/build/statemate-tacit",
+	"common_rootfs": "../../../../../software/firemarshal/boards/default/installers/firesim/dummy.rootfs"
+}

@@ -1,0 +1,156 @@
+# Snapshot of deploy/config_runtime.yaml as used for the TraceDoctor oracle
+# validation runs (2026-08). The live config_runtime.yaml is gitignored by
+# deploy/.gitignore (config_*.yaml), so this frozen copy is what survives a
+# fresh clone -- copy it over deploy/config_runtime.yaml to reproduce.
+#
+# The commented default_hw_config and workload_name ladders below record the
+# validation sequence in order; uncomment one of each.
+#
+# Run-time configuration for the FireSim Simulation Manager
+# See https://docs.fires.im/en/stable/Advanced-Usage/Manager/Manager-Configuration-Files.html for documentation of all of these params.
+
+run_farm:
+  base_recipe: run-farm-recipes/externally_provisioned.yaml
+  recipe_arg_overrides:
+    # REQUIRED: default platform used for run farm hosts. this is a class specifying
+    # how to run simulations on a run farm host.
+    default_platform: XilinxAlveoU250InstanceDeployManager
+
+    # REQUIRED: default directory where simulations are run out of on the run farm hosts
+    default_simulation_dir: /scratch/iansseijelly/FIRESIM_RUN_TMP
+
+    # REQUIRED: default fpga db file that enumerates what fpgas are available on the machine (used by XilinxU* Deploy Managers)
+    default_fpga_db: /opt/firesim-db.json
+
+    # REQUIRED: List of unique hostnames/IP addresses, each with their
+    # corresponding specification that describes the properties of the host.
+    #
+    # Ex:
+    # run_farm_hosts_to_use:
+    #     # use localhost which is described by "four_fpgas_spec" below.
+    #     - localhost: four_fpgas_spec
+    #     # supply IP address, which points to a machine that is described
+    #     # by "four_fpgas_spec" below.
+    #     - "111.111.1.111": four_fpgas_spec
+    run_farm_hosts_to_use:
+        # - localhost: one_metasims_spec
+        # - localhost: two_fpgas_spec
+        - localhost: six_fpgas_spec
+
+metasimulation:
+#   metasimulation_enabled: true
+  metasimulation_enabled: false
+  # vcs or verilator. use vcs-debug or verilator-debug for waveform generation
+  metasimulation_host_simulator: vcs-debug
+  # plusargs passed to the simulator for all metasimulations
+  metasimulation_only_plusargs: "+fesvr-step-size=128 +max-cycles=100000000"
+  # plusargs passed to the simulator ONLY FOR vcs metasimulations
+#   metasimulation_only_vcs_plusargs: "+vcs+initreg+0 +vcs+initmem+0"
+  metasimulation_only_vcs_plusargs: "+vcs+initreg+random +vcs+initmem+0"
+
+# DOCREF START: target_config area
+target_config:
+    topology: no_net_config
+    # no_net_num_nodes: 6
+    # no_net_num_nodes: 5
+    # no_net_num_nodes: 4
+    # no_net_num_nodes: 1
+    # no_net_num_nodes: 1
+    # no_net_num_nodes: 4
+    no_net_num_nodes: 1
+    # no_net_num_nodes: 1
+    link_latency: 6405
+    switching_latency: 10
+    net_bandwidth: 200
+    profile_interval: -1
+
+    # This references a section from config_hwdb.yaml for fpga-accelerated simulation
+    # or from config_build_recipes.yaml for metasimulation
+    # In homogeneous configurations, use this to set the hardware config deployed
+    # for all simulators
+    # NOTE: ~40 commented-out historical hw_config alternates were lost here
+    # (2026-07-31 tooling accident). Recover per-run configs from
+    # results-workload/*/HW_CFG_SUMMARY if needed.
+    # default_hw_config: tacit_frfcfs_ddr3_mega_boom_v3   # 4-wide FRFCFS DDR3: DRAM BW rebuttal (vanilla mcf, traced)
+    # default_hw_config: tacit_mega_boom_v3_tracedoctor  # 4-wide, paper-grade
+    # default_hw_config: tacit_mega_boom_v3_sramqueue  # 2026-08-19: SRAM-queue validation smoke test
+    # default_hw_config: tacit_mega_boom_v3_sramqueue_tracedoctor  # 2026-08-19: SRAM-queue + oracle cross-check
+    # default_hw_config: tacit_mega_boom_v3_tracedoctor  # 2026-08-20: legacy A/B for mcf decode-panic discrimination
+    default_hw_config: tacit_mega_boom_v3_sramqueue_tracedoctor  # 2026-08-19: SRAM-queue + oracle cross-check
+
+    # Advanced: Specify any extra plusargs you would like to provide when
+    # booting the simulator (in both FPGA-sim and metasim modes). This is
+    # a string, with the contents formatted as if you were passing the plusargs
+    # at command line, e.g. "+a=1 +b=2"
+    # smoke-test setting (trace everything from cycle 0):
+    # plusarg_passthrough: "+trace-select=1 +trace-start=0 +trace-end=-1"
+    # statemate/tracedoctor oracle trigger setup:
+    plusarg_passthrough: "+trace-select=3 +trace-start=ffffffff5a502013 +trace-end=ffffffff5ad02013 +tracedoctor-trigger=tracerv +tracedoctor-worker=bboracle,file:bboracle_inst.csv.zst +tracedoctor-worker=bboracle,boundary,file:bboracle_boundary.csv.zst"
+    # plusarg_passthrough: "+mm_useHardwareDefaultRuntimeSettings_0 +mm_relaxFunctionalModel_0=1"
+# DOCREF END: target_config area
+
+tracing:
+    enable: no
+    # enable: yes  # OFF: unbounded TracerV trace (trigger 0, fmt 0) wrote a 641GB
+    #              TRACEFILE-C0 that filled /scratch on the long (fix-working) run.
+
+    # Trace output formats. Only enabled if "enable" is set to "yes" above
+    # 0 = human readable; 1 = binary (compressed raw data); 2 = flamegraph (stack
+    # unwinding -> Flame Graph)
+    output_format: 0
+
+    # Trigger selector.
+    # 0 = no trigger; 1 = cycle count trigger; 2 = program counter trigger; 3 =
+    # instruction trigger
+    # Plain run (no trigger) — we only need pass-vs-hang for the revert test.
+    selector: 0
+    start: 0
+    end: -1
+
+autocounter:
+    # read_rate: 0
+    read_rate: 1000000
+
+workload:
+    # NOTE: ~50 commented-out historical workload alternates were lost here
+    # (2026-07-31 tooling accident). Names recoverable from results-workload/ dirs.
+    # workload_name: mcf-bw-ctrl.json  # DRAM-BW controlled expt: traced-V0 || untraced-V0 (parallel, 2 nodes)
+    # workload_name: lua-dispatch.json  # traced lua benchmarks (4 traced jobs + chores)
+    # workload_name: lua-dispatch-ncj.json  # -fno-crossjumping validation capture
+    # workload_name: lua-dispatch-fused.json  # profile-guided fusion validation capture
+    # workload_name: lua-dispatch-fused2.json  # fused + alignment (layout-term isolation)
+    # workload_name: lua-dispatch.json  # same-image A/A determinism test (vs 09-03-53 run)
+    # workload_name: lua-microbench.json  # 4 new benchmarks, ncj baseline, run 2x for A/A bands
+    # workload_name: statemate-tracedoctor.json  # 4-wide validation ladder step 1
+    # workload_name: spec17-intspeed-test-602.json  # traced 602.gcc_s + tracedoctor oracle
+    # workload_name: bare-hello-tacit.json  # bare-hello uses the DMA sink, not RawByte
+    # workload_name: statemate-smoke.json  # 2026-08-19: SRAM-queue smoke (RawByte sink -> tacit0.out)
+    # workload_name: statemate-tracedoctor.json  # 2026-08-19: SRAM-queue oracle cross-check
+    # workload_name: spec17-intspeed-test-602.json  # 2026-08-20: SRAM-queue Linux-tier validation (gcc test input + oracle)
+    # workload_name: spec17-605-full-traced-oracle.json  # custom-insn flavor, illegal-insn on this target
+    workload_name: spec17-605-test-oracle.json  # 2026-08-20: SRAM-queue long-run validation (605.mcf test, ioctl flavor + oracle)
+    terminate_on_completion: yes
+    suffix_tag: null
+
+host_debug:
+    # When enabled (=yes), Zeros-out FPGA-attached DRAM before simulations
+    # begin (takes 2-5 minutes).
+    # In general, this is not required to produce deterministic simulations on
+    # target machines running linux. Enable if you observe simulation non-determinism.
+    zero_out_dram: no
+    # If disable_synth_asserts: no, simulation will print assertion message and
+    # terminate simulation if synthesized assertion fires.
+    # If disable_synth_asserts: yes, simulation ignores assertion firing and
+    # continues simulation.
+    disable_synth_asserts: no
+
+# DOCREF START: Synthesized Prints
+synth_print:
+    # Start and end cycles for outputting synthesized prints.
+    # They are given in terms of the base clock and will be converted
+    # for each clock domain.
+    start: 0
+    end: -1
+    # When enabled (=yes), prefix print output with the target cycle at which the print was triggered
+    cycle_prefix: yes
+# DOCREF END: Synthesized Prints

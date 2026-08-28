@@ -1,7 +1,10 @@
 {
 	"benchmark_name": "spec17-intspeed-traced-wave2",
 	"common_simulation_outputs": [
-		"uartlog"
+		"uartlog",
+		"tacit0.out",
+		"bboracle_inst.csv.zst",
+		"bboracle_boundary.csv.zst"
 	],
 	"workloads": [
 		{
@@ -41,7 +44,8 @@
 			"bootbinary": "../../../../../software/firemarshal/images/firechip/spec17-intspeed-traced-wave2-chores/spec17-intspeed-traced-wave2-chores-bin",
 			"rootfs": "../../../../../software/firemarshal/images/firechip/spec17-intspeed-traced-wave2-chores/spec17-intspeed-traced-wave2-chores.img",
 			"outputs": [
-				"/output"
+				"/root/chores/driver_map.txt",
+				"/root/chores/jump_label_patch_map.txt"
 			]
 		}
 	]

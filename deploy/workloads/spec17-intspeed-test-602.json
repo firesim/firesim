@@ -1,7 +1,10 @@
 {
 	"benchmark_name": "spec17-intspeed-test-602",
 	"common_simulation_outputs": [
-		"uartlog"
+		"uartlog",
+		"tacit0.out",
+		"bboracle_inst.csv.zst",
+		"bboracle_boundary.csv.zst"
 	],
 	"post_run_hook": "../../../../../software/spec2017/handle-results.py -d test -s intspeed",
 	"workloads": [
