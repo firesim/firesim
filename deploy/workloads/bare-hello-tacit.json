@@ -1,0 +1,9 @@
+{
+	"benchmark_name": "bare-hello-tacit",
+	"common_simulation_outputs": [
+		"uartlog",
+		"tacit0.out"
+	],
+	"common_bootbinary": "../../../../../software/firemarshal/example-workloads/bare-hello/trace-hello.elf",
+	"common_rootfs": "../../../../../software/firemarshal/boards/default/installers/firesim/dummy.rootfs"
+}
