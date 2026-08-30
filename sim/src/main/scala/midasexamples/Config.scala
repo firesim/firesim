@@ -41,6 +41,13 @@ class DefaultF2Config
         new midas.F2Config
     )
 
+/** DefaultF2Config, but with bridge streams DMA'd to host memory over PCIM. */
+class F2PCIMConfig
+    extends Config(
+      new BaseMidasExamplesConfig ++
+        new midas.EC2F2PCIMConfig
+    )
+
 class DefaultVitisConfig
     extends Config(
       new BaseMidasExamplesConfig ++

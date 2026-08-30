@@ -11,25 +11,50 @@ import freechips.rocketchip.diplomacy._
 
 import midas.widgets._
 import midas.targetutils.FireSimQueueHelper
-import midas.F1ShimHasPCIMPorts
 
 import firesim.lib.bridgeutils._
+
+/** Where an FPGAManagedStreamEngine writes the streams it sources.
+  *
+  * This is a property of an *engine instance*, not of the host platform: a
+  * single design may carry one engine of each kind (e.g. F2 doing host DMA for
+  * bridge streams while FireAxe partitioning drives a peer FPGA), and they
+  * share only the physical PCIM port.
+  */
+sealed trait FPGAManagedStreamTarget
+
+/** Write into a circular buffer in host DRAM, drained by the driver. Requires
+  * credit accounting, since the CPU consumes asynchronously, and prefers large
+  * (page-sized) bursts for PCIe efficiency.
+  */
+case object HostMemoryTarget extends FPGAManagedStreamTarget
+
+/** Write into a peer FPGA's BAR (FireAxe partitioning). There is no consumer to
+  * grant credits, and latency matters more than bandwidth, so transfers are
+  * issued per beat.
+  */
+case object PeerFPGATarget extends FPGAManagedStreamTarget
 
 class WriteMetadata(val numBeatsWidth: Int) extends Bundle {
   val numBeats = Output(UInt(numBeatsWidth.W))
   val isFlush  = Output(Bool())
 }
 
-class FPGAManagedStreamEngine(p: Parameters, val params: StreamEngineParameters) extends StreamEngine(p) {
+class FPGAManagedStreamEngine(
+  p:              Parameters,
+  val params:     StreamEngineParameters,
+  val target:     FPGAManagedStreamTarget = HostMemoryTarget,
+) extends StreamEngine(p) {
   require(sinkParams.isEmpty, "FPGAManagedStreamEngine does not currently support FPGA-sunk streams.")
 
   // Beats refers to 512b words moving over a stream
   val beatBytes = BridgeStreamConstants.streamWidthBits / 8
 
-  // NOTE : Instead of waiting util we have 4kB of data, just send an
-  // AXI4 transaction for each beat.
-  // Sending 4KB wastes PCIe BW especially for when P2P is used for partitioning.
-  val streamEngineForP2P = p(F1ShimHasPCIMPorts)
+  // For P2P, send an AXI4 transaction per beat rather than accumulating 4kB:
+  // waiting for a full page wastes PCIe bandwidth when partitioning, where
+  // latency dominates. Host DMA wants the opposite -- page-sized bursts, so a
+  // drain is one large transfer rather than thousands of small ones.
+  val streamEngineForP2P = target == PeerFPGATarget
   val pageBytes          = if (streamEngineForP2P) beatBytes else 4096
   val pageBeats          = pageBytes / beatBytes
 
@@ -285,12 +310,17 @@ class FPGAManagedStreamEngine(p: Parameters, val params: StreamEngineParameters)
         )
       }
 
+      val targetLiteral = target match {
+        case HostMemoryTarget => "FPGAManagedStreams::Target::HostMemory"
+        case PeerFPGATarget   => "FPGAManagedStreams::Target::PeerFPGA"
+      }
+
       genConstructor(
         base,
         sb,
         "FPGAManagedStreamWidget",
         "fpga_managed_stream",
-        Seq(serializeStreamParameters(sourceDriverParameters)),
+        Seq(Verbatim(targetLiteral), serializeStreamParameters(sourceDriverParameters)),
         "GET_MANAGED_STREAM_CONSTRUCTOR",
       )
 

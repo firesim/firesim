@@ -33,7 +33,7 @@ private:
     return write(addr, value);
   }
 
-  char *get_memory_base() override;
+  FPGAManagedStreams::HostBuffer allocate_to_cpu_buffer(size_t size) override;
 
 private:
   int slotid;
@@ -131,7 +131,9 @@ uint32_t simif_vitis_t::is_write_ready() {
   return value & 0xFFFFFFFF;
 }
 
-char *simif_vitis_t::get_memory_base() {
+FPGAManagedStreams::HostBuffer
+simif_vitis_t::allocate_to_cpu_buffer(size_t size) {
+  (void)size;
   std::cerr << "FPGA-managed streams are not yet supported";
   abort();
 }

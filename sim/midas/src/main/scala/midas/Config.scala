@@ -248,7 +248,7 @@ class VitisConfig
           )
         )
       case StreamEngineInstantiatorKey =>
-        (e: StreamEngineParameters, p: Parameters) => new FPGAManagedStreamEngine(p, e)
+        (e: StreamEngineParameters, p: Parameters) => new FPGAManagedStreamEngine(p, e, HostMemoryTarget)
       // Notes on width selection for the control bus
       // Address: This needs further investigation. 12 may not be sufficient when using many auto counters
       // ID:      AXI4Lite does not use ID bits. Use one here since Nasti (which
@@ -281,7 +281,7 @@ class WithPCIMPorts
     extends Config((_, _, _) => {
       case F1ShimHasPCIMPorts              => true
       case FPGAStreamEngineInstantiatorKey =>
-        (e: StreamEngineParameters, p: Parameters) => new FPGAManagedStreamEngine(p, e)
+        (e: StreamEngineParameters, p: Parameters) => new FPGAManagedStreamEngine(p, e, PeerFPGATarget)
       case FPGAManagedAXI4Key              =>
         Some(
           FPGAManagedAXI4Params(
@@ -305,6 +305,33 @@ class EC2F2Config
     extends Config(
       new WithPCIMPorts ++
         new F2Config
+    )
+
+/** Route to-host bridge streams over PCIM into host DRAM, rather than having the
+  * CPU drain them across the CPU-managed AXI4 interface.
+  *
+  * This matters most on F2: the Small Shell ships no DMA engine (the XDMA shell
+  * is unsupported), so the CPU-managed path degenerates into 4-byte PIO reads
+  * over BAR4 -- one stalled, non-posted PCIe round trip per 4 bytes. Having the
+  * FPGA master the transfer instead is the only way to get real FPGA-to-host
+  * bandwidth on that platform.
+  *
+  * Limitation: FPGAManagedStreamEngine cannot serve FPGA-sunk (from-host)
+  * streams, so this supports to-host streams only, and drops the CPU-managed
+  * interface entirely. Targets needing a NIC or block device must stay on
+  * EC2F2Config until a from-host DMA path exists.
+  */
+class WithFPGAManagedBridgeStreams
+    extends Config((_, _, _) => {
+      case StreamEngineInstantiatorKey =>
+        (e: StreamEngineParameters, p: Parameters) => new FPGAManagedStreamEngine(p, e, HostMemoryTarget)
+      case CPUManagedAXI4Key           => None
+    })
+
+class EC2F2PCIMConfig
+    extends Config(
+      new WithFPGAManagedBridgeStreams ++
+        new EC2F2Config
     )
 
 case object FireAxeNoCPartitionPass    extends Field[Boolean](false)

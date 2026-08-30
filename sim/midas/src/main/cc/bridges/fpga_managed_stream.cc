@@ -67,11 +67,38 @@ FPGAManagedStreamWidget::FPGAManagedStreamWidget(
     simif_t &simif,
     unsigned index,
     const std::vector<std::string> &args,
+    FPGAManagedStreams::Target target,
     std::vector<FPGAManagedStreams::StreamParameters> &&to_cpu) {
   assert(index == 0 && "only one managed stream engine is allowed");
 
   auto &io = simif.get_fpga_managed_stream_io();
 
+  switch (target) {
+  case FPGAManagedStreams::Target::HostMemory:
+    init_host_memory_streams(io, std::move(to_cpu));
+    break;
+  case FPGAManagedStreams::Target::PeerFPGA:
+    init_peer_fpga_streams(io, args, std::move(to_cpu));
+    break;
+  }
+}
+
+/** Give each stream its own host-memory region; see allocate_to_cpu_buffer. */
+void FPGAManagedStreamWidget::init_host_memory_streams(
+    FPGAManagedStreamIO &io,
+    std::vector<FPGAManagedStreams::StreamParameters> &&to_cpu) {
+  for (auto &&params : to_cpu) {
+    auto buffer = io.allocate_to_cpu_buffer(params.buffer_capacity);
+    fpga_to_cpu_streams.push_back(
+        std::make_unique<FPGAManagedStreams::FPGAToCPUDriver>(
+            std::move(params), buffer.cpu, buffer.fpga, io));
+  }
+}
+
+void FPGAManagedStreamWidget::init_peer_fpga_streams(
+    FPGAManagedStreamIO &io,
+    const std::vector<std::string> &args,
+    std::vector<FPGAManagedStreams::StreamParameters> &&to_cpu) {
   int idx = 0;
   bool found = false;
   const char *resource_name[8] = {};

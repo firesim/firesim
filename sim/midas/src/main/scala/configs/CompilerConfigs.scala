@@ -99,6 +99,20 @@ class BaseF2Config
         new midas.EC2F2Config
     )
 
+/** BaseF2Config, but with to-host bridge streams DMA'd into host memory over
+  * PCIM instead of drained by the CPU over BAR4. See WithFPGAManagedBridgeStreams.
+  *
+  * Supports to-host streams only, so it suits trace-oriented targets (TracerV,
+  * TACIT) but not ones with a NIC or block device.
+  */
+class BaseF2PCIMConfig
+    extends Config(
+      new WithDefaultMemModel ++
+        new WithWiringTransform ++
+        new WithAsyncResetReplacement ++
+        new midas.EC2F2PCIMConfig
+    )
+
 class BaseXilinxAlveoU200Config
     extends Config(
       new WithDefaultMemModel ++

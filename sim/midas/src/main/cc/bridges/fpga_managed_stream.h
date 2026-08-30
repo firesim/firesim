@@ -11,6 +11,24 @@
 
 class simif_t;
 
+namespace FPGAManagedStreams {
+
+/** A region of host memory that an FPGA-managed stream writes into. */
+struct HostBuffer {
+  /** Where this driver reads the data. */
+  void *cpu;
+  /**
+   * The address the FPGA writes to.
+   *
+   * This is not generally `cpu`: the FPGA masters real bus transactions, so it
+   * needs a physical (or device-visible) address, whereas the driver holds a
+   * virtual one.
+   */
+  uint64_t fpga;
+};
+
+} // namespace FPGAManagedStreams
+
 /**
  * An abstraction over the low-level hardware interface on which streams rely.
  *
@@ -31,12 +49,30 @@ public:
   virtual void mmio_write(size_t addr, uint32_t value) = 0;
 
   /**
-   * Returns a pointer to the memory region where the device is mapped.
+   * Reserve `size` bytes of host memory that the FPGA can write into, and
+   * report both addresses for it.
+   *
+   * Called once per FPGA-to-CPU stream. Each stream gets its own region rather
+   * than a slice of a shared one, because the physical contiguity a DMA engine
+   * requires is only guaranteed *within* an allocation -- on F2 that means one
+   * hugepage per stream, and slicing a single page would cap the total across
+   * all streams at the page size.
+   *
+   * The returned region must remain mapped for the lifetime of this object.
    */
-  virtual char *get_memory_base() = 0;
+  virtual FPGAManagedStreams::HostBuffer allocate_to_cpu_buffer(size_t size) = 0;
 };
 
 namespace FPGAManagedStreams {
+
+/** Mirrors midas.core.FPGAManagedStreamTarget; see that file for the rationale. */
+enum class Target {
+  /** Circular buffers in host DRAM, drained by this driver. */
+  HostMemory,
+  /** A peer FPGA's BAR (FireAxe partitioning); no driver-side consumer. */
+  PeerFPGA,
+};
+
 /**
  * @brief Parameters emitted for a FPGA-managed stream emitted by Golden Gate.
  *
@@ -123,9 +159,21 @@ public:
       simif_t &simif,
       unsigned index,
       const std::vector<std::string> &args,
+      FPGAManagedStreams::Target target,
       std::vector<FPGAManagedStreams::StreamParameters> &&to_cpu);
 
 private:
+  /** Streams land in host DRAM; the driver polls and drains them. */
+  void init_host_memory_streams(
+      FPGAManagedStreamIO &io,
+      std::vector<FPGAManagedStreams::StreamParameters> &&to_cpu);
+
+  /** Streams land in a peer FPGA's BAR4; addresses come from sysfs + plusargs. */
+  void init_peer_fpga_streams(
+      FPGAManagedStreamIO &io,
+      const std::vector<std::string> &args,
+      std::vector<FPGAManagedStreams::StreamParameters> &&to_cpu);
+
   uint64_t get_p2p_bar_address(const char *dir_name);
 };
 
