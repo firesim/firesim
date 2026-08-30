@@ -7,13 +7,13 @@ SDK_DIR := $(abspath $(dir $(lastword $(MAKEFILE_LIST)))/../aws-fpga-firesim-f2/
 CC      ?= gcc
 CFLAGS  += -O2 -Wall -Wextra -std=gnu11 -I$(SDK_DIR)/include
 LDFLAGS += -L$(SDK_DIR)/lib
-LDLIBS  += -lfpga_mgmt -lz
+LDLIBS  += -lz
 
-TARGET  := pcie_mmio_latency
+TARGETS := pcie_mmio_latency dma_buffer_check
 
 .PHONY: all clean check-sdk
 
-all: check-sdk $(TARGET)
+all: check-sdk $(TARGETS)
 
 check-sdk:
 	@test -f $(SDK_DIR)/lib/libfpga_mgmt.a || { \
@@ -23,8 +23,12 @@ check-sdk:
 	  exit 1; \
 	}
 
-$(TARGET): $(TARGET).c
+# dma_buffer_check additionally needs the DMA buffer helpers.
+pcie_mmio_latency: LDLIBS += -lfpga_mgmt
+dma_buffer_check:  LDLIBS += -lfpga_mgmt -lfpga_dma
+
+%: %.c
 	$(CC) $(CFLAGS) -o $@ $< $(LDFLAGS) $(LDLIBS)
 
 clean:
-	rm -f $(TARGET)
+	rm -f $(TARGETS)

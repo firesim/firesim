@@ -267,6 +267,42 @@ FPGAManagedStreams::HostBuffer simif_f2_t::allocate_to_cpu_buffer(size_t size) {
     exit(1);
   }
 
+  // fpga_dma_mem_map_huge derives the physical address by reading
+  // /proc/self/pagemap, and checks only that the read returned 8 bytes -- not
+  // the page-present bit, and not whether the frame number is zero. Since Linux
+  // 4.0 an unprivileged reader gets the frame number masked to zero and the
+  // read still succeeds, so a driver without CAP_SYS_ADMIN is handed physical
+  // address 0 and told it succeeded.
+  //
+  // Programming that into the stream engine would point the FPGA's writes at
+  // low physical memory: either the shell rejects them and the stream silently
+  // stalls, or they land on memory belonging to something else. Refuse.
+  if (physical_address == 0) {
+    fprintf(stderr,
+            "Hugepage mapped at va 0x%" PRIx64 " reports physical address 0, "
+            "which means /proc/self/pagemap returned a zeroed frame number.\n"
+            "This driver needs CAP_SYS_ADMIN to resolve DMA addresses -- run it "
+            "as root. Continuing would point FPGA writes at physical page 0.\n",
+            virtual_address);
+    fpga_dma_mem_unmap(&virtual_address, huge_page_bytes);
+    fpga_shutdown();
+    exit(1);
+  }
+
+  // A real hugepage is naturally aligned. If this address is not, the mapping
+  // is not what we asked for and it is not safe to assume the whole region is
+  // physically contiguous.
+  if ((physical_address % huge_page_bytes) != 0) {
+    fprintf(stderr,
+            "Hugepage physical address 0x%" PRIx64 " is not %zu-byte aligned, "
+            "so the region cannot be assumed physically contiguous.\n",
+            physical_address,
+            huge_page_bytes);
+    fpga_dma_mem_unmap(&virtual_address, huge_page_bytes);
+    fpga_shutdown();
+    exit(1);
+  }
+
   // The FPGA writes into this region before the driver ever reads it, so a
   // stale page would surface as plausible-looking garbage in a trace rather
   // than as an obvious failure.
