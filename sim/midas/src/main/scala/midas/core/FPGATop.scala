@@ -372,18 +372,29 @@ class FPGATop(implicit p: Parameters) extends LazyModule with HasWidgets {
       (Some(streamingEngine), cpuManagedAXI4NodeTuple)
     }
 
-  val (fpgaStreamingEngine, fpgaManagedAXI4NodeTuple) =
-    if (toPeerFPGAStreamParams.isEmpty) { (None, None) }
+  val fpgaStreamingEngine =
+    if (toPeerFPGAStreamParams.isEmpty) { None }
     else {
-      // FPGA Streaming Enginer (AWS PCIM)
+      // FPGA Streaming Engine (AWS PCIM), driving a peer FPGA for partitioning.
       val fpgaStreamEngineParams = StreamEngineParameters(toPeerFPGAStreamParams.toSeq, Seq())
-      val fpgaStreamingEngine    = addWidget(p(FPGAStreamEngineInstantiatorKey)(fpgaStreamEngineParams, p))
+      Some(addWidget(p(FPGAStreamEngineInstantiatorKey)(fpgaStreamEngineParams, p)))
+    }
+
+  // Either stream engine may master PCIM: the main one when bridge streams are
+  // DMA'd into host memory, the peer one when partitioning. Collect whichever
+  // are present and give them a single shared port.
+  val fpgaManagedEngineNodes =
+    (streamingEngine.toSeq ++ fpgaStreamingEngine.toSeq).flatMap(_.fpgaManagedAXI4NodeOpt)
+
+  val fpgaManagedAXI4NodeTuple =
+    if (fpgaManagedEngineNodes.isEmpty) { None }
+    else {
       require(
-        fpgaStreamingEngine.fpgaManagedAXI4NodeOpt.isEmpty || p(FPGAManagedAXI4Key).nonEmpty,
-        "Selected StreamEngine uses the FPGA-managed AXI4 interface but it is not available on this platform.",
+        p(FPGAManagedAXI4Key).nonEmpty,
+        "A StreamEngine uses the FPGA-managed AXI4 interface but it is not available on this platform.",
       )
 
-      val fpgaManagedAXI4NodeTuple = p(FPGAManagedAXI4Key).map { params =>
+      p(FPGAManagedAXI4Key).map { params =>
         val node = AXI4SlaveNode(
           Seq(
             AXI4SlavePortParameters(
@@ -403,15 +414,17 @@ class FPGATop(implicit p: Parameters) extends LazyModule with HasWidgets {
           )
         )
 
-        fpgaStreamingEngine.fpgaManagedAXI4NodeOpt match {
-          case Some(engineNode) =>
+        fpgaManagedEngineNodes match {
+          case Seq(engineNode) =>
             node := AXI4IdIndexer(params.idBits) := AXI4Buffer() := engineNode
-          case None             =>
-            node := AXI4TieOff()
+          case many            =>
+            // More than one engine masters PCIM; arbitrate between them.
+            val xbar = AXI4Xbar()
+            many.foreach { engineNode => xbar := AXI4Buffer() := engineNode }
+            node := AXI4IdIndexer(params.idBits) := xbar
         }
         (node, params)
       }
-      (Some(fpgaStreamingEngine), fpgaManagedAXI4NodeTuple)
     }
 
   def genHeader(sb: StringBuilder): Unit = {
