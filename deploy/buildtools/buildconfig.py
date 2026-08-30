@@ -36,6 +36,12 @@ class BuildStrategy(Enum):
     CONGESTION = auto()
     NORETIMING = auto()
     DEFAULT = auto()
+    # Vivado synth_design -directive RuntimeOptimized. On F2/Vivado 2025.2 the
+    # default directive makes synthesis "Timing Optimization" pathological for
+    # large BOOM+Tacit designs (>3h35m without completing, vs 45:11 for the same
+    # MegaBoom without Tacit); RuntimeOptimized skips that phase and still closes
+    # timing at 50 MHz. See platforms/f2/build-bitstream.sh for the plumbing.
+    RUNTIMEOPTIMIZED = auto()
 
     @staticmethod
     def from_string(input: str) -> BuildStrategy:
