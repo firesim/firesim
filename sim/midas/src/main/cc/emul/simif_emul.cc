@@ -275,7 +275,16 @@ simif_emul_t::FPGAManagedStreamIOImpl::FPGAManagedStreamIOImpl(
     simif_emul_t &simif, const AXI4Config &config)
     : simif(simif), cpu_mem(config) {
   // The final parameter, line size, is not used under mm_magic_t
-  cpu_mem.init((1ULL << cpu_mem.get_config().addr_bits), 512);
+  // The PCIM window spans the whole 64-bit address space, so `1 << addr_bits`
+  // is both undefined behaviour and useless as an allocation size: it silently
+  // yielded a 1-byte region, which mm_t::write then folded every address into
+  // via `addr %= size`. Reserve a bounded region instead -- MAP_NORESERVE means
+  // pages that are never touched cost nothing.
+  constexpr uint64_t max_modeled_bytes = 1ULL << 30; // 1 GiB
+  const int addr_bits = cpu_mem.get_config().addr_bits;
+  const uint64_t modeled_bytes =
+      (addr_bits >= 30) ? max_modeled_bytes : (1ULL << addr_bits);
+  cpu_mem.init(modeled_bytes, 512);
 }
 
 void simif_emul_t::load_mems(const char *fname) {
