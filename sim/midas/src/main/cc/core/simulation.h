@@ -98,6 +98,9 @@ private:
    */
   void init_dram();
 
+  /// Dump a region of target DRAM to a file, if +dumpmem was given.
+  void dump_dram();
+
   // Simulation performance counters.
   void record_start_times();
   void record_end_times();
@@ -124,6 +127,11 @@ private:
    * Path to load DRAM contents from, unless +fastloadmem is set.
    */
   std::string load_mem_path;
+
+  /// +dumpmem=<addr>:<bytes>:<file> -- dump target DRAM after the run.
+  std::string dump_mem_path;
+  uint64_t dump_mem_addr = 0;
+  uint64_t dump_mem_bytes = 0;
 
   /**
    * If set, will write all zeros to fpga dram before commencing simulation

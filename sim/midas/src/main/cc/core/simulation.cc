@@ -27,6 +27,23 @@ simulation_t::simulation_t(widget_registry_t &registry,
     if (arg.find("+zero-out-dram") == 0) {
       do_zero_out_dram = true;
     }
+    // +dumpmem=<addr>:<bytes>:<file>, e.g.
+    //   +dumpmem=0x101c00000:0x400000:tacit_dma.bin
+    // Dumps target DRAM to a host file after the run completes. Used to extract
+    // Tacit DMA-sink traces without any target-side transport.
+    if (arg.find("+dumpmem=") == 0) {
+      const std::string spec = arg.substr(9);
+      const size_t c1 = spec.find(':');
+      const size_t c2 = (c1 == std::string::npos) ? c1 : spec.find(':', c1 + 1);
+      if (c1 == std::string::npos || c2 == std::string::npos) {
+        fprintf(stderr,
+                "Malformed +dumpmem, expected +dumpmem=<addr>:<bytes>:<file>\n");
+        exit(EXIT_FAILURE);
+      }
+      dump_mem_addr = strtoull(spec.substr(0, c1).c_str(), nullptr, 0);
+      dump_mem_bytes = strtoull(spec.substr(c1 + 1, c2 - c1 - 1).c_str(), nullptr, 0);
+      dump_mem_path = spec.substr(c2 + 1);
+    }
     if (arg.find("+check-fingerprint") == 0) {
       check_fingerprint_only = true;
     }
@@ -148,6 +165,9 @@ int simulation_t::execute_simulation_flow() {
 
   simulation_finish();
 
+  // Read out any requested DRAM region before we tear anything down.
+  dump_dram();
+
   const bool timeout = simulation_timed_out();
 
   if (exit_code != 0) {
@@ -190,5 +210,15 @@ void simulation_t::init_dram() {
       fprintf(stderr,
               "Skipping memory initialization: target does not use DRAM\n");
     }
+  }
+}
+
+void simulation_t::dump_dram() {
+  if (dump_mem_path.empty())
+    return;
+  if (auto *loadmem = registry.get_widget_opt<loadmem_t>()) {
+    loadmem->dump_mem_to_file(dump_mem_path, dump_mem_addr, dump_mem_bytes);
+  } else {
+    fprintf(stderr, "Skipping +dumpmem: target does not use DRAM\n");
   }
 }

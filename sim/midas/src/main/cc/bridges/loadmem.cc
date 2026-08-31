@@ -2,7 +2,10 @@
 
 #include "loadmem.h"
 
+#include <algorithm>
+#include <cstdio>
 #include <fstream>
+#include <vector>
 
 #include "core/simif.h"
 
@@ -45,6 +48,47 @@ void loadmem_t::load_mem_from_file(const std::string &filename) {
   mpz_clear(data);
   file.close();
   fprintf(stdout, "[loadmem] done\n");
+}
+
+void loadmem_t::dump_mem_to_file(const std::string &filename,
+                                 size_t start_addr,
+                                 size_t num_bytes) {
+  // One read_mem call returns a full DRAM beat; stride matches the address
+  // increment used by load_mem_from_file (chunk/2 hex chars == data_bits/8).
+  const size_t bytes_per_beat = mem_conf.data_bits / 8;
+  fprintf(stdout,
+          "[loadmem] dumping %zu bytes from 0x%zx to %s (beat = %zu B)\n",
+          num_bytes,
+          start_addr,
+          filename.c_str(),
+          bytes_per_beat);
+
+  FILE *file = fopen(filename.c_str(), "wb");
+  if (!file) {
+    fprintf(stderr, "[loadmem] cannot open %s for writing\n", filename.c_str());
+    exit(EXIT_FAILURE);
+  }
+
+  mpz_t data;
+  mpz_init(data);
+  std::vector<uint8_t> beat(bytes_per_beat);
+  for (size_t off = 0; off < num_bytes; off += bytes_per_beat) {
+    read_mem(start_addr + off, data);
+    // mpz_export writes nothing for a zero value and may write fewer bytes than
+    // the beat width for small values, so pre-zero and let it fill the low bytes.
+    std::fill(beat.begin(), beat.end(), 0);
+    size_t exported = 0;
+    mpz_export(beat.data(), &exported, -1, 1, 0, 0, data);
+    const size_t remaining = num_bytes - off;
+    const size_t n = remaining < bytes_per_beat ? remaining : bytes_per_beat;
+    if (fwrite(beat.data(), 1, n, file) != n) {
+      fprintf(stderr, "[loadmem] short write to %s\n", filename.c_str());
+      exit(EXIT_FAILURE);
+    }
+  }
+  mpz_clear(data);
+  fclose(file);
+  fprintf(stdout, "[loadmem] dump done\n");
 }
 
 void loadmem_t::read_mem(size_t addr, mpz_t &value) {

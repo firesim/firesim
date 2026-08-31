@@ -48,6 +48,14 @@ public:
   // Loads the contents of memory from a file.
   void load_mem_from_file(const std::string &filename);
 
+  // Dumps <num_bytes> of target DRAM starting at <start_addr> to a binary
+  // file. Counterpart to load_mem_from_file. Reads over MMIO via read_mem,
+  // so it costs no target cycles and does not perturb the simulated run --
+  // needed to extract Tacit DMA-sink traces without a target-side transport.
+  void dump_mem_to_file(const std::string &filename,
+                        size_t start_addr,
+                        size_t num_bytes);
+
   unsigned get_mem_data_chunk() const { return mem_data_chunk; }
 
 private:
