@@ -1,6 +1,7 @@
 #include "fpga_managed_stream.h"
 #include "core/simif.h"
 
+#include <algorithm>
 #include <assert.h>
 #include <cstring>
 #include <inttypes.h>
@@ -33,6 +34,17 @@ size_t FPGAManagedStreams::FPGAToCPUDriver::pull(void *dest,
   if (bytes_in_buffer < required_bytes) {
     return 0;
   }
+
+  // The FPGA may have queued more than the caller asked for. Copy only what
+  // fits in dest; the remainder stays in the circular buffer and comes back on
+  // the next pull. This mirrors the clamp the CPU-managed driver already does
+  // (std::min(count, num_beats) in CPUManagedStreams::FPGAToCPUDriver::pull).
+  //
+  // Without it, dest overflows whenever the FPGA-side backlog exceeds the
+  // request. That is invisible in metasimulation -- the simulator is slow
+  // enough that the backlog rarely outruns a single pull -- and fatal on
+  // hardware, where a 512KiB buffer fills far faster than the driver drains it.
+  bytes_in_buffer = std::min(bytes_in_buffer, num_bytes);
 
   void *src_addr = (char *)buffer_base + buffer_offset;
   size_t first_copy_bytes =
