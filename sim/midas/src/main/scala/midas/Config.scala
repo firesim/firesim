@@ -317,15 +317,18 @@ class EC2F2Config
   * bandwidth on that platform.
   *
   * Limitation: FPGAManagedStreamEngine cannot serve FPGA-sunk (from-host)
-  * streams, so this supports to-host streams only, and drops the CPU-managed
-  * interface entirely. Targets needing a NIC or block device must stay on
-  * EC2F2Config until a from-host DMA path exists.
+  * streams, so this supports to-host streams only. Targets needing a NIC or
+  * block device must stay on EC2F2Config until a from-host DMA path exists.
+  *
+  * CPUManagedAXI4Key is deliberately left populated. Nothing binds it -- the
+  * engine exposes no inward node, so FPGATop creates no master for it and the
+  * shim ties the port off -- but the key still sizes the PCIS port, which the
+  * CL wires unconditionally.
   */
 class WithFPGAManagedBridgeStreams
     extends Config((_, _, _) => {
       case StreamEngineInstantiatorKey =>
         (e: StreamEngineParameters, p: Parameters) => new FPGAManagedStreamEngine(p, e, HostMemoryTarget)
-      case CPUManagedAXI4Key           => None
     })
 
 class EC2F2PCIMConfig

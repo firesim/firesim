@@ -51,30 +51,27 @@ class F1Shim(implicit p: Parameters) extends PlatformShim {
 
     top.module.ctrl <> io_master
 
-    // PCIS exists only where the platform provides a CPU-managed AXI4 interface.
-    // A config that DMAs every stream over PCIM instead (see
-    // WithFPGAManagedBridgeStreams) has none, and gets no port -- mirroring how
-    // io_pcim below is conditional on F1ShimHasPCIMPorts.
-    if (p(CPUManagedAXI4Key).nonEmpty) {
-      val io_pcis = IO(Flipped(new NastiIO(CreateNastiParameters(p(CPUManagedAXI4Key).get.axi4BundleParams))))
+    // The port is emitted unconditionally: the CL wires it whether or not
+    // anything drives it, and a config that DMAs every stream over PCIM simply
+    // leaves it tied off below (top.module.cpu_managed_axi4 == None).
+    val io_pcis = IO(Flipped(new NastiIO(CreateNastiParameters(p(CPUManagedAXI4Key).get.axi4BundleParams))))
 
-      if (p(AXIDebugPrint)) {
-        AXI4Printf(io_pcis, "pcis")
-      }
+    if (p(AXIDebugPrint)) {
+      AXI4Printf(io_pcis, "pcis")
+    }
 
-      // Connect the CPU-managed stream engine if the target has one. Otherwise, cap off the connection. (PCIS)
-      top.module.cpu_managed_axi4 match {
-        case None       =>
-          io_pcis.aw.ready := false.B
-          io_pcis.ar.ready := false.B
-          io_pcis.w.ready  := false.B
-          io_pcis.r.valid  := false.B
-          io_pcis.r.bits   := DontCare
-          io_pcis.b.valid  := false.B
-          io_pcis.b.bits   := DontCare
-        case Some(axi4) =>
-          AXI4NastiAssigner.toAXI4Slave(axi4, io_pcis)
-      }
+    // Connect the CPU-managed stream engine if the target has one. Otherwise, cap off the connection. (PCIS)
+    top.module.cpu_managed_axi4 match {
+      case None       =>
+        io_pcis.aw.ready := false.B
+        io_pcis.ar.ready := false.B
+        io_pcis.w.ready  := false.B
+        io_pcis.r.valid  := false.B
+        io_pcis.r.bits   := DontCare
+        io_pcis.b.valid  := false.B
+        io_pcis.b.bits   := DontCare
+      case Some(axi4) =>
+        AXI4NastiAssigner.toAXI4Slave(axi4, io_pcis)
     }
 
     if (p(F1ShimHasPCIMPorts)) {

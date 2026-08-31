@@ -348,7 +348,11 @@ class FPGATop(implicit p: Parameters) extends LazyModule with HasWidgets {
         "Selected StreamEngine uses the CPU-managed AXI4 interface, but it is not available on this platform.",
       )
 
-      val cpuManagedAXI4NodeTuple = p(CPUManagedAXI4Key).map { params =>
+      // Only when the engine actually takes CPU-managed traffic. An engine that
+      // DMAs everything over PCIM exposes no inward node, and creating a master
+      // node with nothing to bind it to fails elaboration.
+      val cpuManagedAXI4NodeTuple = streamingEngine.cpuManagedAXI4NodeOpt.flatMap { engineNode =>
+        p(CPUManagedAXI4Key).map { params =>
         val node = AXI4MasterNode(
           Seq(
             AXI4MasterPortParameters(
@@ -364,10 +368,9 @@ class FPGATop(implicit p: Parameters) extends LazyModule with HasWidgets {
             )
           )
         )
-        streamingEngine.cpuManagedAXI4NodeOpt.foreach {
-          _ := AXI4Buffer() := node
-        }
+        engineNode := AXI4Buffer() := node
         (node, params)
+        }
       }
       (Some(streamingEngine), cpuManagedAXI4NodeTuple)
     }
