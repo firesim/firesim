@@ -133,15 +133,6 @@ END_CONDA_ACTIVATE
     env_append "conda activate $FDIR/.conda-env"
 fi
 
-
-# rh: since chipyard and firesim standalone install fab-classic as a wheel with paramiko-ng
-# the least invasive way i could think of was to uninstall then reinstall here with a specified
-# environment variable to have fab-classic depend on paramiko=2.9.0 instead, which has RSA-SHA2 support
-echo $'\033[0;32mrh:\033[0m Replacing paramiko-ng with paramiko to add rsa2 ssh support for fab-classic'
-pip uninstall -y paramiko-ng paramiko fab-classic 2>/dev/null || true
-PARAMIKO_REPLACE=1 pip install --no-cache-dir --no-binary fab-classic 'fab-classic>=1.19.2' #rh: see https://pypi.org/project/fab-classic/
-pip install --force-reinstall "paramiko==2.9.0"
-
 # init all submodules except for chipyard
 git config submodule.target-design/chipyard.update none
 git submodule update --init --recursive
