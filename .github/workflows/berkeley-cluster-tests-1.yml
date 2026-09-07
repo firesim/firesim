@@ -116,10 +116,20 @@ jobs:
     needs: filter-jobs-on-changes
     steps:
       - uses: actions/checkout@v4
-      - uses: conda-incubator/setup-miniconda@v3
+      - uses: actions/setup-python@v5
         with:
-          environment-file: conda-reqs/docs.yaml
-          miniforge-version: latest
+          python-version: '3.12'
+          cache: pip
+          cache-dependency-path: docs/requirements.txt
+      - name: Install documentation dependencies
+        run: python -m pip install -r docs/requirements.txt
+      - uses: actions/setup-node@v4
+        with:
+          node-version-file: docs/.nvmrc
+          cache: npm
+          cache-dependency-path: docs/package-lock.json
+      - name: Install Starlight dependencies
+        run: npm ci --prefix docs
       - name: Check documentation formatting
         run: |
           make -C docs formatcheck
@@ -127,6 +137,8 @@ jobs:
         run: |
           make -C docs html
           ! grep -v "ERROR: Undefined substitution referenced" warnings.txt
+      - name: Build Starlight documentation and search index
+        run: npm run build --prefix docs
       - name: Show error log and dump objects.inv from sphinx if failed
         if: ${{ failure() }}
         run: |

@@ -13,11 +13,13 @@ help:
 	@$(SPHINXBUILD) -M help "$(SOURCEDIR)" "$(BUILDDIR)" $(SPHINXOPTS) $(O)
 
 clean:
-	rm -r _build/html/*
-	rm -r _build/doctrees/*
+	rm -rf _build dist .astro public/sphinx src/content/docs
+	find public -name '*.html' -delete
+	mkdir -p src/content/docs
+	touch src/content/docs/.gitkeep
 
 format:
-	find $(SOURCEDIR) -name '*.rst' | xargs docstrfmt $(FORMAT_EXTRA_ARGS) -i -v
+	find $(SOURCEDIR) \( -name node_modules -o -name _build -o -name dist -o -name .astro -o -name public -o -name src \) -prune -o -name '*.rst' -print | xargs docstrfmt $(FORMAT_EXTRA_ARGS) -i -v
 
 formatcheck: FORMAT_EXTRA_ARGS := --check
 formatcheck: format

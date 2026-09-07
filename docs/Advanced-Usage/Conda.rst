@@ -95,7 +95,7 @@ at the output and then run again without ``--dry-run``.
 In this case, when you are finished, you can run ``conda list --revisions`` and you
 should see output like the following
 
-::
+.. code-block:: text
 
     bash-4.2$ conda list --revisions
     2022-03-15 19:21:10  (rev 0)
@@ -137,7 +137,7 @@ By giving a descriptive name with that option, you will create another 'environm
 You can see a listing of available environments by running ``conda env list`` to get
 output similar to:
 
-::
+.. code-block:: text
 
     bash-4.2$   conda env list
     # conda environments:
@@ -212,7 +212,7 @@ package:
    interactive shell in the container. To find the build directory and activate the
    correct environment, just follow the instructions from the message that looks like:
 
-   ::
+   .. code-block:: text
 
        ################################################################################
        Build and/or host environments created for debugging.  To enter a debugging environment:
@@ -232,7 +232,7 @@ Running Conda with sudo
 
 ``tl;dr;`` run Conda like this when using ``sudo``:
 
-::
+.. code-block:: bash
 
     sudo -E $CONDA_EXE <remaining options to conda>
 
@@ -252,7 +252,7 @@ remember, the ``secure_path`` does not include the Conda environment by default 
 will need to specify the full path to what you want to run, or in some cases, it is
 easiest to wrap what you want to run in a full login shell invocation like:
 
-::
+.. code-block:: bash
 
     sudo /bin/bash -l -c "<command to run as root>"
 
@@ -260,7 +260,7 @@ The ``-l`` option to ``bash`` ensures that the **default** Conda environment is 
 activated. In the rare case that you are using a non-default named environment, you will
 want to activate it before running your command:
 
-::
+.. code-block:: bash
 
     sudo /bin/bash -l -c "conda activate <myenv> && <command to run as root>"
 
