@@ -20,7 +20,7 @@ proceeds as follows:
 
 Single tests may be run directly out of :gh-file-ref:`sim/` as follows:
 
-::
+.. code-block:: bash
 
     # Run all Chipyard-based tests (uses Rocket + BOOM)
     make test
@@ -37,7 +37,7 @@ Single tests may be run directly out of :gh-file-ref:`sim/` as follows:
 These tests may be run from the SBT console continuously, and SBT will rerun them on
 Scala changes (but not driver changes). Out of :gh-file-ref:`sim/`:
 
-::
+.. code-block:: bash
 
     # Launch the SBT console into the firesim subproject
     # NB: omitting TARGET_PROJECT will put you in the FireChip subproject instead
@@ -90,7 +90,7 @@ test smaller, stand-alone Chisel modules.
 
 Synthesizable unit tests may be run out of :gh-file-ref:`sim/` as follows:
 
-::
+.. code-block:: bash
 
     # Run default tests without waves
     $ make run-midas-unittests
@@ -138,7 +138,7 @@ have copied FIRRTL testing utilities into the source tree to make that process e
 
 ``targetUtils`` scala tests can be run out of :gh-file-ref:`sim/` as follows:
 
-::
+.. code-block:: bash
 
     # Pull open the SBT console in the firesim subproject
     $ make TARGET_PROJECT=midasexamples sbt

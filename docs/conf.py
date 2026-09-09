@@ -146,7 +146,8 @@ language = 'en'
 # List of patterns, relative to source directory, that match files and
 # directories to ignore when looking for source files.
 # This pattern also affects html_static_path and html_extra_path .
-exclude_patterns = [u'_build', 'Thumbs.db', '.DS_Store', '**/*-Template.rst']
+exclude_patterns = ['_build', 'node_modules', 'dist', '.astro', 'src', 'public',
+                    'Thumbs.db', '.DS_Store', '**/*-Template.rst']
 
 # The name of the Pygments (syntax highlighting) style to use.
 pygments_style = 'sphinx'
@@ -289,7 +290,7 @@ def gh_file_ref_role_impl(url, text_prefix, name, rawtext, text, lineno, inliner
         text = text_prefix + text
 
     logger.info(f"Testing GitHub URL {url} exists...")
-    status_code = requests.get(url).status_code
+    status_code = 200 if os.environ.get("SKIP_URL_CHECK") == "1" else requests.get(url).status_code
     if status_code != 200:
         message = f"[Line {lineno}] :{name}:`{text}` produces URL {url} returning status code {status_code}. " \
                   "Ensure your path is correct and all commits that may have moved or renamed files have been pushed to github.com."
