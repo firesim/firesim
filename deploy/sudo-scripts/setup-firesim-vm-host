@@ -1,0 +1,32 @@
+#!/bin/bash
+set -ex
+
+DOWNLOAD_ISO=false
+
+# Parse flags
+for arg in "$@"; do
+    if [ "$arg" == "--download-default-iso" ]; then
+        DOWNLOAD_ISO=true
+    fi
+done
+
+# Optional ISO download
+if $DOWNLOAD_ISO; then
+    ISO_PATH="$FS_DIR/deploy/ubuntu-22.04.5-live-server-amd64.iso"
+    if [ ! -f "$ISO_PATH" ]; then
+        echo "ISO not found. Downloading..."
+        wget -O "$ISO_PATH" https://releases.ubuntu.com/22.04/ubuntu-22.04.5-live-server-amd64.iso
+    else
+        echo "ISO already exists at $ISO_PATH"
+    fi
+fi
+
+firesim enumeratefpgas
+sudo chmod 777 /opt/firesim-vm-host-db.json
+touch /opt/firesim-vm-host-db.lock
+sudo chmod 777 /opt/firesim-vm-host-db.lock
+
+# update vm os cloud-init with newly generated ssh key
+python3 "$FS_DIR/utils/update-cloud-init.py"
+
+python3 "$FS_DIR/deploy/util/start-cloud-init-server.py"
