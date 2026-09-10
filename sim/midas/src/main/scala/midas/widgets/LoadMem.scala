@@ -87,7 +87,16 @@ class LoadMemWriter(nastiParams: NastiParameters, maxBurst: Int) extends NastiMo
   }
 }
 
-class LoadMemWidget(val totalDRAMAllocated: BigInt)(implicit p: Parameters) extends Widget()(p) {
+class LoadMemWidget(val totalDRAMAllocated: BigInt)(implicit p: Parameters)
+    extends Widget()(p)
+    with StreamFromHostCPU {
+
+  // Payload for DRAM initialisation arrives over a CPU-managed stream rather than
+  // through a control-width MMIO register. The writer below already issues AXI
+  // bursts and can zero DRAM entirely in hardware; the host-side feed was the
+  // bottleneck, at one 32-bit MMIO write per four bytes of DRAM.
+  def fromHostCPUQueueDepth: Int = 512
+
   val toHostMemory = AXI4MasterNode(
     Seq(AXI4MasterPortParameters(masters = Seq(AXI4MasterParameters(name = "Host LoadMem Unit", id = IdRange(0, 1)))))
   )
@@ -127,8 +136,11 @@ class LoadMemWidget(val totalDRAMAllocated: BigInt)(implicit p: Parameters) exte
     wAddrQ.io.enq.bits.len  := wLen.bits
     wLen.ready              := wAddrQ.io.enq.ready
 
-    val wDataQ = Module(new MultiWidthFifo(cWidth, hWidth, maxBurst))
-    attachDecoupledSink(wDataQ.io.in, "W_DATA")
+    // Was: MultiWidthFifo(cWidth, ...) fed by attachDecoupledSink(_, "W_DATA").
+    // MultiWidthFifo already does the width adaptation, so widening the input to
+    // the stream width is the whole change; LoadMemWriter is untouched.
+    val wDataQ = Module(new MultiWidthFifo(BridgeStreamConstants.streamWidthBits, hWidth, maxBurst))
+    wDataQ.io.in <> streamDeq
 
     val extMem = p(ExtMem) match {
       case Some(memPortParams) => memPortParams.master
@@ -185,7 +197,7 @@ class LoadMemWidget(val totalDRAMAllocated: BigInt)(implicit p: Parameters) exte
         sb,
         "loadmem_t",
         "loadmem",
-        Seq(Verbatim("conf_target.mem"), UInt32(memDataChunk)),
+        Seq(Verbatim("conf_target.mem"), UInt32(memDataChunk), UInt32(fromHostStreamIdx)),
         "GET_CORE_CONSTRUCTOR",
       )
     }

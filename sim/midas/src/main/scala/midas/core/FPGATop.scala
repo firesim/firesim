@@ -144,6 +144,13 @@ class FPGATop(implicit p: Parameters) extends LazyModule with HasWidgets {
   require(p(CtrlNastiKey).dataBits == 32, "Simulation control bus must be 32-bits wide per AXI4-lite specification")
   val master = addWidget(new SimulationMaster)
 
+  // Set when the LoadMem widget is instantiated below. It is a core widget, so
+  // it does not appear in bridgeModuleMap, but it uses a from-host stream and so
+  // must be collected with the bridges that do. Bridges are constructed above,
+  // giving LoadMem the last stream index -- which is why it is appended rather
+  // than prepended where the streams are gathered.
+  var loadMemWidget: Option[Widget] = None
+
   val bridgeAnnos                                                                              = p(SimWrapperKey).annotations.collect { case ba: BridgeIOAnnotation => ba }
   val bridgeModuleMap: ListMap[BridgeIOAnnotation, BridgeModule[_ <: Record with HasChannels]] =
     ListMap((bridgeAnnos.map(anno => anno -> addWidget(BridgeIOAnnotationToElaboration(anno)))): _*)
@@ -237,6 +244,7 @@ class FPGATop(implicit p: Parameters) extends LazyModule with HasWidgets {
       }
 
       val loadMem = addWidget(new LoadMemWidget(totalDRAMAllocated))
+      loadMemWidget = Some(loadMem)
       xbar := loadMem.toHostMemory
       val memoryRegions = Map(
         sortedRegionTuples
@@ -292,8 +300,12 @@ class FPGATop(implicit p: Parameters) extends LazyModule with HasWidgets {
     .collect { case b: StreamToHostCPU => b }
   val hasToHostStreams            = bridgesWithToHostCPUStreams.nonEmpty
 
+  // LoadMemWidget is a core widget rather than a bridge, so it is not in
+  // bridgeModuleMap; append it explicitly. Its payload used to arrive through a
+  // control-width MMIO register, one 32-bit write per four bytes of DRAM.
   val bridgesWithFromHostCPUStreams = bridgeModuleMap.values
-    .collect { case b: StreamFromHostCPU => b }
+    .collect { case b: StreamFromHostCPU => b }.toSeq ++
+    loadMemWidget.collect { case w: StreamFromHostCPU => w }.toSeq
   val hasFromHostCPUStreams         = bridgesWithFromHostCPUStreams.nonEmpty
 
   val bridgesWithToQSFPStreams = bridgeModuleMap.values

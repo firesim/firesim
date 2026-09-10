@@ -176,6 +176,9 @@ void simulation_t::wait_for_init() {
 
 void simulation_t::init_dram() {
   if (auto *loadmem = registry.get_widget_opt<loadmem_t>()) {
+    // Streams are initialised immediately before this call, so the write
+    // payload can be carried over one rather than through MMIO.
+    loadmem->set_stream_engine(registry.get_stream_engine());
     if (do_zero_out_dram) {
       fprintf(stderr,
               "Zeroing out FPGA DRAM. This will take a few seconds...\n");
