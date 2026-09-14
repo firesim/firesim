@@ -1097,8 +1097,25 @@ class XilinxAlveoInstanceDeployManager(InstanceDeployManager):
         return db[slotno]["bdf"]
 
     def flash_fpgas(self) -> None:
+        """JTAG-program all FPGAs in a single Vivado session.
+
+        Supports heterogeneous configs (different bitstreams per slot).
+        Uses program_fpga_fleet.tcl to avoid the hw_server wedge caused
+        by back-to-back Vivado process launches.
+
+        Wraps the JTAG flash with PCI disconnect/reconnect (via
+        firesim-fpga-util.py) so the kernel picks up the new device
+        configuration after reprogramming.
+        """
         if self.instance_assigned_simulations():
-            self.instance_logger("""Flash all FPGA Slots.""")
+            self.instance_logger("Flash all FPGA Slots (single-session).")
+
+            json_db = self.parent_node.get_fpga_db()
+            collect = run(f"cat {json_db}")
+            db = json.loads(collect)
+
+            mapping_lines = []
+            scripts_synced = False
 
             for slotno, firesimservernode in enumerate(self.parent_node.sim_slots):
                 serv = firesimservernode
@@ -1111,36 +1128,52 @@ class XilinxAlveoInstanceDeployManager(InstanceDeployManager):
                 )
                 bit = os.path.join(bitstream_tar_unpack_dir, "firesim.bit")
 
-                # at this point the tar file is in the sim slot
                 run(f"rm -rf {bitstream_tar_unpack_dir}")
                 run(f"tar xvf {remote_sim_dir}/{bitstream_tar} -C {remote_sim_dir}")
 
-                self.instance_logger(f"""Copying FPGA flashing scripts for {slotno}""")
-                rsync_cap = rsync_project(
-                    local_dir=f"../platforms/{self.PLATFORM_NAME}/scripts",
-                    remote_dir=remote_sim_dir,
-                    ssh_opts="-o StrictHostKeyChecking=no",
-                    extra_opts="-L -p",
-                    capture=True,
-                )
-                rootLogger.debug(rsync_cap)
-                rootLogger.debug(rsync_cap.stderr)
+                if not scripts_synced:
+                    rsync_cap = rsync_project(
+                        local_dir=f"../platforms/{self.PLATFORM_NAME}/scripts",
+                        remote_dir=remote_sim_dir,
+                        ssh_opts="-o StrictHostKeyChecking=no",
+                        extra_opts="-L -p",
+                        capture=True,
+                    )
+                    rootLogger.debug(rsync_cap)
+                    rootLogger.debug(rsync_cap.stderr)
+                    scripts_synced = True
+                    scripts_dir = f"{remote_sim_dir}/scripts"
 
-                json_db = self.parent_node.get_fpga_db()
-                bdf = self.slot_to_bdf(slotno, json_db)
+                assert slotno < len(db), f"Less FPGAs than slots ({slotno} >= {len(db)})"
+                uid = db[slotno]["uid"]
+                self.instance_logger(f"Slot {slotno}: {uid} -> {bit}")
+                mapping_lines.append(f"{uid} {bit}")
 
-                self.instance_logger(
-                    f"""Flashing FPGA Slot: {slotno} ({bdf}) with bitstream: {bit}"""
-                )
-                # Use a system wide installed firesim-fpga-util.py
-                cmd = f"{script_path}/firesim-fpga-util.py"
-                check_script(
-                    cmd,
-                    Path(
-                        f"{get_deploy_dir()}/../platforms/{self.PLATFORM_NAME}/scripts"
-                    ),
-                )
-                run(f"""{cmd} --bitstream {bit} --bdf {bdf} --fpga-db {json_db}""")
+            fpga_util = f"{script_path}/firesim-fpga-util.py"
+            check_script(
+                fpga_util,
+                Path(f"{get_deploy_dir()}/../platforms/{self.PLATFORM_NAME}/scripts"),
+            )
+
+            self.instance_logger("Disconnecting all FPGAs from PCI bus.")
+            for slotno in range(len(self.parent_node.sim_slots)):
+                bdf = db[slotno]["bdf"]
+                run(f"{fpga_util} --bdf {bdf} --disconnect-bdf --fpga-db {json_db}")
+
+            map_file = f"{self.get_remote_sim_dir_for_slot(0)}/flash_map.txt"
+            map_content = "\n".join(mapping_lines)
+            run(f"cat > {map_file} << 'MAPEOF'\n{map_content}\nMAPEOF")
+
+            tcl = f"{scripts_dir}/program_fpga_fleet.tcl"
+            vivado = run("which vivado || which vivado_lab", warn_only=True).strip()
+            if not vivado:
+                raise RuntimeError("Could not find vivado or vivado_lab on PATH")
+            run(f"{vivado} -mode batch -source {tcl} -tclargs -map_file {map_file}")
+
+            self.instance_logger("Reconnecting all FPGAs to PCI bus.")
+            for slotno in range(len(self.parent_node.sim_slots)):
+                bdf = db[slotno]["bdf"]
+                run(f"{fpga_util} --bdf {bdf} --reconnect-bdf --fpga-db {json_db}")
 
     def change_pcie_perms(self) -> None:
         if self.instance_assigned_simulations():
@@ -1346,6 +1379,74 @@ class XilinxAlveoU200InstanceDeployManager(XilinxAlveoInstanceDeployManager):
     def __init__(self, parent_node: Inst) -> None:
         super().__init__(parent_node)
         self.PLATFORM_NAME = "xilinx_alveo_u200"
+
+
+class CorigineXB10InstanceDeployManager(XilinxAlveoInstanceDeployManager):
+    def __init__(self, parent_node: Inst) -> None:
+        super().__init__(parent_node)
+        self.PLATFORM_NAME = "corigine_xb10"
+
+    def create_fpga_database(self, uridir: str) -> None:
+        """Single-session variant that avoids the hw_server back-to-back wedge."""
+        self.instance_logger(f"""Creating FPGA database (single-session)""")
+
+        remote_home_dir = self.parent_node.get_sim_dir()
+        remote_sim_dir = f"{remote_home_dir}/enumerate_fpgas_staging"
+        remote_sim_rsync_dir = f"{remote_sim_dir}/rsyncdir/"
+        run(f"mkdir -p {remote_sim_rsync_dir}")
+
+        assert len(self.parent_node.sim_slots) > 0
+        serv = self.parent_node.sim_slots[0]
+
+        files_to_copy = serv.get_required_files_local_paths()
+
+        hwcfg = serv.get_resolved_server_hardware_config()
+        files_to_copy.extend(hwcfg.get_local_uri_paths(uridir))
+
+        for local_path, remote_path in files_to_copy:
+            rsync_cap = rsync_project(
+                local_dir=local_path,
+                remote_dir=pjoin(remote_sim_rsync_dir, remote_path),
+                ssh_opts="-o StrictHostKeyChecking=no",
+                extra_opts="-L",
+                capture=True,
+            )
+            rootLogger.debug(rsync_cap)
+            rootLogger.debug(rsync_cap.stderr)
+
+        run(f"cp -r {remote_sim_rsync_dir}/* {remote_sim_dir}/", shell=True)
+
+        rsync_cap = rsync_project(
+            local_dir=f"../platforms/{self.PLATFORM_NAME}/scripts",
+            remote_dir=remote_sim_dir + "/",
+            ssh_opts="-o StrictHostKeyChecking=no",
+            extra_opts="-L -p",
+            capture=True,
+        )
+        rootLogger.debug(rsync_cap)
+        rootLogger.debug(rsync_cap.stderr)
+
+        bitstream_tar = hwcfg.get_bitstream_tar_filename()
+        bitstream_tar_unpack_dir = f"{remote_sim_dir}/{self.PLATFORM_NAME}"
+        bitstream = f"{remote_sim_dir}/{self.PLATFORM_NAME}/firesim.bit"
+
+        with cd(remote_sim_dir):
+            run(f"tar -xf {hwcfg.get_driver_tar_filename()}")
+
+        run(f"rm -rf {bitstream_tar_unpack_dir}")
+        run(f"tar xvf {remote_sim_dir}/{bitstream_tar} -C {remote_sim_dir}")
+
+        driver = f"{remote_sim_dir}/FireSim-{self.PLATFORM_NAME}"
+        json_db = self.parent_node.get_fpga_db()
+
+        with cd(remote_sim_dir):
+            cmd = f"{script_path}/firesim-generate-fpga-db-v2.py"
+            check_script(
+                cmd,
+                Path(f"{get_deploy_dir()}/../platforms/{self.PLATFORM_NAME}/scripts"),
+            )
+            run(f"""{cmd} --bitstream {bitstream} --driver {driver} --out-db-json {json_db}""")
+
 
 
 class RHSResearchNitefuryIIInstanceDeployManager(XilinxAlveoInstanceDeployManager):

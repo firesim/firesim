@@ -1,0 +1,11 @@
+.*.swp
+.*.swo
+__pycache__
+
+cl_*
+!cl_firesim
+
+# Vivado artifacts from direct build-bitstream.sh invocation inside cl_firesim/
+cl_firesim/vivado_proj/
+cl_firesim/vivado.jou
+cl_firesim/vivado.log
