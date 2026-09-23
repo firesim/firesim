@@ -1,7 +1,10 @@
 # TACIT artifact evaluation: lua_fusion arm 'mmadd'. Used by scripts/tacit-ae via
 # `firesim -c tacit-runtime/lua-fusion-mmadd.yaml -a tacit-runtime/tacit-ae-hwdb.yaml`.
 # Named without the config_ prefix: deploy/.gitignore drops config_*.yaml at any depth.
-# One f2.6xlarge, one unnetworked slot; the four arm configs differ only in workload_name.
+# Two unnetworked slots on two f2.6xlarge (one FPGA each): the workload has two jobs, the
+# traced mandelbrot run and a chores job that exports the jump-label patch map the decoder
+# needs. With one slot the manager silently runs only the first job. The four arm configs
+# differ only in workload_name.
 # Run-time configuration for the FireSim Simulation Manager
 # See https://docs.fires.im/en/stable/Advanced-Usage/Manager/Manager-Configuration-Files.html for documentation of all of these params.
 
@@ -28,7 +31,7 @@ run_farm:
     # want in your runfarm.
     run_farm_hosts_to_use:
       # 2026-09-04: 11 slots for the 11-job lossy coverage workload (exact fit).
-      - f2.6xlarge: 1
+      - f2.6xlarge: 2
       - f2.12xlarge: 0
       - f2.48xlarge : 0
       - m4.16xlarge: 0
@@ -48,7 +51,7 @@ metasimulation:
 # DOCREF START: target_config area
 target_config:
     topology: no_net_config
-    no_net_num_nodes: 1
+    no_net_num_nodes: 2
     link_latency: 6405
     switching_latency: 10
     net_bandwidth: 200
