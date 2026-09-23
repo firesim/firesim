@@ -1,0 +1,26 @@
+# TACIT artifact evaluation build recipes. Passed to the manager with
+# `-r tacit-runtime/tacit-ae-build-recipes.yaml` by scripts/tacit-ae: the manager
+# loads a recipes file even for runtime tasks (RuntimeBuildRecipes, for
+# metasimulation), and the live deploy/config_build_recipes.yaml is gitignored.
+# Named without the config_ prefix for the same reason as its neighbours.
+#
+# The recipe that built control_f2_megaboom_tacit_pcim_sweep_progthresh
+# (agfi-001ac1ccd806a440c, 2026-09-08). Reconstructed from the build log and the
+# AGFI's recorded build quintuplet:
+#   f2-firesim-FireSim-FireSimMegaBoomV3TacitSweepConfig-FRFCFS16GBQuadRank_WithSynthAsserts_BaseF2PCIMConfig
+# at 50 MHz with the RUNTIMEOPTIMIZED strategy. TARGET_PROJECT_MAKEFRAG is
+# resolved relative to this file's directory.
+control_f2_megaboom_tacit_pcim_sweep_progthresh:
+    PLATFORM: f2
+    TARGET_PROJECT: firesim
+    TARGET_PROJECT_MAKEFRAG: ../../../../generators/firechip/chip/src/main/makefrag/firesim
+    DESIGN: FireSim
+    TARGET_CONFIG: FireSimMegaBoomV3TacitSweepConfig
+    PLATFORM_CONFIG: FRFCFS16GBQuadRank_WithSynthAsserts_BaseF2PCIMConfig
+    deploy_quintuplet: null
+    platform_config_args:
+        fpga_frequency: 50
+        build_strategy: RUNTIMEOPTIMIZED
+    post_build_hook: null
+    metasim_customruntimeconfig: null
+    bit_builder_recipe: bit-builder-recipes/f2.yaml

@@ -140,7 +140,7 @@ fi
 echo $'\033[0;32mrh:\033[0m Replacing paramiko-ng with paramiko to add rsa2 ssh support for fab-classic'
 pip uninstall -y paramiko-ng paramiko fab-classic 2>/dev/null || true
 PARAMIKO_REPLACE=1 pip install --no-cache-dir --no-binary fab-classic 'fab-classic>=1.19.2' #rh: see https://pypi.org/project/fab-classic/
-pip install --force-reinstall "paramiko==2.9.0"
+pip install --force-reinstall "paramiko==2.9.0" "cryptography<41"  # cryptography<41 matches conda-reqs and the pinned pyOpenSSL; unconstrained it pulls 50.x and breaks boto3 imports
 
 # init all submodules except for chipyard
 git config submodule.target-design/chipyard.update none
