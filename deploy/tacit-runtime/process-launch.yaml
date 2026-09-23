@@ -1,10 +1,10 @@
-# TACIT artifact evaluation: the lua_fusion experiment. Used by scripts/tacit-ae via
-# `firesim -c tacit-runtime/lua-fusion.yaml -a tacit-runtime/tacit-ae-hwdb.yaml -r tacit-runtime/tacit-ae-build-recipes.yaml`.
+# TACIT artifact evaluation: the process_launch experiment. Used by scripts/tacit-ae via
+# `firesim -c tacit-runtime/process-launch.yaml -a tacit-runtime/tacit-ae-hwdb.yaml -r tacit-runtime/tacit-ae-build-recipes.yaml`.
 # Named without the config_ prefix: deploy/.gitignore drops config_*.yaml at any depth.
-# Four unnetworked slots on four f2.6xlarge (one FPGA each), one per job of the
-# lua-fusion workload: three traced mandelbrot runs (base, mulmul, mmadd) and a
-# chores job that exports the jump-label patch map the decoder needs. With fewer
-# slots than jobs the manager silently runs only the first ones.
+# Seven unnetworked slots on seven f2.6xlarge (one FPGA each), one per job of the
+# process-launch-f2 workload: chores, two 10k latency collections (control, fix), two
+# traced 256-launch runs (control, fix), and two 10k collections with the diagnosis
+# tracepoints enabled (full, lite). Fewer slots than jobs silently drops the last ones.
 # Run-time configuration for the FireSim Simulation Manager
 # See https://docs.fires.im/en/stable/Advanced-Usage/Manager/Manager-Configuration-Files.html for documentation of all of these params.
 
@@ -12,7 +12,7 @@ run_farm:
   base_recipe: run-farm-recipes/aws_ec2.yaml
   recipe_arg_overrides:
     # tag to apply to run farm hosts
-    run_farm_tag: tacit-ae-lua-fusion
+    run_farm_tag: tacit-ae-process-launch
     # enable expanding run farm by run_farm_hosts given
     always_expand_run_farm: true
     # minutes to retry attempting to request instances
@@ -31,7 +31,7 @@ run_farm:
     # want in your runfarm.
     run_farm_hosts_to_use:
       # 2026-09-04: 11 slots for the 11-job lossy coverage workload (exact fit).
-      - f2.6xlarge: 4
+      - f2.6xlarge: 7
       - f2.12xlarge: 0
       - f2.48xlarge : 0
       - m4.16xlarge: 0
@@ -51,7 +51,7 @@ metasimulation:
 # DOCREF START: target_config area
 target_config:
     topology: no_net_config
-    no_net_num_nodes: 4
+    no_net_num_nodes: 7
     link_latency: 6405
     switching_latency: 10
     net_bandwidth: 200
@@ -92,7 +92,7 @@ autocounter:
     read_rate: 0
 
 workload:
-    workload_name: lua-fusion.json  # all three arms + chores in one launch (marshal install from software/lua-dispatch/workloads)
+    workload_name: process-launch-f2.json  # marshal install from software/firemarshal/example-workloads
     # 2026-09-04: yes -- the farm is 11 launched EC2 instances; do not leave
     # them idle after the run.
     terminate_on_completion: yes
