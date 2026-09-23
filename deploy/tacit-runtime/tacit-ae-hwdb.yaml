@@ -1,0 +1,16 @@
+# TACIT artifact evaluation hardware database. Passed to the manager with
+# `-a tacit-runtime/tacit-ae-hwdb.yaml` by scripts/tacit-ae, because the
+# live deploy/config_hwdb.yaml is gitignored (config_*.yaml, at any depth, hence
+# this name) and does not survive a fresh clone.
+#
+# 2026-09-08: MegaBoom v3 + TACIT, SRAM packet queue physically 128 deep with the
+# drop threshold (0x5C) and resume watermark (0x58) as MMIO registers, TraceDoctor
+# oracle, WithSynthAsserts, FRFCFS (no LLC), 50 MHz RUNTIMEOPTIMIZED. Built from
+#   DESIGN=FireSim TARGET_CONFIG=FireSimMegaBoomV3TacitSweepConfig
+#   PLATFORM_CONFIG=FRFCFS16GBQuadRank_WithSynthAsserts_BaseF2PCIMConfig
+# and verified on 2026-09-23 to elaborate byte-identically from the RTL this tree pins.
+control_f2_megaboom_tacit_pcim_sweep_progthresh:
+    agfi: agfi-001ac1ccd806a440c
+    deploy_quintuplet_override: null
+    deploy_makefrag_override: null
+    custom_runtime_config: null
