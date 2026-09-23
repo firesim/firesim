@@ -33,8 +33,9 @@ public:
   CPUManagedStreamIO &get_cpu_managed_stream_io() override { return *this; }
   FPGAManagedStreamIO &get_fpga_managed_stream_io() override { return *this; }
 
-  /** Abort unless the FPGA is allowed to master the bus (see definition). */
-  void check_bus_master_enabled(const struct fpga_pci_resource_map &map);
+  /** Ensure the FPGA is allowed to master the bus; abort only if it cannot
+   * be enabled (see definition). */
+  void ensure_bus_master_enabled(const struct fpga_pci_resource_map &map);
 
 private:
   uint32_t mmio_read(size_t addr) override { return read(addr); }
@@ -210,8 +211,8 @@ void simif_f2_t::fpga_setup(int slot_id, const std::string &agfi) {
     }
   }
 
-  /* PCIM writes are silently dropped without this; check before we rely on it */
-  check_bus_master_enabled(info.spec.map[FPGA_APP_PF]);
+  /* PCIM writes are silently dropped without this; enable before we rely on it */
+  ensure_bus_master_enabled(info.spec.map[FPGA_APP_PF]);
 
   /* attach to BAR0 (OCL) */
   pci_bar_handle = PCI_BAR_HANDLE_INIT;
@@ -321,10 +322,18 @@ FPGAManagedStreams::HostBuffer simif_f2_t::allocate_to_cpu_buffer(size_t size) {
 
 /**
  * Without PCIe Bus Master Enable the shell silently drops every PCIM write, so
- * the FPGA appears to run while no data ever reaches host memory. Fail here
- * rather than let that present as an inexplicably empty stream.
+ * the FPGA appears to run while no data ever reaches host memory.
+ *
+ * Nothing sets the bit for us. No kernel driver binds to the FPGA -- fpga_pci
+ * mmaps BAR resources from sysfs in userspace -- so pci_set_master() is never
+ * called and COMMAND keeps its power-on value (Memory Space only) on every
+ * fresh instance, of every type, including after fpga-load-local-image. We are
+ * already root under sudo and already hold the device's config space open, so
+ * set the bit here rather than making every run-farm launch a manual setpci
+ * step. Abort only if it cannot be set, rather than let that present as an
+ * inexplicably empty stream.
  */
-void simif_f2_t::check_bus_master_enabled(
+void simif_f2_t::ensure_bus_master_enabled(
     const struct fpga_pci_resource_map &map) {
   char path[256];
   snprintf(path,
@@ -335,9 +344,9 @@ void simif_f2_t::check_bus_master_enabled(
            map.dev,
            map.func);
 
-  FILE *fp = fopen(path, "rb");
+  FILE *fp = fopen(path, "r+b");
   if (!fp) {
-    fprintf(stderr, "Warning: cannot open %s to check bus mastering.\n", path);
+    fprintf(stderr, "Warning: cannot open %s to set bus mastering.\n", path);
     return;
   }
 
@@ -345,30 +354,57 @@ void simif_f2_t::check_bus_master_enabled(
   uint16_t command = 0;
   bool read_ok =
       (fseek(fp, 0x4, SEEK_SET) == 0) && (fread(&command, 2, 1, fp) == 1);
-  fclose(fp);
 
   if (!read_ok) {
+    fclose(fp);
     fprintf(stderr, "Warning: cannot read PCI COMMAND from %s.\n", path);
     return;
   }
 
-  if (!(command & 0x4)) {
+  if (command & 0x4) {
+    fclose(fp);
+    return;
+  }
+
+  // Read-modify-write, so no other COMMAND bit is disturbed. A blind 16-bit
+  // store (what `setpci -s <bdf> 4.w=6` does) would clear anything else set.
+  const uint16_t desired = command | 0x4;
+  uint16_t readback = 0;
+  bool write_ok = (fseek(fp, 0x4, SEEK_SET) == 0) &&
+                  (fwrite(&desired, 2, 1, fp) == 1) && (fflush(fp) == 0);
+  bool verify_ok = write_ok && (fseek(fp, 0x4, SEEK_SET) == 0) &&
+                   (fread(&readback, 2, 1, fp) == 1);
+  fclose(fp);
+
+  if (verify_ok && (readback & 0x4)) {
     fprintf(stderr,
-            "Bus mastering is disabled on %04x:%02x:%02x.%d, so the FPGA "
-            "cannot write to host memory and every stream would stall.\n"
-            "Enable it with:\n"
-            "    sudo setpci -s %04x:%02x:%02x.%d 4.w=6\n",
+            "Enabled PCIe bus mastering on %04x:%02x:%02x.%d "
+            "(COMMAND 0x%04x -> 0x%04x).\n",
             map.domain,
             map.bus,
             map.dev,
             map.func,
-            map.domain,
-            map.bus,
-            map.dev,
-            map.func);
-    fpga_shutdown();
-    exit(1);
+            command,
+            readback);
+    return;
   }
+
+  fprintf(stderr,
+          "Bus mastering is disabled on %04x:%02x:%02x.%d and could not be "
+          "enabled, so the FPGA cannot write to host memory and every stream "
+          "would stall.\n"
+          "Enable it manually with:\n"
+          "    sudo setpci -s %04x:%02x:%02x.%d COMMAND=6:6\n",
+          map.domain,
+          map.bus,
+          map.dev,
+          map.func,
+          map.domain,
+          map.bus,
+          map.dev,
+          map.func);
+  fpga_shutdown();
+  exit(1);
 }
 
 simif_f2_t::~simif_f2_t() {

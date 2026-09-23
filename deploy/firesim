@@ -464,6 +464,13 @@ def main(args: argparse.Namespace) -> None:
     # we elastically spin instances up/down. we can easily get re-used IPs with
     # different keys. also, probably won't get MITM'd
     env.disable_known_hosts = True
+    # Send SSH keepalives. Vivado has long silent phases (e.g. synthesis "Timing
+    # Optimization" runs for many minutes printing nothing), and an idle TCP flow
+    # to a build host can be reaped by stateful connection tracking. Without
+    # keepalives that leaves a half-open socket the manager blocks in select() on
+    # forever, while the remote build dies on SIGHUP -- observed 2026-08-29, both
+    # build hosts lost simultaneously at the Timing Optimization phase boundary.
+    env.keepalive = 30
     env.key_filename = os.path.expanduser("~/firesim.pem") #rh: okay so /firesim.pem does work for infrasetup, need to bump paramiko though to support rsa2
 
 

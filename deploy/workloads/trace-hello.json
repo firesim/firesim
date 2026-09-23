@@ -16,7 +16,18 @@
 		{
 			"name": "trace-hello-trace-hello",
 			"bootbinary": "../../../../../software/firemarshal/images/firechip/trace-hello-trace-hello/trace-hello-trace-hello-bin",
-			"rootfs": "../../../../../software/firemarshal/images/firechip/trace-hello-trace-hello/trace-hello-trace-hello.img"
+			"rootfs": "../../../../../software/firemarshal/images/firechip/trace-hello-trace-hello/trace-hello-trace-hello.img",
+			"simulation_outputs": [
+				"tacit0.out"
+			]
+		},
+		{
+			"name": "trace-hello-trace-hello-lossy",
+			"bootbinary": "../../../../../software/firemarshal/images/firechip/trace-hello-trace-hello-lossy/trace-hello-trace-hello-lossy-bin",
+			"rootfs": "../../../../../software/firemarshal/images/firechip/trace-hello-trace-hello-lossy/trace-hello-trace-hello-lossy.img",
+			"simulation_outputs": [
+				"tacit0.out"
+			]
 		}
 	]
 }

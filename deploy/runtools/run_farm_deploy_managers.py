@@ -681,6 +681,13 @@ class EC2InstanceDeployManager(InstanceDeployManager):
     This is in charge of managing the locations of stuff on remote nodes.
     """
 
+    # 2MB hugepages to reserve per simulation for FPGA-managed (PCIM) bridge
+    # streams: one page per to-host stream, plus headroom. Tacit alone needs 1,
+    # Tacit+TracerV 2. 8 is deliberately generous -- 16MB per sim on a host with
+    # hundreds of GB -- so this never needs tuning per design.
+    HUGEPAGES_PER_SIM: int = 8
+    HUGEPAGES_SLACK: int = 8
+
     def __init__(self, parent_node: Inst) -> None:
         super().__init__(parent_node)
         self.nbd_tracker = NBDTracker()
@@ -755,6 +762,55 @@ class EC2InstanceDeployManager(InstanceDeployManager):
 
             # self.instance_logger("Waiting 10 seconds after removing kernel modules (esp. xocl).")
             # time.sleep(10)
+
+    def reserve_hugepages(self) -> None:
+        """Reserve 2MB hugepages for FPGA-managed (PCIM) bridge streams.
+
+        simif_f2 backs each to-host stream with fpga_dma_mem_map_huge, which
+        requires pre-reserved hugepages. Nothing else reserves them -- not the
+        AMI, not fpga-load-local-image -- and vm.nr_hugepages is 0 on a fresh
+        instance, so every simulator on the host dies at startup with "Could not
+        map a hugepage for a N-byte stream buffer". Do it once per host here,
+        before any simulation starts.
+        """
+        if not self.instance_assigned_simulations():
+            return
+        platforms = set()
+        for slot in self.parent_node.sim_slots:
+            hwcfg = slot.get_server_hardware_config()
+            if hasattr(hwcfg, "get_platform"):
+                platforms.add(hwcfg.get_platform())
+        # Only the F2 PCIM path DMAs into host hugepages.
+        if "f2" not in platforms:
+            return
+
+        nsims = len(self.parent_node.sim_slots)
+        want = nsims * self.HUGEPAGES_PER_SIM + self.HUGEPAGES_SLACK
+
+        # Raise only. A larger existing reservation may belong to something else
+        # on this host; lowering it would break that silently.
+        cur = int(str(run("cat /proc/sys/vm/nr_hugepages")).strip() or 0)
+        if cur < want:
+            run(f"sudo sysctl -w vm.nr_hugepages={want}")
+
+        # sysctl -w reports success even when the kernel grants fewer pages than
+        # asked (memory fragmentation), so trust the readback, not the exit code.
+        got = int(
+            str(
+                run("cat /sys/kernel/mm/hugepages/hugepages-2048kB/nr_hugepages")
+            ).strip()
+            or 0
+        )
+        if got < want:
+            raise Exception(
+                f"Reserved only {got} of {want} hugepages needed for {nsims} "
+                f"simulation(s) -- host memory is too fragmented. Simulations "
+                f"would fail at startup with a hugepage mapping error."
+            )
+        self.instance_logger(
+            f"Reserved {got} hugepages ({nsims} simulation(s) x "
+            f"{self.HUGEPAGES_PER_SIM} + {self.HUGEPAGES_SLACK} slack)."
+        )
 
     def clear_fpgas(self) -> None:
         if self.instance_assigned_simulations():
@@ -885,6 +941,8 @@ class EC2InstanceDeployManager(InstanceDeployManager):
 
             if not metasim_enabled:
                 self.get_and_install_aws_fpga_sdk()
+                # PCIM streams DMA into hugepages; reserve before any sim starts
+                self.reserve_hugepages()
                 # unload any existing edma/xdma/xocl
                 self.unload_xrt_and_xocl()
                 # # copy xdma driver # rh: commenting out for now to prevent loading of xdma.

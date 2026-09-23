@@ -574,6 +574,25 @@ class UserTopologies:
     def no_net_config(self) -> None:
         self.roots = [FireSimServerNode() for x in range(self.no_net_num_nodes)]
 
+    def lossy_depth_sweep_config(self) -> None:
+        """Three unnetworked slots, one per packet-buffer depth, so a single run
+        compares 32/64/128 on identical stimulus. Per-server hardware configs are
+        honoured by pass_apply_default_hwconfig, which only substitutes
+        default_hw_config where a server has none.
+
+        Slot order is the workload's job order, and each job's log self-identifies:
+        the resume watermark defaults to bufferDepth/4, so d32 reads back 8, d64 16
+        and d128 32. That makes a mis-mapping detectable from the data itself
+        rather than assumed."""
+        self.roots = [
+            FireSimServerNode(server_hardware_config=
+                "control_f2_megaboom_tacit_pcim_sramq_oracle_asserts_d32"),
+            FireSimServerNode(server_hardware_config=
+                "control_f2_megaboom_tacit_pcim_sramq_oracle_asserts_d64"),
+            FireSimServerNode(server_hardware_config=
+                "control_f2_megaboom_tacit_pcim_sramq_oracle_asserts_d128"),
+        ]
+
     # Spins up all of the precompiled, unnetworked targets
     def all_no_net_targets_config(self) -> None:
         hwdb_entries = [
