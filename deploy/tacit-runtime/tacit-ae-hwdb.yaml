@@ -35,3 +35,12 @@ control_f2_megaboom_tacit_pcim_sramq_oracle_asserts_d64_trapprv:
     deploy_quintuplet_override: null
     deploy_makefrag_override: null
     custom_runtime_config: null
+
+# 2026-09-24: two MegaBooms, each with its own encoder on a depth-64 SRAM queue, with the
+# trap-packet privilege fix; no TraceDoctor. For the IPI-storm study, where both harts'
+# traces are captured side by side. Closed at WNS +0.055 ns.
+control_f2_dualmegaboom_tacit_pcim_sramq_d64_trapprv:
+    agfi: agfi-0d6536328c45b4aea
+    deploy_quintuplet_override: null
+    deploy_makefrag_override: null
+    custom_runtime_config: null
