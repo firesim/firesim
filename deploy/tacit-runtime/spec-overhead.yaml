@@ -1,0 +1,117 @@
+# TACIT artifact evaluation: the spec_overhead experiment. Used by scripts/tacit-ae via
+# `firesim -c tacit-runtime/spec-overhead.yaml -a tacit-runtime/tacit-ae-hwdb.yaml -r tacit-runtime/tacit-ae-build-recipes.yaml`.
+# Named without the config_ prefix: deploy/.gitignore drops config_*.yaml at any depth.
+# 22 unnetworked slots on 22 f2.6xlarge (one FPGA each), one per job of spec17-intspeed-test-overhead.json.
+# Run-time configuration for the FireSim Simulation Manager
+# See https://docs.fires.im/en/stable/Advanced-Usage/Manager/Manager-Configuration-Files.html for documentation of all of these params.
+
+run_farm:
+  base_recipe: run-farm-recipes/aws_ec2.yaml
+  recipe_arg_overrides:
+    # tag to apply to run farm hosts
+    run_farm_tag: tacit-ae-spec-overhead
+    # enable expanding run farm by run_farm_hosts given
+    always_expand_run_farm: true
+    # minutes to retry attempting to request instances
+    launch_instances_timeout_minutes: 60
+    # run farm host market to use (ondemand, spot)
+    run_instance_market: ondemand
+    # if using spot instances, determine the interrupt behavior (terminate, stop, hibernate)
+    spot_interruption_behavior: terminate
+    # if using spot instances, determine the max price
+    spot_max_price: ondemand
+    # default location of the simulation directory on the run farm host
+    default_simulation_dir: /home/ubuntu
+
+    # run farm hosts to spawn: a mapping from a spec below (which is an EC2
+    # instance type) to the number of instances of the given type that you
+    # want in your runfarm.
+    run_farm_hosts_to_use:
+      # 2026-09-04: 11 slots for the 11-job lossy coverage workload (exact fit).
+      - f2.6xlarge: 22
+      - f2.12xlarge: 0
+      - f2.48xlarge : 0
+      - m4.16xlarge: 0
+      - z1d.3xlarge: 0
+      - z1d.6xlarge: 0
+      - z1d.12xlarge: 0
+
+metasimulation:
+  metasimulation_enabled: false
+  # vcs or verilator. use vcs-debug or verilator-debug for waveform generation
+  metasimulation_host_simulator: verilator
+  # plusargs passed to the simulator for all metasimulations
+  metasimulation_only_plusargs: "+fesvr-step-size=128 +max-cycles=100000000"
+  # plusargs passed to the simulator ONLY FOR vcs metasimulations
+  metasimulation_only_vcs_plusargs: "+vcs+initreg+0 +vcs+initmem+0"
+
+# DOCREF START: target_config area
+target_config:
+    topology: no_net_config
+    no_net_num_nodes: 22
+    link_latency: 6405
+    switching_latency: 10
+    net_bandwidth: 200
+    profile_interval: -1
+
+    # This references a section from config_hwdb.yaml for fpga-accelerated simulation
+    # or from config_build_recipes.yaml for metasimulation
+    # In homogeneous configurations, use this to set the hardware config deployed
+    # for all simulators
+    default_hw_config: control_f2_megaboom_tacit_pcim_sramq_oracle_asserts_d64  # MegaBoom v3 + TACIT, SRAM queue depth 64 (the paper's design), TraceDoctor oracle, synth asserts; 2026-09-07
+
+    # Advanced: Specify any extra plusargs you would like to provide when
+    # booting the simulator (in both FPGA-sim and metasim modes). This is
+    # a string, with the contents formatted as if you were passing the plusargs
+    # at command line, e.g. "+a=1 +b=2"
+    # Tracing is gated by the driver ioctl (trace-submit), not by plusargs.
+    plusarg_passthrough: ""
+# DOCREF END: target_config area
+
+tracing:
+    enable: no
+
+    # Trace output formats. Only enabled if "enable" is set to "yes" above
+    # 0 = human readable; 1 = binary (compressed raw data); 2 = flamegraph (stack
+    # unwinding -> Flame Graph)
+    output_format: 0
+
+    # Trigger selector.
+    # 0 = no trigger; 1 = cycle count trigger; 2 = program counter trigger; 3 =
+    # instruction trigger
+    selector: 0
+    start: 0
+    end: -1
+
+autocounter:
+    read_rate: 0
+
+workload:
+    workload_name: spec17-intspeed-train-overhead.json  # the default input set; spec_overhead.py overrides this with -x for --input test|ref (marshal install from software/spec2017/marshal-configs)
+    # 2026-09-04: yes -- the farm is 11 launched EC2 instances; do not leave
+    # them idle after the run.
+    terminate_on_completion: yes
+    suffix_tag: null
+
+host_debug:
+    # When enabled (=yes), Zeros-out FPGA-attached DRAM before simulations
+    # begin (takes 2-5 minutes).
+    # In general, this is not required to produce deterministic simulations on
+    # target machines running linux. Enable if you observe simulation non-determinism.
+    zero_out_dram: no
+    # If disable_synth_asserts: no, simulation will print assertion message and
+    # terminate simulation if synthesized assertion fires.
+    # If disable_synth_asserts: yes, simulation ignores assertion firing and
+    # continues simulation.
+    disable_synth_asserts: no
+
+# DOCREF START: Synthesized Prints
+synth_print:
+    # Start and end cycles for outputting synthesized prints.
+    # They are given in terms of the base clock and will be converted
+    # for each clock domain.
+    start: 0
+    end: -1
+    # When enabled (=yes), prefix print output with the target cycle at which the print was triggered
+    cycle_prefix: yes
+# DOCREF END: Synthesized Prints
