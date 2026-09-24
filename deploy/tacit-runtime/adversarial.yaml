@@ -55,7 +55,7 @@ target_config:
     # In homogeneous configurations, use this to set the hardware config deployed
     # for all simulators
     # default_hw_config: control_f2_megaboom_tacit_pcim_sramq_oracle  # oracle pair (needed only when cross-checking decoded traces)
-    default_hw_config: control_f2_megaboom_tacit_pcim_sramq_oracle_asserts_d64  # MegaBoom v3 + TACIT, SRAM queue depth 64 (the paper's design), TraceDoctor oracle, synth asserts; 2026-09-07
+    default_hw_config: control_f2_megaboom_tacit_pcim_sramq_oracle_asserts_d64_trapprv  # MegaBoom v3 + TACIT, SRAM queue depth 64 (the paper's design), TraceDoctor oracle, synth asserts; 2026-09-07
 
     # Advanced: Specify any extra plusargs you would like to provide when
     # booting the simulator (in both FPGA-sim and metasim modes). This is
