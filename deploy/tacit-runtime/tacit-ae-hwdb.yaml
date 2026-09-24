@@ -25,3 +25,13 @@ control_f2_megaboom_tacit_pcim_sramq_oracle_asserts_d64:
     deploy_quintuplet_override: null
     deploy_makefrag_override: null
     custom_runtime_config: null
+
+# 2026-09-24: the same depth-64 design with the encoder's trap-packet privilege fix
+# (from_priv tracked by the encoder, to_priv robust to back-to-back traps). Closed at
+# WNS +0.047 ns. Pre-fix bitstreams mislabel the target privilege of an sret that lands
+# on a re-executed ecall, which the decoder cannot recover from.
+control_f2_megaboom_tacit_pcim_sramq_oracle_asserts_d64_trapprv:
+    agfi: agfi-05391b88d93061429
+    deploy_quintuplet_override: null
+    deploy_makefrag_override: null
+    custom_runtime_config: null
