@@ -1,0 +1,20 @@
+# Bitstream builds for the TACIT artifact:
+#   firesim buildbitstream -b tacit-runtime/tacit-ae-build.yaml -r tacit-runtime/tacit-ae-build-recipes.yaml \
+#       -a tacit-runtime/tacit-ae-hwdb.yaml
+# (the manager appends the finished AGFI to the hwdb file). One z1d.12xlarge per recipe listed, on demand;
+# a MegaBoom design takes 5 to 8 hours. The resulting AGFIs go into tacit-ae-hwdb.yaml.
+build_farm:
+  base_recipe: build-farm-recipes/aws_ec2.yaml
+  recipe_arg_overrides:
+    build_farm_tag: tacit-ae-buildfarm
+    instance_type: z1d.12xlarge
+    build_instance_market: ondemand
+    spot_interruption_behavior: terminate
+    spot_max_price: ondemand
+    default_build_dir: /home/ubuntu/firesim-build
+
+builds_to_run:
+    - control_f2_dualmegaboom_tacit_pcim_sramq_d64
+
+agfis_to_share: []
+share_with_accounts: {}
