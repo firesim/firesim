@@ -56,3 +56,37 @@ control_f2_dualmegaboom_tacit_pcim_sramq_d64:
     post_build_hook: null
     metasim_customruntimeconfig: null
     bit_builder_recipe: bit-builder-recipes/f2.yaml
+
+# 2026-09-24: the same two designs with the encoder's trap-packet privilege fix
+# (TacitParallelEncoder: from_priv tracked by the encoder, to_priv robust to back-to-back
+# traps). The pre-fix bitstreams mislabel the target privilege of an sret that lands on a
+# re-executed ecall (restarted syscall), which the decoder cannot recover from.
+control_f2_megaboom_tacit_pcim_sramq_oracle_asserts_d64_trapprv:
+    PLATFORM: f2
+    TARGET_PROJECT: firesim
+    TARGET_PROJECT_MAKEFRAG: ../../../../generators/firechip/chip/src/main/makefrag/firesim
+    DESIGN: FireSim
+    TARGET_CONFIG: FireSimMegaBoomV3TacitSRAMQueueDepth64TraceDoctorConfig
+    PLATFORM_CONFIG: FRFCFS16GBQuadRank_WithSynthAsserts_BaseF2PCIMConfig
+    deploy_quintuplet: null
+    platform_config_args:
+        fpga_frequency: 50
+        build_strategy: RUNTIMEOPTIMIZED
+    post_build_hook: null
+    metasim_customruntimeconfig: null
+    bit_builder_recipe: bit-builder-recipes/f2.yaml
+
+control_f2_dualmegaboom_tacit_pcim_sramq_d64_trapprv:
+    PLATFORM: f2
+    TARGET_PROJECT: firesim
+    TARGET_PROJECT_MAKEFRAG: ../../../../generators/firechip/chip/src/main/makefrag/firesim
+    DESIGN: FireSim
+    TARGET_CONFIG: FireSimDualMegaBoomV3TacitSRAMQueueDepth64Config
+    PLATFORM_CONFIG: FRFCFS16GBQuadRank_WithSynthAsserts_BaseF2PCIMConfig
+    deploy_quintuplet: null
+    platform_config_args:
+        fpga_frequency: 50
+        build_strategy: RUNTIMEOPTIMIZED
+    post_build_hook: null
+    metasim_customruntimeconfig: null
+    bit_builder_recipe: bit-builder-recipes/f2.yaml

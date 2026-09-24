@@ -14,7 +14,8 @@ build_farm:
     default_build_dir: /home/ubuntu/firesim-build
 
 builds_to_run:
-    - control_f2_dualmegaboom_tacit_pcim_sramq_d64
+    - control_f2_megaboom_tacit_pcim_sramq_oracle_asserts_d64_trapprv
+    - control_f2_dualmegaboom_tacit_pcim_sramq_d64_trapprv
 
 agfis_to_share: []
 share_with_accounts: {}
