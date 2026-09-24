@@ -14,3 +14,14 @@ control_f2_megaboom_tacit_pcim_sweep_progthresh:
     deploy_quintuplet_override: null
     deploy_makefrag_override: null
     custom_runtime_config: null
+
+# 2026-09-07: the design every number in the paper was measured on. MegaBoom v3 +
+# TACIT with the credit-based SRAM packet queue at its default depth of 64 entries,
+# TraceDoctor oracle beside it, synthesizable asserts, FRFCFS memory, 50 MHz.
+# (The sweep_progthresh entry above is physically 128 deep with the drop threshold
+# and resume watermark as MMIO registers; left in for depth experiments.)
+control_f2_megaboom_tacit_pcim_sramq_oracle_asserts_d64:
+    agfi: agfi-056de453ff2513780
+    deploy_quintuplet_override: null
+    deploy_makefrag_override: null
+    custom_runtime_config: null

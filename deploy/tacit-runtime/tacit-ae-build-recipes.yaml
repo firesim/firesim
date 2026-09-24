@@ -24,3 +24,35 @@ control_f2_megaboom_tacit_pcim_sweep_progthresh:
     post_build_hook: null
     metasim_customruntimeconfig: null
     bit_builder_recipe: bit-builder-recipes/f2.yaml
+
+# Depth-64 SRAM queue + TraceDoctor: the paper's design (recovered from the 2026-09-07 build log).
+control_f2_megaboom_tacit_pcim_sramq_oracle_asserts_d64:
+    PLATFORM: f2
+    TARGET_PROJECT: firesim
+    TARGET_PROJECT_MAKEFRAG: ../../../../generators/firechip/chip/src/main/makefrag/firesim
+    DESIGN: FireSim
+    TARGET_CONFIG: FireSimMegaBoomV3TacitSRAMQueueDepth64TraceDoctorConfig
+    PLATFORM_CONFIG: FRFCFS16GBQuadRank_WithSynthAsserts_BaseF2PCIMConfig
+    deploy_quintuplet: null
+    platform_config_args:
+        fpga_frequency: 50
+        build_strategy: RUNTIMEOPTIMIZED
+    post_build_hook: null
+    metasim_customruntimeconfig: null
+    bit_builder_recipe: bit-builder-recipes/f2.yaml
+
+# Dual MegaBoom, depth-64 SRAM queue, no TraceDoctor: the IPI-storm case study (two harts traced side by side).
+control_f2_dualmegaboom_tacit_pcim_sramq_d64:
+    PLATFORM: f2
+    TARGET_PROJECT: firesim
+    TARGET_PROJECT_MAKEFRAG: ../../../../generators/firechip/chip/src/main/makefrag/firesim
+    DESIGN: FireSim
+    TARGET_CONFIG: FireSimDualMegaBoomV3TacitSRAMQueueDepth64Config
+    PLATFORM_CONFIG: FRFCFS16GBQuadRank_WithSynthAsserts_BaseF2PCIMConfig
+    deploy_quintuplet: null
+    platform_config_args:
+        fpga_frequency: 50
+        build_strategy: RUNTIMEOPTIMIZED
+    post_build_hook: null
+    metasim_customruntimeconfig: null
+    bit_builder_recipe: bit-builder-recipes/f2.yaml
