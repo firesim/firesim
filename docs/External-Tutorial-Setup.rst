@@ -115,7 +115,6 @@ already have an AWS EC2 account.
 
 .. code-block:: bash
 
-    # .bashrc
     # Source global definitions
     if [ -f /etc/bashrc ]; then
             . /etc/bashrc

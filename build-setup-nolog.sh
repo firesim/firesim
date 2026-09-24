@@ -162,56 +162,62 @@ cd "$FDIR"
 #### EC2-only setup ####
 
 # see if the instance info page exists. if not, we are not on ec2.
-# rh: yet another HTTPS issue that needs to be fixed. i swear on god they use this for the most random things sometimes
-TOKEN=""
-for attempt in 1 2 3; do
-    # Metadata is unreachable off-EC2; keep setup non-fatal in that case.
-    set +e
-    TOKEN=$(curl -X PUT "http://169.254.169.254/latest/api/token" -H "X-aws-ec2-metadata-token-ttl-seconds: 21600" \
-        --connect-timeout 1 -m 3 2>/dev/null)
-    curl_rc=$?
-    set -e
-
-    if [ $curl_rc -eq 0 ] && [ -n "$TOKEN" ]; then
-        break
-    fi
-
+# Skip EC2 setup if FORCE_NON_EC2 is set
+if [ "${FORCE_NON_EC2:-0}" != "1" ]; then
+    # see if the instance info page exists. if not, we are not on ec2.
+    # rh: yet another HTTPS issue that needs to be fixed. i swear on god they use this for the most random things sometimes
     TOKEN=""
-done
-if [ -n "$TOKEN" ]; then
+    for attempt in 1 2 3; do
+        # Metadata is unreachable off-EC2; keep setup non-fatal in that case.
+        set +e
+        TOKEN=$(curl -X PUT "http://169.254.169.254/latest/api/token" -H "X-aws-ec2-metadata-token-ttl-seconds: 21600" \
+            --connect-timeout 1 -m 3 2>/dev/null)
+        curl_rc=$?
+        set -e
 
-    (
-        echo $'\033[0;32mrh:\033[0m IMDSv2 check passed, this is an EC2 instance'
-
-        # ensure that we're using the system toolchain to build the kernel modules
-        # newer gcc has --enable-default-pie and older kernels think the compiler
-        # is broken unless you pass -fno-pie but then I was encountering a weird
-        # error about string.h not being found
-        export PATH=/usr/bin:$PATH
-
-        # TODO: Update for xdma for f2
-        # cd "$FDIR/platforms/f1/aws-fpga/sdk/linux_kernel_drivers/xdma" 
-        # make
-    )
-
-    (
-        if [[ "${CPPFLAGS:-zzz}" != "zzz" ]]; then
-            # don't set it if it isn't already set but strip out -DNDEBUG because
-            # the sdk software has assertion-only variable usage that will end up erroring
-            # under NDEBUG with -Wall and -Werror
-            export CPPFLAGS="${CPPFLAGS/-DNDEBUG/}"
+        if [ $curl_rc -eq 0 ] && [ -n "$TOKEN" ]; then
+            break
         fi
 
-        # Source hdk_setup.sh once on this machine to pull down shell DCP and IP,
-        # so we don't have to waste time doing it each time on worker instances
-        AWSFPGA="$FDIR/platforms/f2/aws-fpga-firesim-f2"
-        cd "$AWSFPGA"
-        bash -c "source ./sdk_setup.sh"
-        bash -c "source ./hdk_setup.sh"
-    )
+        TOKEN=""
+    done
+    if [ -n "$TOKEN" ]; then
 
+        (
+            echo $'IMDSv2 check passed, this is an EC2 instance'
+
+            # ensure that we're using the system toolchain to build the kernel modules
+            # newer gcc has --enable-default-pie and older kernels think the compiler
+            # is broken unless you pass -fno-pie but then I was encountering a weird
+            # error about string.h not being found
+            export PATH=/usr/bin:$PATH
+
+            # TODO: Update for xdma for f2
+            # cd "$FDIR/platforms/f1/aws-fpga/sdk/linux_kernel_drivers/xdma" 
+            # make
+        )
+
+        (
+            if [[ "${CPPFLAGS:-zzz}" != "zzz" ]]; then
+                # don't set it if it isn't already set but strip out -DNDEBUG because
+                # the sdk software has assertion-only variable usage that will end up erroring
+                # under NDEBUG with -Wall and -Werror
+                export CPPFLAGS="${CPPFLAGS/-DNDEBUG/}"
+            fi
+
+            # Source hdk_setup.sh once on this machine to pull down shell DCP and IP,
+            # so we don't have to waste time doing it each time on worker instances
+            AWSFPGA="$FDIR/platforms/f2/aws-fpga-firesim-f2"
+            cd "$AWSFPGA"
+            bash -c "source ./sdk_setup.sh"
+            bash -c "source ./hdk_setup.sh"
+        )
+
+    else
+        echo $'IMDSv2 token empty/failed, skipping EC2 specific setup stuff'
+    fi
 else
-    echo $'\033[0;32mrh:\033[0m IMDSv2 token empty/failed, skipping EC2 specific setup stuff'
+    echo $'FORCE_NON_EC2 set, skipping EC2 specific setup'
 fi
 
 cd "$FDIR"

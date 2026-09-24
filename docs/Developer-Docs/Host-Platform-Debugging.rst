@@ -23,7 +23,7 @@ Usage
 
 To run a simulation you need to make both the DUT and driver targets by typing:
 
-::
+.. code-block:: bash
 
     make xsim
     make xsim-dut <VCS=1> & # Launch the DUT
@@ -35,7 +35,7 @@ xsim-dut`` will take a while).
 
 Once both processes are running, you should see:
 
-::
+.. code-block:: text
 
     opening driver to xsim
     opening xsim to driver
@@ -56,13 +56,13 @@ The waveforms are dumped in the FPGA build directories (
 
 For XSIM:
 
-::
+.. code-block:: text
 
     <BUILD_DIR>/verif/sim/vivado/test_firesim_c/tb.wdb
 
 And for VCS:
 
-::
+.. code-block:: text
 
     <BUILD_DIR>/verif/sim/vcs/test_firesim_c/test_null.vpd
 

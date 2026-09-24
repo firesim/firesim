@@ -129,7 +129,7 @@ https://docs.aws.amazon.com/cli/latest/reference/configure/index.html
 
 Again on the ``t2.nano`` instance, do the following:
 
-.. code-block::
+.. code-block:: bash
     :substitutions:
 
     sudo yum install -y python3-pip
@@ -141,7 +141,7 @@ Again on the ``t2.nano`` instance, do the following:
 
 The final command should print the following:
 
-.. code-block:: text
+.. code-block:: bash
 
     Creating VPC for FireSim...
     Success!

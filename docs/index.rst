@@ -73,10 +73,3 @@ New to FireSim? Jump to the :doc:`/FireSim-Basics` page for more info.
     :caption: Miscellaneous:
 
     External-Tutorial-Setup
-
-Indices and tables
-==================
-
-- :ref:`genindex`
-- :ref:`modindex`
-- :ref:`search`
