@@ -87,7 +87,7 @@ autocounter:
     read_rate: 0
 
 workload:
-    workload_name: spec17-intspeed-train-lossy-full.json  # the default input set; spec_lossy.py overrides this with -x for --input test|ref (marshal install from software/spec2017/marshal-configs)
+    workload_name: spec17-intspeed-train-lossy-full.json  # template: spec_lossy.py derives config_spec-lossy-<input>.yaml from this file, with the input's workload and a run farm tag suffixed by the input
     # 2026-09-04: yes -- the farm is 11 launched EC2 instances; do not leave
     # them idle after the run.
     terminate_on_completion: yes
