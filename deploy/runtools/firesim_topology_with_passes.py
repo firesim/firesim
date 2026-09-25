@@ -231,6 +231,8 @@ class FireSimTopologyWithPasses:
             "gviz_graph",
             filename="generated-topology-diagrams/firesim_topology"
             + self.user_topology_name
+            + "-"
+            + self.workload.workload_name
             + ".gv",
             node_attr={"shape": "record", "height": ".1"},
         )
