@@ -60,7 +60,7 @@ target_config:
     # or from config_build_recipes.yaml for metasimulation
     # In homogeneous configurations, use this to set the hardware config deployed
     # for all simulators
-    default_hw_config: control_f2_dualmegaboom_tacit_pcim_sramq_d64_trapprv
+    default_hw_config: control_f2_dualmegaboom_tacit_pcim_sramq_d64_trapprv_intfix
 
     # Advanced: Specify any extra plusargs you would like to provide when
     # booting the simulator (in both FPGA-sim and metasim modes). This is
