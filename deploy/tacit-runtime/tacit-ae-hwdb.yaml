@@ -44,3 +44,20 @@ control_f2_dualmegaboom_tacit_pcim_sramq_d64_trapprv:
     deploy_quintuplet_override: null
     deploy_makefrag_override: null
     custom_runtime_config: null
+
+# 2026-09-25: the _trapprv designs with the back-to-back fallback narrowed to CSR-executed
+# traps (tacit 9638fbb). The _trapprv bitstreams mislabel a fault or interrupt followed
+# directly by an interrupt, e.g. a store page fault from U with an M-mode timer interrupt
+# on the handler's first instruction, encoded U->U. Closed at WNS +0.021 ns.
+control_f2_megaboom_tacit_pcim_sramq_oracle_asserts_d64_trapprv_intfix:
+    agfi: agfi-0bf207d1e1ca71e9d
+    deploy_quintuplet_override: null
+    deploy_makefrag_override: null
+    custom_runtime_config: null
+
+# 2026-09-25: the dual-MegaBoom counterpart of the entry above. Closed at WNS +0.020 ns.
+control_f2_dualmegaboom_tacit_pcim_sramq_d64_trapprv_intfix:
+    agfi: agfi-008077d7f12b5aee2
+    deploy_quintuplet_override: null
+    deploy_makefrag_override: null
+    custom_runtime_config: null
