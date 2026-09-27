@@ -30,9 +30,9 @@ fi
 if ssh-add -l | grep -q 'firesim\.pem'; then
     echo "success: firesim.pem available in ssh-agent"
 else
-    if ssh-add ~/firesim.pem; then
-        echo "success: ~/firesim.pem added to ssh-agent"
+    if ssh-add "${FIRESIM_SSH_KEY:-$HOME/firesim.pem}"; then
+        echo "success: configured FireSim key added to ssh-agent"
     else
-        echo "FAIL: ERROR adding ~/firesim.pem to ssh-agent. If on AWS F2, does it exist?"
+        echo "FAIL: ERROR adding the configured FireSim key to ssh-agent. If on AWS F2, does it exist?"
     fi
 fi

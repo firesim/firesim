@@ -220,7 +220,7 @@ def aws_resource_names() -> Dict[str, Any]:
         "securitygroupname": "for-farms-only-firesim",
         "securitygroupname-manager": "firesim",
         # regular users are instructed to create a key named `firesim` in the wiki
-        "keyname": "firesim",
+        "keyname": os.environ.get("FIRESIM_KEYPAIR", "firesim"),
         "s3bucketname": None,
         "snsname": "FireSim",
         "runfarmprefix": None,
