@@ -204,6 +204,12 @@ class DefaultF2BankedLLCConfig
         new midas.F2Config
     )
 
+class DefaultF2FRFCFS64GBQuadRankConfig
+    extends Config(
+      new FRFCFS64GBQuadRank ++
+        new DefaultF2Config
+    )
+
 class DefaultVitisConfig
     extends Config(
       new BaseBridgesConfig ++

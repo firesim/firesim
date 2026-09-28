@@ -119,6 +119,13 @@ class FRFCFS16GBQuadRankLLC4MB
       new WithLLCModel(4096, 8) ++
         new FRFCFS16GBQuadRank
     )
+// DDR3 FR-FCFS, 64 GB, 4 ranks x 8 banks
+class FRFCFS64GBQuadRank
+    extends Config(
+      new WithDramOrganization(maxRanks = 4, maxBanks = 8, dramSize = BigInt(1) << 36) ++
+        new FRFCFS16GBQuadRank
+    )
+
 
 // DDR3 - FCFS models, 8GB
 class FCFS8GBQuadRank
