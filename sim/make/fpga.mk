@@ -14,6 +14,8 @@ else ifeq ($(PLATFORM), xilinx_alveo_u280)
 board_dir          := $(platforms_dir)/xilinx_alveo_u280
 else ifeq ($(PLATFORM), xilinx_alveo_u200)
 board_dir          := $(platforms_dir)/xilinx_alveo_u200
+else ifeq ($(PLATFORM), corigine_mimicturbo_gt)
+board_dir          := $(platforms_dir)/corigine_mimicturbo_gt
 else ifeq ($(PLATFORM), xilinx_vcu118)
 board_dir          := $(platforms_dir)/xilinx_vcu118/garnet-firesim
 else ifeq ($(PLATFORM), rhsresearch_nitefury_ii)
