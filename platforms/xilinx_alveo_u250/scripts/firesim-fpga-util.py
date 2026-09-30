@@ -6,11 +6,12 @@ import subprocess
 import sys
 import shutil
 import json
+import tempfile
 from pathlib import Path
 import pcielib
 import util
 
-from typing import Dict, Any, List
+from typing import Dict, Any, List, Tuple
 
 scriptPath = Path(__file__).resolve().parent
 # firesim specific location of where to read/write database file
@@ -30,6 +31,39 @@ def program_fpga(vivado: Path, serial: str, bitstream: str) -> None:
     )
     if rc != 0:
         sys.exit(f":ERROR: Unable to flash FPGA {serial} with {bitstream}.\nstdout:\n{stdout}\nstderr:\n{stderr}")
+
+def program_fpgas(vivado: Path, serial2bitstream: List[Tuple[str, Path]]) -> None:
+    """Program several FPGAs in one Vivado session (avoids per-FPGA Vivado startup)."""
+    fleetTcl = scriptPath / 'program_fpga_fleet.tcl'
+    assert fleetTcl.exists(), f"Unable to find {fleetTcl}"
+    with tempfile.TemporaryDirectory(prefix='firesim-fpga-util-') as tmpDir:
+        mapFile = Path(tmpDir) / 'serial_map.txt'
+        mapFile.write_text("".join(f"{s} {b}\n" for s, b in serial2bitstream))
+        rc, stdout, stderr = util.call_vivado(
+            vivado,
+            [
+                '-source', str(fleetTcl),
+                '-tclargs',
+                    '-map_file', str(mapFile),
+            ]
+        )
+    if rc != 0:
+        sys.exit(f":ERROR: Unable to flash FPGAs {serial2bitstream}.\nstdout:\n{stdout}\nstderr:\n{stderr}")
+
+def read_bitstream_map(mapFile: Path) -> List[Tuple[str, Path]]:
+    """Parse '<bdf> <bitstream>' lines into (bus id, bitstream) pairs."""
+    entries = []
+    for line in mapFile.read_text().splitlines():
+        if not line.strip() or line.lstrip().startswith('#'):
+            continue
+        bdf, bitstream = line.split(maxsplit=1)
+        bitstream = Path(bitstream.strip()).absolute()
+        if not bitstream.is_file():
+            sys.exit(f":ERROR: Invalid bitstream: {bitstream}")
+        entries.append((pcielib.get_bus_id_from_extended_bdf(pcielib.get_extended_bdf_from_bdf(bdf)), bitstream))
+    if not entries:
+        sys.exit(f":ERROR: No entries in bitstream map {mapFile}")
+    return entries
 
 # mapping functions
 
@@ -69,7 +103,7 @@ def get_extended_bdfs() -> List[str]:
 
 def main(args: List[str]) -> int:
     parser = argparse.ArgumentParser(description="Program/manipulate a Xilinx XDMA-enabled FPGA device")
-    megroup = parser.add_mutually_exclusive_group(required=True)
+    megroup = parser.add_mutually_exclusive_group()
     megroup.add_argument("--bus_id", help="Bus number of FPGA (i.e. ****:<THIS>:**.*)")
     megroup.add_argument("--bdf", help="BDF of FPGA (i.e. ****:<THIS>)")
     megroup.add_argument("--extended-bdf", help="Extended BDF of FPGA (i.e. all of this - ****:**:**.*)")
@@ -83,7 +117,14 @@ def main(args: List[str]) -> int:
     megroup2.add_argument("--bitstream", help="The bitstream to flash onto FPGA(s)", type=Path)
     megroup2.add_argument("--disconnect-bdf", help="Disconnect BDF(s)", action="store_true")
     megroup2.add_argument("--reconnect-bdf", help="Reconnect BDF(s)", action="store_true")
+    megroup2.add_argument("--bitstream-map", help="File of '<bdf> <bitstream>' lines: disconnect, program in one Vivado session, and reconnect those BDFs", type=Path)
     parsed_args = parser.parse_args(args)
+
+    has_target_arg = any([parsed_args.bus_id, parsed_args.bdf, parsed_args.extended_bdf, parsed_args.serial, parsed_args.all_serials, parsed_args.all_bdfs])
+    if parsed_args.bitstream_map is not None and has_target_arg:
+        parser.error("--bitstream-map selects its own FPGAs; do not combine it with a BDF/serial argument")
+    if parsed_args.bitstream_map is None and not has_target_arg:
+        parser.error("one of the BDF/serial arguments is required")
 
     if parsed_args.hw_server_bin is None:
         parsed_args.hw_server_bin = shutil.which('hw_server')
@@ -181,6 +222,32 @@ def main(args: List[str]) -> int:
                 program_fpga(parsed_args.vivado_bin, serial, parsed_args.bitstream)
                 print(f":INFO: Successfully programmed FPGA {serial} with {parsed_args.bitstream}")
             print(":WARNING: Please warm reboot the machine")
+
+    # program a set of bdfs, each with its own bitstream
+    if parsed_args.bitstream_map is not None:
+        entries = read_bitstream_map(parsed_args.bitstream_map)
+
+        # must be called before the remove otherwise it will not find a serial number
+        serial2bitstream = [(get_serial_from_bus_id(bus_id), bit) for bus_id, bit in entries]
+
+        # always reconnect, so a failed program does not leave FPGAs off the PCI-E bus
+        removed = []
+        try:
+            for bus_id, _ in entries:
+                removed.append(bus_id)
+                disconnect_bus_id(bus_id)
+            program_fpgas(parsed_args.vivado_bin, serial2bitstream)
+            print(f":INFO: Successfully programmed FPGAs {serial2bitstream}")
+        finally:
+            failed = []
+            for bus_id in removed:
+                try:
+                    reconnect_bus_id(bus_id)
+                except AssertionError as e:
+                    print(f":ERROR: {e}", file=sys.stderr)
+                    failed.append(bus_id)
+            if failed:
+                sys.exit(f":ERROR: Unable to reconnect {failed}")
 
     # disconnect bdfs
     if parsed_args.disconnect_bdf:
