@@ -1,6 +1,6 @@
 # See LICENSE for license details.
 
-STRATEGY ?= QUICK
+STRATEGY ?= RUNTIME_OPTIMIZED
 FREQUENCY ?= 30
 
 
