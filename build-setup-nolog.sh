@@ -134,13 +134,15 @@ END_CONDA_ACTIVATE
 fi
 
 
-# rh: since chipyard and firesim standalone install fab-classic as a wheel with paramiko-ng
-# the least invasive way i could think of was to uninstall then reinstall here with a specified
-# environment variable to have fab-classic depend on paramiko=2.9.0 instead, which has RSA-SHA2 support
-echo $'\033[0;32mrh:\033[0m Replacing paramiko-ng with paramiko to add rsa2 ssh support for fab-classic'
+# Fab Classic 1.21 uses upstream Paramiko by default.  Pin it so that behavior
+# cannot change, and remove either Paramiko distribution first because both
+# install a module named "paramiko".
+echo $'\033[0;32mFireSim:\033[0m Installing Fab Classic with Paramiko 2.9.0'
 pip uninstall -y paramiko-ng paramiko fab-classic 2>/dev/null || true
-PARAMIKO_REPLACE=1 pip install --no-cache-dir --no-binary fab-classic 'fab-classic>=1.19.2' #rh: see https://pypi.org/project/fab-classic/
-pip install --force-reinstall "paramiko==2.9.0"
+pip install --no-cache-dir --no-deps "fab-classic==1.21.0"
+# Do not let pip re-resolve Paramiko's dependencies: it can replace Conda's cryptography
+# with an incompatible version, causing pyOpenSSL's GEN_EMAIL import failure.
+pip install --force-reinstall --no-deps "paramiko==2.9.0"
 
 # init all submodules except for chipyard
 git config submodule.target-design/chipyard.update none
@@ -165,7 +167,6 @@ cd "$FDIR"
 # Skip EC2 setup if FORCE_NON_EC2 is set
 if [ "${FORCE_NON_EC2:-0}" != "1" ]; then
     # see if the instance info page exists. if not, we are not on ec2.
-    # rh: yet another HTTPS issue that needs to be fixed. i swear on god they use this for the most random things sometimes
     TOKEN=""
     for attempt in 1 2 3; do
         # Metadata is unreachable off-EC2; keep setup non-fatal in that case.
