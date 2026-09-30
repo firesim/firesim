@@ -2,10 +2,11 @@
 
 """Generate the FireSim FPGA database (JTAG serial -> PCI-E BDF mapping).
 
-Every Xilinx FPGA on the host is programmed with --bitstream and given a
+Every FPGA whose part matches --bitstream is programmed with it and given a
 fingerprint over PCI-E; each FPGA is then reprogrammed in turn, and the BDF
-whose fingerprint disappears belongs to that JTAG serial. This takes over
-every Xilinx FPGA on the host.
+whose fingerprint disappears belongs to that JTAG serial. This takes over all
+of those FPGAs; other FPGAs on the host (different part, or not running a
+FireSim bitstream) are left untouched.
 
 All JTAG work runs in a single Vivado session (enumerate_fpgas.tcl, installed
 next to this script), which this script steps through its phases with marker
@@ -17,6 +18,7 @@ import json
 import os
 import shutil
 import signal
+import struct
 import subprocess
 import sys
 import tempfile
@@ -31,23 +33,35 @@ scriptPath = Path(__file__).resolve().parent
 # upper bound on programming one FPGA over JTAG (~40 s for a VU19P)
 PROGRAM_TIMEOUT_S = 180
 
+# PCI-E ID of the XDMA endpoint in FireSim bitstreams (matches the driver default)
+FIRESIM_PCI_ID = "10ee:903f"
+
 def get_bdfs() -> List[str]:
-    pLspci= subprocess.Popen(['lspci'], stdout=subprocess.PIPE)
-    pGrep = subprocess.Popen(['grep', '-i', 'xilinx'], stdin=pLspci.stdout, stdout=subprocess.PIPE)
-    if pLspci.stdout is not None:
-        pLspci.stdout.close()
-
-    sout, serr = pGrep.communicate()
-
-    eSout = sout.decode('utf-8') if sout is not None else ""
-    eSerr = serr.decode('utf-8') if serr is not None else ""
-
-    if pGrep.returncode != 0:
-        sys.exit(f":ERROR: It failed with stdout: {eSout} stderr: {eSerr}")
-
-    outputLines = eSout.splitlines()
-    bdfs = [ i[:7] for i in outputLines if len(i.strip()) >= 0]
+    """BDFs of FPGAs currently running a FireSim bitstream; other PCI-E devices are left alone."""
+    out = subprocess.run(['lspci', '-d', FIRESIM_PCI_ID], stdout=subprocess.PIPE, check=True).stdout.decode('utf-8')
+    bdfs = [line[:7] for line in out.splitlines() if line.strip()]
+    if not bdfs:
+        sys.exit(f":ERROR: No FireSim FPGAs ({FIRESIM_PCI_ID}) on PCI-E. FPGAs must boot a FireSim bitstream (e.g. from flash) before enumeration.")
     return bdfs
+
+def get_bitstream_device(bitstream: Path) -> str:
+    """Device (e.g. 'xcvu19p') from the part field ('b') of a Xilinx .bit header."""
+    with open(bitstream, 'rb') as f:
+        data = f.read(1024)
+    try:
+        off = 2 + struct.unpack('>H', data[:2])[0] + 2
+        while True:
+            key = chr(data[off])
+            if key == 'e':
+                break
+            n = struct.unpack('>H', data[off + 1:off + 3])[0]
+            value = data[off + 3:off + 3 + n - 1].decode('ascii')
+            if key == 'b':
+                return value.split('-')[0].lower()
+            off += 3 + n
+    except (IndexError, struct.error, UnicodeDecodeError):
+        pass
+    sys.exit(f":ERROR: Unable to read the target part from {bitstream}. Is it a Xilinx .bit file?")
 
 def get_bus_id(bdf: str) -> str:
     """Bus id (e.g. '05') of a BDF, as Vivado and the FPGA database report it."""
@@ -127,7 +141,7 @@ def run_driver_write_fingerprint(bdf: str, driver: Path, write_val: int) -> int:
 class VivadoSession:
     """A background enumerate_fpgas.tcl run, coordinated through marker files."""
 
-    def __init__(self, vivado: Path, bitstream: Path) -> None:
+    def __init__(self, vivado: Path, bitstream: Path, device: str) -> None:
         tclScript = scriptPath / 'enumerate_fpgas.tcl'
         assert tclScript.exists(), f"Unable to find {tclScript}"
         self.work_dir = Path(tempfile.mkdtemp(prefix="firesim-enumerate-"))
@@ -140,6 +154,7 @@ class VivadoSession:
                     '-source', str(tclScript),
                     '-tclargs',
                         '-bit_path', str(bitstream),
+                        '-device', device,
                         '-work_dir', str(self.work_dir),
                 ],
                 stdin=subprocess.DEVNULL,
@@ -208,8 +223,10 @@ def main(args: List[str]) -> int:
         print(f":INFO: Running: {execvArgs}")
         os.execv(execvArgs[0], execvArgs)
 
+    bitstream = parsed_args.bitstream.resolve().absolute()
+    device = get_bitstream_device(bitstream)
     bdfs = get_bdfs()
-    print(f":INFO: Found Xilinx BDFs: {bdfs}")
+    print(f":INFO: Found FireSim BDFs: {bdfs}; bitstream targets {device}")
 
     disconnected: Set[str] = set()
 
@@ -229,12 +246,16 @@ def main(args: List[str]) -> int:
 
     # FPGAs must be off the PCI-E bus whenever they are (re)programmed
     disconnect_all()
-    session = VivadoSession(parsed_args.vivado_bin, parsed_args.bitstream.resolve().absolute())
+    session = VivadoSession(parsed_args.vivado_bin, bitstream, device)
     try:
-        # 1. get all serial numbers for all fpgas on the system
+        # 1. get serial numbers of all fpgas on the system that match the bitstream
         session.wait("phase1_done", timeout_s=300)
         serials = json.loads((session.work_dir / "serials.json").read_text())
-        print(f":INFO: Found JTAG serials: {[s['uid'] for s in serials]}")
+        print(f":INFO: Found {device} JTAG serials: {[s['uid'] for s in serials]}")
+        if len(serials) != len(bdfs):
+            sys.exit(f":ERROR: Found {len(serials)} {device} FPGA(s) on JTAG but {len(bdfs)} FireSim FPGA(s) on PCI-E. "
+                     f"Every {device} FPGA must be running a FireSim bitstream. See {session.log}")
+        session.signal("start_phase2")
 
         # 2. program all fpgas so that they are in a known state
         status = session.wait("phase2_done", timeout_s=60 + PROGRAM_TIMEOUT_S * len(serials))

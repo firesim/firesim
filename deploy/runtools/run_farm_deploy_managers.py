@@ -26,6 +26,9 @@ if TYPE_CHECKING:
 
 rootLogger = logging.getLogger()
 
+# PCI-E vendor:device ID of the XDMA endpoint in FireSim Xilinx bitstreams
+FIRESIM_PCI_ID = "10ee:903f"
+
 
 class NBDTracker:
     """Track allocation of NBD devices on an instance. Used for mounting
@@ -1163,7 +1166,7 @@ class XilinxAlveoInstanceDeployManager(InstanceDeployManager):
                 run(f"""sudo {cmd} 0000:{bdf}""")
 
     def change_all_pcie_perms(self) -> None:
-        collect = run("lspci | grep -i xilinx")
+        collect = run(f"lspci -d {FIRESIM_PCI_ID}")
 
         bdfs = [
             {"busno": "0x" + i[:2], "devno": "0x" + i[3:5], "capno": "0x" + i[6:7]}
