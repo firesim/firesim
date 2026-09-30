@@ -5,18 +5,18 @@ set synth_directive "default"
 
 set opt 1
 set opt_options    ""
-set opt_directive  ""
+set opt_directive  "Default"
 
 set place_options    ""
-set place_directive  ""
+set place_directive  "Default"
 
 set phys_opt 0
 set phys_options    ""
-set phys_directive  ""
+set phys_directive  "Default"
 
 set route_options    ""
-set route_directive  ""
+set route_directive  "Default"
 
 set route_phys_opt 0
 set post_phys_options    ""
-set post_phys_directive  ""
+set post_phys_directive  "Default"

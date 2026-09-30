@@ -5,7 +5,7 @@ set synth_directive "AlternateRoutability"
 
 set opt 1
 set opt_options    "-bufg_opt -control_set_merge -hier_fanout_limit 512 -muxf_remap -propconst -retarget -sweep"
-set opt_directive  ""
+set opt_directive  "Default"
 
 set place_options    ""
 set place_directive  "AltSpreadLogic_medium"
@@ -19,4 +19,4 @@ set route_directive  "Explore"
 
 set route_phys_opt 0
 set post_phys_options    ""
-set post_phys_directive  ""
+set post_phys_directive  "Default"
