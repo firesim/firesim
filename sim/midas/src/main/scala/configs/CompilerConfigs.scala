@@ -123,6 +123,16 @@ class BaseXilinxAlveoU280Config
         new midas.XilinxAlveoU280Config
     )
 
+class BaseCorigineMimicTurboGTConfig
+    extends Config(
+      // Corigine MimicTurbo GT only has 8GB of onboard DRAM
+      new WithDramOrganization(maxRanks = 4, maxBanks = 8, dramSize = BigInt(1) << 33) ++
+        new WithDefaultMemModel ++
+        new WithWiringTransform ++
+        new WithAsyncResetReplacement ++
+        new midas.CorigineMimicTurboGTConfig
+    )
+
 class BaseNitefuryConfig
     extends Config(
       new WithDefaultMemModel ++
