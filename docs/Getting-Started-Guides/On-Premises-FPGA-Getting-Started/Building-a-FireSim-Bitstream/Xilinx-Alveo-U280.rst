@@ -14,6 +14,8 @@
 
 .. |vivado_default_install_path| replace:: ``/tools/Xilinx/Vivado/2021.1``
 
+.. |vivado_settings64_path| replace:: /tools/Xilinx/Vivado/2021.1/settings64.sh
+
 .. |board_package_install| replace:: Download the ``au280`` board support package
     directory from https://github.com/Xilinx/open-nic-shell/tree/main/board_files/Xilinx
     and place the directory in

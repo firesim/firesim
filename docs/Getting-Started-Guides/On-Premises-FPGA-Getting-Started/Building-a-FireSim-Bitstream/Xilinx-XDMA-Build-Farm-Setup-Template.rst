@@ -37,7 +37,7 @@ On each Build Farm machine, do the following:
 .. code-block:: bash
     :substitutions:
 
-    source /tools/Xilinx/Vivado/|vivado_version_number_only|/settings64.sh
+    source |vivado_settings64_path|
 
 3. |board_package_install|
 

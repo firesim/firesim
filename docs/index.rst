@@ -27,6 +27,7 @@ New to FireSim? Jump to the :doc:`/FireSim-Basics` page for more info.
     Getting-Started-Guides/On-Premises-FPGA-Getting-Started/Xilinx-Alveo-U280-FPGAs
     Getting-Started-Guides/On-Premises-FPGA-Getting-Started/Xilinx-VCU118-FPGAs
     Getting-Started-Guides/On-Premises-FPGA-Getting-Started/RHS-Research-Nitefury-II-FPGAs
+    Getting-Started-Guides/On-Premises-FPGA-Getting-Started/Corigine-MimicTurbo-GT-FPGAs
     Getting-Started-Guides/On-Premises-FPGA-Getting-Started/Xilinx-Vitis-FPGAs
 
 .. toctree::

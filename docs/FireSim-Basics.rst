@@ -112,6 +112,10 @@ links to work through the getting started guide for your particular platform.
 
   - Status: ✅ All FireSim Features Supported.
 
+- :doc:`/Getting-Started-Guides/On-Premises-FPGA-Getting-Started/Corigine-MimicTurbo-GT-FPGAs`
+
+  - Status: ✅ All FireSim Features Supported.
+
 - :doc:`Getting-Started-Guides/On-Premises-FPGA-Getting-Started/Xilinx-Vitis-FPGAs`
 
   - Status: ⚠️  DMA-based Bridges Not Supported. The Vitis-based U250 flow is **not
