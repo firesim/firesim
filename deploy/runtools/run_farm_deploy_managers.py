@@ -1357,6 +1357,14 @@ class XilinxAlveoU200InstanceDeployManager(XilinxAlveoInstanceDeployManager):
         self.PLATFORM_NAME = "xilinx_alveo_u200"
 
 
+class CorigineMimicTurboGTInstanceDeployManager(XilinxAlveoInstanceDeployManager):
+    """Run farm deploy manager for Corigine MimicTurbo GT FPGAs, which reuse the Alveo XDMA flow."""
+
+    def __init__(self, parent_node: Inst) -> None:
+        super().__init__(parent_node)
+        self.PLATFORM_NAME = "corigine_mimicturbo_gt"
+
+
 class RHSResearchNitefuryIIInstanceDeployManager(XilinxAlveoInstanceDeployManager):
     def __init__(self, parent_node: Inst) -> None:
         super().__init__(parent_node)
