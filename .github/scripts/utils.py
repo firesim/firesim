@@ -5,6 +5,7 @@ import os
 class FpgaPlatform(Enum):
     vitis = 'vitis'
     xilinx_alveo_u250 = 'xilinx_alveo_u250'
+    corigine_mimicturbo_gt = 'corigine_mimicturbo_gt'
 
     def __str__(self):
         return self.value
