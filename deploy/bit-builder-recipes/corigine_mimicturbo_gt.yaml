@@ -1,0 +1,22 @@
+# Build-time bitbuilder design configuration for the FireSim Simulation Manager
+# See https://docs.fires.im/en/stable/Advanced-Usage/Manager/Manager-Configuration-Files.html for documentation of all of these params.
+
+###########
+# Schema:
+###########
+# # Class name of the bitbuilder type.
+# # This can be determined from `deploy/buildtools/bitbuilder.py`).
+# bitbuilder_type: <TYPE NAME>
+# args:
+#     # Bitbuilder arguments that are passed to the `BitBuilder`
+#     # object. Determined by looking at `_parse_args` function of class.
+#     <K/V pairs of args>
+
+# The Corigine MimicTurbo GT has 8 GiB of host DRAM, so a target design may request
+# at most 8 GiB of DRAM in total. Most FireChip configs request 16 GiB (e.g.
+# FireSimRocketConfig) and fail in Golden Gate with "Total requested DRAM ... exceeds
+# host capacity". Use a smaller variant such as FireSimRocket4GiBDRAMConfig, or set
+# WithExtMemSize in your target config.
+
+bit_builder_type: CorigineMimicTurboGTBitBuilder
+args: null
