@@ -1054,7 +1054,7 @@ class VitisInstanceDeployManager(InstanceDeployManager):
 
 
 class XilinxAlveoInstanceDeployManager(InstanceDeployManager):
-    """This class manages a Xilinx Alveo-enabled instance"""
+    """This class manages an instance with a Vivado-flow PCIe FPGA"""
 
     PLATFORM_NAME: Optional[str]
 
