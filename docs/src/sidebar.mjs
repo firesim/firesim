@@ -37,6 +37,7 @@ export const sidebar = [
         ['Xilinx Alveo U280', 'xilinx-alveo-u280'],
         ['Xilinx VCU118', 'xilinx-vcu118'],
         ['RHS Research Nitefury II', 'rhs-research-nitefury-ii'],
+        ['Corigine MimicTurbo GT', 'corigine-mimicturbo-gt'],
       ].map(([label, board]) => ({
         label,
         items: [

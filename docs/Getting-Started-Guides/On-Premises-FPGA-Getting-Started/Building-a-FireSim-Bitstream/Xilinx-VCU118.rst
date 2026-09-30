@@ -14,6 +14,8 @@
 
 .. |vivado_default_install_path| replace:: ``/tools/Xilinx/Vivado/2023.1``
 
+.. |vivado_settings64_path| replace:: /tools/Xilinx/Vivado/2023.1/settings64.sh
+
 .. |board_package_install| replace:: No special board support package is required for the
     VCU118. Move on to the next step.
 
