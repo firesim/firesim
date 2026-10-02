@@ -133,6 +133,14 @@ class BaseCorigineMimicTurboGTConfig
         new midas.CorigineMimicTurboGTConfig
     )
 
+class BaseXilinxAlveoV80Config
+    extends Config(
+      new WithDefaultMemModel ++
+        new WithWiringTransform ++
+        new WithAsyncResetReplacement ++
+        new midas.XilinxAlveoV80Config
+    )
+
 class BaseNitefuryConfig
     extends Config(
       new WithDefaultMemModel ++
