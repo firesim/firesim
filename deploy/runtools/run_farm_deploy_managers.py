@@ -1057,6 +1057,12 @@ class XilinxAlveoInstanceDeployManager(InstanceDeployManager):
     """This class manages an instance with a Vivado-flow PCIe FPGA"""
 
     PLATFORM_NAME: Optional[str]
+    # FPGA image in the bitstream tarball
+    BITSTREAM_FILENAME: str = "firesim.bit"
+    # FPGA part to enumerate (None reads it from the .bit header)
+    FPGA_DEVICE: Optional[str] = None
+    # PCI-E BAR that maps the simulator's MMIO port
+    MMIO_BAR: int = 0
 
     def __init__(self, parent_node: Inst) -> None:
         super().__init__(parent_node)
@@ -1114,7 +1120,7 @@ class XilinxAlveoInstanceDeployManager(InstanceDeployManager):
                 bitstream_tar_unpack_dir = os.path.join(
                     remote_sim_dir, str(self.PLATFORM_NAME)
                 )
-                bit = os.path.join(bitstream_tar_unpack_dir, "firesim.bit")
+                bit = os.path.join(bitstream_tar_unpack_dir, self.BITSTREAM_FILENAME)
 
                 # at this point the tar file is in the sim slot
                 run(f"rm -rf {bitstream_tar_unpack_dir}")
@@ -1260,7 +1266,7 @@ class XilinxAlveoInstanceDeployManager(InstanceDeployManager):
 
         bitstream_tar = hwcfg.get_bitstream_tar_filename()
         bitstream_tar_unpack_dir = f"{remote_sim_dir}/{self.PLATFORM_NAME}"
-        bitstream = f"{remote_sim_dir}/{self.PLATFORM_NAME}/firesim.bit"
+        bitstream = f"{remote_sim_dir}/{self.PLATFORM_NAME}/{self.BITSTREAM_FILENAME}"
 
         with cd(remote_sim_dir):
             run(f"tar -xf {hwcfg.get_driver_tar_filename()}")
@@ -1279,8 +1285,9 @@ class XilinxAlveoInstanceDeployManager(InstanceDeployManager):
                 cmd,
                 Path(f"{get_deploy_dir()}/../platforms/{self.PLATFORM_NAME}/scripts"),
             )
+            device_arg = f" --device {self.FPGA_DEVICE}" if self.FPGA_DEVICE else ""
             run(
-                f"""{cmd} --bitstream {bitstream} --driver {driver} --out-db-json {json_db}"""
+                f"""{cmd} --bitstream {bitstream} --driver {driver} --out-db-json {json_db}{device_arg}"""
             )
 
     def enumerate_fpgas(self, uridir: str) -> None:
@@ -1323,7 +1330,7 @@ class XilinxAlveoInstanceDeployManager(InstanceDeployManager):
                     .replace(".", ":")
                     .split(":")
                 )
-                extra_args = f"+domain=0x0000 +bus=0x{bdf[0]} +device=0x{bdf[1]} +function=0x{bdf[2]} +bar=0x0 +pci-vendor=0x10ee +pci-device=0x903f"
+                extra_args = f"+domain=0x0000 +bus=0x{bdf[0]} +device=0x{bdf[1]} +function=0x{bdf[2]} +bar=0x{self.MMIO_BAR:x} +pci-vendor=0x10ee +pci-device=0x903f"
             else:
                 extra_args = None
 
@@ -1363,6 +1370,57 @@ class CorigineMimicTurboGTInstanceDeployManager(XilinxAlveoInstanceDeployManager
     def __init__(self, parent_node: Inst) -> None:
         super().__init__(parent_node)
         self.PLATFORM_NAME = "corigine_mimicturbo_gt"
+
+
+class XilinxAlveoV80InstanceDeployManager(XilinxAlveoInstanceDeployManager):
+    """Run farm deploy manager for Xilinx Alveo V80 FPGAs. The V80's CPM PCI-E block
+    exposes the simulator's MMIO port on BAR1 and needs no XDMA driver."""
+
+    BITSTREAM_FILENAME = "firesim.pdi"
+    FPGA_DEVICE = "xcv80"
+    MMIO_BAR = 1
+
+    def __init__(self, parent_node: Inst) -> None:
+        super().__init__(parent_node)
+        self.PLATFORM_NAME = "xilinx_alveo_v80"
+
+    def load_xdma(self) -> None:
+        """The V80 does not use XDMA."""
+        return
+
+    def unload_xdma(self) -> None:
+        """The V80 does not use XDMA."""
+        return
+
+    def change_bdf_perms(self, extended_bdf: str) -> None:
+        """Let the driver map the BAR of one FPGA, and mask PCI-E errors that would otherwise crash the host."""
+        cmd = f"{script_path}/firesim-v80-change-pcie-perms"
+        check_script(
+            cmd,
+            Path(f"{get_deploy_dir()}/../platforms/{self.PLATFORM_NAME}/scripts"),
+        )
+        run(f"sudo {cmd} {extended_bdf}")
+
+    def change_pcie_perms(self) -> None:
+        if self.instance_assigned_simulations():
+            self.instance_logger("""Change permissions on FPGA slot""")
+
+            for slotno, firesimservernode in enumerate(self.parent_node.sim_slots):
+                bdf = self.slot_to_bdf(slotno, self.parent_node.get_fpga_db())
+
+                self.instance_logger(
+                    f"""Changing permissions on FPGA Slot: {slotno} (bdf:{bdf})"""
+                )
+                self.change_bdf_perms(f"0000:{bdf}")
+
+    def change_all_pcie_perms(self) -> None:
+        collect = run(f"lspci -D -d {FIRESIM_XILINX_PCI_ID}")
+
+        for line in collect.splitlines():
+            if line.strip():
+                extended_bdf = line.split()[0]
+                self.instance_logger(f"""Changing permissions on FPGA: {extended_bdf}""")
+                self.change_bdf_perms(extended_bdf)
 
 
 class RHSResearchNitefuryIIInstanceDeployManager(XilinxAlveoInstanceDeployManager):

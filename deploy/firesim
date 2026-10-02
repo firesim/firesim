@@ -184,7 +184,7 @@ def managerinit(args: argparse.Namespace):
             "managerinit replace start",
             "managerinit replace end",
             bf_recipe_lines)
-    elif args.platform == 'vitis' or args.platform == 'xilinx_alveo_u250' or args.platform == 'xilinx_alveo_u280' or args.platform == 'xilinx_alveo_u200' or args.platform == 'xilinx_vcu118' or args.platform == 'rhsresearch_nitefury_ii' or args.platform == 'corigine_mimicturbo_gt':
+    elif args.platform == 'vitis' or args.platform == 'xilinx_alveo_u250' or args.platform == 'xilinx_alveo_u280' or args.platform == 'xilinx_alveo_u200' or args.platform == 'xilinx_vcu118' or args.platform == 'rhsresearch_nitefury_ii' or args.platform == 'corigine_mimicturbo_gt' or args.platform == 'xilinx_alveo_v80':
         runfarm_default_file = "run-farm-recipes/externally_provisioned.yaml"
         with open(runfarm_default_file, "r") as f:
             rf_recipe_lines = f.readlines()
@@ -199,6 +199,7 @@ def managerinit(args: argparse.Namespace):
             'xilinx_vcu118': 'XilinxVCU118InstanceDeployManager',
             'rhsresearch_nitefury_ii': 'RHSResearchNitefuryIIInstanceDeployManager',
             'corigine_mimicturbo_gt': 'CorigineMimicTurboGTInstanceDeployManager',
+            'xilinx_alveo_v80': 'XilinxAlveoV80InstanceDeployManager',
         }
         firesim_runs_dir = str(Path.home()) + "/FIRESIM_RUNS_DIR"
 

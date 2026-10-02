@@ -1,0 +1,1 @@
+../../xilinx_alveo_u250/scripts/enumerate_fpgas.tcl
