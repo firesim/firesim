@@ -32,13 +32,13 @@ def program_fpga(vivado: Path, serial: str, bitstream: str) -> None:
     if rc != 0:
         sys.exit(f":ERROR: Unable to flash FPGA {serial} with {bitstream}.\nstdout:\n{stdout}\nstderr:\n{stderr}")
 
-def program_fpgas(vivado: Path, serial2bitstream: List[Tuple[str, Path]]) -> None:
-    """Program several FPGAs in one Vivado session (avoids per-FPGA Vivado startup)."""
+def program_fpgas(vivado: Path, serial2bitstream: List[Tuple[str, str, Path]]) -> None:
+    """Program several FPGAs, given as (serial, JTAG device, bitstream), in one Vivado session (avoids per-FPGA Vivado startup)."""
     fleetTcl = scriptPath / 'program_fpga_fleet.tcl'
     assert fleetTcl.exists(), f"Unable to find {fleetTcl}"
     with tempfile.TemporaryDirectory(prefix='firesim-fpga-util-') as tmpDir:
         mapFile = Path(tmpDir) / 'serial_map.txt'
-        mapFile.write_text("".join(f"{s} {b}\n" for s, b in serial2bitstream))
+        mapFile.write_text("".join(f"{s} {d} {b}\n" for s, d, b in serial2bitstream))
         rc, stdout, stderr = util.call_vivado(
             vivado,
             [
@@ -86,6 +86,13 @@ def get_serial_from_bus_id(id: str) -> str:
         if deviceBDF == e['bdf']:
             return e['uid']
     sys.exit(":ERROR: Unable to get serial number from bus id")
+
+def get_device_from_serial(serial: str) -> str:
+    """JTAG device (e.g. 'xcvu19p_0') recorded in the FPGA database for a serial number."""
+    for e in get_fpga_db():
+        if serial == e['uid']:
+            return e['device']
+    sys.exit(f":ERROR: Unable to find {serial} in the FPGA database")
 
 def get_serials() -> List[str]:
     serials = []
@@ -228,7 +235,10 @@ def main(args: List[str]) -> int:
         entries = read_bitstream_map(parsed_args.bitstream_map)
 
         # must be called before the remove otherwise it will not find a serial number
-        serial2bitstream = [(get_serial_from_bus_id(bus_id), bit) for bus_id, bit in entries]
+        serial2bitstream = []
+        for bus_id, bit in entries:
+            serial = get_serial_from_bus_id(bus_id)
+            serial2bitstream.append((serial, get_device_from_serial(serial), bit))
 
         # always reconnect, so a failed program does not leave FPGAs off the PCI-E bus
         removed = []

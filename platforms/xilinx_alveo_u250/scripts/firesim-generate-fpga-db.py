@@ -198,6 +198,7 @@ def main(args: List[str]) -> int:
     parser.add_argument("--out-db-json", help="Path to output FireSim database", type=Path, required=True)
     parser.add_argument("--vivado-bin", help="Explicit path to 'vivado'", type=Path)
     parser.add_argument("--hw-server-bin", help="Explicit path to 'hw_server'", type=Path)
+    parser.add_argument("--device", help="FPGA part to enumerate, e.g. xcv80 (default: read from the .bit header; required for images without one, such as Versal .pdi files)")
     parsed_args = parser.parse_args(args)
 
     if parsed_args.hw_server_bin is None:
@@ -224,7 +225,7 @@ def main(args: List[str]) -> int:
         os.execv(execvArgs[0], execvArgs)
 
     bitstream = parsed_args.bitstream.resolve().absolute()
-    device = get_bitstream_device(bitstream)
+    device = parsed_args.device.lower() if parsed_args.device else get_bitstream_device(bitstream)
     bdfs = get_bdfs()
     print(f":INFO: Found FireSim BDFs: {bdfs}; bitstream targets {device}")
 
