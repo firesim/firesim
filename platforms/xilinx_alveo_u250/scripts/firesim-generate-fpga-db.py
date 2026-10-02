@@ -26,7 +26,7 @@ import time
 from pathlib import Path
 import pcielib
 
-from typing import Dict, List, Set
+from typing import Dict, List, Optional, Set
 
 scriptPath = Path(__file__).resolve().parent
 
@@ -36,12 +36,24 @@ PROGRAM_TIMEOUT_S = 180
 # PCI-E ID of the XDMA endpoint in FireSim bitstreams (matches the driver default)
 FIRESIM_XILINX_PCI_ID = "10ee:903f"
 
-def get_bdfs() -> List[str]:
-    """BDFs of FPGAs currently running a FireSim bitstream; other PCI-E devices are left alone."""
-    out = subprocess.run(['lspci', '-d', FIRESIM_XILINX_PCI_ID], stdout=subprocess.PIPE, check=True).stdout.decode('utf-8')
-    bdfs = [line[:7] for line in out.splitlines() if line.strip()]
+def get_bdfs(pci_class: Optional[str], exclude_pci_class: Optional[str]) -> List[str]:
+    """BDFs of FPGAs currently running a FireSim bitstream, optionally narrowed by PCI-E class
+    (base and sub class, e.g. '0700'); other PCI-E devices are left alone."""
+    out = subprocess.run(['lspci', '-n', '-d', FIRESIM_XILINX_PCI_ID], stdout=subprocess.PIPE, check=True).stdout.decode('utf-8')
+    bdfs = []
+    for line in out.splitlines():
+        fields = line.split()
+        if len(fields) < 2:
+            continue
+        # e.g. '05:00.0 0700: 10ee:903f'
+        bdf, dev_class = fields[0], fields[1].rstrip(':').lower()
+        if pci_class is not None and dev_class != pci_class.lower():
+            continue
+        if exclude_pci_class is not None and dev_class == exclude_pci_class.lower():
+            continue
+        bdfs.append(bdf)
     if not bdfs:
-        sys.exit(f":ERROR: No FireSim FPGAs ({FIRESIM_XILINX_PCI_ID}) on PCI-E. FPGAs must boot a FireSim bitstream (e.g. from flash) before enumeration.")
+        sys.exit(f":ERROR: No FireSim FPGAs ({FIRESIM_XILINX_PCI_ID}) of this type on PCI-E. FPGAs must boot a FireSim bitstream (e.g. from flash) before enumeration.")
     return bdfs
 
 def get_bitstream_device(bitstream: Path) -> str:
@@ -198,6 +210,8 @@ def main(args: List[str]) -> int:
     parser.add_argument("--out-db-json", help="Path to output FireSim database", type=Path, required=True)
     parser.add_argument("--vivado-bin", help="Explicit path to 'vivado'", type=Path)
     parser.add_argument("--hw-server-bin", help="Explicit path to 'hw_server'", type=Path)
+    parser.add_argument("--pci-class", help="Only use FireSim FPGAs with this PCI-E class (base and sub class, e.g. 0580)")
+    parser.add_argument("--exclude-pci-class", help="Skip FireSim FPGAs with this PCI-E class (base and sub class, e.g. 0580)")
     parser.add_argument("--device", help="FPGA part to enumerate, e.g. xcv80 (default: read from the .bit header; required for images without one, such as Versal .pdi files)")
     parsed_args = parser.parse_args(args)
 
@@ -226,7 +240,7 @@ def main(args: List[str]) -> int:
 
     bitstream = parsed_args.bitstream.resolve().absolute()
     device = parsed_args.device.lower() if parsed_args.device else get_bitstream_device(bitstream)
-    bdfs = get_bdfs()
+    bdfs = get_bdfs(parsed_args.pci_class, parsed_args.exclude_pci_class)
     print(f":INFO: Found FireSim BDFs: {bdfs}; bitstream targets {device}")
 
     disconnected: Set[str] = set()

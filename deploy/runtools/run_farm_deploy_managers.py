@@ -26,8 +26,11 @@ if TYPE_CHECKING:
 
 rootLogger = logging.getLogger()
 
-# PCI-E vendor:device ID of the XDMA endpoint in FireSim Xilinx bitstreams
+# PCI-E vendor:device ID of the PCI-E endpoint in FireSim Xilinx bitstreams
 FIRESIM_XILINX_PCI_ID = "10ee:903f"
+# PCI-E class (base and sub class) of the Alveo V80's CPM endpoint. It is the only
+# Vivado-flow board without an XDMA endpoint; all others report a different class.
+V80_PCI_CLASS = "0580"
 
 
 class NBDTracker:
@@ -1063,6 +1066,8 @@ class XilinxAlveoInstanceDeployManager(InstanceDeployManager):
     FPGA_DEVICE: Optional[str] = None
     # PCI-E BAR that maps the simulator's MMIO port
     MMIO_BAR: int = 0
+    # PCI-E class of this board's FireSim endpoint (None: any class except the V80's)
+    PCI_CLASS: Optional[str] = None
 
     def __init__(self, parent_node: Inst) -> None:
         super().__init__(parent_node)
@@ -1095,6 +1100,30 @@ class XilinxAlveoInstanceDeployManager(InstanceDeployManager):
                 run(f"sudo {cmd}", shell=True)
             else:
                 self.instance_logger("XDMA Driver Kernel Module already unloaded.")
+
+    def pci_class_args(self) -> str:
+        """firesim-generate-fpga-db.py arguments that select this board type's FireSim FPGAs."""
+        if self.PCI_CLASS is not None:
+            return f"--pci-class {self.PCI_CLASS}"
+        return f"--exclude-pci-class {V80_PCI_CLASS}"
+
+    def get_firesim_bdfs(self) -> List[str]:
+        """BDFs (e.g. '05:00.0') of this board type's FPGAs that are running a FireSim bitstream."""
+        collect = run(f"lspci -n -d {FIRESIM_XILINX_PCI_ID}")
+        bdfs = []
+        for line in collect.splitlines():
+            fields = line.split()
+            if len(fields) < 2:
+                continue
+            # e.g. '05:00.0 0700: 10ee:903f'
+            dev_class = fields[1].rstrip(":").lower()
+            if self.PCI_CLASS is not None:
+                matches = dev_class == self.PCI_CLASS
+            else:
+                matches = dev_class != V80_PCI_CLASS
+            if matches:
+                bdfs.append(fields[0])
+        return bdfs
 
     def slot_to_bdf(self, slotno: int, json_db: str) -> str:
         # get fpga information from db
@@ -1172,12 +1201,9 @@ class XilinxAlveoInstanceDeployManager(InstanceDeployManager):
                 run(f"""sudo {cmd} 0000:{bdf}""")
 
     def change_all_pcie_perms(self) -> None:
-        collect = run(f"lspci -d {FIRESIM_XILINX_PCI_ID}")
-
         bdfs = [
             {"busno": "0x" + i[:2], "devno": "0x" + i[3:5], "capno": "0x" + i[6:7]}
-            for i in collect.splitlines()
-            if len(i.strip()) >= 0
+            for i in self.get_firesim_bdfs()
         ]
         for bdf in bdfs:
             busno = bdf["busno"]
@@ -1287,7 +1313,7 @@ class XilinxAlveoInstanceDeployManager(InstanceDeployManager):
             )
             device_arg = f" --device {self.FPGA_DEVICE}" if self.FPGA_DEVICE else ""
             run(
-                f"""{cmd} --bitstream {bitstream} --driver {driver} --out-db-json {json_db}{device_arg}"""
+                f"""{cmd} --bitstream {bitstream} --driver {driver} --out-db-json {json_db} {self.pci_class_args()}{device_arg}"""
             )
 
     def enumerate_fpgas(self, uridir: str) -> None:
@@ -1379,6 +1405,7 @@ class XilinxAlveoV80InstanceDeployManager(XilinxAlveoInstanceDeployManager):
     BITSTREAM_FILENAME = "firesim.pdi"
     FPGA_DEVICE = "xcv80"
     MMIO_BAR = 1
+    PCI_CLASS = V80_PCI_CLASS
 
     def __init__(self, parent_node: Inst) -> None:
         super().__init__(parent_node)
@@ -1414,13 +1441,9 @@ class XilinxAlveoV80InstanceDeployManager(XilinxAlveoInstanceDeployManager):
                 self.change_bdf_perms(f"0000:{bdf}")
 
     def change_all_pcie_perms(self) -> None:
-        collect = run(f"lspci -D -d {FIRESIM_XILINX_PCI_ID}")
-
-        for line in collect.splitlines():
-            if line.strip():
-                extended_bdf = line.split()[0]
-                self.instance_logger(f"""Changing permissions on FPGA: {extended_bdf}""")
-                self.change_bdf_perms(extended_bdf)
+        for bdf in self.get_firesim_bdfs():
+            self.instance_logger(f"""Changing permissions on FPGA: {bdf}""")
+            self.change_bdf_perms(f"0000:{bdf}")
 
 
 class RHSResearchNitefuryIIInstanceDeployManager(XilinxAlveoInstanceDeployManager):
