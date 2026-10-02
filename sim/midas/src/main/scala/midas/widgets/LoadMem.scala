@@ -37,7 +37,10 @@ class LoadMemWriter(nastiParams: NastiParameters, maxBurst: Int) extends NastiMo
   val wLen         = Reg(UInt(nastiXAddrBits.W))
   val wSize        = log2Ceil(nastiXDataBits / 8).U
   val wBeatsLeft   = RegInit(0.U(log2Ceil(maxBurst).W))
-  val nextBurstLen = Mux(wLen > maxBurst.U, maxBurst.U, wLen)
+  // AXI4 bursts must not cross 4KB boundaries (AMBA spec A3.4.1)
+  val beatsInPage  = (4096.U - wAddr(11, 0)) >> wSize
+  val maxBurstOrLen = Mux(wLen > maxBurst.U, maxBurst.U, wLen)
+  val nextBurstLen = Mux(maxBurstOrLen > beatsInPage, beatsInPage, maxBurstOrLen)
   val burstBytes   = nextBurstLen << wSize
 
   val (s_idle :: s_addr :: s_data :: s_resp :: Nil) = Enum(4)
