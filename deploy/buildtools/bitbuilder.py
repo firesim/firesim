@@ -701,6 +701,8 @@ class XilinxAlveoBitBuilder(BitBuilder):
 
     BOARD_NAME: Optional[str]
     BOARD_DISPLAY_NAME: str
+    # FPGA image the Vivado flow writes to vivado_proj/
+    IMAGE_FILENAME: str = "firesim.bit"
 
     def __init__(self, build_config: BuildConfig, args: Dict[str, Any]) -> None:
         super().__init__(build_config, args)
@@ -850,7 +852,7 @@ class XilinxAlveoBitBuilder(BitBuilder):
 
         hwdb_entry_name = self.build_config.name
         local_cl_dir = f"{local_results_dir}/{fpga_build_postfix}"
-        bit_path = f"{local_cl_dir}/vivado_proj/firesim.bit"
+        bit_path = f"{local_cl_dir}/vivado_proj/{self.IMAGE_FILENAME}"
         mcs_path = f"{local_cl_dir}/vivado_proj/firesim.mcs"
         mcs_secondary_path = f"{local_cl_dir}/vivado_proj/firesim_secondary.mcs"
         tar_staging_path = f"{local_cl_dir}/{self.build_config.PLATFORM}"
@@ -862,7 +864,8 @@ class XilinxAlveoBitBuilder(BitBuilder):
 
         # store bitfile (and mcs if it exists)
         local(f"cp {bit_path} {tar_staging_path}")
-        local(f"cp {mcs_path} {tar_staging_path}")
+        if os.path.exists(mcs_path):
+            local(f"cp {mcs_path} {tar_staging_path}")
         if self.build_config.PLATFORM == "xilinx_vcu118":
             local(f"cp {mcs_secondary_path} {tar_staging_path}")
 
@@ -936,6 +939,17 @@ class CorigineMimicTurboGTBitBuilder(XilinxAlveoBitBuilder):
         super().__init__(build_config, args)
         self.BOARD_NAME = "mimicturbo_gt"
         self.BOARD_DISPLAY_NAME = "Corigine MimicTurbo GT"
+
+
+class XilinxAlveoV80BitBuilder(XilinxAlveoBitBuilder):
+    """Bit builder class that builds a Xilinx Alveo V80 device image (PDI) from the build config."""
+
+    IMAGE_FILENAME = "firesim.pdi"
+
+    def __init__(self, build_config: BuildConfig, args: Dict[str, Any]) -> None:
+        super().__init__(build_config, args)
+        self.BOARD_NAME = "v80"
+        self.BOARD_DISPLAY_NAME = "Xilinx Alveo V80"
 
 
 class XilinxVCU118BitBuilder(XilinxAlveoBitBuilder):
