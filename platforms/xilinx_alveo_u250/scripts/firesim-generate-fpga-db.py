@@ -34,14 +34,14 @@ scriptPath = Path(__file__).resolve().parent
 PROGRAM_TIMEOUT_S = 180
 
 # PCI-E ID of the XDMA endpoint in FireSim bitstreams (matches the driver default)
-FIRESIM_PCI_ID = "10ee:903f"
+FIRESIM_XILINX_PCI_ID = "10ee:903f"
 
 def get_bdfs() -> List[str]:
     """BDFs of FPGAs currently running a FireSim bitstream; other PCI-E devices are left alone."""
-    out = subprocess.run(['lspci', '-d', FIRESIM_PCI_ID], stdout=subprocess.PIPE, check=True).stdout.decode('utf-8')
+    out = subprocess.run(['lspci', '-d', FIRESIM_XILINX_PCI_ID], stdout=subprocess.PIPE, check=True).stdout.decode('utf-8')
     bdfs = [line[:7] for line in out.splitlines() if line.strip()]
     if not bdfs:
-        sys.exit(f":ERROR: No FireSim FPGAs ({FIRESIM_PCI_ID}) on PCI-E. FPGAs must boot a FireSim bitstream (e.g. from flash) before enumeration.")
+        sys.exit(f":ERROR: No FireSim FPGAs ({FIRESIM_XILINX_PCI_ID}) on PCI-E. FPGAs must boot a FireSim bitstream (e.g. from flash) before enumeration.")
     return bdfs
 
 def get_bitstream_device(bitstream: Path) -> str:
