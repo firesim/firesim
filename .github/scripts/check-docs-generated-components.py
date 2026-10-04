@@ -27,6 +27,8 @@ def run_docs_generated_components_check():
                     subpath = 'On-Premises-FPGA-Getting-Started'
                 elif args.platform == FpgaPlatform.corigine_mimicturbo_gt:
                     subpath = 'On-Premises-FPGA-Getting-Started'
+                elif args.platform == FpgaPlatform.xilinx_alveo_v80:
+                    subpath = 'On-Premises-FPGA-Getting-Started'
                 else:
                     raise Exception(f"Unable to run this script with {args.platform}")
                 path = f'docs/Getting-Started-Guides/{subpath}/Running-Simulations/DOCS_EXAMPLE_config_runtime.yaml'

@@ -116,6 +116,11 @@ links to work through the getting started guide for your particular platform.
 
   - Status: ✅ All FireSim Features Supported.
 
+- :doc:`/Getting-Started-Guides/On-Premises-FPGA-Getting-Started/Xilinx-Alveo-V80-FPGAs`
+
+  - Status: ⚠️ DMA-based Bridges Not Supported. The V80 flow uses only MMIO for now, so
+    DMA-based FireSim bridges (e.g., TracerV, Synthesizable Printfs, etc.) do not work.
+
 - :doc:`Getting-Started-Guides/On-Premises-FPGA-Getting-Started/Xilinx-Vitis-FPGAs`
 
   - Status: ⚠️  DMA-based Bridges Not Supported. The Vitis-based U250 flow is **not

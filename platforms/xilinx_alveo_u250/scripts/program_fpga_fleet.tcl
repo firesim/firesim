@@ -6,12 +6,13 @@
 #   vivado -mode batch -source program_fpga_fleet.tcl \
 #     -tclargs -map_file <path>
 #
-# map_file format: one line per target
-#   <uid_substring> <bitstream_path>
+# map_file format: one line per target, naming the JTAG device to program
+# (a Versal target also exposes non-programmable devices such as arm_dap)
+#   <uid_substring> <hw_device> <bitstream_path>
 #
 # Example:
-#   Digilent/210308B356F7 /path/to/slot0/firesim.bit
-#   Digilent/210308B356F1 /path/to/slot1/firesim.bit
+#   Digilent/210308B356F7 xcvu19p_0 /path/to/slot0/firesim.bit
+#   Digilent/210308B356F1 xcvu19p_0 /path/to/slot1/firesim.bit
 
 proc parse_args {} {
     global argc argv
@@ -43,17 +44,18 @@ proc read_map_file {path} {
         set line [string trim $line]
         if {$line eq "" || [string index $line 0] eq "#"} continue
         set parts [split $line]
-        if {[llength $parts] < 2} {
+        if {[llength $parts] < 3} {
             puts "WARNING: skipping malformed line: $line"
             continue
         }
         set uid [lindex $parts 0]
-        set bit [join [lrange $parts 1 end]]
+        set dev [lindex $parts 1]
+        set bit [join [lrange $parts 2 end]]
         if {![file exists $bit]} {
             puts "ERROR: bitstream not found: $bit"
             exit 1
         }
-        lappend entries [list $uid $bit]
+        lappend entries [list $uid $dev $bit]
     }
     close $fd
     return $entries
@@ -69,7 +71,7 @@ if {[llength $entries] == 0} {
 
 puts "Will program [llength $entries] target(s):"
 foreach e $entries {
-    puts "  [lindex $e 0] -> [lindex $e 1]"
+    puts "  [lindex $e 0] ([lindex $e 1]) -> [lindex $e 2]"
 }
 
 set_param labtools.enable_cs_server false
@@ -87,7 +89,8 @@ set failures {}
 
 foreach entry $entries {
     set uid [lindex $entry 0]
-    set bit [lindex $entry 1]
+    set dev_name [lindex $entry 1]
+    set bit [lindex $entry 2]
     incr idx
 
     set matched ""
@@ -109,7 +112,7 @@ foreach entry $entries {
 
     if {[catch {
         open_hw_target $matched
-        set dev [lindex [get_hw_devices] 0]
+        set dev [get_hw_devices $dev_name]
         current_hw_device $dev
         set_property PROGRAM.FILE $bit $dev
         program_hw_devices $dev

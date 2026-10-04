@@ -186,6 +186,26 @@ class CorigineMimicTurboGTConfig
       case F1ShimHasQSFPPorts  => false
     }) ++ new XilinxAlveoU250Config)
 
+class XilinxAlveoV80Config
+    extends Config(new Config((_, _, _) => {
+      case HostMemChannelKey   =>
+        HostMemChannelParams(
+          size      = 0x800000000L, // 32 GiB — V80 DDR4 capacity
+          beatBytes = 8,
+          idBits    = 16,
+        )
+      // The V80 shell's io_pcis port is 6 bits wide
+      case CPUManagedAXI4Key   =>
+        Some(
+          CPUManagedAXI4Params(
+            addrBits = 64,
+            dataBits = 512,
+            idBits   = 6,
+          )
+        )
+      case F1ShimHasQSFPPorts  => false
+    }) ++ new XilinxAlveoU250Config)
+
 class NitefuryConfig
     extends Config(new Config((_, _, _) => {
       case Platform                    => (p: Parameters) => new F1Shim()(p)

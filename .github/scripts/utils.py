@@ -6,6 +6,7 @@ class FpgaPlatform(Enum):
     vitis = 'vitis'
     xilinx_alveo_u250 = 'xilinx_alveo_u250'
     corigine_mimicturbo_gt = 'corigine_mimicturbo_gt'
+    xilinx_alveo_v80 = 'xilinx_alveo_v80'
 
     def __str__(self):
         return self.value

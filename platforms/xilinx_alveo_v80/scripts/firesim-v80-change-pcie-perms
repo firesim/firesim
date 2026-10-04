@@ -1,0 +1,62 @@
+#!/bin/bash
+# V80 post-programming setup: sysfs permissions + PCIe AER error masking.
+#
+# Permissions: the FireSim driver reads vendor/device to verify the PCI ID
+# and mmaps resource1 (BAR1) for MMIO.
+#
+# AER masking: without masking, uncorrectable PCIe errors (Completer Abort,
+# Completion Timeout, Malformed TLP, etc.) hit the kernel's generic AER
+# handler and crash the host via NMI.
+#
+# Usage: sudo firesim-v80-change-pcie-perms 0000:01:00.0
+
+set -e
+
+BDF=$1
+BDF_PATH="/sys/bus/pci/devices/${BDF}"
+
+# --- sysfs permissions ---
+chmod a+r "${BDF_PATH}/vendor"
+chmod a+r "${BDF_PATH}/device"
+chmod a+rw ${BDF_PATH}/resource*
+
+# --- derive root port from PCIe topology ---
+ROOT_PORT=$(basename $(dirname $(readlink -f "${BDF_PATH}")))
+
+# --- mask PCIe AER errors ---
+mask_aer() {
+    local DEV=$1
+    if setpci -s "$DEV" ECAP_AER+0x00.L >/dev/null 2>&1; then
+        # clear pending error status
+        setpci -s "$DEV" ECAP_AER+0x04.L=0xFFFFFFFF
+        setpci -s "$DEV" ECAP_AER+0x10.L=0xFFFFFFFF
+        # mask all uncorrectable errors
+        setpci -s "$DEV" ECAP_AER+0x08.L=0xFFFFFFFF
+        # downgrade all uncorrectable from fatal to non-fatal
+        setpci -s "$DEV" ECAP_AER+0x0C.L=0x00000000
+        # mask all correctable errors
+        setpci -s "$DEV" ECAP_AER+0x14.L=0xFFFFFFFF
+    fi
+    # disable error reporting in Device Control (clear bits 0-3)
+    if DEVCTL=$(setpci -s "$DEV" CAP_EXP+0x08.W 2>/dev/null); then
+        setpci -s "$DEV" CAP_EXP+0x08.W=$(printf '%04x' $(( 0x$DEVCTL & ~0x000F )))
+    fi
+    # clear Device Status error bits (write-1-to-clear bits 0-3)
+    setpci -s "$DEV" CAP_EXP+0x0a.W=0x000F 2>/dev/null || true
+    # disable SERR (clear bit 8 in Command register)
+    if CMD=$(setpci -s "$DEV" COMMAND.W 2>/dev/null); then
+        setpci -s "$DEV" COMMAND.W=$(printf '%04x' $(( 0x$CMD & ~0x0100 )))
+    fi
+}
+
+mask_aer "$BDF"
+mask_aer "$ROOT_PORT"
+
+# root port: disable Root Error Command reporting
+if setpci -s "$ROOT_PORT" ECAP_AER+0x00.L >/dev/null 2>&1; then
+    setpci -s "$ROOT_PORT" ECAP_AER+0x2C.L=0x00000000
+fi
+# root port: disable SERR forwarding from secondary bus
+if BCTL=$(setpci -s "$ROOT_PORT" BRIDGE_CONTROL.W 2>/dev/null); then
+    setpci -s "$ROOT_PORT" BRIDGE_CONTROL.W=$(printf '%04x' $(( 0x$BCTL & ~0x0002 )))
+fi
