@@ -51,6 +51,8 @@ Next, copy the required scripts to ``/usr/local/bin``:
 
     sudo cp deploy/sudo-scripts/* /usr/local/bin
     sudo cp platforms/xilinx_alveo_u250/scripts/* /usr/local/bin
+    # only needed for Xilinx Alveo V80 FPGAs
+    sudo cp platforms/xilinx_alveo_v80/scripts/firesim-v80-change-pcie-perms /usr/local/bin
 
 Now we can delete the temporary clone:
 
@@ -147,6 +149,11 @@ Next, install the cable drivers like so:
 **4. Install the Xilinx XDMA and XVSEC drivers**
 
 **Machines:** Run Farm Machines.
+
+.. note::
+
+    Run Farm Machines that only have Xilinx Alveo V80 FPGAs do not need the XDMA and XVSEC
+    drivers and can skip this step.
 
 .. warning::
 
