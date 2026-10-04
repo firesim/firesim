@@ -1191,17 +1191,44 @@ class XilinxAlveoInstanceDeployManager(InstanceDeployManager):
             check_script(cmd)
             run(f"sudo {cmd}")
 
-    def unload_xdma(self) -> None:
-        """unload the xdma kernel module."""
+    def check_xdma_bound(self) -> None:
+        """Check that XDMA is bound to each slot's FPGA.
+
+        XDMA stays loaded while FPGAs are reprogrammed: each FPGA is removed from
+        PCI-E before programming and rescanned after, which re-probes it with XDMA.
+        """
         if self.instance_assigned_simulations():
-            # unload xdma if loaded
-            if run("lsmod | grep -wq xdma", warn_only=True).return_code == 0:
-                self.instance_logger("Unloading XDMA Driver Kernel Module.")
-                cmd = f"{script_path}/firesim-remove-xdma-module"
-                check_script(cmd)
-                run(f"sudo {cmd}", shell=True)
-            else:
-                self.instance_logger("XDMA Driver Kernel Module already unloaded.")
+            for slotno in range(len(self.parent_node.sim_slots)):
+                bdf = self.slot_to_bdf(slotno, self.parent_node.get_fpga_db())
+                driver = run(
+                    f"basename $(readlink /sys/bus/pci/devices/0000:{bdf}/driver)",
+                    warn_only=True,
+                )
+                if driver.strip() != "xdma":
+                    util = f"{script_path}/firesim-fpga-util.py --bdf {bdf} --fpga-db {self.parent_node.get_fpga_db()}"
+                    raise Exception(
+                        f"XDMA is not bound to the FPGA at {bdf} after programming it. "
+                        f"Reconnect just that FPGA, which re-probes it with XDMA, with `{util} --disconnect-bdf` "
+                        f"and then `{util} --reconnect-bdf`, and rerun infrasetup. "
+                        "If XDMA still doesn't bind, reload it with "
+                        "`sudo firesim-remove-xdma-module && sudo firesim-load-xdma-module` "
+                        "once no other simulations are running on this host."
+                    )
+
+    def run_fpga_script(self, cmd: str) -> None:
+        """Run an FPGA script, raising with its error messages if it fails.
+
+        The script's output otherwise only reaches the debug log, leaving the console
+        with a generic nonzero-return-code error.
+        """
+        result = run(cmd, warn_only=True)
+        if result.return_code != 0:
+            lines = result.splitlines()
+            errors = [l for l in lines if ":ERROR:" in l] or lines[-5:]
+            raise Exception(
+                f"{cmd.split()[0]} failed on {self.parent_node.get_host()}:\n"
+                + "\n".join(errors)
+            )
 
     def pci_class_args(self) -> str:
         """firesim-generate-fpga-db.py arguments that select this board type's FireSim FPGAs."""
@@ -1288,7 +1315,9 @@ class XilinxAlveoInstanceDeployManager(InstanceDeployManager):
                 cmd,
                 Path(f"{get_deploy_dir()}/../platforms/{self.PLATFORM_NAME}/scripts"),
             )
-            run(f"""{cmd} --bitstream-map {map_file} --fpga-db {json_db}""")
+            self.run_fpga_script(
+                f"""{cmd} --bitstream-map {map_file} --fpga-db {json_db}"""
+            )
 
     def change_pcie_perms(self) -> None:
         if self.instance_assigned_simulations():
@@ -1334,12 +1363,11 @@ class XilinxAlveoInstanceDeployManager(InstanceDeployManager):
                 self.extract_driver_tarball(slotno)
 
             if not metasim_enabled:
-                # unload xdma driver
-                self.unload_xdma()
-                # flash fpgas
+                # flash fpgas (XDMA stays loaded, so FPGAs other than these are left alone)
                 self.flash_fpgas()
-                # load xdma driver
+                # load xdma driver if needed and open up its device files
                 self.load_xdma()
+                self.check_xdma_bound()
                 # change pcie permissions
                 self.change_pcie_perms()
 
@@ -1416,7 +1444,7 @@ class XilinxAlveoInstanceDeployManager(InstanceDeployManager):
                 Path(f"{get_deploy_dir()}/../platforms/{self.PLATFORM_NAME}/scripts"),
             )
             device_arg = f" --device {self.FPGA_DEVICE}" if self.FPGA_DEVICE else ""
-            run(
+            self.run_fpga_script(
                 f"""{cmd} --bitstream {bitstream} --driver {driver} --out-db-json {json_db} {self.pci_class_args()}{device_arg}"""
             )
 
@@ -1426,9 +1454,7 @@ class XilinxAlveoInstanceDeployManager(InstanceDeployManager):
         if self.instance_assigned_simulations():
             # This is a sim-host node.
 
-            # unload xdma driver
-            self.unload_xdma()
-            # load xdma driver
+            # load xdma driver if needed
             self.load_xdma()
 
             # change all pcie permissions
@@ -1519,7 +1545,7 @@ class XilinxAlveoV80InstanceDeployManager(XilinxAlveoInstanceDeployManager):
         """The V80 does not use XDMA."""
         return
 
-    def unload_xdma(self) -> None:
+    def check_xdma_bound(self) -> None:
         """The V80 does not use XDMA."""
         return
 

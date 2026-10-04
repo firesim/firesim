@@ -206,6 +206,7 @@ def main(args: List[str]) -> int:
             for bus_id in bus_ids:
                 serialNums.append(get_serial_from_bus_id(bus_id))
 
+            pcielib.assert_devices_unused(bus_ids)
             for bus_id in bus_ids:
                 disconnect_bus_id(bus_id)
 
@@ -240,6 +241,8 @@ def main(args: List[str]) -> int:
             serial = get_serial_from_bus_id(bus_id)
             serial2bitstream.append((serial, get_device_from_serial(serial), bit))
 
+        pcielib.assert_devices_unused([bus_id for bus_id, _ in entries])
+
         # always reconnect, so a failed program does not leave FPGAs off the PCI-E bus
         removed = []
         try:
@@ -263,6 +266,7 @@ def main(args: List[str]) -> int:
     if parsed_args.disconnect_bdf:
         if is_bdf_arg(parsed_args):
             bus_ids = get_bus_ids_from_args(parsed_args)
+            pcielib.assert_devices_unused(bus_ids)
             for bus_id in bus_ids:
                 disconnect_bus_id(bus_id)
         else:

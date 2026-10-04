@@ -824,10 +824,19 @@ A host can run any number of non-FireAxe runs side by side, plus at most one Fir
 (partitioned) run: FireAxe's pipes and QSFP metasimulations name their shared memory
 without the run's tag.
 
-On FPGAs that use the XDMA driver (e.g. Xilinx Alveo), ``firesim infrasetup`` and
-``firesim enumeratefpgas`` unload XDMA from the whole host while they program FPGAs, so
-they fail while another run's simulation is running there. Run ``firesim infrasetup``
-for every run before starting any of their simulations.
+On XDMA-based FPGAs (Xilinx Alveo U200/U250/U280, Corigine MimicTurbo GT and RHS
+Research Nitefury II), FireSim programs an FPGA without unloading the XDMA driver, so
+one run can run ``firesim infrasetup`` while other runs' simulations keep going on the
+host's other FPGAs. Before it takes an FPGA off PCI-E to program it, FireSim checks that
+no process is using that FPGA, and stops with an error like ``FPGA on bus 05 is in use
+by 12345 (FireSim-xilinx_)`` if one is. ``firesim enumeratefpgas`` programs every FPGA
+of the board type, so it refuses to run while any of them is in use.
+
+.. warning::
+
+    Reprogramming one FPGA while a simulation runs on another needs the XDMA driver from
+    the ``firesim-fixes`` branch of firesim/dma_ip_drivers (see
+    :ref:`initial-local-setup`). With the Xilinx driver, it can crash the machine.
 
 Each user sharing the host needs the setup in :ref:`initial-local-setup`, including
 membership in the ``firesim`` group.

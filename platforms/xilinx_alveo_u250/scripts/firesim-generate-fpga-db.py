@@ -243,6 +243,8 @@ def main(args: List[str]) -> int:
     bdfs = get_bdfs(parsed_args.pci_class, parsed_args.exclude_pci_class)
     print(f":INFO: Found FireSim BDFs: {bdfs}; bitstream targets {device}")
 
+    pcielib.assert_devices_unused([get_bus_id(bdf) for bdf in bdfs])
+
     disconnected: Set[str] = set()
 
     def disconnect_all() -> None:
