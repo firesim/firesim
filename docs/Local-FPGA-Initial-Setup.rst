@@ -152,8 +152,8 @@ Next, install the cable drivers like so:
 
 .. note::
 
-    Run Farm Machines that only have Xilinx Alveo V80 FPGAs do not need the XDMA and XVSEC
-    drivers and can skip this step.
+    Run Farm Machines that only have Xilinx Alveo V80 FPGAs do not need the XDMA and
+    XVSEC drivers and can skip this step.
 
 .. warning::
 
@@ -162,7 +162,8 @@ Next, install the cable drivers like so:
 
 .. warning::
 
-    We use a non-Xilinx given XDMA/XVSEC repository since the mainline repository hasn't updated to 6.4.0+ kernels yet.
+    We use a non-Xilinx given XDMA/XVSEC repository since the mainline repository hasn't
+    updated to 6.4.0+ kernels yet.
 
 First, run the following to clone the XDMA kernel module source:
 
@@ -187,8 +188,8 @@ First, run the following to clone the XDMA kernel module source:
     sudo make install
 
 FireSim requires the XDMA driver to run in poll mode. Make this the driver's default
-option, so that it also applies when the kernel loads the driver on its own (e.g., when an
-FPGA reappears on PCI-E after being reprogrammed):
+option, so that it also applies when the kernel loads the driver on its own (e.g., when
+an FPGA reappears on PCI-E after being reprogrammed):
 
 .. code-block:: bash
 

@@ -79,8 +79,9 @@ If you have other use-cases that we haven't covered, feel free to contact us!
 Non-Chipyard-based target simulation
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-The recommended way (and most tested way) to use FireSim is with `Chipyard <https://ucb.bar/cydocs>`__. 
-However, users can also use FireSim seperately from Chipyard. For a guide, please see :doc:`/Advanced-Usage/FireSim-without-Chipyard`.
+The recommended way (and most tested way) to use FireSim is with `Chipyard
+<https://ucb.bar/cydocs>`__. However, users can also use FireSim seperately from
+Chipyard. For a guide, please see :doc:`/Advanced-Usage/FireSim-without-Chipyard`.
 
 Choose your platform to get started
 -----------------------------------
@@ -90,7 +91,10 @@ links to work through the getting started guide for your particular platform.
 
 - :doc:`/Getting-Started-Guides/AWS-EC2-F2-Getting-Started/index`
 
-  - Status: ⚠️ XDMA is not supported by AWS's EC2 F2 Shell, as of June 2026. We have implemented a mitigation; Impact: high speed FireSim bridges (e.g., TracerV) will function, but at a slower speed. **We are working with Amazon to introduce XDMA support.**
+  - Status: ⚠️ XDMA is not supported by AWS's EC2 F2 Shell, as of June 2026. We have
+    implemented a mitigation; Impact: high speed FireSim bridges (e.g., TracerV) will
+    function, but at a slower speed. **We are working with Amazon to introduce XDMA
+    support.**
 
 - :doc:`/Getting-Started-Guides/On-Premises-FPGA-Getting-Started/Xilinx-Alveo-U200-FPGAs`
 
@@ -123,7 +127,7 @@ links to work through the getting started guide for your particular platform.
 
 - :doc:`Getting-Started-Guides/On-Premises-FPGA-Getting-Started/Xilinx-Vitis-FPGAs`
 
-  - Status: ⚠️  DMA-based Bridges Not Supported. The Vitis-based U250 flow is **not
+  - Status: ⚠️ DMA-based Bridges Not Supported. The Vitis-based U250 flow is **not
     recommended** unless you have specific constraints that require using Vitis.
     Notably, the Vitis-based flow does not support DMA-based FireSim bridges (e.g.,
     TracerV, Synthesizable Printfs, etc.), while the XDMA-based flows support all

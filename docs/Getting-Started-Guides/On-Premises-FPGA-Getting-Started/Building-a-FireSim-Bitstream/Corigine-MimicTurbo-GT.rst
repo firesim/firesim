@@ -27,12 +27,12 @@ simulations.
 
 .. warning::
 
-    The MimicTurbo GT has 8 GiB of host DRAM, so a target design can request at most 8 GiB
-    of DRAM in total. Most FireChip target configs request 16 GiB (e.g.,
+    The MimicTurbo GT has 8 GiB of host DRAM, so a target design can request at most 8
+    GiB of DRAM in total. Most FireChip target configs request 16 GiB (e.g.,
     ``FireSimRocketConfig``) and fail in Golden Gate with ``Total requested DRAM ...
     exceeds host capacity``. Use a smaller variant such as
-    ``FireSimRocket4GiBDRAMConfig`` (as |hwdb_entry_name| does), or set ``WithExtMemSize``
-    in your target config.
+    ``FireSimRocket4GiBDRAMConfig`` (as |hwdb_entry_name| does), or set
+    ``WithExtMemSize`` in your target config.
 
 .. include:: Xilinx-XDMA-Build-Farm-Setup-Template.rst
 

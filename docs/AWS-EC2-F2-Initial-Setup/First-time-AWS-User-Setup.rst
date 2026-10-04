@@ -23,13 +23,11 @@ protect their infrastructure. You can learn more about how these limits/quotas w
 `here
 <https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/ec2-on-demand-instances.html#ec2-on-demand-instances-limits>`__.
 
-Select one of the following regions, which has F2 support, according to your location: 
+Select one of the following regions, which has F2 support, according to your location:
 
--  US East (N. Virginia) [``us-east-1``]
-
--  US West (Oregon) [``us-west-2``]
-
--  EU (London) [``eu-west-2``]
+- US East (N. Virginia) [``us-east-1``]
+- US West (Oregon) [``us-west-2``]
+- EU (London) [``eu-west-2``]
 
 You should make sure that your account has the ability to launch a sufficient number of
 instances to follow this guide by looking at the "Service Quotas" page in the AWS
@@ -40,9 +38,12 @@ that the correct region is selected once you open this page.
 The values listed on this page represent the maximum number vCPUs of any of these
 instances that you can run at once, which will limit the size of simulations (e.g.,
 number of parallel FPGAs) that you can run. If you need to increase your limits, follow
-the instructions below. 
+the instructions below.
 
-.. Note:: Note that requests will take a few business days to process by Amazon AWS (prepare for a worst case time of 1 week if cases need to be escalated).
+.. note::
+
+    Note that requests will take a few business days to process by Amazon AWS (prepare
+    for a worst case time of 1 week if cases need to be escalated).
 
 We recommend the following limits:
 
@@ -52,11 +53,12 @@ We recommend the following limits:
 
 - ``Running On-Demand Standard (A, C, D, H, I, M, R, T, Z) instances``: 1024 vCPUs.
 
-      - We will use ``c5.4xlarge`` for our FireSim manager instance and 
-        ``z1d.2xlarge`` for our build farm instances.
+      - We will use ``c5.4xlarge`` for our FireSim manager instance and ``z1d.2xlarge``
+        for our build farm instances.
       - Each ``c5.4xlarge`` requires 10 vCPUs
       - Each ``z1d.2xlarge`` requires 8 vCPUs
-      - Your 1024 vCPU capacity is shared across the ``A, C, D, H, I, M, R, T, Z`` instances you launch.
+      - Your 1024 vCPU capacity is shared across the ``A, C, D, H, I, M, R, T, Z``
+        instances you launch.
 
 At a minimum, you need to have the following limits:
 
@@ -71,22 +73,29 @@ At a minimum, you need to have the following limits:
 
 If you have insufficient limits, request a limit increase by following these steps:
 
-Visit: https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/ec2-resource-limits.html#request-increase
+Visit:
+https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/ec2-resource-limits.html#request-increase
 
-In your request, enter the vCPU limits for the two instance classes shown above. 
+In your request, enter the vCPU limits for the two instance classes shown above.
 
 At this point, you should wait for the response to this request.
 
-If your request gets rejected, you will need to go through the escalation process. Gather the following details from your request:
+If your request gets rejected, you will need to go through the escalation process.
+Gather the following details from your request:
 
-- Your Support Case ID for your rejected request (or both if both requests were rejected). You can find your case ID from the `AWS Support page <https://support.console.aws.amazon.com/support/home#/case/history>`__, under `Support cases`.
-
-- Your `Service quota` string that you requested a quota increase on. Ex: `Running On-Demand F instances`.
-
+- Your Support Case ID for your rejected request (or both if both requests were
+  rejected). You can find your case ID from the `AWS Support page
+  <https://support.console.aws.amazon.com/support/home#/case/history>`__, under `Support
+  cases`.
+- Your `Service quota` string that you requested a quota increase on. Ex: `Running
+  On-Demand F instances`.
 - The number of vCPUs you requested a quota increase to.
-
 - Requested region. Ex: `US West (Oregon)`.
 
-You will then need to send an email to Amazon AWS for escalation. **We are working with AWS to come up with a list of contacts to reach out to, check back for updates. If you want to get started immediately, please reach out to Jim at yf328@eecs.berkeley.edu. Please pardon these issues as we work with Amazon to stabilize the EC2 F2 platform for FireSim.**
+You will then need to send an email to Amazon AWS for escalation. **We are working with
+AWS to come up with a list of contacts to reach out to, check back for updates. If you
+want to get started immediately, please reach out to Jim at yf328@eecs.berkeley.edu.
+Please pardon these issues as we work with Amazon to stabilize the EC2 F2 platform for
+FireSim.**
 
 Hit Next below to continue.
