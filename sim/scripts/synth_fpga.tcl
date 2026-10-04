@@ -88,10 +88,10 @@ switch $strategy {
         set synth_options "-keep_equivalent_registers -flatten_hierarchy rebuilt $synth_uram_option -retiming"
         set synth_directive "default"
     }
-    "QUICK" {
-        puts "QUICK strategy."
-        set synth_options "$synth_uram_option"
-        set synth_directive "runtimeoptimized"
+    "RUNTIME_OPTIMIZED" {
+        puts "RUNTIME_OPTIMIZED strategy."
+        set synth_options "-flatten_hierarchy none -fsm_extraction off $synth_uram_option"
+        set synth_directive "RuntimeOptimized"
     }
     default {
         puts "$strategy is NOT a valid strategy."

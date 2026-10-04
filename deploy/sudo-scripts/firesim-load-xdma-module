@@ -2,4 +2,12 @@
 
 set -ex
 
-insmod $(find /lib/modules/$(uname -r) -name "xdma.ko") poll_mode=1
+# Since Linux 6.3 the kernel also ships an unrelated driver named "xdma".
+# Refuse to load unless modprobe resolves to the Xilinx dma_ip_drivers module.
+if ! modinfo -p xdma | grep -q '^poll_mode:'; then
+    echo "ERROR: $(modinfo -F filename xdma) is not the Xilinx XDMA driver." >&2
+    echo "Reinstall dma_ip_drivers for kernel $(uname -r)." >&2
+    exit 1
+fi
+
+modprobe xdma poll_mode=1

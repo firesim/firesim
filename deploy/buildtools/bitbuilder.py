@@ -697,13 +697,15 @@ class VitisBitBuilder(BitBuilder):
 
 
 class XilinxAlveoBitBuilder(BitBuilder):
-    """Bit builder class that builds a Xilinx Alveo bitstream from the build config."""
+    """Bit builder class that builds a bitstream for a Vivado-flow FPGA board from the build config."""
 
     BOARD_NAME: Optional[str]
+    BOARD_DISPLAY_NAME: str
 
     def __init__(self, build_config: BuildConfig, args: Dict[str, Any]) -> None:
         super().__init__(build_config, args)
         self.BOARD_NAME = None
+        self.BOARD_DISPLAY_NAME = build_config.PLATFORM
 
     def setup(self) -> None:
         return
@@ -775,9 +777,7 @@ class XilinxAlveoBitBuilder(BitBuilder):
         def on_build_failure():
             """Terminate build host and notify user that build failed"""
 
-            message_title = (
-                f"FireSim Xilinx Alveo {self.build_config.PLATFORM} FPGA Build Failed"
-            )
+            message_title = f"FireSim {self.BOARD_DISPLAY_NAME} FPGA Build Failed"
 
             message_body = (
                 "Your FPGA build failed for quintuplet: "
@@ -789,9 +789,7 @@ class XilinxAlveoBitBuilder(BitBuilder):
 
             build_farm.release_build_host(self.build_config)
 
-        rootLogger.info(
-            f"Building Xilinx Alveo {self.build_config.PLATFORM} Bitstream from Verilog"
-        )
+        rootLogger.info(f"Building {self.BOARD_DISPLAY_NAME} Bitstream from Verilog")
 
         local_deploy_dir = get_deploy_dir()
         fpga_build_postfix = f"cl_{self.build_config.get_chisel_quintuplet()}"
@@ -902,7 +900,7 @@ class XilinxAlveoBitBuilder(BitBuilder):
             rootLogger.debug("[localhost] " + str(localcap.stderr))
 
         rootLogger.info(
-            f"Build complete! Xilinx Alveo {self.build_config.PLATFORM} bitstream ready. See {os.path.join(hwdb_entry_file_location,hwdb_entry_name)}."
+            f"Build complete! {self.BOARD_DISPLAY_NAME} bitstream ready. See {os.path.join(hwdb_entry_file_location,hwdb_entry_name)}."
         )
 
         build_farm.release_build_host(self.build_config)
@@ -914,18 +912,21 @@ class XilinxAlveoU200BitBuilder(XilinxAlveoBitBuilder):
     def __init__(self, build_config: BuildConfig, args: Dict[str, Any]) -> None:
         super().__init__(build_config, args)
         self.BOARD_NAME = "au200"
+        self.BOARD_DISPLAY_NAME = "Xilinx Alveo U200"
 
 
 class XilinxAlveoU280BitBuilder(XilinxAlveoBitBuilder):
     def __init__(self, build_config: BuildConfig, args: Dict[str, Any]) -> None:
         super().__init__(build_config, args)
         self.BOARD_NAME = "au280"
+        self.BOARD_DISPLAY_NAME = "Xilinx Alveo U280"
 
 
 class XilinxAlveoU250BitBuilder(XilinxAlveoBitBuilder):
     def __init__(self, build_config: BuildConfig, args: Dict[str, Any]) -> None:
         super().__init__(build_config, args)
         self.BOARD_NAME = "au250"
+        self.BOARD_DISPLAY_NAME = "Xilinx Alveo U250"
 
 
 class XilinxVCU118BitBuilder(XilinxAlveoBitBuilder):
@@ -936,6 +937,7 @@ class XilinxVCU118BitBuilder(XilinxAlveoBitBuilder):
     def __init__(self, build_config: BuildConfig, args: Dict[str, Any]) -> None:
         super().__init__(build_config, args)
         self.BOARD_NAME = "xilinx_vcu118"
+        self.BOARD_DISPLAY_NAME = "Xilinx VCU118"
 
     def cl_dir_setup(self, chisel_quintuplet: str, dest_build_dir: str) -> str:
         """Setup CL_DIR on build host.
@@ -994,6 +996,7 @@ class RHSResearchNitefuryIIBitBuilder(XilinxAlveoBitBuilder):
     def __init__(self, build_config: BuildConfig, args: Dict[str, Any]) -> None:
         super().__init__(build_config, args)
         self.BOARD_NAME = "rhsresearch_nitefury_ii"
+        self.BOARD_DISPLAY_NAME = "RHS Research Nitefury II"
 
     def cl_dir_setup(self, chisel_quintuplet: str, dest_build_dir: str) -> str:
         """Setup CL_DIR on build host.

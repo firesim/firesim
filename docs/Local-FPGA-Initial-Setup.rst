@@ -179,15 +179,24 @@ First, run the following to clone the XDMA kernel module source:
 
     sudo make install
 
+FireSim requires the XDMA driver to run in poll mode. Make this the driver's default
+option, so that it also applies when the kernel loads the driver on its own (e.g., when an
+FPGA reappears on PCI-E after being reprogrammed):
+
+.. code-block:: bash
+
+    echo "options xdma poll_mode=1" | sudo tee /etc/modprobe.d/xdma.conf
+
 Now, test that the module can be inserted:
 
 .. code-block:: bash
 
-    sudo insmod $(find /lib/modules/$(uname -r) -name "xdma.ko") poll_mode=1
+    sudo modprobe xdma
     lsmod | grep -i xdma
+    cat /sys/module/xdma/parameters/poll_mode
 
 The second command above should have produced output indicating that the XDMA driver is
-loaded.
+loaded, and the third should print ``1``.
 
 Next, we will do the same for the XVSEC driver, which is pulled from a separate
 repository due to kernel version incompatibility:

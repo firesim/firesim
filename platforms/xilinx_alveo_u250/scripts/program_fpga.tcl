@@ -65,5 +65,7 @@ set_property PROGRAM.FILE ${options(-bitstream_path)} [get_hw_device]
 program_hw_devices [get_hw_device]
 refresh_hw_device [get_hw_device]
 close_hw_target
+disconnect_hw_server
+close_hw_manager
 
 exit

@@ -6,6 +6,7 @@ import re
 import logging
 import abc
 import json
+import shlex
 from fabric.api import prefix, local, run, env, cd, warn_only, put, settings, hide  # type: ignore
 from fabric.contrib.project import rsync_project  # type: ignore
 from os.path import join as pjoin
@@ -24,6 +25,9 @@ if TYPE_CHECKING:
     from awstools.awstools import MockBoto3Instance
 
 rootLogger = logging.getLogger()
+
+# PCI-E vendor:device ID of the XDMA endpoint in FireSim Xilinx bitstreams
+FIRESIM_XILINX_PCI_ID = "10ee:903f"
 
 
 class NBDTracker:
@@ -1050,7 +1054,7 @@ class VitisInstanceDeployManager(InstanceDeployManager):
 
 
 class XilinxAlveoInstanceDeployManager(InstanceDeployManager):
-    """This class manages a Xilinx Alveo-enabled instance"""
+    """This class manages an instance with a Vivado-flow PCIe FPGA"""
 
     PLATFORM_NAME: Optional[str]
 
@@ -1100,6 +1104,7 @@ class XilinxAlveoInstanceDeployManager(InstanceDeployManager):
         if self.instance_assigned_simulations():
             self.instance_logger("""Flash all FPGA Slots.""")
 
+            bitstream_map = []
             for slotno, firesimservernode in enumerate(self.parent_node.sim_slots):
                 serv = firesimservernode
                 hwcfg = serv.get_resolved_server_hardware_config()
@@ -1132,15 +1137,19 @@ class XilinxAlveoInstanceDeployManager(InstanceDeployManager):
                 self.instance_logger(
                     f"""Flashing FPGA Slot: {slotno} ({bdf}) with bitstream: {bit}"""
                 )
-                # Use a system wide installed firesim-fpga-util.py
-                cmd = f"{script_path}/firesim-fpga-util.py"
-                check_script(
-                    cmd,
-                    Path(
-                        f"{get_deploy_dir()}/../platforms/{self.PLATFORM_NAME}/scripts"
-                    ),
-                )
-                run(f"""{cmd} --bitstream {bit} --bdf {bdf} --fpga-db {json_db}""")
+                bitstream_map.append(f"{bdf} {bit}")
+
+            # Program all slots with a single Vivado session
+            map_file = f"{self.get_remote_sim_dir_for_slot(0)}/bitstream_map.txt"
+            run(f"""printf '%s\\n' {" ".join(shlex.quote(l) for l in bitstream_map)} > {map_file}""")
+
+            # Use a system wide installed firesim-fpga-util.py
+            cmd = f"{script_path}/firesim-fpga-util.py"
+            check_script(
+                cmd,
+                Path(f"{get_deploy_dir()}/../platforms/{self.PLATFORM_NAME}/scripts"),
+            )
+            run(f"""{cmd} --bitstream-map {map_file} --fpga-db {json_db}""")
 
     def change_pcie_perms(self) -> None:
         if self.instance_assigned_simulations():
@@ -1157,7 +1166,7 @@ class XilinxAlveoInstanceDeployManager(InstanceDeployManager):
                 run(f"""sudo {cmd} 0000:{bdf}""")
 
     def change_all_pcie_perms(self) -> None:
-        collect = run("lspci | grep -i xilinx")
+        collect = run(f"lspci -d {FIRESIM_XILINX_PCI_ID}")
 
         bdfs = [
             {"busno": "0x" + i[:2], "devno": "0x" + i[3:5], "capno": "0x" + i[6:7]}

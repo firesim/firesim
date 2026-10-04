@@ -11,7 +11,7 @@ pciDevicesPath = Path('/sys/bus/pci/devices')
 def get_device_paths(bus_id: str) -> List[Path]:
     result = []
     for entry in pciDevicesPath.iterdir():
-        if re.match('^0000:' + re.escape(bus_id) + ':[a-fA-F0-9]{2}\.[0-7]$', entry.name):
+        if re.match('^0000:' + re.escape(bus_id) + r':[a-fA-F0-9]{2}\.[0-7]$', entry.name):
             result.append(entry)
     return result
 

@@ -36,6 +36,7 @@ class BuildStrategy(Enum):
     CONGESTION = auto()
     NORETIMING = auto()
     DEFAULT = auto()
+    RUNTIME_OPTIMIZED = auto()
 
     @staticmethod
     def from_string(input: str) -> BuildStrategy:
