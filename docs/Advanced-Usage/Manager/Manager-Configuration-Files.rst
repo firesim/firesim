@@ -797,7 +797,31 @@ number of FPGAs it supports (``num_fpgas``), number of metasims it could support
 (``use_for_switch_only``). Additionally, a specification can optionally add
 ``override_simulation_dir`` to override the ``default_simulation_dir`` for that specific
 run farm host. Similarly, a specification can optionally add ``override_platform`` to
-choose a different ``default_platform`` for that specific run farm host.
+choose a different ``default_platform`` for that specific run farm host, and
+``override_fpga_db`` or ``override_fpgas_to_use`` to replace ``default_fpga_db`` or
+``default_fpgas_to_use`` (see below).
+
+``default_fpgas_to_use``
+++++++++++++++++++++++++
+
+On run farm hosts with Vivado-flow FPGAs (e.g. Xilinx Alveo), this optional path to a
+file on the run farm host picks which FPGAs simulations use. The file has the same
+format as the FPGA database written by ``firesim enumeratefpgas``, so entries can be
+copied from it, and lists the FPGAs to use in simulation slot order:
+
+.. code-block:: json
+
+    [
+      {"uid": "Xilinx/21770205K03BA", "device": "xcu250_0", "bdf": "03:00.0"},
+      {"uid": "Xilinx/21770205K02BA", "device": "xcu250_0", "bdf": "02:00.0"}
+    ]
+
+Simulation slot N uses the Nth FPGA listed, looked up in the FPGA database by ``uid``.
+FPGAs that are not listed are not reprogrammed, so they can keep running other
+simulations. Only ``uid`` is required; if ``bdf`` or ``device`` is given and differs
+from the FPGA database (e.g. after the FPGAs are enumerated again), FireSim stops with
+an error. Without this file, simulations use the FPGAs in FPGA database order. To share
+a host between runs this way, see :ref:`sharing-run-farm-host`.
 
 .. _sharing-run-farm-host:
 
@@ -815,10 +839,12 @@ one user running several workloads side by side. Each run uses its own
   ``switch0-r1a2b3c4d``) and shared-memory ports. So runs don't wait on or connect to
   each other's simulations, and ``firesim kill`` only stops the run whose configuration
   it is given.
-- **Its own FPGAs.** Simulations use FPGAs in the order of the run's FPGA database, so
-  give each run a ``default_fpga_db`` (or ``override_fpga_db``) that lists only its
-  FPGAs. FireSim does not track which FPGAs other runs or users are using: agree on that
-  beforehand.
+- **Its own FPGAs.** On Vivado-flow FPGAs (e.g. Xilinx Alveo), list them in a
+  ``default_fpgas_to_use`` (or ``override_fpgas_to_use``) file, described above. FireSim
+  never reprograms FPGAs that the file doesn't list. On other platforms, simulations use
+  FPGAs in the order of the run's FPGA database, so give each run a ``default_fpga_db``
+  (or ``override_fpga_db``) that lists only its FPGAs. FireSim does not track which
+  FPGAs other runs or users are using: agree on that beforehand.
 
 A host can run any number of non-FireAxe runs side by side, plus at most one FireAxe
 (partitioned) run: FireAxe's pipes and QSFP metasimulations name their shared memory

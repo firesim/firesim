@@ -76,6 +76,8 @@ class InstanceDeployManager(metaclass=abc.ABCMeta):
     # but the guide still say to do enumeration - which will fail for those platforms
     # make knob to skip for platforms that dynamically checks BDF
     NEED_ENUMERATION: bool = True
+    # Whether run farm hosts can pick FPGAs from the FPGA database (fpgas_to_use)
+    SUPPORTS_FPGAS_TO_USE: bool = False
 
     def __init__(self, parent_node: Inst) -> None:
         """
@@ -1170,6 +1172,7 @@ class XilinxAlveoInstanceDeployManager(InstanceDeployManager):
     MMIO_BAR: int = 0
     # PCI-E class of this board's FireSim endpoint (None: any class except the V80's)
     PCI_CLASS: Optional[str] = None
+    SUPPORTS_FPGAS_TO_USE = True
 
     def __init__(self, parent_node: Inst) -> None:
         super().__init__(parent_node)
@@ -1254,11 +1257,45 @@ class XilinxAlveoInstanceDeployManager(InstanceDeployManager):
                 bdfs.append(fields[0])
         return bdfs
 
+    def fpga_to_use_bdf(
+        self, slotno: int, fpgas_to_use: str, db: List[Dict[str, str]], json_db: str
+    ) -> str:
+        """BDF of the slot's FPGA from the fpgas_to_use file, looked up in the FPGA database by uid."""
+        host = self.parent_node.get_host()
+        collect = run(f"cat {fpgas_to_use}", warn_only=True)
+        if collect.return_code != 0:
+            raise Exception(f"fpgas_to_use file {fpgas_to_use} not found on {host}.")
+        selection = json.loads(collect)
+        uids = [entry["uid"] for entry in selection]
+        if len(set(uids)) != len(uids):
+            raise Exception(f"{fpgas_to_use} on {host} lists an FPGA more than once.")
+        if slotno >= len(selection):
+            raise Exception(
+                f"{fpgas_to_use} on {host} lists {len(selection)} FPGA(s), fewer than the simulations assigned to it."
+            )
+        wanted = selection[slotno]
+        for entry in db:
+            if entry["uid"] == wanted["uid"]:
+                for key in ("bdf", "device"):
+                    if key in wanted and wanted[key] != entry[key]:
+                        raise Exception(
+                            f"FPGA {wanted['uid']} has {key} {wanted[key]} in {fpgas_to_use} but {entry[key]} in the FPGA database {json_db} on {host}. "
+                            f"Update {fpgas_to_use} from the FPGA database."
+                        )
+                return entry["bdf"]
+        raise Exception(
+            f"FPGA {wanted['uid']} from {fpgas_to_use} is not in the FPGA database {json_db} on {host}. "
+            "Check the uid, or rerun firesim enumeratefpgas."
+        )
+
     def slot_to_bdf(self, slotno: int, json_db: str) -> str:
         # get fpga information from db
         self.instance_logger(f"""Determine BDF for {slotno}""")
         collect = run(f"cat {json_db}")
         db = json.loads(collect)
+        fpgas_to_use = self.parent_node.fpgas_to_use
+        if fpgas_to_use is not None:
+            return self.fpga_to_use_bdf(slotno, fpgas_to_use, db, json_db)
         assert slotno < len(
             db
         ), f"Less FPGAs available than slots ({slotno} >= {len(db)})"

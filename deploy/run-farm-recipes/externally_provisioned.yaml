@@ -14,6 +14,11 @@ args:
     # REQUIRED: default fpga db file that enumerates what fpgas are available on the machine (used by XilinxU* Deploy Managers)
     default_fpga_db: /opt/firesim-db.json
 
+    # OPTIONAL: default file listing which FPGAs from the fpga db to use, in sim slot order
+    # (same format as the fpga db; FPGAs are matched by uid). FPGAs that aren't listed are
+    # left alone. Without it, all FPGAs in the fpga db are used, in order.
+    # default_fpgas_to_use: /opt/firesim-fpgas-to-use.json
+
     # REQUIRED: List of unique hostnames/IP addresses, each with their
     # corresponding specification that describes the properties of the host.
     #
@@ -43,6 +48,7 @@ args:
     #       override_platform: EC2InstanceDeployManager
     #       override_simulation_dir: /scratch/specific-build-host-build-dir
     #       override_fpga_db: /opt/firesim-db-specific.json
+    #       override_fpgas_to_use: /opt/firesim-fpgas-to-use-specific.json
     run_farm_host_specs:
         - four_fpgas_spec:
             # REQUIRED: number of FPGAs on the machine
