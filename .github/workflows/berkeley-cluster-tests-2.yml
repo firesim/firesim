@@ -19,6 +19,11 @@ env:
   # temporary directories should be located in /scratch (since it's larger)
   REMOTE_WORK_DIR: /scratch/buildbot/fs-shared/fs-${{ github.sha }}-${{ github.workflow }}
 
+  # Give each workflow its own conda package cache. Both workflows' setup jobs run
+  # at the same time on the same host, and concurrent downloads/extractions into a
+  # shared cache corrupt it.
+  CONDA_PKGS_DIRS: /scratch/buildbot/conda-pkgs/${{ github.workflow }}
+
   # misc
   TERM: xterm-256-color
 
