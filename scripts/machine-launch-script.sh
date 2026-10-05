@@ -254,7 +254,7 @@ set -o pipefail
         azure-mgmt-network \
         fsspec \
         "s3fs==0.4.2" \
-        "cryptography<41" \
+        "cryptography=40.0.2" \
     )
 
     if [[ "$CONDA_ENV_NAME" == "base" ]]; then
