@@ -92,10 +92,12 @@ Gather the following details from your request:
 - The number of vCPUs you requested a quota increase to.
 - Requested region. Ex: `US West (Oregon)`.
 
-You will then need to send an email to Amazon AWS for escalation. **We are working with
-AWS to come up with a list of contacts to reach out to, check back for updates. If you
-want to get started immediately, please reach out to Jim at yf328@eecs.berkeley.edu.
-Please pardon these issues as we work with Amazon to stabilize the EC2 F2 platform for
-FireSim.**
+You will then need to send an email to Amazon AWS for escalation. 
+We've been informed by AWS that if you are not able to be granted a quota increase through their normal quota increase process, you will need to reach out to AWS Support or your site/institution's AWS Sales Support Representative (if applicable) with the case details specified above. 
+They will handle case-by-case escalations to increase your quota.
+AWS has given us the following 2 links to start from:
+
+- https://aws.amazon.com/contact-us/?nc2=h_ut_cu
+- Fill out the "Request AWS sales support" form located here: https://aws.amazon.com/contact-us/sales-support/
 
 Hit Next below to continue.
