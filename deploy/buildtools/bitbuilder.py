@@ -8,9 +8,9 @@ import random
 import string
 import logging
 import os
-from fabric.api import prefix, local, run, env, lcd, parallel, settings  # type: ignore
+from fabric.api import prefix, local, run as remote_run, env, lcd, parallel, settings  # type: ignore
 from fabric.contrib.console import confirm  # type: ignore
-from fabric.contrib.project import rsync_project  # type: ignore
+from fabric.contrib.project import rsync_project as remote_rsync_project  # type: ignore
 
 from util.streamlogger import InfoStreamLogger
 from util.export import create_export_string
@@ -32,6 +32,46 @@ if TYPE_CHECKING:
     from buildtools.buildconfig import BuildConfig
 
 rootLogger = logging.getLogger()
+
+
+def on_localhost() -> bool:
+    """Whether the current Fabric host is this machine, which needs no ssh."""
+    return env.host in ("localhost", "127.0.0.1")
+
+
+def run(command: str, **kwargs: Any) -> Any:
+    """Fabric's run, or a local bash command when the host is this machine."""
+    if on_localhost():
+        return local(command, shell="/bin/bash")
+    return remote_run(command, **kwargs)
+
+
+def rsync_project(
+    remote_dir: str,
+    local_dir: str,
+    exclude: Any = (),
+    extra_opts: str = "",
+    upload: bool = True,
+    capture: bool = False,
+    **kwargs: Any,
+) -> Any:
+    """Fabric's rsync_project, or the same rsync between local directories when the
+    host is this machine."""
+    if not on_localhost():
+        return remote_rsync_project(
+            remote_dir=remote_dir,
+            local_dir=local_dir,
+            exclude=exclude,
+            extra_opts=extra_opts,
+            upload=upload,
+            capture=capture,
+            **kwargs,
+        )
+    if isinstance(exclude, str):
+        exclude = [exclude]
+    excludes = "".join(f' --exclude "{e}"' for e in exclude)
+    src, dst = (local_dir, remote_dir) if upload else (remote_dir, local_dir)
+    return local(f"rsync{excludes} -pthrvz {extra_opts} {src} {dst}", capture=capture)
 
 
 def get_deploy_dir() -> str:
