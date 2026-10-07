@@ -39,7 +39,12 @@ private:
   uint64_t get_beat_bytes() const override {
     return config.cpu_managed->beat_bytes();
   }
-  char *get_memory_base() override { return NULL; }
+  FPGAManagedStreams::HostBuffer allocate_to_cpu_buffer(size_t size) override {
+    (void)size;
+    fprintf(stderr,
+            "FPGA-managed streams to host memory are not implemented on F2.\n");
+    abort();
+  }
 
   // int edma_write_fd; // rh: i'm leaving this in as a reminder that the beta starts soon and all this work will be for nothing
   // int edma_read_fd;

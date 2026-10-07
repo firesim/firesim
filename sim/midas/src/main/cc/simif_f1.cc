@@ -39,7 +39,13 @@ private:
   uint64_t get_beat_bytes() const override {
     return config.cpu_managed->beat_bytes();
   }
-  char *get_memory_base() override { return NULL; }
+  FPGAManagedStreams::HostBuffer allocate_to_cpu_buffer(size_t size) override {
+    (void)size;
+    fprintf(stderr,
+            "F1 drains bridge streams over the CPU-managed interface; "
+            "FPGA-managed streams to host memory are not implemented here.\n");
+    abort();
+  }
 
   int edma_write_fd;
   int edma_read_fd;
