@@ -53,6 +53,11 @@ args:
             # to host ONLY switches (e.g. any attached FPGAs are "wasted")
             use_for_switch_only: false
 
+        - one_metasims_spec:
+            num_fpgas: 0
+            num_metasims: 1
+            use_for_switch_only: false
+
         - four_metasims_spec:
             num_fpgas: 0
             num_metasims: 4

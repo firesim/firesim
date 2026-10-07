@@ -11,8 +11,8 @@ Select a region
 Head to the `EC2 Management Console <https://console.aws.amazon.com/ec2/v2/home>`__. In
 the top right corner, ensure that the correct region is selected. You should select one
 of: ``us-east-1`` (N. Virginia), ``us-west-2`` (Oregon), or ``eu-west-2`` (London),
-since F2 instances are only available in those regions.
-For the most current list of regions supporting F2 instance, see `Amazon EC2 instance types by Region
+since F2 instances are only available in those regions. For the most current list of
+regions supporting F2 instance, see `Amazon EC2 instance types by Region
 <https://docs.aws.amazon.com/ec2/latest/instancetypes/ec2-instance-regions.html>`__.
 
 Once you select a region, it's useful to bookmark the link to the EC2 console, so that
@@ -118,9 +118,9 @@ On this machine, run the following:
     [follow prompts]
 
 Within the prompt, you should specify the same region that you chose above (e.g.,
-``us-east-1``, ``us-west-2``) and set the default output format to
-``json``. You will need to generate an AWS access key in the "Security Credentials" menu
-of your AWS settings (as instructed in
+``us-east-1``, ``us-west-2``) and set the default output format to ``json``. You will
+need to generate an AWS access key in the "Security Credentials" menu of your AWS
+settings (as instructed in
 https://docs.aws.amazon.com/IAM/latest/UserGuide/id_credentials_access-keys.html#Using_CreateAccessKey
 ). You should keep the AWS access key information in a safe place, so that you can refer
 to it again when setting up the manager instance. You can learn more about the ``aws
@@ -166,8 +166,8 @@ Subscribe to the AWS FPGA Developer AMI
 ---------------------------------------
 
 Go to the `AWS Marketplace page for the FPGA Developer AMI
-<https://aws.amazon.com/marketplace/pp/prodview-tcl7sjgreh6bq>`__. Click the button to subscribe to
-the FPGA Dev AMI (it should be free) and follow the prompts to accept the EULA (but do
-not launch any instances).
+<https://aws.amazon.com/marketplace/pp/prodview-tcl7sjgreh6bq>`__. Click the button to
+subscribe to the FPGA Dev AMI (it should be free) and follow the prompts to accept the
+EULA (but do not launch any instances).
 
 Now, hit next to continue on to setting up our Manager Instance.

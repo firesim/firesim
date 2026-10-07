@@ -4,32 +4,45 @@ Setting up your Manager Instance
 Launching a "Manager Instance"
 ------------------------------
 
-.. .. warning::
+..
+    .. warning::
 
-..     These instructions refer to fields in EC2's new launch instance wizard. Refer to
-..     `version 1.13.4 <https://docs.fires.im/en/1.13.4/>`__ of the documentation for
-..     references to the old wizard, being wary that specifics, such as the AMI ID
-..     selection, may be out of date.
+..
+    These instructions refer to fields in EC2's new launch instance wizard. Refer to
+
+..
+    `version 1.13.4 <https://docs.fires.im/en/1.13.4/>`__ of the documentation for
+
+..
+    references to the old wizard, being wary that specifics, such as the AMI ID
+
+..
+    selection, may be out of date.
 
 Now, we need to launch a "Manager Instance" that acts as a "head" node that we will
 ``ssh`` or ``mosh`` into to work from. Since we will deploy the heavy lifting to
 separate ``z1d.2xlarge`` and ``f2`` instances later, the Manager Instance can be a
 relatively cheap instance. In this guide, however, we will use a ``c5.4xlarge``, running
-the AWS FPGA Developer AMI. 
+the AWS FPGA Developer AMI.
 
 To launch a manager instance, follow these steps:
 
-1. Click on *View Purchase Options* on the `AWS Marketplace page for the FPGA Developer AMI <https://aws.amazon.com/marketplace/pp/prodview-tcl7sjgreh6bq>`__.
-   If already subscribed, then click *Launch your software*. Otherwise, Subscribe and then click *Launch your software*.
+1. Click on *View Purchase Options* on the `AWS Marketplace page for the FPGA Developer
+   AMI <https://aws.amazon.com/marketplace/pp/prodview-tcl7sjgreh6bq>`__. If already
+   subscribed, then click *Launch your software*. Otherwise, Subscribe and then click
+   *Launch your software*.
 2. In the *Launch FPGA Developer AMI (Ubuntu)* window:
 
-   1. Set the launch method to *Launch from EC2 Console*. 
-   2. Set the version to ``1.19.1-prod-rhng4b6alkhdq``.
-      **If you do not change the version, you will likely get an incorrect version of the AMI; However, version changes to the last digit (i.e. 1.19.1 → 1.19.2) should not lead to any breaking changes and is fine to increment to.**
-   
-   3. Select the region that corresponds to the region you selected in :ref:`configuring-required-infrastructure-in-your-aws-account`.
-   4. Click *Launch from EC2*. It should open a new tab in your browser with the launch instance page.
-   
+   1. Set the launch method to *Launch from EC2 Console*.
+   2. Set the version to ``1.19.1-prod-rhng4b6alkhdq``. **If you do not change the
+      version, you will likely get an incorrect version of the AMI; However, version
+      changes to the last digit (i.e. 1.19.1 → 1.19.2) should not lead to any breaking
+      changes and is fine to increment to.**
+   3. Select the region that corresponds to the region you selected in
+      :ref:`configuring-required-infrastructure-in-your-aws-account`.
+   4. Click *Launch from EC2*. It should open a new tab in your browser with the launch
+      instance page.
+
 3. In the *Name* field, give the instance a recognizable name, for example
    ``firesim-manager-1``. This is purely for your own convenience and can also be left
    blank.
@@ -48,12 +61,12 @@ To launch a manager instance, follow these steps:
       the ``for-farms-only-firesim`` security group that might also be in the list (it
       is also fine if this group does not appear in your list).
 
-7.  In the *Configure storage* section, increase the size of the root volume to at least
-    **300GB**. The default of 120GB can quickly become too small as you accumulate large
-    Vivado reports/outputs, large waveforms, XSim outputs, and large root filesystems for
-    simulations. You should remove the small (5-8GB) secondary volume that is added by
-    default.
-8.  In the *Advanced details* drop-down, change the following:
+7. In the *Configure storage* section, increase the size of the root volume to at least
+   **300GB**. The default of 120GB can quickly become too small as you accumulate large
+   Vivado reports/outputs, large waveforms, XSim outputs, and large root filesystems for
+   simulations. You should remove the small (5-8GB) secondary volume that is added by
+   default.
+8. In the *Advanced details* drop-down, change the following:
 
    1. Under *Termination protection*, select Enable. This adds a layer of protection to
       prevent your manager instance from being terminated by accident. You will need to
@@ -67,7 +80,7 @@ To launch a manager instance, follow these steps:
    When your instance boots, this will install a compatible set of all the dependencies
    needed to run FireSim on your instance using Conda.
 
-10. Double check your configuration. The most common misconfigurations that may require
+9. Double check your configuration. The most common misconfigurations that may require
    repeating this process include:
 
    1. Not selecting the ``firesim`` vpc.
@@ -75,7 +88,7 @@ To launch a manager instance, follow these steps:
    3. Not selecting the ``firesim`` key pair.
    4. Selecting the wrong AMI.
 
-11. Click the orange *Launch Instance* button.
+10. Click the orange *Launch Instance* button.
 
 .. warning::
 

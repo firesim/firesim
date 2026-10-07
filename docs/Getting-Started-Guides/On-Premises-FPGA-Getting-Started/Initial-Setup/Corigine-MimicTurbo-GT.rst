@@ -4,8 +4,8 @@
 
 .. |fpga_power_info| replace:: For the MimicTurbo GT, this is ATX 4-pin peripheral power
     (**NOT** PCIe power) from the system's PSU, attached to connector J5 on the FPGA via
-    the ATX power supply adapter cable that comes with the MimicTurbo GT. Do not plug a PC
-    ATX power connector directly into J5; this can damage the board.
+    the ATX power supply adapter cable that comes with the MimicTurbo GT. Do not plug a
+    PC ATX power connector directly into J5; this can damage the board.
 
 .. |hwdb_entry_name| replace:: ``corigine_mimicturbo_gt_firesim_rocket_singlecore_4GB_no_nic``
 

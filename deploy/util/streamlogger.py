@@ -9,8 +9,12 @@ from __future__ import annotations
 import sys
 import logging
 import io
+import threading
 
 from typing import Any, Optional, Tuple
+
+# Per-thread flag: set while any StreamLogger in this thread is flushing.
+_flush_state = threading.local()
 
 
 class StreamLogger:
@@ -58,6 +62,12 @@ class StreamLogger:
 
     def write(self, data: str) -> None:
         """Write data to the stream."""
+        if getattr(_flush_state, "active", False):
+            # Re-entered from inside a flush(), e.g. a logging handler's
+            # handleError() writing to an intercepted stream. Routing it back
+            # through logging would recurse forever, so bypass to the real stream.
+            self.__stream.write(data)
+            return
         self.__buffer.write(data)
         if self.__unbuffered is True or (
             self.__flush_on_new_line is True and "\n" in data
@@ -66,6 +76,15 @@ class StreamLogger:
 
     def flush(self) -> None:
         """Flush the stream."""
+        if getattr(_flush_state, "active", False):
+            return
+        _flush_state.active = True
+        try:
+            self._flush_impl()
+        finally:
+            _flush_state.active = False
+
+    def _flush_impl(self) -> None:
         self.__buffer.seek(0)
         while True:
             line = self.__buffer.readline()

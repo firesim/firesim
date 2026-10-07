@@ -1,6 +1,7 @@
 #include "fpga_managed_stream.h"
 #include "core/simif.h"
 
+#include <algorithm>
 #include <assert.h>
 #include <cstring>
 #include <inttypes.h>
@@ -33,6 +34,11 @@ size_t FPGAManagedStreams::FPGAToCPUDriver::pull(void *dest,
   if (bytes_in_buffer < required_bytes) {
     return 0;
   }
+
+  // The FPGA may have queued more than the caller asked for. Copy only what
+  // fits in dest; the remainder stays queued for the next pull. This mirrors
+  // the clamp in CPUManagedStreams::FPGAToCPUDriver::pull.
+  bytes_in_buffer = std::min(bytes_in_buffer, num_bytes);
 
   void *src_addr = (char *)buffer_base + buffer_offset;
   size_t first_copy_bytes =
