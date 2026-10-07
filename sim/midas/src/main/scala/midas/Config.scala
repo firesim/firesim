@@ -353,6 +353,15 @@ class WithFPGAManagedBridgeStreams
       (e: StreamEngineParameters, p: Parameters) => new FPGAManagedStreamEngine(p, e, HostMemoryTarget)
     })
 
+/** EC2F2Config with to-host bridge streams DMA'd into host memory over PCIM. The F2 small shell has no DMA engine, so
+  * the CPU-managed path drains streams with 4-byte reads over BAR4; this is much faster for streaming-heavy bridges.
+  */
+class EC2F2PCIMConfig
+    extends Config(
+      new WithFPGAManagedBridgeStreams ++
+        new EC2F2Config
+    )
+
 case object FireAxeNoCPartitionPass    extends Field[Boolean](false)
 case object FireAxeQSFPConnections     extends Field[Boolean](false)
 case object FireAxePCIMConnections     extends Field[Boolean](false)
