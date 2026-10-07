@@ -903,8 +903,9 @@ class XilinxAlveoBitBuilder(BitBuilder):
             rootLogger.info(f"Using local project copy: {pr_project_path}")
 
         # Build the command with optional PR arguments
-        build_cmd = f"{cl_dir}/build-bitstream.sh --cl_dir {cl_dir} --frequency {fpga_frequency} --strategy {build_strategy} --board {self.BOARD_NAME} --enable_pr {str(enable_pr).lower()}"
+        build_cmd = f"{cl_dir}/build-bitstream.sh --cl_dir {cl_dir} --frequency {fpga_frequency} --strategy {build_strategy} --board {self.BOARD_NAME}"
         if enable_pr:
+            build_cmd += " --enable_pr true"
             if pr_module_name:
                 build_cmd += f" --pr_module_name {','.join(pr_module_name)}"
             if pr_partition_path:
