@@ -27,6 +27,31 @@ attaching a TracerV Bridge to the RISC-V trace port of each core they wish to tr
 (there should be one bridge per core). By default, only the cycle number, instruction
 address, and valid bit are collected.
 
+.. _tracerv-f2-pcim:
+
+Faster Trace Output on AWS EC2 F2 (PCIM)
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+By default, the driver drains bridge streams such as TracerV's over the CPU-managed
+interface. The F2 shell has no DMA engine, so on F2 this means 4-byte reads over BAR4,
+which can limit simulation speed when tracing. To have the FPGA write streams directly
+into host memory over PCIM instead, build with ``BaseF2PCIMConfig`` in place of
+``BaseF2Config`` at the end of your ``PLATFORM_CONFIG``, for example:
+
+.. code-block:: yaml
+
+    PLATFORM_CONFIG: BaseF2PCIMConfig
+
+Things to know about this mode:
+
+- Only FPGA-to-host streams are supported. Designs with bridges that also stream from
+  the host to the FPGA, such as a NIC or block device, must keep using ``BaseF2Config``.
+- Each stream is backed by one 2 MiB hugepage, so a stream's FPGA-side buffer can be at
+  most 2 MiB. The manager reserves hugepages on F2 run farm hosts during ``infrasetup``.
+- The driver resolves the physical addresses of these buffers and enables PCIe bus
+  mastering on the FPGA, so it must run as root. The manager already runs drivers with
+  ``sudo`` on EC2.
+
 .. _tracerv-enabling:
 
 Enabling Tracing at Runtime

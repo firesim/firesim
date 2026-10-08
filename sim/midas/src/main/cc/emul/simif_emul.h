@@ -203,9 +203,22 @@ private:
       return simif.write(addr, value);
     }
 
-    char *get_memory_base() override { return ((char *)cpu_mem.get_data()); }
+    FPGAManagedStreams::HostBuffer
+    allocate_to_cpu_buffer(size_t size) override {
+      // The modeled memory is FPGA-addressed from 0, so an offset into it is
+      // simultaneously a valid "physical" address and an index into the
+      // backing array. Bump-allocate; nothing is ever freed.
+      uint64_t fpga = next_free_offset;
+      next_free_offset += size;
+      assert(next_free_offset <= cpu_mem.get_size() &&
+             "FPGA-managed stream buffers exceed the modeled host memory");
+      return {(char *)cpu_mem.get_data() + fpga, fpga};
+    }
 
     simif_emul_t &simif;
+
+    /** Bump pointer for allocate_to_cpu_buffer. */
+    uint64_t next_free_offset = 0;
 
     /**
      * @brief A model of FPGA-addressable CPU-host memory.

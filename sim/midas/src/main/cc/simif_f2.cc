@@ -1,4 +1,8 @@
 #include <cassert>
+#include <cinttypes>
+#include <cstring>
+#include <utility>
+#include <vector>
 
 #include <fcntl.h>
 #include <sys/stat.h>
@@ -9,6 +13,7 @@
 #include "bridges/fpga_managed_stream.h"
 #include "core/simif.h"
 
+#include <fpga_dma_mem.h>
 #include <fpga_mgmt.h>
 #include <fpga_pci.h>
 
@@ -28,6 +33,10 @@ public:
   CPUManagedStreamIO &get_cpu_managed_stream_io() override { return *this; }
   FPGAManagedStreamIO &get_fpga_managed_stream_io() override { return *this; }
 
+  /** Ensure the FPGA is allowed to master the bus; abort only if it cannot
+   * be enabled (see definition). */
+  void ensure_bus_master_enabled(const struct fpga_pci_resource_map &map);
+
 private:
   uint32_t mmio_read(size_t addr) override { return read(addr); }
   void mmio_write(size_t addr, uint32_t value) override {
@@ -39,7 +48,10 @@ private:
   uint64_t get_beat_bytes() const override {
     return config.cpu_managed->beat_bytes();
   }
-  char *get_memory_base() override { return NULL; }
+  FPGAManagedStreams::HostBuffer allocate_to_cpu_buffer(size_t size) override;
+
+  /** Hugepages mapped for FPGA-managed streams, unmapped on teardown. */
+  std::vector<std::pair<uint64_t, size_t>> dma_buffers;
 
   // int edma_write_fd; // rh: i'm leaving this in as a reminder that the beta starts soon and all this work will be for nothing
   // int edma_read_fd;
@@ -199,6 +211,12 @@ void simif_f2_t::fpga_setup(int slot_id, const std::string &agfi) {
     }
   }
 
+  /* PCIM writes are silently dropped without bus mastering. Only designs with
+   * an FPGA-managed (PCIM) port need it; leave other designs untouched. */
+  if (config.fpga_managed) {
+    ensure_bus_master_enabled(info.spec.map[FPGA_APP_PF]);
+  }
+
   /* attach to BAR0 (OCL) */
   pci_bar_handle = PCI_BAR_HANDLE_INIT;
   rc = fpga_pci_attach(slot_id, FPGA_APP_PF, APP_PF_BAR0, 0, &pci_bar_handle);
@@ -212,7 +230,194 @@ void simif_f2_t::fpga_setup(int slot_id, const std::string &agfi) {
   printf("Attached to BAR4 (PCIS)\n");
 }
 
-simif_f2_t::~simif_f2_t() { fpga_shutdown(); }
+/**
+ * The FPGA masters PCIM writes with *physical* addresses, so a stream buffer
+ * has to be physically contiguous for its whole length. Userspace can only get
+ * that guarantee from a hugepage -- an ordinary anonymous mapping is contiguous
+ * in virtual address space and arbitrarily scattered in physical.
+ *
+ * fpga_dma_mem_map_huge() maps one default-size (2 MiB) hugepage and reports
+ * both addresses. One page per stream: slicing a single page across streams
+ * would cap their combined size at 2 MiB, whereas this caps each stream at
+ * 2 MiB independently.
+ *
+ * Requires free hugepages, e.g. `sudo sysctl -w vm.nr_hugepages=<n>`.
+ */
+FPGAManagedStreams::HostBuffer simif_f2_t::allocate_to_cpu_buffer(size_t size) {
+  constexpr size_t huge_page_bytes = 2 * 1024 * 1024;
+
+  if (size > huge_page_bytes) {
+    fprintf(stderr,
+            "Stream buffer of %zu bytes exceeds the %zu-byte hugepage backing "
+            "it. Reduce the bridge's fpgaBufferDepth, or extend this to map "
+            "1 GiB hugepages.\n",
+            size,
+            huge_page_bytes);
+    fpga_shutdown();
+    exit(1);
+  }
+
+  uint64_t virtual_address = 0;
+  uint64_t physical_address = 0;
+  int rc = fpga_dma_mem_map_huge(&virtual_address, &physical_address);
+  if (rc) {
+    fprintf(stderr,
+            "Could not map a hugepage for a %zu-byte stream buffer (rc=%d). "
+            "Are hugepages reserved? Try: sudo sysctl -w vm.nr_hugepages=%zu\n",
+            size,
+            rc,
+            dma_buffers.size() + 4);
+    fpga_shutdown();
+    exit(1);
+  }
+
+  // fpga_dma_mem_map_huge derives the physical address by reading
+  // /proc/self/pagemap, and checks only that the read returned 8 bytes -- not
+  // the page-present bit, and not whether the frame number is zero. Since Linux
+  // 4.0 an unprivileged reader gets the frame number masked to zero and the
+  // read still succeeds, so a driver without CAP_SYS_ADMIN is handed physical
+  // address 0 and told it succeeded.
+  //
+  // Programming that into the stream engine would point the FPGA's writes at
+  // low physical memory: either the shell rejects them and the stream silently
+  // stalls, or they land on memory belonging to something else. Refuse.
+  if (physical_address == 0) {
+    fprintf(
+        stderr,
+        "Hugepage mapped at va 0x%" PRIx64 " reports physical address 0, "
+        "which means /proc/self/pagemap returned a zeroed frame number.\n"
+        "This driver needs CAP_SYS_ADMIN to resolve DMA addresses -- run it "
+        "as root. Continuing would point FPGA writes at physical page 0.\n",
+        virtual_address);
+    fpga_dma_mem_unmap(&virtual_address, huge_page_bytes);
+    fpga_shutdown();
+    exit(1);
+  }
+
+  // A real hugepage is naturally aligned. If this address is not, the mapping
+  // is not what we asked for and it is not safe to assume the whole region is
+  // physically contiguous.
+  if ((physical_address % huge_page_bytes) != 0) {
+    fprintf(stderr,
+            "Hugepage physical address 0x%" PRIx64 " is not %zu-byte aligned, "
+            "so the region cannot be assumed physically contiguous.\n",
+            physical_address,
+            huge_page_bytes);
+    fpga_dma_mem_unmap(&virtual_address, huge_page_bytes);
+    fpga_shutdown();
+    exit(1);
+  }
+
+  // The FPGA writes into this region before the driver ever reads it, so a
+  // stale page would surface as plausible-looking garbage in a trace rather
+  // than as an obvious failure.
+  memset((void *)virtual_address, 0, size);
+
+  dma_buffers.emplace_back(virtual_address, huge_page_bytes);
+
+  fprintf(stderr,
+          "Stream buffer: %zu bytes at va 0x%" PRIx64 " -> pa 0x%" PRIx64 "\n",
+          size,
+          virtual_address,
+          physical_address);
+
+  return {(void *)virtual_address, physical_address};
+}
+
+/**
+ * Without PCIe Bus Master Enable the shell silently drops every PCIM write, so
+ * the FPGA appears to run while no data ever reaches host memory.
+ *
+ * Nothing sets the bit for us. No kernel driver binds to the FPGA -- fpga_pci
+ * mmaps BAR resources from sysfs in userspace -- so pci_set_master() is never
+ * called and COMMAND keeps its power-on value (Memory Space only) on every
+ * fresh instance, of every type, including after fpga-load-local-image. We are
+ * already root under sudo and already hold the device's config space open, so
+ * set the bit here rather than making every run-farm launch a manual setpci
+ * step. Abort only if it cannot be set, rather than let that present as an
+ * inexplicably empty stream.
+ */
+void simif_f2_t::ensure_bus_master_enabled(
+    const struct fpga_pci_resource_map &map) {
+  char path[256];
+  snprintf(path,
+           sizeof(path),
+           "/sys/bus/pci/devices/%04x:%02x:%02x.%d/config",
+           map.domain,
+           map.bus,
+           map.dev,
+           map.func);
+
+  FILE *fp = fopen(path, "r+b");
+  if (!fp) {
+    fprintf(stderr, "Warning: cannot open %s to set bus mastering.\n", path);
+    return;
+  }
+
+  // PCI COMMAND register: offset 0x4, bit 2 is Bus Master Enable.
+  uint16_t command = 0;
+  bool read_ok =
+      (fseek(fp, 0x4, SEEK_SET) == 0) && (fread(&command, 2, 1, fp) == 1);
+
+  if (!read_ok) {
+    fclose(fp);
+    fprintf(stderr, "Warning: cannot read PCI COMMAND from %s.\n", path);
+    return;
+  }
+
+  if (command & 0x4) {
+    fclose(fp);
+    return;
+  }
+
+  // Read-modify-write, so no other COMMAND bit is disturbed. A blind 16-bit
+  // store (what `setpci -s <bdf> 4.w=6` does) would clear anything else set.
+  const uint16_t desired = command | 0x4;
+  uint16_t readback = 0;
+  bool write_ok = (fseek(fp, 0x4, SEEK_SET) == 0) &&
+                  (fwrite(&desired, 2, 1, fp) == 1) && (fflush(fp) == 0);
+  bool verify_ok = write_ok && (fseek(fp, 0x4, SEEK_SET) == 0) &&
+                   (fread(&readback, 2, 1, fp) == 1);
+  fclose(fp);
+
+  if (verify_ok && (readback & 0x4)) {
+    fprintf(stderr,
+            "Enabled PCIe bus mastering on %04x:%02x:%02x.%d "
+            "(COMMAND 0x%04x -> 0x%04x).\n",
+            map.domain,
+            map.bus,
+            map.dev,
+            map.func,
+            command,
+            readback);
+    return;
+  }
+
+  fprintf(stderr,
+          "Bus mastering is disabled on %04x:%02x:%02x.%d and could not be "
+          "enabled, so the FPGA cannot write to host memory and every stream "
+          "would stall.\n"
+          "Enable it manually with:\n"
+          "    sudo setpci -s %04x:%02x:%02x.%d COMMAND=6:6\n",
+          map.domain,
+          map.bus,
+          map.dev,
+          map.func,
+          map.domain,
+          map.bus,
+          map.dev,
+          map.func);
+  fpga_shutdown();
+  exit(1);
+}
+
+simif_f2_t::~simif_f2_t() {
+  for (auto &buffer : dma_buffers) {
+    uint64_t va = buffer.first;
+    fpga_dma_mem_unmap(&va, buffer.second);
+  }
+  fpga_shutdown();
+}
 
 void simif_f2_t::write(size_t addr, uint32_t data) {
   // fprintf(stderr, "OCL write addr=0x%08lx <- value=0x%08x\n", addr, data); // rh: log OCL writes
