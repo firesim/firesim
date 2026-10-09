@@ -149,7 +149,7 @@ class F2Config
       case CtrlNastiKey                => NastiParameters(32, 32, 12)
       case HostMemChannelKey           =>
         HostMemChannelParams(
-          size      = 0x400000000L, // 16 GiB
+          size      = 0x1000000000L, // 64 GiB
           beatBytes = 8,
           idBits    = 16,
         )
