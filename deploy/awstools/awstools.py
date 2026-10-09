@@ -299,57 +299,23 @@ def farm_security_group_setup() -> None:
     # this security group will allow ingress ONLY from the firesim VPC, i.e.
     # managers and other build/run farm instances
     allowed_cidr = "192.168.0.0/16"
+    allowed_ipv6_cidrs = [
+        assoc["Ipv6CidrBlock"]
+        for assoc in firesimvpc.ipv6_cidr_block_association_set or []
+        if assoc["Ipv6CidrBlockState"]["State"] == "associated"
+    ]
 
     sec_group.authorize_ingress(
         IpPermissions=[
             {
                 "PrefixListIds": [],
-                "FromPort": 60000,
-                "IpRanges": [{"Description": "mosh", "CidrIp": allowed_cidr}],
-                "ToPort": 61000,
-                "IpProtocol": "udp",
+                "IpRanges": [{"Description": "firesim vpc", "CidrIp": allowed_cidr}],
+                "IpProtocol": "-1",
                 "UserIdGroupPairs": [],
-                "Ipv6Ranges": [],
-            },
-            {
-                "PrefixListIds": [],
-                "FromPort": 22,
-                "IpRanges": [{"CidrIp": allowed_cidr}],
-                "ToPort": 22,
-                "IpProtocol": "tcp",
-                "UserIdGroupPairs": [],
-                "Ipv6Ranges": [],
-            },
-            {
-                "PrefixListIds": [],
-                "FromPort": 10000,
-                "IpRanges": [
-                    {"Description": "firesim network model", "CidrIp": allowed_cidr}
+                "Ipv6Ranges": [
+                    {"Description": "firesim vpc", "CidrIpv6": cidr}
+                    for cidr in allowed_ipv6_cidrs
                 ],
-                "ToPort": 11000,
-                "IpProtocol": "tcp",
-                "UserIdGroupPairs": [],
-                "Ipv6Ranges": [],
-            },
-            {
-                "PrefixListIds": [],
-                "FromPort": 3389,
-                "IpRanges": [{"Description": "remote desktop", "CidrIp": allowed_cidr}],
-                "ToPort": 3389,
-                "IpProtocol": "tcp",
-                "UserIdGroupPairs": [],
-                "Ipv6Ranges": [],
-            },
-            {
-                "PrefixListIds": [],
-                "FromPort": 8443,
-                "IpRanges": [
-                    {"Description": "nice dcv (ipv4)", "CidrIp": allowed_cidr}
-                ],
-                "ToPort": 8443,
-                "IpProtocol": "tcp",
-                "UserIdGroupPairs": [],
-                "Ipv6Ranges": [],
             },
         ]
     )
