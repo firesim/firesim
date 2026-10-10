@@ -151,7 +151,11 @@ The final command should print the following:
     Success!
 
 This will have created a VPC named ``firesim`` and a security group named ``firesim`` in
-your account.
+your account. The ``firesim`` security group accepts SSH (TCP port 22) from any address
+and all traffic from inside the ``firesim`` VPC. It does not accept any other traffic from
+outside the VPC. If you need another port from outside the VPC (for example, UDP ports
+60000-61000 for ``mosh``), add an inbound rule for it to the ``firesim`` security group,
+and limit its source to your own IP address.
 
 Terminate the t2.nano
 ---------------------

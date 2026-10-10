@@ -65,57 +65,35 @@ def aws_setup():
 
     # allow all egress rule exists by default
 
-    # ingress rules
+    # ingress rules: ssh from anywhere, everything from inside the firesim VPC
+    vpc.reload()
+    vpc_ipv6_cidrs = [
+        assoc["Ipv6CidrBlock"]
+        for assoc in vpc.ipv6_cidr_block_association_set or []
+        if assoc["Ipv6CidrBlockState"]["State"] == "associated"
+    ]
     sec_group.authorize_ingress(
         IpPermissions=[
             {
                 "PrefixListIds": [],
-                "FromPort": 60000,
-                "IpRanges": [{"Description": "mosh", "CidrIp": "0.0.0.0/0"}],
-                "ToPort": 61000,
-                "IpProtocol": "udp",
-                "UserIdGroupPairs": [],
-                "Ipv6Ranges": [{"Description": "mosh", "CidrIpv6": "::/0"}],
-            },
-            {
-                "PrefixListIds": [],
                 "FromPort": 22,
-                "IpRanges": [{"CidrIp": "0.0.0.0/0"}],
+                "IpRanges": [{"Description": "ssh", "CidrIp": "0.0.0.0/0"}],
                 "ToPort": 22,
                 "IpProtocol": "tcp",
                 "UserIdGroupPairs": [],
-                "Ipv6Ranges": [],
+                "Ipv6Ranges": [{"Description": "ssh", "CidrIpv6": "::/0"}],
             },
             {
                 "PrefixListIds": [],
-                "FromPort": 10000,
                 "IpRanges": [
-                    {"Description": "firesim network model", "CidrIp": "0.0.0.0/0"}
+                    {"Description": "firesim vpc", "CidrIp": vpc.cidr_block}
                 ],
-                "ToPort": 11000,
-                "IpProtocol": "tcp",
+                "IpProtocol": "-1",
                 "UserIdGroupPairs": [],
                 "Ipv6Ranges": [
-                    {"Description": "firesim network model", "CidrIpv6": "::/0"}
+                    {"Description": "firesim vpc", "CidrIpv6": cidr}
+                    for cidr in vpc_ipv6_cidrs
                 ],
-            },
-            {
-                "PrefixListIds": [],
-                "FromPort": 3389,
-                "IpRanges": [{"Description": "remote desktop", "CidrIp": "0.0.0.0/0"}],
-                "ToPort": 3389,
-                "IpProtocol": "tcp",
-                "UserIdGroupPairs": [],
-                "Ipv6Ranges": [{"CidrIpv6": "::/0", "Description": "rdp"}],
-            },
-            {
-                "PrefixListIds": [],
-                "FromPort": 8443,
-                "IpRanges": [{"Description": "nice dcv (ipv4)", "CidrIp": "0.0.0.0/0"}],
-                "ToPort": 8443,
-                "IpProtocol": "tcp",
-                "UserIdGroupPairs": [],
-                "Ipv6Ranges": [{"Description": "nice dcv (ipv6)", "CidrIpv6": "::/0"}],
             },
         ]
     )

@@ -65,8 +65,17 @@ file.
 Using the ILA at Runtime
 ------------------------
 
-Prerequisite: Make sure that ports 8443, 3121 and 10201 are enabled in the "firesim" AWS
-security group.
+Prerequisite: The "firesim" AWS security group accepts all traffic from inside the
+``firesim`` VPC, so Vivado on the manager instance can reach ports 3121 and 10201 on the
+simulation instance. From outside the VPC, the security group accepts only SSH. To reach
+the NICE DCV server (port 8443) on the manager instance, forward the port through SSH
+from your local machine:
+
+.. code-block:: bash
+
+    ssh -i firesim.pem -L 8443:localhost:8443 ubuntu@YOUR_MANAGER_INSTANCE_IP
+
+Then connect the DCV client to ``localhost:8443``.
 
 In order to use the ILA, we must enable the GUI interface on our manager instance. In
 the past, AWS had a custom ``setup_gui.sh`` script. However, this was recently
