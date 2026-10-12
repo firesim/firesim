@@ -15,7 +15,8 @@ module overall_fpga_top(
     input wire pcie_perstn,
     `DIFF_CLK_PDEF(pcie_refclk),
 
-    input wire resetn
+    input wire resetn,
+    input wire fixed_100mhz_clk
 );
 
     wire sys_clk;
@@ -57,7 +58,7 @@ module overall_fpga_top(
 	`undef DDR4_PAR
 
 	`DIFF_CLK_CONNECT(default_250mhz_clk0, default_250mhz_clk0)
-
+        , .fixed_100mhz_clk(fixed_100mhz_clk)
 	`define AMBA_AXI4
 	`define AMBA_AXI_CACHE
 	`define AMBA_AXI_PROT
@@ -92,6 +93,21 @@ module overall_fpga_top(
         , .pci_express_x16_txp(pci_express_x16_txp)
         , .pcie_perstn(pcie_perstn)
 	`DIFF_CLK_CONNECT(pcie_refclk, pcie_refclk)
+
+        , .QSFP0_CHANNEL_UP(QSFP0_CHANNEL_UP)
+        , .TO_QSFP0_DATA(TO_QSFP0_DATA)
+        , .TO_QSFP0_VALID(TO_QSFP0_VALID)
+        , .TO_QSFP0_READY(TO_QSFP0_READY)
+        , .FROM_QSFP0_DATA(FROM_QSFP0_DATA)
+        , .FROM_QSFP0_VALID(FROM_QSFP0_VALID)
+        , .FROM_QSFP0_READY(FROM_QSFP0_READY)
+        , .QSFP1_CHANNEL_UP(QSFP1_CHANNEL_UP)
+        , .TO_QSFP1_DATA(TO_QSFP1_DATA)
+        , .TO_QSFP1_VALID(TO_QSFP1_VALID)
+        , .TO_QSFP1_READY(TO_QSFP1_READY)
+        , .FROM_QSFP1_DATA(FROM_QSFP1_DATA)
+        , .FROM_QSFP1_VALID(FROM_QSFP1_VALID)
+        , .FROM_QSFP1_READY(FROM_QSFP1_READY)
 
         , .sys_clk(sys_clk)
         , .sys_reset_n(sys_reset_n)
@@ -244,8 +260,25 @@ module overall_fpga_top(
         .io_slave_0_r_bits_resp(DDR4_0_S_AXI_rresp),
         .io_slave_0_r_bits_data(DDR4_0_S_AXI_rdata),
         .io_slave_0_r_bits_last(DDR4_0_S_AXI_rlast),
-        .io_slave_0_r_bits_id(DDR4_0_S_AXI_rid)
+        .io_slave_0_r_bits_id(DDR4_0_S_AXI_rid),
 
+        .io_qsfp_channel_up_0(QSFP0_CHANNEL_UP),
+        .io_qsfp_tx_0_ready(TO_QSFP0_READY),
+        .io_qsfp_tx_0_valid(TO_QSFP0_VALID),
+        .io_qsfp_tx_0_bits(TO_QSFP0_DATA),
+
+        .io_qsfp_rx_0_ready(FROM_QSFP0_READY),
+        .io_qsfp_rx_0_valid(FROM_QSFP0_VALID),
+        .io_qsfp_rx_0_bits(FROM_QSFP0_DATA),
+
+        .io_qsfp_channel_up_1(QSFP1_CHANNEL_UP),
+        .io_qsfp_tx_1_ready(TO_QSFP1_READY),
+        .io_qsfp_tx_1_valid(TO_QSFP1_VALID),
+        .io_qsfp_tx_1_bits(TO_QSFP1_DATA),
+
+        .io_qsfp_rx_1_ready(FROM_QSFP1_READY),
+        .io_qsfp_rx_1_valid(FROM_QSFP1_VALID),
+        .io_qsfp_rx_1_bits(FROM_QSFP1_DATA)
     );
 
 endmodule
