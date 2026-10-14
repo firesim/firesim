@@ -8,8 +8,6 @@
 #include <sys/ioctl.h>
 
 #define NET_IP_ALIGN 2
-#define ETH_MAX_WORDS 190
-#define ETH_MAX_BYTES 1518
 
 struct network_flit {
   uint64_t data;

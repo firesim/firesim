@@ -10,9 +10,14 @@
 #define MAC_ETHTYPE 0x8808
 #define PAUSE_CONTROL 0x0001
 
+// 1500 MTU + 18 Header = 1518B -> /8 = 189 + extra padding = 200
+// 9000 MTU + 18 Header = 9018B -> /8 = 1127 + extra padding = 1140
+#define ETH_MAX_WORDS 1140
+#define ETH_MAX_BYTES (ETH_MAX_WORDS * 8)
+
 struct switchpacket {
   uint64_t timestamp;
-  uint64_t dat[200];
+  uint64_t dat[ETH_MAX_WORDS];
   int amtwritten;
   int amtread;
   int sender;
