@@ -279,7 +279,7 @@ class VitisConfig
           )
         )
       case StreamEngineInstantiatorKey =>
-        (e: StreamEngineParameters, p: Parameters) => new FPGAManagedStreamEngine(p, e)
+        (e: StreamEngineParameters, p: Parameters) => new FPGAManagedStreamEngine(p, e, HostMemoryTarget)
       // Notes on width selection for the control bus
       // Address: This needs further investigation. 12 may not be sufficient when using many auto counters
       // ID:      AXI4Lite does not use ID bits. Use one here since Nasti (which
@@ -312,11 +312,11 @@ class WithPCIMPorts
     extends Config((_, _, _) => {
       case F1ShimHasPCIMPorts              => true
       case FPGAStreamEngineInstantiatorKey =>
-        (e: StreamEngineParameters, p: Parameters) => new FPGAManagedStreamEngine(p, e)
+        (e: StreamEngineParameters, p: Parameters) => new FPGAManagedStreamEngine(p, e, PeerFPGATarget)
       case FPGAManagedAXI4Key              =>
         Some(
           FPGAManagedAXI4Params(
-            size               = BigInt(1) << 64,        // 128GB (size of Bar 4)
+            size               = BigInt(1) << 64,        // full 64-bit bus address space (PCIM targets physical addresses)
             dataBits           = 512,                    // 512 bits set by FireSim default
             idBits             = 6,                      // 6 is a guess; based upon CPUManagedAXI4Params
             writeTransferSizes = TransferSizes(512 / 8), // Default for Firesim
@@ -336,6 +336,30 @@ class EC2F2Config
     extends Config(
       new WithPCIMPorts ++
         new F2Config
+    )
+
+/** Route to-host bridge streams over PCIM into host DRAM, rather than having the CPU drain them across the CPU-managed
+  * AXI4 interface.
+  *
+  * Limitation: FPGAManagedStreamEngine cannot serve FPGA-sunk (from-host) streams, so this supports to-host streams
+  * only.
+  *
+  * CPUManagedAXI4Key is deliberately left populated. Nothing binds it -- the engine exposes no inward node, so FPGATop
+  * creates no master for it and the shim ties the port off -- but the key still sizes the PCIS port, which the CL wires
+  * unconditionally.
+  */
+class WithFPGAManagedBridgeStreams
+    extends Config((_, _, _) => { case StreamEngineInstantiatorKey =>
+      (e: StreamEngineParameters, p: Parameters) => new FPGAManagedStreamEngine(p, e, HostMemoryTarget)
+    })
+
+/** EC2F2Config with to-host bridge streams DMA'd into host memory over PCIM. The F2 small shell has no DMA engine, so
+  * the CPU-managed path drains streams with 4-byte reads over BAR4; this is much faster for streaming-heavy bridges.
+  */
+class EC2F2PCIMConfig
+    extends Config(
+      new WithFPGAManagedBridgeStreams ++
+        new EC2F2Config
     )
 
 case object FireAxeNoCPartitionPass    extends Field[Boolean](false)
