@@ -106,13 +106,20 @@ To launch a manager instance, follow these steps:
 Access your instance
 ~~~~~~~~~~~~~~~~~~~~
 
-We **HIGHLY** recommend using `mosh <https://mosh.org/>`__ instead of ``ssh`` or using
-``ssh`` with a screen/tmux session running on your manager instance to ensure that
-long-running jobs are not killed by a bad network connection to your manager instance.
-On this instance, the ``mosh`` server is installed as part of the setup script we pasted
-before, so we need to first ssh into the instance and make sure the setup is complete.
+We **HIGHLY** recommend using ``ssh`` with a screen/tmux session running on your manager
+instance to ensure that long-running jobs are not killed by a bad network connection to
+your manager instance. The `mosh <https://mosh.org/>`__ server is also installed as part
+of the setup script we pasted before.
 
-In either case, ``ssh`` into your instance (e.g. ``ssh -i firesim.pem
+.. note::
+
+    The ``firesim`` security group accepts only SSH from outside the VPC, so ``mosh``
+    does not work by default. To use ``mosh``, add an inbound rule to the ``firesim``
+    security group for UDP ports 60000-61000, and set its source to your own IP address.
+    Do not open these ports to ``0.0.0.0/0`` or ``::/0``: this exposes the ``mosh``
+    server and any other program that listens on these UDP ports to the internet.
+
+First, ``ssh`` into your instance (e.g. ``ssh -i firesim.pem
 ubuntu@YOUR_INSTANCE_IP``) and wait until the ``/tmp/machine-launchstatus`` file
 contains all the following text:
 
