@@ -26,6 +26,9 @@ source $sourceFile
 check_file_exists [set sourceFile [retrieveVersionedFile ${root_dir}/scripts/${iboard}.tcl $vivado_version]]
 source $sourceFile
 
+check_file_exists [set sourceFile [retrieveVersionedFile ${root_dir}/scripts/bd_lib/create_aurora_exdes.tcl $vivado_version]]
+source $sourceFile
+
 # Cleanup
 delete_files [list ${root_dir}/vivado_proj/firesim.bit]
 
@@ -41,7 +44,10 @@ foreach addFile [list \
     ${root_dir}/design/helpers.vh \
     ${root_dir}/design/overall_fpga_top.v \
     ${root_dir}/design/FireSim-generated.sv \
-    ${root_dir}/design/FireSim-generated.defines.vh
+    ${root_dir}/design/FireSim-generated.defines.vh \
+    ${root_dir}/design/aurora/aurora_64b66b_0_driver.v \
+    ${root_dir}/design/aurora/aurora_64b66b_0_cdc_sync_exdes.v \
+    ${root_dir}/design/aurora/aurora_64b66b_0_utils.v \
 ] {
   set addFile [retrieveVersionedFile $addFile $vivado_version]
   check_file_exists $addFile

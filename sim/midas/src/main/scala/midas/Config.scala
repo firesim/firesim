@@ -183,7 +183,7 @@ class CorigineMimicTurboGTConfig
           beatBytes = 8,
           idBits    = 16,
         )
-      case F1ShimHasQSFPPorts  => false
+      case F1ShimHasQSFPPorts  => true
     }) ++ new XilinxAlveoU250Config)
 
 class XilinxAlveoV80Config
