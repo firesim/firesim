@@ -1,9 +1,5 @@
 set current_vivado_version [version -short]
 
-proc get_bd_lib_file { script_folder filename version } {
-  return $script_folder/bd_lib/$version/$filename
-}
-
 ##################################################################
 # START (i.e. create block design)
 ##################################################################

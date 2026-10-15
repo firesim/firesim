@@ -1,1 +1,0 @@
-../2022.1/create_aurora_exdes.tcl

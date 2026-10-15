@@ -26,7 +26,7 @@ source $sourceFile
 check_file_exists [set sourceFile [retrieveVersionedFile ${root_dir}/scripts/${iboard}.tcl $vivado_version]]
 source $sourceFile
 
-check_file_exists [set sourceFile [retrieveVersionedFile ${root_dir}/scripts/bd_lib/${vivado_version}/create_aurora_exdes.tcl $vivado_version]]
+check_file_exists [set sourceFile [get_bd_lib_file $script_folder create_aurora_exdes.tcl $vivado_version]]
 source $sourceFile
 
 # Cleanup
