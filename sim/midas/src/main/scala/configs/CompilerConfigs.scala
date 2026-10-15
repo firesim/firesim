@@ -200,7 +200,7 @@ class DefaultF2LLCConfig
 
 class DefaultF2BankedLLCConfig
     extends Config(
-      new FRFCFS16GBQuadRankBankedLLC6MB ++
+      new FRFCFS16GBQuadRankBankedLLC4MB ++
         new midas.F2Config
     )
 

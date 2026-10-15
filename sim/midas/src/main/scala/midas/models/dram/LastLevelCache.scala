@@ -161,11 +161,35 @@ class LLCModelIO(nastiParams: NastiParameters, val key: LLCParams)(implicit val 
   val settings = new LLCProgrammableSettings(key)
 }
 
-class LLCModel(nastiParams: NastiParameters, cfg: BaseConfig)(implicit p: Parameters) extends NastiModule(nastiParams) {
+// A bank of a BankedLLCModel (bankBits > 0) receives only the lines whose low line-address bits equal its
+// index, bankIdx. So it leaves those bits out of its set index, and adds them back to the line addresses
+// it sends to DRAM.
+class LLCModel(
+  nastiParams: NastiParameters,
+  cfg:         BaseConfig,
+  bankBits:    Int = 0,
+  bankIdx:     Int = 0,
+)(implicit
+  p:           Parameters
+) extends NastiModule(nastiParams) {
   val llcKey = cfg.params.llcKey.get
   val io     = IO(new LLCModelIO(nastiParams, llcKey))
 
   require(log2Ceil(llcKey.mshrs.max) <= nastiXIdBits, "Can have at most one MSHR per AXI ID")
+
+  def bankLocal(addr: UInt): UInt =
+    if (bankBits == 0) addr
+    else
+      ((addr >> (io.settings.blockBits +& bankBits.U)) << io.settings.blockBits) |
+        (addr & ((1.U << io.settings.blockBits) - 1.U))
+
+  def maskSet(addr: UInt): UInt = io.settings.maskSet(bankLocal(addr))
+  def maskTag(addr: UInt): UInt = io.settings.maskTag(bankLocal(addr))
+
+  def regenPhysicalAddress(set_addr: UInt, tag_addr: UInt): UInt = {
+    val addr = io.settings.regenPhysicalAddress(set_addr, tag_addr)
+    if (bankBits == 0) addr else (addr << bankBits) | (bankIdx.U << io.settings.blockBits)
+  }
 
   val maxTagBits    = llcKey.maxTagBits(nastiXAddrBits)
   val way_addr_mask = Reverse(MaskGen((llcKey.ways.max - 1).U, io.settings.wayBits, llcKey.ways.max))
@@ -201,12 +225,12 @@ class LLCModel(nastiParams: NastiParameters, cfg: BaseConfig)(implicit p: Parame
   val miss_resource_hazard = !mshr_available || !s2_aw_mem.io.enq.ready || !s2_ar_mem.io.enq.ready
 
   val reads              = Queue(io.req.ar)
-  val read_set           = io.settings.maskSet(reads.bits.addr)
+  val read_set           = maskSet(reads.bits.addr)
   val read_set_collision = mshrs.exists({ m: MSHR => m.setCollision(read_set) })
   val can_deq_read       = reads.valid && !read_set_collision && !miss_resource_hazard && io.rResp.ready
 
   val writes              = Queue(io.req.aw)
-  val write_set           = io.settings.maskSet(writes.bits.addr)
+  val write_set           = maskSet(writes.bits.addr)
   val write_set_collision = mshrs.exists({ m: MSHR => m.setCollision(write_set) })
   val can_deq_write       = writes.valid && !write_set_collision && !miss_resource_hazard && mshr_available && io.wResp.ready
 
@@ -219,7 +243,7 @@ class LLCModel(nastiParams: NastiParameters, cfg: BaseConfig)(implicit p: Parame
   val write_start  = WireInit(false.B)
 
   val set_addr = Mux(write_start, write_set, read_set)
-  val tag_addr = io.settings.maskTag(Mux(write_start, writes.bits.addr, reads.bits.addr))
+  val tag_addr = maskTag(Mux(write_start, writes.bits.addr, reads.bits.addr))
 
   // S1 = Tag matches, replacement candidate selection, and replacement policy update
   val s1_tag_addr = RegNext(tag_addr)
@@ -249,7 +273,7 @@ class LLCModel(nastiParams: NastiParameters, cfg: BaseConfig)(implicit p: Parame
 
   val do_evict        = !hit_valid && !empty_valid
   val evict_dirty_way = do_evict && evict_way_is_dirty
-  val dirty_line_addr = io.settings.regenPhysicalAddress(s1_set_addr, evict_way_tag)
+  val dirty_line_addr = regenPhysicalAddress(s1_set_addr, evict_way_tag)
 
   val selected_way_OH = Mux(hit_valid, hit_way_sel, Mux(empty_valid, empty_way_sel, evict_way_sel)).asBools
 
@@ -306,7 +330,7 @@ class LLCModel(nastiParams: NastiParameters, cfg: BaseConfig)(implicit p: Parame
   // Refill Issue
   // For now always fetch whole cache lines from DRAM, even if fewer beats are required for
   // a write-triggered refill
-  val current_line_addr = io.settings.regenPhysicalAddress(s1_set_addr, s1_tag_addr)
+  val current_line_addr = regenPhysicalAddress(s1_set_addr, s1_tag_addr)
   s2_ar_mem.io.enq.bits  := NastiReadAddressChannel(
     nastiParams,
     addr = current_line_addr,
@@ -493,7 +517,7 @@ class BankedLLCModel(nastiParams: NastiParameters, cfg: BaseConfig, nBanks: Int)
 
   // Instantiate N independent LLC banks
   val banks = Seq.tabulate(nBanks) { i =>
-    val bank = Module(new LLCModel(nastiParams, cfg))
+    val bank = Module(new LLCModel(nastiParams, cfg, bankBits, i))
     bank.suggestName(s"llc_bank_$i")
     bank
   }

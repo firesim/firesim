@@ -154,11 +154,10 @@ class FRFCFS8GBQuadRankLLC4MB
         new FRFCFS8GBQuadRank
     )
 
-// L3: 6MB, 6-way, 64B blocks, 2 banks
-// 2 banks x 4096 sets/bank x 6 ways x 64B = ~3MB per bank = 6MB total
-// (runtime-configurable: setBits=12, wayBits=log2(6)~3, blockBits=6)
-class FRFCFS16GBQuadRankBankedLLC6MB
+// 2 LLC banks of up to 2048 sets x 8 ways: 4 MB with 128 B blocks, the capacity of LLC4MB.
+// Ways and sets are powers of two, so a 6 MB, 6-way cache cannot be modeled.
+class FRFCFS16GBQuadRankBankedLLC4MB
     extends Config(
-      new WithLLCModel(4096, 8, banks = 2) ++
+      new WithLLCModel(2048, 8, banks = 2) ++
         new FRFCFS16GBQuadRank
     )
