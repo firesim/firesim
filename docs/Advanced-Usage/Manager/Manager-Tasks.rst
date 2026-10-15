@@ -140,8 +140,8 @@ code.
 
 .. note::
 
-    **It is highly recommended that you either run this command in a** ``screen`` **or
-    use** ``mosh`` **to access the manager instance. Builds will not finish if the
+    **It is highly recommended that you run this command in a** ``screen`` **or**
+    ``tmux`` **session on the manager instance. Builds will not finish if the
     manager is killed due to ssh disconnection from the manager instance.**
 
 When you run a build for a particular configuration, a directory named
