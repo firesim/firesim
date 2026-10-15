@@ -62,7 +62,7 @@ Now, we can run a build like so (while also pointing to Chipyard's recipes provi
 
 .. code-block:: bash
 
-    firesim buildbitstream -r -r ${CY_DIR}/sims/firesim-staging/sample_config_build_recipes.yaml
+    firesim buildbitstream -r ${CY_DIR}/sims/firesim-staging/sample_config_build_recipes.yaml
 
 This will run through the entire build process, taking the Chisel (or Verilog) RTL and
 producing a bitstream that runs on the |fpga_name| FPGA. This whole process will usually

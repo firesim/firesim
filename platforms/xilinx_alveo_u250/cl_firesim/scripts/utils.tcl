@@ -25,6 +25,7 @@ proc get_bd_lib_file { script_folder filename version } {
        2022.2 -
        2023.1 - 
        2023.2 - 
+       2023.2.2 -
        2024.1 - 
        2024.2 - 
        2025.1 - 
