@@ -27,13 +27,16 @@ class WithDefaultMemModel
   * modifiers
   */
 
-// Adds a LLC model with at most <maxSets> sets with <maxWays> ways
-class WithLLCModel(maxSets: Int, maxWays: Int)
+// Adds a LLC model with at most <maxSets> sets with <maxWays> ways.
+// banks > 1 creates independent LLC banks to reduce head-of-line blocking.
+// Constraint: log2(banks) + log2(mshrs.max) <= AXI ID width (typically 4 bits).
+class WithLLCModel(maxSets: Int, maxWays: Int, banks: Int = 1)
     extends Config((_, _, _) => { case LlcKey =>
       Some(
         LLCParams().copy(
-          ways = WRange(1, maxWays),
-          sets = WRange(1, maxSets),
+          ways  = WRange(1, maxWays),
+          sets  = WRange(1, maxSets),
+          banks = banks,
         )
       )
     })
@@ -116,6 +119,23 @@ class FRFCFS16GBQuadRankLLC4MB
       new WithLLCModel(4096, 8) ++
         new FRFCFS16GBQuadRank
     )
+// DDR3 FR-FCFS, 64 GB, 4 ranks x 8 banks
+class FRFCFS64GBQuadRank
+    extends Config(
+      new WithDramOrganization(maxRanks = 4, maxBanks = 8, dramSize = BigInt(1) << 36) ++
+        new FRFCFS16GBQuadRank
+    )
+class FRFCFS64GBQuadRankLLC4MB
+    extends Config(
+      new WithLLCModel(4096, 8) ++
+        new FRFCFS64GBQuadRank
+    )
+class FRFCFS64GBQuadRankBankedLLC4MB
+    extends Config(
+      new WithLLCModel(2048, 8, banks = 2) ++
+        new FRFCFS64GBQuadRank
+    )
+
 
 // DDR3 - FCFS models, 8GB
 class FCFS8GBQuadRank
@@ -142,4 +162,12 @@ class FRFCFS8GBQuadRankLLC4MB
     extends Config(
       new WithLLCModel(4096, 8) ++
         new FRFCFS8GBQuadRank
+    )
+
+// 2 LLC banks of up to 2048 sets x 8 ways: 4 MB with 128 B blocks, the capacity of LLC4MB.
+// Ways and sets are powers of two, so a 6 MB, 6-way cache cannot be modeled.
+class FRFCFS16GBQuadRankBankedLLC4MB
+    extends Config(
+      new WithLLCModel(2048, 8, banks = 2) ++
+        new FRFCFS16GBQuadRank
     )

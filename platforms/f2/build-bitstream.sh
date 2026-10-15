@@ -74,4 +74,4 @@ cd $CL_DIR/build/scripts
 # ./aws_build_dcp_from_cl.sh  -strategy $STRATEGY -frequency $FREQUENCY -foreground
 export CL_NAME=$(basename $CL_DIR)
 
-./aws_build_dcp_from_cl.py -c $CL_NAME --frequency $FREQUENCY --aws_clk_gen --clock_recipe_a A1  --clock_recipe_b B0 --clock_recipe_c C0 --mode small_shell
+./aws_build_dcp_from_cl.py -c $CL_NAME --frequency $FREQUENCY --strategy $STRATEGY --aws_clk_gen --clock_recipe_a A1  --clock_recipe_b B0 --clock_recipe_c C0 --mode small_shell
