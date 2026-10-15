@@ -72,6 +72,7 @@ class LLCProgrammableSettings(llcKey: LLCParams) extends Bundle with HasProgramm
   val writebacks    = Output(UInt(32.W))                             // Number of dirty lines returned to DRAM
   val refills       = Output(UInt(32.W))                             // Number of clean lines requested from DRAM
   val peakMSHRsUsed = Output(UInt(log2Ceil(llcKey.mshrs.max + 1).W)) // Peak number of MSHRs used
+  // Note in a BankedLLCModel, peakMSHRsUsed is the largest of the per-bank peaks, not the LLC-wide peak
   // Note short-burst writes will produce a refill, whereas releases from caches will not
 
   val registers = Seq(
