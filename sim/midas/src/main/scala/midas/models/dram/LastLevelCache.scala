@@ -596,8 +596,15 @@ class BankedLLCModel(nastiParams: NastiParameters, cfg: BaseConfig, nBanks: Int)
   }
   io.rResp <> rRespArb.io.out
 
+  // A bank raises wResp.valid for one cycle without waiting for ready (it checks ready before it
+  // starts the write). The arbiter takes one bank per cycle, so the queue keeps the response until then.
   val wRespArb = Module(new RRArbiter(new WriteResponseMetaData(nastiParams), nBanks))
-  banks.zipWithIndex.foreach { case (bank, i) => wRespArb.io.in(i) <> bank.io.wResp }
+  banks.zipWithIndex.foreach { case (bank, i) =>
+    val q = Module(new Queue(new WriteResponseMetaData(nastiParams), 1))
+    q.suggestName(s"wRespQueue_$i")
+    q.io.enq          <> bank.io.wResp
+    wRespArb.io.in(i) <> q.io.deq
+  }
   io.wResp <> wRespArb.io.out
 
   // ========== Memory-side request mux ==========
@@ -658,15 +665,24 @@ class BankedLLCModel(nastiParams: NastiParameters, cfg: BaseConfig, nBanks: Int)
     if (mshrBits > 0) id(mshrBits - 1, 0) else 0.U
 
   // Read response demux
-  val rRespBankId = decodeMemBankId(io.memRResp.bits.id)
-  banks.zipWithIndex.foreach { case (bank, i) =>
-    bank.io.memRResp.valid   := io.memRResp.valid && rRespBankId === i.U
-    bank.io.memRResp.bits    := io.memRResp.bits
-    bank.io.memRResp.bits.id := decodeMemMshrId(io.memRResp.bits.id)
+  // A bank takes a DRAM read response only when it is idle, so a bank that waits (for example for
+  // write data that is behind another bank's) must not block the other banks' responses. Each bank
+  // queues its responses, with room for one per MSHR, so the shared channel never waits on a bank.
+  val rRespBankId    = decodeMemBankId(io.memRResp.bits.id)
+  val memRRespQueues = banks.zipWithIndex.map { case (bank, i) =>
+    val q = Module(new Queue(new ReadResponseMetaData(nastiParams), llcKey.mshrs.max))
+    q.suggestName(s"memRRespQueue_$i")
+    q.io.enq.valid   := io.memRResp.valid && rRespBankId === i.U
+    q.io.enq.bits    := io.memRResp.bits
+    q.io.enq.bits.id := decodeMemMshrId(io.memRResp.bits.id)
+    bank.io.memRResp <> q.io.deq
+    q
   }
-  io.memRResp.ready := banks.zipWithIndex.map { case (bank, i) =>
-    bank.io.memRResp.ready && rRespBankId === i.U
-  }.reduce(_ || _)
+  io.memRResp.ready := memRRespQueues.zipWithIndex
+    .map { case (q, i) =>
+      q.io.enq.ready && rRespBankId === i.U
+    }
+    .reduce(_ || _)
 
   // Write response demux
   val wRespBankId = decodeMemBankId(io.memWResp.bits.id)
