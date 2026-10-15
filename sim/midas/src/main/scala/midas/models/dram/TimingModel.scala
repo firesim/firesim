@@ -133,15 +133,22 @@ abstract class TimingModel(val cfg: BaseConfig)(implicit val p: Parameters)
   xactionRelease.io.egressResp <> io.egressResp
 
   if (cfg.useLLCModel) {
-    // Drop the LLC model inline
-    val llc_model = Module(new LLCModel(p(NastiKey), cfg))
-    llc_model.io.settings       <> io.mmReg.llc.get
-    llc_model.io.memRResp       <> rResp
-    llc_model.io.memWResp       <> wResp
-    llc_model.io.req.fromNasti(io.tNasti)
-    nastiReqIden.io.in          <> llc_model.io.memReq
-    xactionRelease.io.nextWrite <> llc_model.io.wResp
-    xactionRelease.io.nextRead  <> llc_model.io.rResp
+    // Drop the LLC model inline; use banked variant to reduce HOL blocking
+    val llcKey  = cfg.params.llcKey.get
+    val llc_io = if (llcKey.banks > 1) {
+      val m = Module(new BankedLLCModel(p(NastiKey), cfg, llcKey.banks))
+      m.io
+    } else {
+      val m = Module(new LLCModel(p(NastiKey), cfg))
+      m.io
+    }
+    llc_io.settings       <> io.mmReg.llc.get
+    llc_io.memRResp       <> rResp
+    llc_io.memWResp       <> wResp
+    llc_io.req.fromNasti(io.tNasti)
+    nastiReqIden.io.in          <> llc_io.memReq
+    xactionRelease.io.nextWrite <> llc_io.wResp
+    xactionRelease.io.nextRead  <> llc_io.rResp
   } else {
     nastiReqIden.io.in.fromNasti(io.tNasti)
     xactionRelease.io.nextWrite <> wResp
