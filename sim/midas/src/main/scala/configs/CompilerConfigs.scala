@@ -191,16 +191,17 @@ class DefaultF2FRFCFS16GBQuadRankConfig
         new DefaultF2Config
     )
 
-// F2 platform configs with LLC + FR-FCFS DDR3 DRAM timing
+// F2 platform configs with LLC + FR-FCFS DDR3 DRAM timing, with the 64 GB DRAM layout of
+// F2's 64 GB host memory channel
 class DefaultF2LLCConfig
     extends Config(
-      new FRFCFS16GBQuadRankLLC4MB ++
+      new FRFCFS64GBQuadRankLLC4MB ++
         new midas.F2Config
     )
 
 class DefaultF2BankedLLCConfig
     extends Config(
-      new FRFCFS16GBQuadRankBankedLLC4MB ++
+      new FRFCFS64GBQuadRankBankedLLC4MB ++
         new midas.F2Config
     )
 
