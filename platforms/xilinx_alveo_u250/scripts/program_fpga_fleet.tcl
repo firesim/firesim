@@ -61,6 +61,30 @@ proc read_map_file {path} {
     return $entries
 }
 
+# Name of a JTAG device as Vivado gives it when its hw_target is opened on its own
+# (<part>_<chain index>, e.g. xcu250_0). Vivado adds suffixes such as _1 to the NAME
+# of a device that matches one on another target opened in the same session, so NAME
+# alone is not stable across sessions.
+proc jtag_name {dev} {
+    return "[string tolower [get_property PART $dev]]_[get_property INDEX $dev]"
+}
+
+# Device on the open hw_target that the FPGA database names dev_name. FPGA databases
+# written before devices were recorded by jtag_name hold the session NAME instead.
+proc find_device {dev_name} {
+    foreach d [get_hw_devices] {
+        if {[jtag_name $d] eq $dev_name} {
+            return $d
+        }
+    }
+    foreach d [get_hw_devices] {
+        if {[get_property NAME $d] eq $dev_name} {
+            return $d
+        }
+    }
+    error "no device $dev_name on this hw_target (devices: [get_hw_devices]); rerun firesim enumeratefpgas"
+}
+
 array set opts [parse_args]
 set entries [read_map_file $opts(-map_file)]
 
@@ -112,7 +136,7 @@ foreach entry $entries {
 
     if {[catch {
         open_hw_target $matched
-        set dev [get_hw_devices $dev_name]
+        set dev [find_device $dev_name]
         current_hw_device $dev
         set_property PROGRAM.FILE $bit $dev
         program_hw_devices $dev
