@@ -1200,6 +1200,20 @@ class XilinxAlveoInstanceDeployManager(InstanceDeployManager):
                 check_script(cmd)
                 run(f"""sudo {cmd} 0000:{bdf}""")
 
+    def check_bus_master(self) -> None:
+        """Fail early if any slot's FPGA has PCI-E bus mastering disabled (it could not DMA)."""
+        if self.instance_assigned_simulations():
+            for slotno in range(len(self.parent_node.sim_slots)):
+                bdf = self.slot_to_bdf(slotno, self.parent_node.get_fpga_db())
+                control = run(f"lspci -s {bdf} -vv | grep -o 'BusMaster[+-]'")
+                self.instance_logger(
+                    f"""FPGA Slot: {slotno} (bdf:{bdf}) {control.strip()}"""
+                )
+                if "BusMaster+" not in control:
+                    raise Exception(
+                        f"FPGA slot {slotno} ({bdf}) has PCI-E bus mastering disabled after reloading xdma; DMA to it would hang"
+                    )
+
     def change_all_pcie_perms(self) -> None:
         bdfs = [
             {"busno": "0x" + i[:2], "devno": "0x" + i[3:5], "capno": "0x" + i[6:7]}
@@ -1234,8 +1248,16 @@ class XilinxAlveoInstanceDeployManager(InstanceDeployManager):
                 self.unload_xdma()
                 # flash fpgas
                 self.flash_fpgas()
+                # Reconnecting a flashed FPGA can autoload xdma, which probes the
+                # device (enabling PCI-E bus mastering) before firesim-fpga-util.py
+                # rewrites the command register with 'setpci COMMAND=0x02', clearing
+                # Bus Master again. Without it the FPGA cannot DMA and the first
+                # host-to-FPGA transfer times out. Reload xdma so the probe, and its
+                # pci_set_master(), happens after the setpci.
+                self.unload_xdma()
                 # load xdma driver
                 self.load_xdma()
+                self.check_bus_master()
                 # change pcie permissions
                 self.change_pcie_perms()
 
