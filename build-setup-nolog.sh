@@ -87,9 +87,9 @@ if [ "$IS_LIBRARY" = true ]; then
         echo "Using existing RISCV toolchain at $RISCV"
     fi
 
-    # the chipyard conda environment should be installed already and have all requirements
-    if [ -z "${CONDA_DEFAULT_ENV+x}" ]; then
-        echo "ERROR: No conda environment detected. If using Chipyard, did you source 'env.sh'."
+    # Pixi exports CONDA_PREFIX too, for package and compiler compatibility.
+    if [ -z "${PIXI_ENVIRONMENT_NAME:-}${CONDA_DEFAULT_ENV:-}" ]; then
+        echo "ERROR: No environment detected. If using Chipyard, source env.sh first."
         exit 5
     fi
 else
@@ -134,15 +134,28 @@ END_CONDA_ACTIVATE
 fi
 
 
-# Fab Classic 1.21 uses upstream Paramiko by default.  Pin it so that behavior
-# cannot change, and remove either Paramiko distribution first because both
-# install a module named "paramiko".
-echo $'\033[0;32mFireSim:\033[0m Installing Fab Classic with Paramiko 2.9.0'
-pip uninstall -y paramiko-ng paramiko fab-classic 2>/dev/null || true
-pip install --no-cache-dir --no-deps "fab-classic==1.21.0"
-# Do not let pip re-resolve Paramiko's dependencies: it can replace Conda's cryptography
-# with an incompatible version, causing pyOpenSSL's GEN_EMAIL import failure.
-pip install --force-reinstall --no-deps "paramiko==2.9.0"
+if [ -n "${PIXI_ENVIRONMENT_NAME:-}" ]; then
+    # Chipyard's Pixi manifest owns these versions. Mutating its prefix with pip
+    # would invalidate the lock and potentially replace cryptography / pyOpenSSL.
+    python3 - <<'CHECK_PIXI_DEPS'
+from importlib.metadata import version
+for package, expected in (("fab-classic", "1.21.0"), ("paramiko", "2.9.0")):
+    actual = version(package)
+    if actual != expected:
+        raise RuntimeError(f"{package} {actual} installed; expected {expected}. Run pixi install.")
+CHECK_PIXI_DEPS
+else
+    # Fab Classic 1.21 uses upstream Paramiko by default.  Pin it so that behavior
+    # cannot change, and remove either Paramiko distribution first because both
+    # install a module named "paramiko".
+    echo $'\033[0;32mFireSim:\033[0m Installing Fab Classic with Paramiko 2.9.0'
+    pip uninstall -y paramiko-ng paramiko fab-classic 2>/dev/null || true
+    pip install --no-cache-dir --no-deps "fab-classic==1.21.0"
+    # Do not let pip re-resolve Paramiko's dependencies: it can replace Conda's cryptography
+    # with an incompatible version, causing pyOpenSSL's GEN_EMAIL import failure.
+    pip install --force-reinstall --no-deps "paramiko==2.9.0"
+
+fi
 
 # init all submodules except for chipyard
 git config submodule.target-design/chipyard.update none
@@ -156,7 +169,11 @@ if [ "$IS_LIBRARY" = true ]; then
     CHIPYARD_DIR="$FDIR/../.."
 
     # chipyard env.sh should be sourced in library mode.
-    env_append "source $CHIPYARD_DIR/env.sh"
+    if [ -n "${PIXI_ENVIRONMENT_NAME:-}" ]; then
+        env_append "source \"$CHIPYARD_DIR/scripts/pixi-env.sh\" $PIXI_ENVIRONMENT_NAME || return \$?"
+    else
+        env_append "source \"$CHIPYARD_DIR/env.sh\""
+    fi
 fi
 
 cd "$FDIR"
