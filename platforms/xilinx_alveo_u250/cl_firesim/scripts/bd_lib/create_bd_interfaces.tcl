@@ -41,6 +41,7 @@ proc create_ddr_intf_port { name firesim_freq_hz } {
    set_property -dict [ list \
       CONFIG.FREQ_HZ $firesim_freq_hz \
       CONFIG.DATA_WIDTH 64 \
+      CONFIG.ADDR_WIDTH 34 \
    ] $i
    return $i
 }
