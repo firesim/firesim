@@ -133,7 +133,7 @@ class F1Config
     }) ++ new SimConfig)
 
 class F2Config
-    extends Config(new Config((_, _, _) => {
+    extends Config(new WithPCIMPorts ++ new Config((_, _, _) => {
       case Platform                    => (p: Parameters) => new F1Shim()(p)
       case HasDMAChannel               => true
       case StreamEngineInstantiatorKey => (e: StreamEngineParameters, p: Parameters) => new CPUManagedStreamEngine(p, e)
@@ -332,12 +332,6 @@ class EC2F1Config
         new F1Config
     )
 
-class EC2F2Config
-    extends Config(
-      new WithPCIMPorts ++
-        new F2Config
-    )
-
 /** Route to-host bridge streams over PCIM into host DRAM, rather than having the CPU drain them across the CPU-managed
   * AXI4 interface.
   *
@@ -353,13 +347,13 @@ class WithFPGAManagedBridgeStreams
       (e: StreamEngineParameters, p: Parameters) => new FPGAManagedStreamEngine(p, e, HostMemoryTarget)
     })
 
-/** EC2F2Config with to-host bridge streams DMA'd into host memory over PCIM. The F2 small shell has no DMA engine, so
+/** F2Config with to-host bridge streams DMA'd into host memory over PCIM. The F2 small shell has no DMA engine, so
   * the CPU-managed path drains streams with 4-byte reads over BAR4; this is much faster for streaming-heavy bridges.
   */
 class EC2F2PCIMConfig
     extends Config(
       new WithFPGAManagedBridgeStreams ++
-        new EC2F2Config
+        new F2Config
     )
 
 case object FireAxeNoCPartitionPass    extends Field[Boolean](false)
