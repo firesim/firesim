@@ -96,7 +96,7 @@ class BaseF2Config
       new WithDefaultMemModel ++
         new WithWiringTransform ++
         new WithAsyncResetReplacement ++
-        new midas.EC2F2Config
+        new midas.F2Config
     )
 
 /** BaseF2Config, but with to-host bridge streams DMA'd into host memory over PCIM instead of drained by the CPU over
