@@ -9,7 +9,9 @@ header := $(GENERATED_DIR)/$(BASE_FILE_NAME).const.h
 
 # The midas-generated simulator RTL which will be baked into the FPGA shell project
 simulator_verilog := $(GENERATED_DIR)/$(BASE_FILE_NAME).sv
-simulator_xdc := $(GENERATED_DIR)/$(BASE_FILE_NAME).synthesis.xdc
+# For metasims a simulator XDC file isn't created (thus the rule will always run since it thinks it should create the file from it).
+# For now, comment this out.
+#simulator_xdc := $(GENERATED_DIR)/$(BASE_FILE_NAME).synthesis.xdc
 
 # Pre-simulation-mapping annotations which includes all Bridge Annotations
 # extracted used to generate new runtime configurations.
