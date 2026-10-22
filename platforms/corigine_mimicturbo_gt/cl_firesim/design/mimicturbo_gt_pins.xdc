@@ -7,7 +7,7 @@ set_property PACKAGE_PIN P56 [get_ports default_250mhz_clk0_clk_n]
 set_property IOSTANDARD DIFF_SSTL12 [get_ports default_250mhz_clk0_clk_p]
 set_property IOSTANDARD DIFF_SSTL12 [get_ports default_250mhz_clk0_clk_n]
 
-create_clock period 10.000 [get_ports fixed_100mhz_clk]
+create_clock -period 10.000 [get_ports fixed_100mhz_clk]
 set_property PACKAGE_PIN AM49 [get_ports fixed_100mhz_clk]
 set_property IOSTANDARD LVCMOS18 [get_ports fixed_100mhz_clk]
 
