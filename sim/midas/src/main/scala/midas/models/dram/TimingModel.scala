@@ -134,7 +134,7 @@ abstract class TimingModel(val cfg: BaseConfig)(implicit val p: Parameters)
 
   if (cfg.useLLCModel) {
     // Drop the LLC model inline; use banked variant to reduce HOL blocking
-    val llcKey  = cfg.params.llcKey.get
+    val llcKey = cfg.params.llcKey.get
     val llc_io = if (llcKey.banks > 1) {
       val m = Module(new BankedLLCModel(p(NastiKey), cfg, llcKey.banks))
       m.io
@@ -142,9 +142,9 @@ abstract class TimingModel(val cfg: BaseConfig)(implicit val p: Parameters)
       val m = Module(new LLCModel(p(NastiKey), cfg))
       m.io
     }
-    llc_io.settings       <> io.mmReg.llc.get
-    llc_io.memRResp       <> rResp
-    llc_io.memWResp       <> wResp
+    llc_io.settings <> io.mmReg.llc.get
+    llc_io.memRResp             <> rResp
+    llc_io.memWResp             <> wResp
     llc_io.req.fromNasti(io.tNasti)
     nastiReqIden.io.in          <> llc_io.memReq
     xactionRelease.io.nextWrite <> llc_io.wResp

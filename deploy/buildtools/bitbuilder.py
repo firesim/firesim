@@ -269,7 +269,9 @@ class F2BitBuilder(BitBuilder):
                 capture=True,
             )
             if "-dirty" in aws_fpga_upstream_version:
-                aws_fpga_upstream_version = aws_fpga_upstream_version.replace("-dirty", "")
+                aws_fpga_upstream_version = aws_fpga_upstream_version.replace(
+                    "-dirty", ""
+                )
                 rootLogger.critical(
                     "Unable to use local changes to aws-fpga. Continuing without them."
                 )
@@ -284,7 +286,12 @@ class F2BitBuilder(BitBuilder):
             local_dir=local_awsfpga_dir,
             remote_dir=dest_f2_platform_dir,
             ssh_opts="-o StrictHostKeyChecking=no",
-            exclude=["hdk/cl/developer_designs/cl_*", ".git", "hdk/common/ip", "hdk/common/shell_stable/hlx"],
+            exclude=[
+                "hdk/cl/developer_designs/cl_*",
+                ".git",
+                "hdk/common/ip",
+                "hdk/common/shell_stable/hlx",
+            ],
             extra_opts="-l",
             capture=True,
         )
@@ -293,7 +300,12 @@ class F2BitBuilder(BitBuilder):
         rsync_cap = rsync_project(
             local_dir=f"{local_awsfpga_dir}/{fpga_build_postfix}/*",
             remote_dir=f"{dest_awsfpga_dir}/{fpga_build_postfix}",
-            exclude=["build/checkpoints", ".git", "hdk/common/ip", "hdk/common/shell_stable/hlx"],
+            exclude=[
+                "build/checkpoints",
+                ".git",
+                "hdk/common/ip",
+                "hdk/common/shell_stable/hlx",
+            ],
             ssh_opts="-o StrictHostKeyChecking=no",
             extra_opts="-l",
             capture=True,
@@ -521,6 +533,7 @@ class F2BitBuilder(BitBuilder):
             return True
         else:
             return None
+
 
 class VitisBitBuilder(BitBuilder):
     """Bit builder class that builds a Vitis bitstream from the build config.

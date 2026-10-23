@@ -119,9 +119,8 @@ of the setup script we pasted before.
     Do not open these ports to ``0.0.0.0/0`` or ``::/0``: this exposes the ``mosh``
     server and any other program that listens on these UDP ports to the internet.
 
-First, ``ssh`` into your instance (e.g. ``ssh -i firesim.pem
-ubuntu@YOUR_INSTANCE_IP``) and wait until the ``/tmp/machine-launchstatus`` file
-contains all the following text:
+First, ``ssh`` into your instance (e.g. ``ssh -i firesim.pem ubuntu@YOUR_INSTANCE_IP``)
+and wait until the ``/tmp/machine-launchstatus`` file contains all the following text:
 
 .. code-block:: bash
 

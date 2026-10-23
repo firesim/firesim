@@ -708,7 +708,9 @@ class EC2InstanceDeployManager(InstanceDeployManager):
                     capture=True,
                 )
                 if "-dirty" in aws_fpga_upstream_version:
-                    aws_fpga_upstream_version = aws_fpga_upstream_version.replace("-dirty", "")
+                    aws_fpga_upstream_version = aws_fpga_upstream_version.replace(
+                        "-dirty", ""
+                    )
                     rootLogger.critical(
                         "Unable to use local changes to aws-fpga. Continuing without them."
                     )
@@ -718,7 +720,9 @@ class EC2InstanceDeployManager(InstanceDeployManager):
                 )
             )
             with warn_only():
-                run("git clone https://github.com/firesim/aws-fpga-firesim-f2.git aws-fpga")
+                run(
+                    "git clone https://github.com/firesim/aws-fpga-firesim-f2.git aws-fpga"
+                )
                 run("cd aws-fpga && git checkout " + aws_fpga_upstream_version)
             with cd(f"/home/{os.environ['USER']}/aws-fpga"):
                 run("source sdk_setup.sh")
@@ -735,9 +739,9 @@ class EC2InstanceDeployManager(InstanceDeployManager):
                 f"/home/{os.environ['USER']}/xdma/",
                 mirror_local_mode=True,
             )
-            with cd(
-                f"/home/{os.environ['USER']}/xdma/linux-kernel/xdma/"
-            ), prefix("export PATH=/usr/bin:$PATH"):
+            with cd(f"/home/{os.environ['USER']}/xdma/linux-kernel/xdma/"), prefix(
+                "export PATH=/usr/bin:$PATH"
+            ):
                 # prefix only needed if conda env is earlier in PATH
                 # see build-setup-nolog.sh for explanation.
                 run("make clean")
@@ -910,7 +914,7 @@ class EC2InstanceDeployManager(InstanceDeployManager):
             self.instance_logger("Loading XDMA Driver Kernel Module.")
             # TODO: can make these values automatically be chosen based on link lat
             run(
-                f"sudo insmod /home/{os.environ['USER']}/xdma/linux-kernel/xdma/xdma.ko poll_mode=1"  # rh: renamed to fit submodule 
+                f"sudo insmod /home/{os.environ['USER']}/xdma/linux-kernel/xdma/xdma.ko poll_mode=1"  # rh: renamed to fit submodule
             )
 
     def start_ila_server(self) -> None:
@@ -1234,7 +1238,9 @@ class XilinxAlveoInstanceDeployManager(InstanceDeployManager):
 
             # Program all slots with a single Vivado session
             map_file = f"{self.get_remote_sim_dir_for_slot(0)}/bitstream_map.txt"
-            run(f"""printf '%s\\n' {" ".join(shlex.quote(l) for l in bitstream_map)} > {map_file}""")
+            run(
+                f"""printf '%s\\n' {" ".join(shlex.quote(l) for l in bitstream_map)} > {map_file}"""
+            )
 
             # Use a system wide installed firesim-fpga-util.py
             cmd = f"{script_path}/firesim-fpga-util.py"
@@ -1600,7 +1606,11 @@ class XilinxVCU118InstanceDeployManager(InstanceDeployManager):
                 # TODO: is "Partial Reconfig Clear File" useful (see xvsecctl help)?
                 bdfs = [
                     # Cannot hardcode capno to 0x1 here, if 0x1 change permissions sometimes cannot find the device in /sys/bus/pci/devices/
-                    {"busno": "0x" + i[:2], "devno": "0x" + i[3:5], "capno": "0x" + i[6:7]}
+                    {
+                        "busno": "0x" + i[:2],
+                        "devno": "0x" + i[3:5],
+                        "capno": "0x" + i[6:7],
+                    }
                     for i in collect.splitlines()
                     if len(i.strip()) >= 0
                 ]

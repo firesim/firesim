@@ -60,12 +60,14 @@ def get_incremented_f2_ami_name(ami_name: str, increment: int) -> str:
     """For an ami_name of the format "STUFF - X.Y.Z-hash-stuff",
     return ami_name, but with Z incremented by increment for auto-bumping the AMI on hotfix releases. Uses Regex in case ami_nname has variable spaces between `-`
     """
+
     def replacer(match):
         x, y, z = map(int, match.group().split("."))
         return f"{x}.{y}.{z + increment}"
 
     # Replace the first occurrence of a version number like X.Y.Z
     return re.sub(r"\b\d+\.\d+\.\d+\b", replacer, ami_name, count=1)
+
 
 class MockBoto3Instance:
     """This is used for testing without actually launching instances."""
@@ -130,7 +132,7 @@ def get_localhost_instance_info(url_ext: str) -> Optional[str]:
     res = None
 
     with settings(ok_ret_codes=[0, 7, 28]), hide("everything"):
-        base = "http://169.254.169.254/latest/" #rh: new method for IMDSv2 compatibility on f2. check later, should 21600 be increased?
+        base = "http://169.254.169.254/latest/"  # rh: new method for IMDSv2 compatibility on f2. check later, should 21600 be increased?
         token_cmd = f"curl -S --connect-timeout {curl_connection_timeout} -X PUT -H 'X-aws-ec2-metadata-token-ttl-seconds: 21600' {base}api/token"
         token_res = local(token_cmd, capture=True)
         token = token_res.stdout.strip()
@@ -146,6 +148,7 @@ def get_localhost_instance_info(url_ext: str) -> Optional[str]:
     else:
         rootLogger.debug("Non-AWS Host Detected")
         return None
+
 
 def get_localhost_instance_id() -> Optional[str]:
     """Get current manager instance id, if applicable.
