@@ -153,7 +153,7 @@ Next, install the cable drivers like so:
 .. note::
 
     Run Farm Machines that only have Xilinx Alveo V80 FPGAs do not need the XDMA and
-    XVSEC drivers and can skip this step.
+    XVSEC drivers and can skip this step. Only the Xilinx VCU118 needs the XVSEC driver.
 
 .. warning::
 
@@ -162,18 +162,21 @@ Next, install the cable drivers like so:
 
 .. warning::
 
-    We use a non-Xilinx given XDMA/XVSEC repository since the mainline repository hasn't
-    updated to 6.4.0+ kernels yet.
+    Use the ``firesim-fixes`` branch of FireSim's fork of the Xilinx drivers,
+    `firesim/dma_ip_drivers <https://github.com/firesim/dma_ip_drivers>`_. It adds fixes
+    to the Xilinx XDMA driver that FireSim needs. In poll mode, the Xilinx driver can
+    crash the machine when one FPGA is reprogrammed while a simulation runs on another.
+    That happens whenever a run farm host is shared, for example when several FireSim
+    runs or users use different FPGAs on the same machine. Also, on newer kernels such
+    as 6.17, the Xilinx driver does not build.
 
-First, run the following to clone the XDMA kernel module source:
+First, run the following to clone the driver source:
 
 .. code-block:: bash
 
     cd ~/   # or any directory you would like to work from
-    git clone https://github.com/joonho3020/dma_ip_drivers
-    cd dma_ip_drivers
-    git checkout ubuntu-24-xdma
-    cd XDMA/linux-kernel/xdma
+    git clone -b firesim-fixes https://github.com/firesim/dma_ip_drivers
+    cd dma_ip_drivers/XDMA/linux-kernel/xdma
 
 .. note::
 
@@ -186,6 +189,20 @@ First, run the following to clone the XDMA kernel module source:
 .. code-block:: bash
 
     sudo make install
+
+This installs the driver under ``/lib/modules/$(uname -r)/updates/``, which ``modprobe``
+searches before the kernel's own modules (Linux 6.3 and later include an unrelated
+driver also named ``xdma``).
+
+.. note::
+
+    If the build fails because the compiler differs from the one that built the kernel
+    (``cat /proc/version`` shows it), pass that compiler to ``make``, for example ``sudo
+    make install CC=x86_64-linux-gnu-gcc-13``.
+
+    If you are replacing an XDMA driver installed from another repository, remove that
+    driver's ``xdma.ko`` from ``/lib/modules/$(uname -r)/`` and run ``sudo depmod -a``
+    first. ``modinfo -F filename xdma`` shows which module ``modprobe`` will load.
 
 FireSim requires the XDMA driver to run in poll mode. Make this the driver's default
 option, so that it also applies when the kernel loads the driver on its own (e.g., when
@@ -206,16 +223,11 @@ Now, test that the module can be inserted:
 The second command above should have produced output indicating that the XDMA driver is
 loaded, and the third should print ``1``.
 
-Next, we will do the same for the XVSEC driver, which is pulled from a separate
-repository due to kernel version incompatibility:
+If you use a Xilinx VCU118, build and install the XVSEC driver from the same repository:
 
 .. code-block:: bash
 
-    cd ~/   # or any directory you would like to work from
-    git clone https://github.com/joonho3020/dma_ip_drivers dma_ip_drivers_xvsec
-    cd dma_ip_drivers_xvsec
-    git checkout ubuntu-24-xvsec
-    cd XVSEC/linux-kernel/
+    cd ~/dma_ip_drivers/XVSEC/linux-kernel/
 
     make clean all
     sudo make install
