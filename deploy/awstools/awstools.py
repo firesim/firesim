@@ -674,6 +674,7 @@ def launch_run_instances(
     spotmaxprice: str,
     timeout: timedelta,
     always_expand: bool,
+    ami_id: Optional[str] = None,
 ) -> List[EC2InstanceResource]:
     return launch_instances(
         instancetype,
@@ -683,6 +684,7 @@ def launch_run_instances(
         spotmaxprice,
         timeout=timeout,
         always_expand=always_expand,
+        ami_id=ami_id,
         blockdevices=[
             {
                 "DeviceName": "/dev/sda1",
