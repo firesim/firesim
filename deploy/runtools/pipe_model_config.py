@@ -276,15 +276,13 @@ class AbstractPipeToPipeConfig:
         assert partition_config is not None
         batch_size = partition_config.batch_size
         return """screen -S {} -d -m bash -c "script -f -c '{} ./{} {}' pipelog"; sleep 1""".format(
-            self.pipe_binary_name(),
+            self.fsimpipenode.get_host_instance().get_screen_name(
+                self.pipe_binary_name()
+            ),
             "sudo" if sudo else "",
             self.pipe_binary_name(),
             batch_size,
         )
-
-    def kill_pipe_simulation_command(self) -> str:
-        """Return the command to kill the pipe."""
-        return """pkill -f -SIGKILL {}""".format(self.pipe_binary_name())
 
     def pipe_build_local_dir(self) -> str:
         """get local build dir of the pipe."""

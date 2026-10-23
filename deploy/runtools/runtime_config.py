@@ -457,6 +457,7 @@ class RuntimeHWConfig:
         cutbridge_idxs: List[int],
         extra_plusargs: str,
         extra_args: str,
+        screen_name: str,
     ) -> str:
         """return the command used to boot the simulation. this has to have
         some external params passed to it, because not everything is contained
@@ -513,8 +514,6 @@ class RuntimeHWConfig:
         dwarf_file_name = "+dwarf-file-name=" + all_bootbinaries[0] + "-dwarf"
 
         need_sudo = "sudo" if is_on_aws() else ""
-
-        screen_name = "fsim{}".format(slotid)
 
         # TODO: supernode support (tracefile, trace-select.. etc)
         permissive_driver_args = []
@@ -590,12 +589,6 @@ class RuntimeHWConfig:
         )
 
         return screen_wrapped
-
-    def get_kill_simulation_command(self) -> str:
-        driver = self.get_local_driver_binaryname()
-        need_sudo = "sudo" if is_on_aws() else ""
-        # Note that pkill only works for names <=15 characters
-        return f"""{need_sudo} pkill -SIGKILL {driver[:15]}"""
 
     def handle_failure(
         self, buildresult: _stdoutString, what: str, dir: Path | str, cmd: str
@@ -871,6 +864,7 @@ class RuntimeBuildRecipeConfig(RuntimeHWConfig):
         cutbridge_idxs: List[int],
         extra_plusargs: str,
         extra_args: str,
+        screen_name: str,
     ) -> str:
         """return the command used to boot the meta simulation."""
         full_extra_plusargs = (
@@ -903,6 +897,7 @@ class RuntimeBuildRecipeConfig(RuntimeHWConfig):
             cutbridge_idxs,
             full_extra_plusargs,
             full_extra_args,
+            screen_name,
         )
 
 

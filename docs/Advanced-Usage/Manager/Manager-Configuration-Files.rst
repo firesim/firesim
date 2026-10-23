@@ -773,7 +773,9 @@ EC2InstanceDeployManager``.
 ``default_simulation_dir``
 ++++++++++++++++++++++++++
 
-This is the default path on all run farm hosts that simulations will run out of.
+This is the default path on all run farm hosts that simulations will run out of. Runs
+that share a run farm host must each use a different simulation directory (see
+:ref:`sharing-run-farm-host`).
 
 ``run_farm_hosts_to_use``
 +++++++++++++++++++++++++
@@ -796,6 +798,39 @@ number of FPGAs it supports (``num_fpgas``), number of metasims it could support
 ``override_simulation_dir`` to override the ``default_simulation_dir`` for that specific
 run farm host. Similarly, a specification can optionally add ``override_platform`` to
 choose a different ``default_platform`` for that specific run farm host.
+
+.. _sharing-run-farm-host:
+
+Sharing a Run Farm Host
+-----------------------
+
+Several FireSim runs can use one run farm host at the same time, each on its own FPGAs:
+for example, several users sharing one machine with several FPGAs as ``localhost``, or
+one user running several workloads side by side. Each run uses its own
+``config_runtime.yaml`` and needs:
+
+- **Its own simulation directory**, set with ``default_simulation_dir`` or
+  ``override_simulation_dir``. FireSim derives a tag from the directory (for example
+  ``r1a2b3c4d``) and adds it to the run's screen names (``fsim0-r1a2b3c4d``,
+  ``switch0-r1a2b3c4d``) and shared-memory ports. So runs don't wait on or connect to
+  each other's simulations, and ``firesim kill`` only stops the run whose configuration
+  it is given.
+- **Its own FPGAs.** Simulations use FPGAs in the order of the run's FPGA database, so
+  give each run a ``default_fpga_db`` (or ``override_fpga_db``) that lists only its
+  FPGAs. FireSim does not track which FPGAs other runs or users are using: agree on that
+  beforehand.
+
+A host can run any number of non-FireAxe runs side by side, plus at most one FireAxe
+(partitioned) run: FireAxe's pipes and QSFP metasimulations name their shared memory
+without the run's tag.
+
+On FPGAs that use the XDMA driver (e.g. Xilinx Alveo), ``firesim infrasetup`` and
+``firesim enumeratefpgas`` unload XDMA from the whole host while they program FPGAs, so
+they fail while another run's simulation is running there. Run ``firesim infrasetup``
+for every run before starting any of their simulations.
+
+Each user sharing the host needs the setup in :ref:`initial-local-setup`, including
+membership in the ``firesim`` group.
 
 .. _build-farm-recipe:
 

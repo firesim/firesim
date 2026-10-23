@@ -176,6 +176,24 @@ class WorkloadConfig:
         # import code
         # code.interact(local=locals())
 
+    def make_job_results_dir(self) -> None:
+        """Create the results directory. Runs launched from the same deploy directory in the
+        same second with the same workload would otherwise share it, so if the name is taken,
+        add -2, -3, ... until mkdir creates a new directory."""
+        base = self.job_results_dir.rstrip("/")
+        os.makedirs(os.path.dirname(base), exist_ok=True)
+        path, n = base, 1
+        while True:
+            try:
+                os.mkdir(path)
+                break
+            except FileExistsError:
+                n += 1
+                path = f"{base}-{n}"
+        self.job_results_dir = path + "/"
+        self.job_monitoring_dir = self.job_results_dir + ".monitoring-dir/"
+        os.mkdir(self.job_monitoring_dir)
+
     def get_job(self, index: int) -> JobConfig:
         if not self.uniform_mode:
             return self.jobs[index]

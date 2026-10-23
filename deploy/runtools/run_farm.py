@@ -5,6 +5,7 @@ import logging
 import time
 import abc
 import os
+import hashlib
 from datetime import timedelta
 from fabric.api import run, env, prefix, put, cd, warn_only, local, settings, hide  # type: ignore
 from fabric.contrib.project import rsync_project  # type: ignore
@@ -123,6 +124,24 @@ class Inst(metaclass=abc.ABCMeta):
     def get_sim_dir(self) -> str:
         assert self.sim_dir is not None
         return self.sim_dir
+
+    def get_run_tag(self) -> str:
+        """Tag for this run's screens and shared memory on this host.
+
+        Derived from the simulation directory, which each run on a host already has
+        to itself, so runs that share a host (e.g. on different FPGAs) don't see,
+        kill or reuse each other's simulations, switches, pipes or shmem ports.
+        """
+        sim_dir = os.path.normpath(self.get_sim_dir())
+        return "r" + hashlib.sha1(sim_dir.encode()).hexdigest()[:8]
+
+    def get_screen_name(self, base: str) -> str:
+        """Name of this run's screen for base (fsim<slot>, switch<id> or pipe<id>)."""
+        return f"{base}-{self.get_run_tag()}"
+
+    def get_shmem_name(self, base: str) -> str:
+        """Name of this run's shmem port for base (a link id, or "default")."""
+        return f"{self.get_run_tag()}_{base}"
 
     def set_fpga_db(self, f: str) -> None:
         self.fpga_db = f
