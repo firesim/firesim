@@ -97,7 +97,9 @@ else
     # done with cloning base then installing conda lock to speed up dependency solving.
     CONDA_LOCK_ENV_PATH=$FDIR/.conda-lock-env
     rm -rf $CONDA_LOCK_ENV_PATH
-    conda create -y -p $CONDA_LOCK_ENV_PATH -c conda-forge $(grep "conda-lock" $FDIR/conda-reqs/firesim.yaml | sed 's/^ \+-//')
+    # pin python as well as conda-lock: unpinned, conda picks the newest python, which can be too new for
+    # this conda-lock (e.g. python 3.15 removed sre_parse, which conda-lock 2.5.7's vendored lark imports).
+    conda create -y -p $CONDA_LOCK_ENV_PATH -c conda-forge $(grep -E "^\s+- (python|conda-lock)[=<>]" $FDIR/conda-reqs/firesim.yaml | sed 's/^ \+-//')
     source $(conda info --base)/etc/profile.d/conda.sh
     conda activate $CONDA_LOCK_ENV_PATH
 
