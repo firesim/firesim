@@ -293,15 +293,15 @@ class RunFarm(metaclass=abc.ABCMeta):
 
     def needs_fpga_enumeration(self) -> bool:
         """Check if any host in the run farm needs FPGA enumeration.
-        
+
         Returns True if at least one host's platform requires enumeration.
         Platforms like VCU118 discover BDFs dynamically and don't need enumeration.
-        """ 
+        """
         for ip_addr, host_list in self.run_farm_hosts_dict.items():
             for inst, _ in host_list:
                 deploy_manager = inst.instance_deploy_manager
                 # Default to True if attribute not defined (conservative)
-                if getattr(deploy_manager, 'NEED_ENUMERATION', True):
+                if getattr(deploy_manager, "NEED_ENUMERATION", True):
                     return True
         return False
 
@@ -350,7 +350,6 @@ class RunFarm(metaclass=abc.ABCMeta):
     def terminate_by_inst(self, inst: Inst) -> None:
         """Terminate run farm host based on Inst object."""
         raise NotImplementedError
-    
 
 
 def invert_filter_sort(input_dict: Dict[str, int]) -> List[Tuple[int, str]]:

@@ -85,9 +85,7 @@ def aws_setup():
             },
             {
                 "PrefixListIds": [],
-                "IpRanges": [
-                    {"Description": "firesim vpc", "CidrIp": vpc.cidr_block}
-                ],
+                "IpRanges": [{"Description": "firesim vpc", "CidrIp": vpc.cidr_block}],
                 "IpProtocol": "-1",
                 "UserIdGroupPairs": [],
                 "Ipv6Ranges": [

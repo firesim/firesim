@@ -136,7 +136,6 @@ class FRFCFS64GBQuadRankBankedLLC4MB
         new FRFCFS64GBQuadRank
     )
 
-
 // DDR3 - FCFS models, 8GB
 class FCFS8GBQuadRank
     extends Config(

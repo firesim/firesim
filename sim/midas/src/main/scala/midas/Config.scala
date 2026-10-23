@@ -177,25 +177,25 @@ class XilinxAlveoU280Config extends XilinxAlveoU200Config
 
 class CorigineMimicTurboGTConfig
     extends Config(new Config((_, _, _) => {
-      case HostMemChannelKey   =>
+      case HostMemChannelKey  =>
         HostMemChannelParams(
           size      = 0x200000000L, // 8 GiB — MimicTurbo GT has 4× 16 Gb x16 DDR4 components
           beatBytes = 8,
           idBits    = 16,
         )
-      case F1ShimHasQSFPPorts  => true
+      case F1ShimHasQSFPPorts => true
     }) ++ new XilinxAlveoU250Config)
 
 class XilinxAlveoV80Config
     extends Config(new Config((_, _, _) => {
-      case HostMemChannelKey   =>
+      case HostMemChannelKey  =>
         HostMemChannelParams(
           size      = 0x800000000L, // 32 GiB — V80 DDR4 capacity
           beatBytes = 8,
           idBits    = 16,
         )
       // The V80 shell's io_pcis port is 6 bits wide
-      case CPUManagedAXI4Key   =>
+      case CPUManagedAXI4Key  =>
         Some(
           CPUManagedAXI4Params(
             addrBits = 64,
@@ -203,7 +203,7 @@ class XilinxAlveoV80Config
             idBits   = 6,
           )
         )
-      case F1ShimHasQSFPPorts  => false
+      case F1ShimHasQSFPPorts => false
     }) ++ new XilinxAlveoU250Config)
 
 class NitefuryConfig
@@ -347,8 +347,8 @@ class WithFPGAManagedBridgeStreams
       (e: StreamEngineParameters, p: Parameters) => new FPGAManagedStreamEngine(p, e, HostMemoryTarget)
     })
 
-/** F2Config with to-host bridge streams DMA'd into host memory over PCIM. The F2 small shell has no DMA engine, so
-  * the CPU-managed path drains streams with 4-byte reads over BAR4; this is much faster for streaming-heavy bridges.
+/** F2Config with to-host bridge streams DMA'd into host memory over PCIM. The F2 small shell has no DMA engine, so the
+  * CPU-managed path drains streams with 4-byte reads over BAR4; this is much faster for streaming-heavy bridges.
   */
 class EC2F2PCIMConfig
     extends Config(

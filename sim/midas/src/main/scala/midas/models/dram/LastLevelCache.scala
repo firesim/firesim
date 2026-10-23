@@ -133,8 +133,8 @@ case class LLCParams(
   ways:       WRange = WRange(1, 8),
   sets:       WRange = WRange(32, 4096),
   blockBytes: WRange = WRange(8, 128),
-  mshrs:      WRange = WRange(1, 8),// TODO: check against AXI ID width
-  banks:      Int    = 1,           // Number of independent LLC banks (must be power of 2)
+  mshrs:      WRange = WRange(1, 8), // TODO: check against AXI ID width
+  banks:      Int    = 1,            // Number of independent LLC banks (must be power of 2)
 ) {
 
   def maxTagBits(addrWidth: Int): Int = addrWidth - blockBytes.minBits - sets.minBits
@@ -553,9 +553,11 @@ class BankedLLCModel(nastiParams: NastiParameters, cfg: BaseConfig, nBanks: Int)
     bank.io.req.ar.valid := io.req.ar.valid && readBankSel === i.U
     bank.io.req.ar.bits  := io.req.ar.bits
   }
-  io.req.ar.ready := banks.zipWithIndex.map { case (bank, i) =>
-    bank.io.req.ar.ready && readBankSel === i.U
-  }.reduce(_ || _)
+  io.req.ar.ready := banks.zipWithIndex
+    .map { case (bank, i) =>
+      bank.io.req.ar.ready && readBankSel === i.U
+    }
+    .reduce(_ || _)
 
   // AW (write address) demux by address; gated on W FIFO having space
   val writeBankSel = bankSelect(io.req.aw.bits.addr)
@@ -563,9 +565,11 @@ class BankedLLCModel(nastiParams: NastiParameters, cfg: BaseConfig, nBanks: Int)
     bank.io.req.aw.valid := io.req.aw.valid && writeBankSel === i.U && wBankFifo.io.enq.ready
     bank.io.req.aw.bits  := io.req.aw.bits
   }
-  io.req.aw.ready := wBankFifo.io.enq.ready && banks.zipWithIndex.map { case (bank, i) =>
-    bank.io.req.aw.ready && writeBankSel === i.U
-  }.reduce(_ || _)
+  io.req.aw.ready := wBankFifo.io.enq.ready && banks.zipWithIndex
+    .map { case (bank, i) =>
+      bank.io.req.aw.ready && writeBankSel === i.U
+    }
+    .reduce(_ || _)
 
   wBankFifo.io.enq.valid := io.req.aw.fire
   wBankFifo.io.enq.bits  := writeBankSel
@@ -577,9 +581,11 @@ class BankedLLCModel(nastiParams: NastiParameters, cfg: BaseConfig, nBanks: Int)
     bank.io.req.w.valid := io.req.w.valid && wFifoValid && currentWBank === i.U
     bank.io.req.w.bits  := io.req.w.bits
   }
-  io.req.w.ready         := wFifoValid && banks.zipWithIndex.map { case (bank, i) =>
-    bank.io.req.w.ready && currentWBank === i.U
-  }.reduce(_ || _)
+  io.req.w.ready := wFifoValid && banks.zipWithIndex
+    .map { case (bank, i) =>
+      bank.io.req.w.ready && currentWBank === i.U
+    }
+    .reduce(_ || _)
   wBankFifo.io.deq.ready := io.req.w.fire && io.req.w.bits.last
 
   // ========== Target-side response mux ==========
@@ -592,7 +598,7 @@ class BankedLLCModel(nastiParams: NastiParameters, cfg: BaseConfig, nBanks: Int)
   banks.zipWithIndex.foreach { case (bank, i) =>
     val q = Module(new Queue(new ReadResponseMetaData(nastiParams), 1))
     q.suggestName(s"rRespQueue_$i")
-    q.io.enq <> bank.io.rResp
+    q.io.enq          <> bank.io.rResp
     rRespArb.io.in(i) <> q.io.deq
   }
   io.rResp <> rRespArb.io.out
@@ -619,10 +625,10 @@ class BankedLLCModel(nastiParams: NastiParameters, cfg: BaseConfig, nBanks: Int)
   // AR (read address) arbiter with ID rewriting
   val memArArb = Module(new RRArbiter(new NastiReadAddressChannel(nastiParams), nBanks))
   banks.zipWithIndex.foreach { case (bank, i) =>
-    memArArb.io.in(i).valid := bank.io.memReq.ar.valid
-    memArArb.io.in(i).bits  := bank.io.memReq.ar.bits
+    memArArb.io.in(i).valid   := bank.io.memReq.ar.valid
+    memArArb.io.in(i).bits    := bank.io.memReq.ar.bits
     memArArb.io.in(i).bits.id := encodeMemId(i, bank.io.memReq.ar.bits.id)
-    bank.io.memReq.ar.ready := memArArb.io.in(i).ready
+    bank.io.memReq.ar.ready   := memArArb.io.in(i).ready
   }
   io.memReq.ar <> memArArb.io.out
 
@@ -631,25 +637,25 @@ class BankedLLCModel(nastiParams: NastiParameters, cfg: BaseConfig, nBanks: Int)
 
   val memAwArb = Module(new RRArbiter(new NastiWriteAddressChannel(nastiParams), nBanks))
   banks.zipWithIndex.foreach { case (bank, i) =>
-    memAwArb.io.in(i).valid := bank.io.memReq.aw.valid
-    memAwArb.io.in(i).bits  := bank.io.memReq.aw.bits
+    memAwArb.io.in(i).valid   := bank.io.memReq.aw.valid
+    memAwArb.io.in(i).bits    := bank.io.memReq.aw.bits
     memAwArb.io.in(i).bits.id := encodeMemId(i, bank.io.memReq.aw.bits.id)
-    bank.io.memReq.aw.ready := memAwArb.io.in(i).ready && memWBankFifo.io.enq.ready
+    bank.io.memReq.aw.ready   := memAwArb.io.in(i).ready && memWBankFifo.io.enq.ready
   }
-  io.memReq.aw.valid       := memAwArb.io.out.valid && memWBankFifo.io.enq.ready
-  io.memReq.aw.bits        := memAwArb.io.out.bits
-  memAwArb.io.out.ready    := io.memReq.aw.ready && memWBankFifo.io.enq.ready
+  io.memReq.aw.valid := memAwArb.io.out.valid && memWBankFifo.io.enq.ready
+  io.memReq.aw.bits         := memAwArb.io.out.bits
+  memAwArb.io.out.ready     := io.memReq.aw.ready && memWBankFifo.io.enq.ready
   memWBankFifo.io.enq.valid := io.memReq.aw.fire
   memWBankFifo.io.enq.bits  := memAwArb.io.chosen
 
   // W (write data) routing from banks to DRAM, ordered by AW grant sequence
   val currentMemWBank = memWBankFifo.io.deq.bits
   val memWFifoValid   = memWBankFifo.io.deq.valid
-  io.memReq.w.valid := memWFifoValid && Mux1H(
+  io.memReq.w.valid         := memWFifoValid && Mux1H(
     UIntToOH(currentMemWBank),
     banks.map(_.io.memReq.w.valid),
   )
-  io.memReq.w.bits := Mux1H(
+  io.memReq.w.bits          := Mux1H(
     UIntToOH(currentMemWBank),
     banks.map(_.io.memReq.w.bits),
   )
@@ -692,7 +698,9 @@ class BankedLLCModel(nastiParams: NastiParameters, cfg: BaseConfig, nBanks: Int)
     bank.io.memWResp.bits    := io.memWResp.bits
     bank.io.memWResp.bits.id := decodeMemMshrId(io.memWResp.bits.id)
   }
-  io.memWResp.ready := banks.zipWithIndex.map { case (bank, i) =>
-    bank.io.memWResp.ready && wRespBankId === i.U
-  }.reduce(_ || _)
+  io.memWResp.ready := banks.zipWithIndex
+    .map { case (bank, i) =>
+      bank.io.memWResp.ready && wRespBankId === i.U
+    }
+    .reduce(_ || _)
 }

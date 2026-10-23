@@ -127,7 +127,9 @@ class WorkloadConfig:
     job_results_dir: str
     job_monitoring_dir: str
 
-    def __init__(self, workloadfilename: str, launch_time: str, suffixtag: str) -> None:
+    def __init__(
+        self, workloadfilename: str, launch_time: str, suffixtag: Optional[str]
+    ) -> None:
         self.workloadfilename = self.workloadinputs + workloadfilename
         workloadjson = None
         with open(self.workloadfilename) as json_data:
