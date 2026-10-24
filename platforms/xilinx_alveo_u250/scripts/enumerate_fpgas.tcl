@@ -90,6 +90,14 @@ proc wait_for_marker {name {timeout_s 600}} {
     }
 }
 
+# Name of a JTAG device as Vivado gives it when its hw_target is opened on its own
+# (<part>_<chain index>, e.g. xcu250_0). Vivado adds suffixes such as _1 to the NAME
+# of a device that matches one on another target opened in the same session, so NAME
+# alone is not stable across sessions.
+proc jtag_name {dev} {
+    return "[string tolower [get_property PART $dev]]_[get_property INDEX $dev]"
+}
+
 proc program_target {hw_target dev_name bit_path} {
     open_hw_target $hw_target
     set dev [get_hw_devices $dev_name]
@@ -134,7 +142,7 @@ foreach hw_target [get_hw_targets] {
     puts "ENUM: hw_target=$hw_target hw_dev=$hw_dev hw_uid=$hw_uid"
     lappend targets $hw_target
     lappend devs $hw_dev
-    lappend entries "  \{\"uid\": \"$hw_uid\", \"device\": \"$hw_dev\", \"hw_target\": \"$hw_target\"\}"
+    lappend entries "  \{\"uid\": \"$hw_uid\", \"device\": \"[jtag_name $hw_dev]\", \"hw_target\": \"$hw_target\"\}"
 }
 
 set f [open [file join $options(-work_dir) "serials.json"] w]
