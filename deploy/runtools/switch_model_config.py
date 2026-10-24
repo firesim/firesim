@@ -9,7 +9,6 @@ import string
 import logging
 from fabric.api import local  # type: ignore
 
-from runtools.utils import is_on_aws
 
 from typing import TYPE_CHECKING
 
@@ -62,7 +61,9 @@ class AbstractSwitchToSwitchConfig:
             )
 
         else:
-            linkbasename = linkobj.get_global_link_id()
+            linkbasename = self.fsimswitchnode.get_host_instance().get_shmem_name(
+                linkobj.get_global_link_id()
+            )
             return (
                 "new ShmemPort("
                 + str(target_local_portno)
@@ -86,7 +87,9 @@ class AbstractSwitchToSwitchConfig:
                 + ");\n"
             )
         else:
-            linkbasename = downlinkobj.get_global_link_id()
+            linkbasename = self.fsimswitchnode.get_host_instance().get_shmem_name(
+                downlinkobj.get_global_link_id()
+            )
             return (
                 "new ShmemPort("
                 + str(downlinkno)
@@ -224,17 +227,14 @@ class AbstractSwitchToSwitchConfig:
         bandwidth = self.fsimswitchnode.switch_bandwidth
         # insert gdb -ex run --args in front of ./ below to start switches in gdb
         return """screen -S {} -d -m bash -c "script -f -c './{} {} {} {}' switchlog"; sleep 1""".format(
-            self.switch_binary_name(),
+            self.fsimswitchnode.get_host_instance().get_screen_name(
+                self.switch_binary_name()
+            ),
             self.switch_binary_name(),
             linklatency,
             switchlatency,
             bandwidth,
         )
-
-    def kill_switch_simulation_command(self) -> str:
-        """Return the command to kill the switch."""
-        need_sudo = "sudo" if is_on_aws() else ""
-        return f"""{need_sudo} pkill -f -SIGKILL {self.switch_binary_name()}"""
 
     def switch_build_local_dir(self) -> str:
         """get local build dir of the switch."""

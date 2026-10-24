@@ -337,10 +337,11 @@ class FireSimServerNode(FireSimNode):
         """get the command to run a simulation. assumes it will be
         called in a directory where its required_files are already located.
         """
-        shmemportname = "default"
+        host = self.get_host_instance()
+        shmemportname = host.get_shmem_name("default")
         cutbridge_idxs = []
         if self.uplinks:
-            shmemportname = self.uplinks[0].get_global_link_id()
+            shmemportname = host.get_shmem_name(self.uplinks[0].get_global_link_id())
 
             for ul in self.uplinks:
                 rootLogger.info(f"ul {ul}, ul.uplink_size {ul.uplink_side}")
@@ -391,6 +392,7 @@ class FireSimServerNode(FireSimNode):
                 cutbridge_idxs,
                 plusargs,
                 "",
+                self.get_host_instance().get_screen_name(f"fsim{slotno}"),
             )
         )
 
@@ -565,12 +567,6 @@ class FireSimServerNode(FireSimNode):
                 )
                 rootLogger.debug(rsync_cap)
                 rootLogger.debug(rsync_cap.stderr)
-
-    def get_sim_kill_command(self, slotno: int) -> str:
-        """return the command to kill the simulation. assumes it will be
-        called in a directory where its required_files are already located.
-        """
-        return self.get_resolved_server_hardware_config().get_kill_simulation_command()
 
     def get_tarball_files_paths(self) -> List[Tuple[str, str]]:
         """Return local and remote paths of all stuff destined for the driver tarball
@@ -793,10 +789,17 @@ class FireSimSuperNodeServerNode(FireSimServerNode):
             assert sibling.server_bw_max is not None
             all_maxbws.append(sibling.server_bw_max)
 
-        all_shmemportnames = ["default" for x in range(num_siblings)]
+        host = self.get_host_instance()
+        all_shmemportnames = [
+            host.get_shmem_name("default") for x in range(num_siblings)
+        ]
         if self.uplinks:
-            all_shmemportnames = [self.uplinks[0].get_global_link_id()] + [
-                self.supernode_get_sibling(x).uplinks[0].get_global_link_id()
+            all_shmemportnames = [
+                host.get_shmem_name(self.uplinks[0].get_global_link_id())
+            ] + [
+                host.get_shmem_name(
+                    self.supernode_get_sibling(x).uplinks[0].get_global_link_id()
+                )
                 for x in range(1, num_siblings)
             ]
 
@@ -822,6 +825,7 @@ class FireSimSuperNodeServerNode(FireSimServerNode):
                 [],
                 plusargs,
                 "",
+                self.get_host_instance().get_screen_name(f"fsim{slotno}"),
             )
         )
 
@@ -947,9 +951,6 @@ class FireSimSwitchNode(FireSimNode):
     def get_switch_start_command(self) -> str:
         return self.switch_builder.get_switch_simulation_command()
 
-    def get_switch_kill_command(self) -> str:
-        return self.switch_builder.kill_switch_simulation_command()
-
     def copy_back_switchlog_from_run(
         self, job_results_dir: str, switch_slot_no: int
     ) -> None:
@@ -1012,9 +1013,6 @@ class FireSimPipeNode(FireSimNode):
     def get_pipe_start_command(self, sudo: bool) -> str:
         assert self.partition_config is not None
         return self.pipe_builder.get_pipe_simulation_command(sudo)
-
-    def get_pipe_kill_command(self) -> str:
-        return self.pipe_builder.kill_pipe_simulation_command()
 
     def get_required_files_local_paths(self) -> List[Tuple[str, str]]:
         """Return local paths of all stuff needed to run this simulation as

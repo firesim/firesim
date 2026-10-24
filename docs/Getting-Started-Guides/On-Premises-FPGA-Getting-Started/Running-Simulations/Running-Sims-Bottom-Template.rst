@@ -103,6 +103,11 @@ run:
 
     screen -r fsim0
 
+FireSim names each screen with a suffix that identifies the run, like
+``fsim0-r1a2b3c4d``, so that several runs can share a host (see
+:ref:`sharing-run-farm-host`). ``screen -r`` accepts the start of a name, so ``screen -r
+fsim0`` works as long as only one run on the host has a slot 0.
+
 Voila! You should now see Linux booting on the simulated system and then be prompted
 with a Linux login prompt, like so:
 

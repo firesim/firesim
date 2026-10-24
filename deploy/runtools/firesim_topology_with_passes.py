@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import re
 import time
 import os
 import pprint
@@ -771,9 +772,11 @@ class FireSimTopologyWithPasses:
 
         def screens() -> None:
             """poll on screens to make sure kill succeeded."""
+            # only wait on this run's screens: other runs on the host have their own tag
+            tag = re.escape(self.run_farm.lookup_by_host(env.host_string).get_run_tag())
             with warn_only():
                 rootLogger.info("Confirming exit...")
-                # keep checking screen until it reports that there are no screens left
+                # keep checking screen until it reports that this run has no screens left
                 while True:
                     run("screen -wipe || true")  # wipe any potentially dead screens
                     screenoutput = run("screen -ls")
@@ -785,16 +788,10 @@ class FireSimTopologyWithPasses:
                         and "virtual_jtag" in screenoutput
                     ):
                         break
-                    # If AutoILA is disabled, confirm exit when there is no fsim, switch or pipe screen.
-                    # Previously, it only exited successfully when there was no screen at all. However,
-                    # that lead to pathological behaviors when there were other screens running.
-                    elif (
-                        ("fsim" in screenoutput)
-                        or ("switch" in screenoutput)
-                        or ("pipe" in screenoutput)
+                    # Otherwise, confirm exit when this run has no fsim, switch or pipe screen.
+                    if not re.search(
+                        rf"\.(fsim|switch|pipe)[0-9]+-{tag}\s", screenoutput + " "
                     ):
-                        continue
-                    else:
                         break
                     time.sleep(1)
 
@@ -878,23 +875,10 @@ class FireSimTopologyWithPasses:
             x.get_host() for x in self.run_farm.get_all_bound_host_nodes()
         ]
 
+        self.workload.make_job_results_dir()
         rootLogger.info(
-            """Creating the directory: {}""".format(self.workload.job_results_dir)
+            """Created the directory: {}""".format(self.workload.job_results_dir)
         )
-        localcap = local(
-            """mkdir -p {}""".format(self.workload.job_results_dir), capture=True
-        )
-        rootLogger.debug("[localhost] " + str(localcap))
-        rootLogger.debug("[localhost] " + str(localcap.stderr))
-
-        rootLogger.debug(
-            """Creating the directory: {}""".format(self.workload.job_monitoring_dir)
-        )
-        localcap = local(
-            """mkdir -p {}""".format(self.workload.job_monitoring_dir), capture=True
-        )
-        rootLogger.debug("[localhost] " + str(localcap))
-        rootLogger.debug("[localhost] " + str(localcap.stderr))
 
         # Setup partition configs
         with TemporaryDirectory() as uridir:

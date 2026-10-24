@@ -20,7 +20,9 @@ private:
 ShmemPort::ShmemPort(int portNo, char *shmemportname, bool uplink)
     : BasePort(portNo, !uplink) {
 #define SHMEM_EXTRABYTES 1
-#define SHMEM_NAME_SIZE 120
+// as large as the NIC bridge's shmem port name buffer, so both sides open the
+// same names
+#define SHMEM_NAME_SIZE 257
 
   // create shared memory regions
   char name[SHMEM_NAME_SIZE];
@@ -65,6 +67,7 @@ ShmemPort::ShmemPort(int portNo, char *shmemportname, bool uplink)
                 recvdirection,
                 shmemportname,
                 j);
+        abort();
       }
     } else {
       fprintf(stdout, "Using slot-id associated shmemportname:\n");

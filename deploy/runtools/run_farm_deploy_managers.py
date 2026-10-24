@@ -344,6 +344,22 @@ class InstanceDeployManager(metaclass=abc.ABCMeta):
                 run("chmod +x sim-run.sh")
                 run("./sim-run.sh")
 
+    def kill_processes_in_dir(self, name: str, directory: str, sudo: bool) -> None:
+        """SIGKILL the processes named name whose working directory is directory.
+
+        Simulations, switches and pipes run in their slot directory, which belongs to
+        one run, so this leaves other runs' processes on the same host alone.
+        """
+        # process names (comm) are cut to 15 characters
+        script = (
+            f"d=$(readlink -f {shlex.quote(directory)}); "
+            f"for p in $(pgrep -x {shlex.quote(name[:15])}); do "
+            f'[ "$(readlink /proc/$p/cwd)" = "$d" ] && kill -9 $p; '
+            "done; true"
+        )
+        with warn_only():
+            run(f"{'sudo ' if sudo else ''}bash -c {shlex.quote(script)}")
+
     def kill_switch_slot(self, switchslot: int) -> None:
         """kill the switch in slot switchslot."""
         if self.instance_assigned_switches():
@@ -352,8 +368,11 @@ class InstanceDeployManager(metaclass=abc.ABCMeta):
             )
             assert switchslot < len(self.parent_node.switch_slots)
             switch = self.parent_node.switch_slots[switchslot]
-            with warn_only():
-                run(switch.get_switch_kill_command())
+            self.kill_processes_in_dir(
+                switch.switch_builder.switch_binary_name(),
+                f"{self.parent_node.get_sim_dir()}/switch_slot_{switchslot}",
+                is_on_aws(),
+            )
 
     def kill_pipe_slot(self, pipeslot: int) -> None:
         """kill the pipe in slot pipeslot."""
@@ -363,11 +382,11 @@ class InstanceDeployManager(metaclass=abc.ABCMeta):
             )
             assert pipeslot < len(self.parent_node.pipe_slots)
             pipe = self.parent_node.pipe_slots[pipeslot]
-            with warn_only():
-                if has_sudo():
-                    run("sudo " + pipe.get_pipe_kill_command())
-                else:
-                    run(pipe.get_pipe_kill_command())
+            self.kill_processes_in_dir(
+                pipe.pipe_builder.pipe_binary_name(),
+                f"{self.parent_node.get_sim_dir()}/pipe_slot_{pipeslot}",
+                has_sudo(),
+            )
 
     def kill_sim_slot(self, slotno: int) -> None:
         """kill the simulation in slot slotno."""
@@ -379,8 +398,11 @@ class InstanceDeployManager(metaclass=abc.ABCMeta):
                 self.parent_node.sim_slots
             ), f"{slotno} can not index into sim_slots {len(self.parent_node.sim_slots)} on {self.parent_node.host}"
             server = self.parent_node.sim_slots[slotno]
-            with warn_only():
-                run(server.get_sim_kill_command(slotno))
+            self.kill_processes_in_dir(
+                server.get_resolved_server_hardware_config().get_local_driver_binaryname(),
+                self.get_remote_sim_dir_for_slot(slotno),
+                is_on_aws(),
+            )
 
     def instance_assigned_simulations(self) -> bool:
         """return true if this instance has any assigned fpga simulations."""
@@ -395,12 +417,20 @@ class InstanceDeployManager(metaclass=abc.ABCMeta):
         return len(self.parent_node.pipe_slots) != 0
 
     def remove_shm_files(self) -> None:
+        """Remove this run's shmem ports (named with its run tag) from /dev/shm.
+
+        FireAxe pipes name their shared memory without the run tag, so a host with
+        pipes also removes those, as before.
+        """
+        tag = self.parent_node.get_run_tag()
+        pipes = self.instance_assigned_pipes()
         if is_on_aws():
-            run("sudo rm -rf /dev/shm/*")
+            pipe_files = " /dev/shm/pipe_h2t* /dev/shm/pipe_t2h*" if pipes else ""
+            run(f"sudo rm -f /dev/shm/*{tag}*{pipe_files}")
         else:
             cmd = f"{script_path}/firesim-remove-dev-shm"
             check_script(cmd)
-            run(f"sudo {cmd}")
+            run(f"sudo {cmd} {tag}{' --pipes' if pipes else ''}")
 
     def start_pipe_slots(self) -> None:
         for slotno in range(len(self.parent_node.pipe_slots)):
@@ -423,6 +453,16 @@ class InstanceDeployManager(metaclass=abc.ABCMeta):
         elif self.instance_assigned_switches():
             self.start_switch_slots()
 
+        screens = [
+            self.parent_node.get_screen_name(switch.switch_builder.switch_binary_name())
+            for switch in self.parent_node.switch_slots
+        ] + [
+            self.parent_node.get_screen_name(pipe.pipe_builder.pipe_binary_name())
+            for pipe in self.parent_node.pipe_slots
+        ]
+        if screens:
+            self.instance_logger(f"Switch and pipe screens: {', '.join(screens)}")
+
     def start_simulations_instance(self) -> None:
         """Boot up all the sims on this host in screens."""
         if self.instance_assigned_simulations():
@@ -432,6 +472,11 @@ class InstanceDeployManager(metaclass=abc.ABCMeta):
             )
             for slotno in range(len(self.parent_node.sim_slots)):
                 self.start_sim_slot(slotno)
+            screens = [
+                self.parent_node.get_screen_name(f"fsim{slotno}")
+                for slotno in range(len(self.parent_node.sim_slots))
+            ]
+            self.instance_logger(f"Simulation screens: {', '.join(screens)}")
 
     def kill_switches_instance(self) -> None:
         """Kill all the switches on this host."""
@@ -444,7 +489,7 @@ class InstanceDeployManager(metaclass=abc.ABCMeta):
         if self.instance_assigned_pipes():
             for slotno in range(len(self.parent_node.pipe_slots)):
                 self.kill_pipe_slot(slotno)
-            self.remove_shm_files()  # TODO : remove shm files for only this instance
+            self.remove_shm_files()
 
     def kill_simulations_instance(self, disconnect_all_nbds: bool = True) -> None:
         """Kill all simulations on this host."""
@@ -457,37 +502,32 @@ class InstanceDeployManager(metaclass=abc.ABCMeta):
             self.disconnect_all_nbds_instance()
 
     def running_simulations(self) -> Dict[str, List[str]]:
-        """collect screen results from this host to see what's running on it."""
+        """collect screen results from this host to see what's running on it.
+
+        Only this run's screens count: other runs on the same host name theirs with
+        their own run tag.
+        """
         simdrivers = []
         switches = []
         pipes = []
+        tag = re.escape(self.parent_node.get_run_tag())
         with settings(warn_only=True), hide("everything"):
             collect = run("screen -ls")
             for line in collect.splitlines():
                 if "(Detached)" in line or "(Attached)" in line:
-                    line_stripped = line.strip()
-                    if "fsim" in line:
-                        re_search_results = re.search(
-                            "fsim([0-9][0-9]*)", line_stripped
-                        )
-                        assert re_search_results is not None
-                        line_stripped = re_search_results.group(0)
-                        line_stripped = line_stripped.replace("fsim", "")
-                        simdrivers.append(line_stripped)
-                    elif "switch" in line:
-                        re_search_results = re.search(
-                            "switch([0-9][0-9]*)", line_stripped
-                        )
-                        assert re_search_results is not None
-                        line_stripped = re_search_results.group(0)
-                        switches.append(line_stripped)
-                    elif "pipe" in line:
-                        re_search_results = re.search(
-                            "pipe([0-9][0-9]*)", line_stripped
-                        )
-                        assert re_search_results is not None
-                        line_stripped = re_search_results.group(0)
-                        pipes.append(line_stripped)
+                    # e.g. "12345.fsim0-r1a2b3c4d	(Detached)"
+                    match = re.search(
+                        rf"\.(fsim|switch|pipe)([0-9]+)-{tag}\s", line.strip() + " "
+                    )
+                    if match is None:
+                        continue
+                    kind, num = match.group(1), match.group(2)
+                    if kind == "fsim":
+                        simdrivers.append(num)
+                    elif kind == "switch":
+                        switches.append(f"switch{num}")
+                    else:
+                        pipes.append(f"pipe{num}")
         return {"switches": switches, "simdrivers": simdrivers, "pipes": pipes}
 
     def monitor_jobs_instance(
