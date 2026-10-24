@@ -1,3 +1,4 @@
+import os
 import subprocess
 import sys
 import re
@@ -146,6 +147,36 @@ def enable_memmapped_transfers(bus_id: str) -> None:
 
 def any_device_exists(bus_id: str) -> bool:
     return len(get_device_paths(bus_id)) > 0
+
+def get_device_users(bus_id: str) -> List[str]:
+    """Processes ('<pid> (<command>)') that have the FPGA's PCI-E resources or XDMA device files open or mapped."""
+    devDirs = [str(p.resolve()) + '/' for p in get_device_paths(bus_id)]
+    # XDMA character devices (e.g. /dev/xdma0_user) are listed under the device's xdma/ directory
+    devFiles = {f"/dev/{e.name}" for p in get_device_paths(bus_id) if (p / 'xdma').is_dir() for e in (p / 'xdma').iterdir()}
+
+    def usesDevice(path: str) -> bool:
+        return path in devFiles or any(path.startswith(d) for d in devDirs)
+
+    users = []
+    for procPath in Path('/proc').iterdir():
+        if not procPath.name.isdigit():
+            continue
+        try:
+            paths = [os.readlink(fd) for fd in (procPath / 'fd').iterdir()]
+            paths += [line.split(maxsplit=5)[5].strip() for line in open(procPath / 'maps') if len(line.split(maxsplit=5)) == 6]
+            if any(usesDevice(p) for p in paths):
+                users.append(f"{procPath.name} ({(procPath / 'comm').read_text().strip()})")
+        except (FileNotFoundError, ProcessLookupError, PermissionError):
+            # the process exited, or isn't ours to inspect without root
+            continue
+    return users
+
+def assert_devices_unused(bus_ids: List[str]) -> None:
+    """Exit if any process is using one of these FPGAs (e.g. a running simulation)."""
+    for bus_id in bus_ids:
+        users = get_device_users(bus_id)
+        if users:
+            sys.exit(f":ERROR: FPGA on bus {bus_id} is in use by {', '.join(users)}. Stop those processes before reprogramming it.")
 
 # converter funcs
 

@@ -77,6 +77,10 @@ class Inst(metaclass=abc.ABCMeta):
     # location of fpga db file specifying fpga's available
     fpga_db: Optional[str]
 
+    # location of file (fpga db format) listing the fpgas to use, in sim slot order
+    # (None: all fpgas in fpga db order)
+    fpgas_to_use: Optional[str]
+
     # instances parameterized by this
     instance_deploy_manager: InstanceDeployManager
 
@@ -92,6 +96,7 @@ class Inst(metaclass=abc.ABCMeta):
         sim_dir: Optional[str] = None,
         fpga_db: Optional[str] = None,
         metasimulation_enabled: bool = False,
+        fpgas_to_use: Optional[str] = None,
     ) -> None:
         super().__init__()
 
@@ -109,6 +114,7 @@ class Inst(metaclass=abc.ABCMeta):
 
         self.sim_dir = sim_dir
         self.fpga_db = fpga_db
+        self.fpgas_to_use = fpgas_to_use
         self.metasimulation_enabled = metasimulation_enabled
 
         self.instance_deploy_manager = instance_deploy_manager(self)
@@ -735,6 +741,7 @@ class ExternallyProvisioned(RunFarm):
 
         default_platform = self.args.get("default_platform")
         default_fpga_db = self.args.get("default_fpga_db")
+        default_fpgas_to_use = self.args.get("default_fpgas_to_use")
 
         runhost_specs = dict()
         for specinfo in self.args["run_farm_host_specs"]:
@@ -782,6 +789,14 @@ class ExternallyProvisioned(RunFarm):
                 "override_simulation_dir", self.default_simulation_dir
             )
             fpga_db = host_spec.get("override_fpga_db", default_fpga_db)
+            fpgas_to_use = host_spec.get("override_fpgas_to_use", default_fpgas_to_use)
+            if (
+                fpgas_to_use is not None
+                and not dispatch_dict[platform].SUPPORTS_FPGAS_TO_USE
+            ):
+                raise Exception(
+                    f"Run farm host {ip_addr} sets fpgas_to_use, which {platform} does not support."
+                )
 
             inst = Inst(
                 self,
@@ -790,6 +805,7 @@ class ExternallyProvisioned(RunFarm):
                 simulation_dir,
                 fpga_db,
                 self.metasimulation_enabled,
+                fpgas_to_use,
             )
             inst.set_host(ip_addr)
             assert (
