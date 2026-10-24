@@ -40,8 +40,6 @@ rootLogger = logging.getLogger()
 # this needs to be updated whenever the FPGA Dev AMI changes
 # You can find this by going to the AMI tab under EC2 and searching for public images:
 # https://console.aws.amazon.com/ec2/v2/home?region=us-east-1#Images:visibility=public-images;search=FPGA%20Developer;sort=name
-# And whenever this changes, you also need to update deploy/tests/test_amis.json
-# by running scripts/update_test_amis.py
 # additionally, for normal use this assumes that the AMI used by the runhosts and manager instance match.
 # in the case of CI (or launching instances from a non-EC2 instance), this defaults to the Ubuntu based AMI.
 def get_f2_ami_name() -> str:
