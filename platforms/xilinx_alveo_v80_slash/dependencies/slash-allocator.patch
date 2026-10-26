@@ -1,0 +1,14 @@
+diff --git a/vrt/include/vrt/allocator/allocator.hpp b/vrt/include/vrt/allocator/allocator.hpp
+index 5793871..b1e75b8 100644
+--- a/vrt/include/vrt/allocator/allocator.hpp
++++ b/vrt/include/vrt/allocator/allocator.hpp
+@@ -252,7 +252,8 @@ protected:
+             return buffer;
+         }
+         
+-        return nullptr;
++        // Exhaustion must reach the allocator caller as an allocation failure.
++        throw std::bad_alloc();
+     }
+ 
+     void deallocate(const UntypedBuffer& whole, UntypedBuffer buffer, const char* tooSmallError, const char* ownershipError) {

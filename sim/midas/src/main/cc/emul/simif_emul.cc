@@ -5,10 +5,13 @@
 #include "bridges/cpu_managed_stream.h"
 #include "bridges/fpga_managed_stream.h"
 #include "core/simulation.h"
+#include "core/v80_slash_ddr_stream.h"
+#include "core/v80_slash_mmio_stream.h"
 #include "emul/mm.h"
 #include "emul/mmio.h"
 #include <cassert>
 #include <memory>
+#include <stdexcept>
 #include <string.h>
 #include <unistd.h>
 
@@ -144,6 +147,21 @@ simif_emul_t::simif_emul_t(const TargetConfig &config,
     fpga_managed_stream_io.reset(new FPGAManagedStreamIOImpl(*this, *conf));
   }
 
+#if defined(V80_DDR_STREAM_METADATA) || defined(V80_MMIO_STREAM_METADATA)
+  if (config.cpu_managed || config.fpga_managed || config.fpga_managed_ddr)
+    throw std::invalid_argument("Internal CPU stream transport conflicts with "
+                                "an external or FPGA stream port");
+  cpu_managed_stream_io.reset(
+      new CPUManagedStreamIOImpl(*this, AXI4Config{1, 32, 64}));
+#endif
+  if (config.fpga_managed_ddr) {
+    if (config.cpu_managed || config.fpga_managed || slave.size() != 1)
+      throw std::invalid_argument("DDR-managed streams require one shared "
+                                  "memory channel and no external stream port");
+    fpga_managed_stream_io.reset(
+        new FPGAManagedStreamIOImpl(*this, config.mem));
+  }
+
   std::cout << "simif_emul_t: done" << std::endl;
 }
 
@@ -172,7 +190,17 @@ void simif_emul_t::start_driver(simulation_t &sim) {
       }
 
       // Run the simulation flow.
-      exit_code = sim.execute_simulation_flow();
+      try {
+        exit_code = sim.execute_simulation_flow();
+      } catch (const std::exception &error) {
+        // Always wake the DPI thread, including when a bridge rejects a
+        // transaction or reaches its bounded timeout during final draining.
+        fprintf(stderr, "Metasimulation driver failed: %s\n", error.what());
+        exit_code = EXIT_FAILURE;
+      } catch (...) {
+        fprintf(stderr, "Metasimulation driver failed: unknown exception\n");
+        exit_code = EXIT_FAILURE;
+      }
 
       // Wake the target thread before returning from the simulation thread.
       {
@@ -218,8 +246,42 @@ uint32_t simif_emul_t::read(size_t addr) {
 
 #define MAX_LEN 255
 
+uint64_t simif_emul_t::CPUManagedStreamIOImpl::get_beat_bytes() const {
+#ifdef V80_MMIO_STREAM_METADATA
+  return 4;
+#else
+  return cpu_managed_axi4.get_config().beat_bytes();
+#endif
+}
+
+#ifdef V80_DDR_STREAM_METADATA
+static char *stream_staging(simif_emul_t &simif) {
+  constexpr uint64_t offset = V80_DDR_STREAM_MIN_DDR;
+  constexpr uint64_t bytes = v80_slash_ddr_stream::capacity;
+  if (simif.slave.size() != 1 || offset > simif.slave[0]->get_size() ||
+      bytes > simif.slave[0]->get_size() - offset)
+    throw std::out_of_range(
+        "Metasimulation memory is too small for the DDR stream staging area");
+  return static_cast<char *>(simif.slave[0]->get_data()) + offset;
+}
+#endif
+
 size_t simif_emul_t::CPUManagedStreamIOImpl::cpu_managed_axi4_read(
     size_t addr, char *data, size_t size) {
+  if (!size)
+    return 0;
+#ifdef V80_DDR_STREAM_METADATA
+  v80_slash_ddr_stream::validate(V80_DDR_STREAM_MIN_DDR, addr, size);
+  if (!data)
+    throw std::invalid_argument("DDR stream pull requires destination storage");
+  char *staging = stream_staging(simif);
+  v80_slash_ddr_stream::transfer(
+      simif, V80_DDR_STREAM_MIN_DDR, addr, size, false);
+  memcpy(data, staging, size);
+  return size;
+#elif defined(V80_MMIO_STREAM_METADATA)
+  return v80_slash_mmio_stream::pull(simif, addr, data, size);
+#else
   const uint64_t beat_bytes = cpu_managed_axi4.get_config().beat_bytes();
   ssize_t len = (size - 1) / beat_bytes;
 
@@ -234,10 +296,25 @@ size_t simif_emul_t::CPUManagedStreamIOImpl::cpu_managed_axi4_read(
     data += (part_len + 1) * beat_bytes;
   }
   return size;
+#endif
 }
 
 size_t simif_emul_t::CPUManagedStreamIOImpl::cpu_managed_axi4_write(
     size_t addr, const char *data, size_t size) {
+  if (!size)
+    return 0;
+#ifdef V80_DDR_STREAM_METADATA
+  v80_slash_ddr_stream::validate(V80_DDR_STREAM_MIN_DDR, addr, size);
+  if (!data)
+    throw std::invalid_argument("DDR stream push requires source storage");
+  char *staging = stream_staging(simif);
+  memcpy(staging, data, size);
+  v80_slash_ddr_stream::transfer(
+      simif, V80_DDR_STREAM_MIN_DDR, addr, size, true);
+  return size;
+#elif defined(V80_MMIO_STREAM_METADATA)
+  return v80_slash_mmio_stream::push(simif, addr, data, size);
+#else
   const uint64_t beat_bytes = cpu_managed_axi4.get_config().beat_bytes();
   ssize_t len = (size - 1) / beat_bytes;
   const size_t remaining = size - len * beat_bytes;
@@ -269,11 +346,20 @@ size_t simif_emul_t::CPUManagedStreamIOImpl::cpu_managed_axi4_write(
   }
 
   return size;
+#endif
 }
 
 simif_emul_t::FPGAManagedStreamIOImpl::FPGAManagedStreamIOImpl(
     simif_emul_t &simif, const AXI4Config &config)
     : simif(simif), cpu_mem(config) {
+  if (simif.config.fpga_managed_ddr) {
+    backing = simif.slave[0].get();
+    const uint64_t occupied = simif.config.target_dram_bytes;
+    if (occupied > backing->get_size() || occupied > UINT64_MAX - 4095)
+      throw std::out_of_range("Target allocation exceeds shared stream memory");
+    next_free_offset = (occupied + 4095) & ~uint64_t(4095);
+    return;
+  }
   // The final parameter, line size, is not used under mm_magic_t
   // addr_bits can be 64 (the PCIM window), where `1 << addr_bits` is
   // undefined. Cap the modeled region at 1 GiB; mm_t maps it MAP_NORESERVE,
@@ -283,6 +369,18 @@ simif_emul_t::FPGAManagedStreamIOImpl::FPGAManagedStreamIOImpl(
   const uint64_t modeled_bytes =
       (addr_bits >= 30) ? max_modeled_bytes : (1ULL << addr_bits);
   cpu_mem.init(modeled_bytes, 512);
+  backing = &cpu_mem;
+}
+
+FPGAManagedStreams::HostBuffer
+simif_emul_t::FPGAManagedStreamIOImpl::allocate_to_cpu_buffer(size_t size) {
+  if (!size || next_free_offset > UINT64_MAX - 4095)
+    throw std::invalid_argument("Invalid metasimulation stream allocation");
+  const uint64_t fpga = (next_free_offset + 4095) & ~uint64_t(4095);
+  if (fpga > backing->get_size() || size > backing->get_size() - fpga)
+    throw std::out_of_range("Stream rings exceed modeled memory");
+  next_free_offset = fpga + size;
+  return {static_cast<char *>(backing->get_data()) + fpga, fpga};
 }
 
 void simif_emul_t::load_mems(const char *fname) {

@@ -177,6 +177,16 @@ class BaseVitisConfig
         new midas.VitisConfig
     )
 
+class BaseXilinxAlveoV80SlashConfig
+    extends Config(
+      new WithDefaultMemModel ++
+        new WithWiringTransform ++
+        new WithAsyncResetReplacement ++
+        new midas.XilinxAlveoV80SlashConfig
+    )
+
+class DefaultV80SlashConfig extends Config(new BaseBridgesConfig ++ new midas.XilinxAlveoV80SlashConfig)
+
 class NoConfig extends Config(Parameters.empty)
 
 class BaseBridgesConfig
@@ -227,4 +237,14 @@ class DefaultVitisConfig
     extends Config(
       new BaseBridgesConfig ++
         new midas.VitisConfig
+    )
+
+class DefaultV80SlashFPGAManagedConfig
+    extends Config(
+      new BaseBridgesConfig ++ new midas.WithDDRManagedBridgeStreams ++ new midas.XilinxAlveoV80SlashConfig
+    )
+
+class DefaultV80SlashMMIOConfig
+    extends Config(
+      new BaseBridgesConfig ++ new midas.WithMMIOManagedBridgeStreams ++ new midas.XilinxAlveoV80SlashConfig
     )

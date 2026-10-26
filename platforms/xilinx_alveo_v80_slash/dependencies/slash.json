@@ -1,0 +1,20 @@
+{
+  "repository": "https://github.com/Xilinx/SLASH.git",
+  "base_commit": "26f9c55ca1ce7d766715d51eb4dd5f3b50b8f3fc",
+  "patches": [
+    {
+      "path": "slash-linker.patch",
+      "sha256": "dc2e3a2d92350910105fc6deb4cfd5aaca0f86ce8c042bdf5ec2c57ad26b00d4"
+    },
+    {
+      "path": "slash-allocator.patch",
+      "sha256": "465e77395d557ff4ecbc1065cda9e389e50cceea3129d19a438bf9efa7562d66"
+    }
+  ],
+  "patched_files_sha256": {
+    "linker/slashkit/emit/hw/project_gen.py": "c30af42ccfdc2c2d3c5564372358de9169c345bb4fab9b0b4227369df3b87efb",
+    "linker/slashkit/resources/base/scripts/slash_project_build.tcl": "1162fef3bda9713e5564619ee8af0dcb2450b94327624cb358b236851249317a",
+    "vrt/include/vrt/allocator/allocator.hpp": "5b765a146876de8fd7dc27e4bbd937b69ceaa6d5dbadafaa8052016295f58e30"
+  },
+  "scope": "portable linker clock/probe hooks, Linux libcap preload, allocation exhaustion; no DRC severity or pblock exceptions"
+}

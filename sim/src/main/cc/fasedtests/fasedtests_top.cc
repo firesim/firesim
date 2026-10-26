@@ -57,11 +57,11 @@ fasedtests_top_t::fasedtests_top_t(simif_t &simif,
 
   // Add functions you'd like to periodically invoke on a paused simulator here.
   if (profile_interval) {
-    register_task(0, [&] {
-      for (auto *mod : registry.get_bridges<FASEDMemoryTimingModel>()) {
+    register_task(0, [this, interval = *profile_interval] {
+      for (auto *mod : this->registry.get_bridges<FASEDMemoryTimingModel>()) {
         mod->profile();
       }
-      return *profile_interval;
+      return interval;
     });
   }
 }

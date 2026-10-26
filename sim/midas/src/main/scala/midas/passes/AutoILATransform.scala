@@ -2,8 +2,8 @@
 
 package midas.passes
 
-import midas.{EnableAutoILA, ILADepthKey, ILAProbeTriggersKey}
-import midas.InternalFirrtlFpgaDebugAnnotation
+import midas.{AutoILAUseAXIS, EnableAutoILA, ILADepthKey, ILAProbeTriggersKey}
+import midas.{AXIDebugLinkAnnotation, InternalFirrtlFpgaDebugAnnotation}
 import midas.stage.GoldenGateOutputFileAnnotation
 import midas.stage.phases.ConfigParametersAnnotation
 
@@ -161,13 +161,22 @@ object AutoILATransform extends Transform with DependencyAPIMigration {
       println(s"  ${probe.name}, width: ${probe.width}")
     }
     // IP elaboration script.
+    val useAXIS               = state.annotations
+      .collectFirst { case ConfigParametersAnnotation(p) =>
+        p(AutoILAUseAXIS)
+      }
+      .getOrElse(false)
+    val ipName                = if (useAXIS) "axis_ila" else "ila"
+    val ipVersion             = if (useAXIS) "1.3" else "6.2"
+    val monitorConfig         =
+      if (useAXIS) Seq("CONFIG.C_NUM_MONITOR_SLOTS {0}", "CONFIG.C_EN_AXIS_IF {1}") else Seq.empty[String]
     val ilaBlackBoxName       = circuitNamespace.newName("ila_firesim")
-    val fullConfigString      = probes.map(_.ipConfigString).mkString(" \\\n  ")
+    val fullConfigString      = (probes.map(_.ipConfigString) ++ monitorConfig).mkString(" \\\n  ")
     val ipElaborationFileAnno = GoldenGateOutputFileAnnotation(
-      s"""|create_ip -name ila \\
+      s"""|create_ip -name ${ipName} \\
           |  -vendor xilinx.com \\
           |  -library ip \\
-          |  -version  6.2 \\
+          |  -version  ${ipVersion} \\
           |  -module_name ${ilaBlackBoxName}
           |set_property -dict [list \\
           |  ${fullConfigString} \\
@@ -191,20 +200,66 @@ object AutoILATransform extends Transform with DependencyAPIMigration {
     val ilaWrapperClockName = ilaWrapperPortNS.newName("clock")
     val ilaWrapperClockPort = Port(NoInfo, ilaWrapperClockName, Input, ClockType)
 
+    val debugLinks        =
+      if (useAXIS)
+        wiredState.annotations
+          .collect { case a: AXIDebugLinkAnnotation =>
+            a
+          }
+          .sortBy(_.port)
+      else Seq.empty
+    if (useAXIS) {
+      val expected = Map(
+        "S_AXIS_tdata"  -> (true, 32),
+        "S_AXIS_tvalid" -> (true, 1),
+        "S_AXIS_tlast"  -> (true, 1),
+        "S_AXIS_tready" -> (false, 1),
+        "M_AXIS_tdata"  -> (false, 32),
+        "M_AXIS_tvalid" -> (false, 1),
+        "M_AXIS_tlast"  -> (false, 1),
+        "M_AXIS_tready" -> (true, 1),
+        "aresetn"       -> (true, 1),
+      )
+      require(
+        debugLinks.size == expected.size && debugLinks.map(a => a.port -> (a.input, a.width)).toMap == expected,
+        "AXIS AutoILA requires one correctly typed platform AXI Debug Hub transport",
+      )
+      require(
+        debugLinks.forall(a => a.target.module == c.main && a.target.path.isEmpty && a.target.component.isEmpty),
+        "AXI debug transport must resolve to lowered top-level wires",
+      )
+    }
+    debugLinks.foreach(a => ilaLog(s"AXIS transport ${a.port}: ${a.target.serialize}"))
+    val linkPorts         =
+      debugLinks.map(a => Port(NoInfo, a.port, if (a.input) Input else Output, UIntType(IntWidth(a.width))))
+    val linkDefs          = debugLinks.map { a =>
+      val direction = if (a.input) "input" else "output"
+      s"$direction [${a.width - 1}:0] ${a.port}"
+    }
+    val linkAssignments   = debugLinks.map(a => s".${a.port}(${a.port})") ++
+      (if (useAXIS) Seq(s".aclk(${ilaWrapperClockName})") else Seq.empty)
+    val simulationTieoffs =
+      if (useAXIS)
+        "`else\n" + debugLinks
+          .filterNot(_.input)
+          .map(a => s"assign ${a.port} = ${a.width}'b0;")
+          .mkString("", "\n", "\n")
+      else ""
+
     // Emit the wrapper as a black box since we can't express Verilog ifdefs in IR
     val ilaWrapper = ExtModule(
       info    = NoInfo,
       name    = ilaWrapperModuleName,
-      ports   = ilaWrapperClockPort +: flippedPorts,
+      ports   = ilaWrapperClockPort +: (flippedPorts ++ linkPorts),
       defname = ilaWrapperModuleName,
       params  = Nil,
     )
 
     val ilaWrapperPortList =
-      (s"input ${ilaWrapperClockName}" +: probes.map(_.wrapperPortDef)).mkString(",\n")
+      (s"input ${ilaWrapperClockName}" +: (probes.map(_.wrapperPortDef) ++ linkDefs)).mkString(",\n")
 
     val ilaPortAssignments =
-      (s".clk(${ilaWrapperClockName})" +: probes.map(_.ilaPortAssignment)).mkString(",\n    ")
+      (s".clk(${ilaWrapperClockName})" +: (probes.map(_.ilaPortAssignment) ++ linkAssignments)).mkString(",\n    ")
 
     val ilaWrapperBody =
       s"""|// A wrapper module around the ILA IP instance. This serves two purposes:
@@ -218,7 +273,7 @@ object AutoILATransform extends Transform with DependencyAPIMigration {
           |  ${ilaBlackBoxName} CL_FIRESIM_DEBUG_WIRING_TRANSFORM (
           |    ${ilaPortAssignments}
           |  );
-          |`endif
+          |${simulationTieoffs}`endif
           |endmodule
           |""".stripMargin
 
@@ -226,13 +281,33 @@ object AutoILATransform extends Transform with DependencyAPIMigration {
       BlackBoxInlineAnno(ilaWrapperMT.toNamed, ilaWrapperFilename(state.annotations), ilaWrapperBody)
 
     // Re-target connect statements, which now reference the removed ports, to ILA wrapper
+    val connectedDebugOutputs = scala.collection.mutable.Set.empty[String]
     def rewireConnects(s: Statement): Statement = s.map(rewireConnects) match {
-      case c @ Connect(_, WRef(portName, _, _, _), _) if newPortNames.contains(portName) =>
+      case c @ Connect(_, WRef(portName, _, _, _), _) if newPortNames.contains(portName)                         =>
         c.copy(loc = SubField(WRef(ilaWrapperInstName), portName))
-      case o                                                                             => o
+      case node @ DefNode(_, name, _) if debugLinks.exists(a => !a.input && a.target.ref == name)                =>
+        val link = debugLinks.find(a => !a.input && a.target.ref == name).get
+        connectedDebugOutputs += link.port
+        node.copy(value = SubField(WRef(ilaWrapperInstName), link.port))
+      case IsInvalid(info, WRef(name, _, _, _)) if debugLinks.exists(a => !a.input && a.target.ref == name)      =>
+        val link = debugLinks.find(a => !a.input && a.target.ref == name).get
+        connectedDebugOutputs += link.port
+        Connect(info, WRef(name), SubField(WRef(ilaWrapperInstName), link.port))
+      case conn @ Connect(_, WRef(name, _, _, _), _) if debugLinks.exists(a => !a.input && a.target.ref == name) =>
+        val link = debugLinks.find(a => !a.input && a.target.ref == name).get
+        connectedDebugOutputs += link.port
+        conn.copy(expr = SubField(WRef(ilaWrapperInstName), link.port))
+      case o                                                                                                     => o
+    }
+    val inputLinkConnects = debugLinks.filter(_.input).map { a =>
+      Connect(NoInfo, SubField(WRef(ilaWrapperInstName), a.port), WRef(a.target.ref))
     }
     val rewiredTop = newTopWithOldPorts.copy(
-      body = Block(ilaWrapperInst, newTopWithOldPorts.body.map(rewireConnects))
+      body = Block(Seq(ilaWrapperInst, newTopWithOldPorts.body.map(rewireConnects)) ++ inputLinkConnects)
+    )
+    require(
+      connectedDebugOutputs.toSet == debugLinks.filterNot(_.input).map(_.port).toSet,
+      "AutoILA failed to connect all AXI debug return channels",
     )
     val newCircuit = state.circuit.copy(modules = Seq(rewiredTop, ilaWrapper) ++ submodules)
 
@@ -258,6 +333,12 @@ object AutoILATransform extends Transform with DependencyAPIMigration {
     val dataDepth     = p(ILADepthKey)
     val probeTriggers = p(ILAProbeTriggersKey)
 
+    require(
+      !(p(EnableAutoILA) && p(AutoILAUseAXIS) && ilaAnnos.isEmpty &&
+        state.annotations.exists(_.isInstanceOf[AXIDebugLinkAnnotation])),
+      "AXIS debug links require at least one AutoILA probe",
+    )
+
     val newState = if (!p(EnableAutoILA)) {
       ilaLog("p(EnableAutoILA) unset. Skipping AutoILATransform")
       state
@@ -272,6 +353,7 @@ object AutoILATransform extends Transform with DependencyAPIMigration {
       case _: TopWiringAnnotation               => false
       case _: TopWiringOutputFilesAnnotation    => false
       case _: InternalFirrtlFpgaDebugAnnotation => false
+      case _: AXIDebugLinkAnnotation            => false
       case _                                    => true
     }
     newState.copy(annotations = cleanedAnnos)
