@@ -55,6 +55,24 @@ public:
   virtual uint32_t read(size_t addr) = 0;
 
   /**
+   * Optionally accept a complete, padded loadmem write through a bulk
+   * transport. Addresses are loadmem-widget DRAM offsets, after any bridge host
+   * offset has been applied. Return false without side effects to use the MMIO
+   * widget. On success, copy or consume the caller's bytes before returning;
+   * the caller retains ownership. A backend may defer the device transfer until
+   * a flush.
+   */
+  virtual bool write_dram_bulk(size_t, const void *, size_t) { return false; }
+
+  /**
+   * Make accepted bulk writes visible to subsequent device accesses, preserving
+   * write order. Loadmem flushes before reads, MMIO write fallbacks, DRAM
+   * clearing and file completion. A deferring backend must also flush before
+   * starting/resuming target execution.
+   */
+  virtual void flush_dram_writes() {}
+
+  /**
    * Return a functor accessing CPU-managed streams.
    *
    * This method aborts if it is not reimplemented by the desired host

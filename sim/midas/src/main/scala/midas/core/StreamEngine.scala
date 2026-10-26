@@ -15,6 +15,14 @@ import midas.widgets._
   */
 case object StreamEngineInstantiatorKey extends Field[(StreamEngineParameters, Parameters) => StreamEngine]
 
+// Optional host transport through a reserved region of FPGA-attached DRAM.
+// Number of complete 512-bit tokens reserved before issuing DDR read bursts.
+case object DDRManagedStreamReadBufferDepth extends Field[Int](128)
+case object FPGAManagedDDRTransport         extends Field[Boolean](false)
+case object CPUManagedMMIOTransport         extends Field[Boolean](false)
+case object CPUManagedDDRTransport          extends Field[Boolean](false)
+case object CPUStreamDMAReservedBytes       extends Field[BigInt](0)
+
 // Key intended for PCIM on AWS P2P support
 case object FPGAStreamEngineInstantiatorKey extends Field[(StreamEngineParameters, Parameters) => StreamEngine]
 

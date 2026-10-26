@@ -18,7 +18,9 @@ import firesim.lib.bridgeutils._
 import firesim.lib.nasti._
 
 // The AXI4-lite key for the simulation control bus
-case object CtrlNastiKey extends Field[NastiParameters]
+case object CtrlNastiKey               extends Field[NastiParameters]
+// Bytes at the start of a platform's control aperture unavailable to widgets.
+case object WidgetControlReservedBytes extends Field[BigInt](0)
 
 // Just NASTI, but pointing at the right key.
 class WidgetMMIO(nastiParams: NastiParameters) extends NastiIO(nastiParams)
@@ -37,6 +39,8 @@ class WidgetIO(implicit p: Parameters) extends ParameterizedBundle()(p) {
 }
 abstract class Widget()(implicit p: Parameters) extends LazyModule()(p) {
   require(p(CtrlNastiKey).dataBits == 32, "Control bus data width must be 32b per AXI4-lite standard")
+  val controlReservedBytes = p(WidgetControlReservedBytes)
+  require(controlReservedBytes >= 0)
 
   override def module: WidgetImp
   val (wName, wId) = Widget.assignName(this)
@@ -298,9 +302,11 @@ trait HasWidgets {
   private val name2inst    = mutable.HashMap[String, Widget]()
   private lazy val addrMap = new AddrMap({
     val (_, entries) = (sortedWidgets.foldLeft(BigInt(0), Seq[AddrMapEntry]())) { case ((start, es), w) =>
-      val name = w.getWName
-      val size = w.memRegionSize
-      (start + size, es :+ AddrMapEntry(name, WidgetRegion(start, size)))
+      val name    = w.getWName
+      val size    = w.memRegionSize
+      val minimum = start.max(w.controlReservedBytes)
+      val base    = ((minimum + size - 1) / size) * size
+      (base + size, es :+ AddrMapEntry(name, WidgetRegion(base, size)))
     }
     entries
   })

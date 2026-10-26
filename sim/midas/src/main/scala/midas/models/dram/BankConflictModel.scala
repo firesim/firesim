@@ -31,7 +31,7 @@ class BankConflictMMRegIO(cfg: BankConflictConfig)(implicit p: Parameters) exten
       maskBits      = log2Ceil(cfg.maxBanks),
       longName      = "Bank Address",
       defaultOffset = 13,
-      defaultMask   = (1 << cfg.maxBanks) - 1,
+      defaultMask   = cfg.maxBanks - 1,
     )
   )
 
@@ -84,13 +84,20 @@ class BankConflictModel(cfg: BankConflictConfig)(implicit p: Parameters) extends
   val transactionQueue    = Module(new Queue(new BankQueueEntry(p(NastiKey), cfg), cfg.maxWrites + cfg.maxReads))
   val transactionQueueArb = Module(new RRArbiter(new BankQueueEntry(p(NastiKey), cfg), 2))
 
-  transactionQueueArb.io.in(0).valid         := newWReq
-  transactionQueueArb.io.in(0).bits.xaction  := TransactionMetaData(p(NastiKey), awQueue.io.deq.bits)
-  transactionQueueArb.io.in(0).bits.bankAddr := io.mmReg.bankAddr.getSubAddr(awQueue.io.deq.bits.addr)
-
-  transactionQueueArb.io.in(1).valid         := tNasti.ar.fire
-  transactionQueueArb.io.in(1).bits.xaction  := TransactionMetaData(p(NastiKey), tNasti.ar.bits)
-  transactionQueueArb.io.in(1).bits.bankAddr := io.mmReg.bankAddr.getSubAddr(tNasti.ar.bits.addr)
+  // These pulses describe already accepted transactions. Retain each request
+  // until the shared arbiter accepts it, including simultaneous reads/writes.
+  val readRequests  = Module(new Queue(new BankQueueEntry(p(NastiKey), cfg), cfg.maxReads, flow = true))
+  val writeRequests = Module(new Queue(new BankQueueEntry(p(NastiKey), cfg), cfg.maxWrites, flow = true))
+  readRequests.io.enq.valid          := tNasti.ar.fire
+  readRequests.io.enq.bits.xaction   := TransactionMetaData(p(NastiKey), tNasti.ar.bits)
+  readRequests.io.enq.bits.bankAddr  := io.mmReg.bankAddr.getSubAddr(tNasti.ar.bits.addr)
+  writeRequests.io.enq.valid         := newWReq
+  writeRequests.io.enq.bits.xaction  := TransactionMetaData(p(NastiKey), awQueue.io.deq.bits)
+  writeRequests.io.enq.bits.bankAddr := io.mmReg.bankAddr.getSubAddr(awQueue.io.deq.bits.addr)
+  transactionQueueArb.io.in(1)       <> readRequests.io.deq
+  transactionQueueArb.io.in(0)       <> writeRequests.io.deq
+  assert(!tNasti.ar.fire || readRequests.io.enq.ready, "Bank-conflict accepted AR must be retained")
+  assert(!newWReq || writeRequests.io.enq.ready, "Bank-conflict completed write must be retained")
 
   transactionQueue.io.enq <> transactionQueueArb.io.out
 

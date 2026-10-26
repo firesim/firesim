@@ -1,0 +1,54 @@
+diff --git a/linker/slashkit/emit/hw/project_gen.py b/linker/slashkit/emit/hw/project_gen.py
+index 0c7ff7d..b44d1dd 100644
+--- a/linker/slashkit/emit/hw/project_gen.py
++++ b/linker/slashkit/emit/hw/project_gen.py
+@@ -151,9 +151,16 @@ def _environment_with_udev_ld_preload() -> Dict[str, str]:
+     possible_paths = [
+         Path("/lib/x86_64-linux-gnu/libudev.so.1"), Path("/lib64/libudev.so.1")]
+     existing_paths = [str(path) for path in possible_paths if path.is_file()]
++    # On Ubuntu 24.04 libudev.so.1 gained a dependency on libcap.so.2 which
++    # the DDRMC firmware compiler bundled with Vivado cannot resolve, so the
++    # calibration ELF is silently never built (Xilinx/SLASH#139). Preload the
++    # dependency alongside libudev.
++    dep_paths = [
++        Path("/lib/x86_64-linux-gnu/libcap.so.2"), Path("/lib64/libcap.so.2")]
++    existing_deps = [str(path) for path in dep_paths if path.is_file()]
+     env = dict(os.environ)
+     if len(existing_paths) > 0:
+-        env["LD_PRELOAD"] = ":".join(existing_paths)
++        env["LD_PRELOAD"] = ":".join(existing_paths + existing_deps)
+     return env
+ 
+ 
+diff --git a/linker/slashkit/resources/base/scripts/slash_project_build.tcl b/linker/slashkit/resources/base/scripts/slash_project_build.tcl
+index e0ab1d9..277114a 100644
+--- a/linker/slashkit/resources/base/scripts/slash_project_build.tcl
++++ b/linker/slashkit/resources/base/scripts/slash_project_build.tcl
+@@ -160,6 +160,14 @@ add_files $rm_synth_dcp
+ set_property SCOPED_TO_CELLS {top_i/slash} [get_files $rm_synth_dcp]
+ set_property strategy Congestion_SSI_SpreadLogic_high [get_runs impl_1]
+ 
++# FireSim supplies timing constraints for the actual runtime host clock.
++# Preserve the shell floorplan and the standard DFX DRC severity levels.
++if {[info exists ::env(FIRESIM_OPT_PRE_TCL)]} {
++    set firesim_pre_tcl [file normalize $::env(FIRESIM_OPT_PRE_TCL)]
++    _require_file $firesim_pre_tcl "FireSim pre-opt Tcl"
++    set_property STEPS.OPT_DESIGN.TCL.PRE $firesim_pre_tcl [get_runs impl_1]
++}
++
+ launch_runs impl_1 -jobs $jobs
+ wait_on_run impl_1
+ open_run impl_1
+@@ -168,5 +176,11 @@ report_timing_summary -delay_type min_max -check_timing_verbose -max_paths 1 -in
+ 
+ set partial_pdi [file join $artifact_out_dir "top_i_slash_slash_${proj_name}_inst_0_partial.pdi"]
+ write_device_image -cell top_i/slash -force $partial_pdi
+-write_debug_probes -cell top_i/slash -force $ltx_file
++if {[info exists ::env(FIRESIM_DEBUG_PROBES_TCL)]} {
++    set firesim_probe_tcl [file normalize $::env(FIRESIM_DEBUG_PROBES_TCL)]
++    _require_file $firesim_probe_tcl "FireSim debug probe exporter"
++    source $firesim_probe_tcl
++} else {
++    write_debug_probes -cell top_i/slash -force $ltx_file
++}
+ report_utilization -hierarchical -hierarchical_percentages -file $util_report_file

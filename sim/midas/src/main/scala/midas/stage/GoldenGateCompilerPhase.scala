@@ -58,7 +58,7 @@ class GoldenGateCompilerPhase extends Phase {
     // to avoid breakages that can emerge from "legal" but unsound pass orderings
     // due to underspecified pass constraints + invalidations
     // Shunt ILA passes to a seperate compiler to avoid invalidating downstream steps
-    val loweringCompiler = new Compiler(
+    val loweringCompiler     = new Compiler(
       targets      = Seq(
         Dependency(midas.passes.AutoILATransform),
         Dependency(midas.passes.HostClockWiring),
@@ -69,7 +69,7 @@ class GoldenGateCompilerPhase extends Phase {
     )
     logger.info("Post-GG Host Transformation Ordering\n")
     logger.info(loweringCompiler.prettyPrint("  "))
-    loweringCompiler.execute(simulator)
+    val hostLoweredSimulator = loweringCompiler.execute(simulator)
 
     // Ensure FPGA backend passes run after all user-provided + ILA transforms, but before final emission
     val fpgaBackendCompiler  = new Compiler(
@@ -83,7 +83,7 @@ class GoldenGateCompilerPhase extends Phase {
     )
     logger.info("FPGA Backend Transformation Ordering\n")
     logger.info(fpgaBackendCompiler.prettyPrint("  "))
-    val postLoweredSimulator = fpgaBackendCompiler.execute(simulator)
+    val postLoweredSimulator = fpgaBackendCompiler.execute(hostLoweredSimulator)
 
     // Workaround under-constrained transform dependencies by forcing the
     // emitter to run last in a separate compiler.

@@ -8,6 +8,7 @@
 #include <iostream>
 #include <memory>
 #include <mutex>
+#include <stdexcept>
 #include <thread>
 #include <vector>
 
@@ -83,7 +84,7 @@ public:
    * This is used by the harness to bridge the driver and the simulation.
    */
   mmio_t *get_cpu_managed_axi4() {
-    if (cpu_managed_stream_io)
+    if (cpu_managed_stream_io && config.cpu_managed)
       return &cpu_managed_stream_io->cpu_managed_axi4;
     return nullptr;
   }
@@ -95,7 +96,7 @@ public:
    * This is used by the harness to bridge the driver and the simulation.
    */
   mm_t *get_fpga_managed_axi4() {
-    if (fpga_managed_stream_io)
+    if (fpga_managed_stream_io && config.fpga_managed)
       return &fpga_managed_stream_io->cpu_mem;
     return nullptr;
   }
@@ -124,6 +125,9 @@ public:
    * Return the wrapper around the CPU-managed stream AXI interface.
    */
   CPUManagedStreamIO &get_cpu_managed_stream_io() override {
+    if (!cpu_managed_stream_io)
+      throw std::runtime_error(
+          "No CPU-managed stream transport in this metasimulation");
     return *cpu_managed_stream_io;
   }
 
@@ -131,6 +135,9 @@ public:
    * Return the wrapper around the FPGA-managed stream AXI interface.
    */
   FPGAManagedStreamIO &get_fpga_managed_stream_io() override {
+    if (!fpga_managed_stream_io)
+      throw std::runtime_error(
+          "No FPGA-managed stream transport in this metasimulation");
     return *fpga_managed_stream_io;
   }
 
@@ -182,9 +189,7 @@ private:
 
     size_t cpu_managed_axi4_read(size_t addr, char *data, size_t size) override;
 
-    uint64_t get_beat_bytes() const override {
-      return cpu_managed_axi4.get_config().beat_bytes();
-    }
+    uint64_t get_beat_bytes() const override;
 
     simif_emul_t &simif;
     mmio_t cpu_managed_axi4;
@@ -203,22 +208,13 @@ private:
       return simif.write(addr, value);
     }
 
-    FPGAManagedStreams::HostBuffer
-    allocate_to_cpu_buffer(size_t size) override {
-      // The modeled memory is FPGA-addressed from 0, so an offset into it is
-      // simultaneously a valid "physical" address and an index into the
-      // backing array. Bump-allocate; nothing is ever freed.
-      uint64_t fpga = next_free_offset;
-      next_free_offset += size;
-      assert(next_free_offset <= cpu_mem.get_size() &&
-             "FPGA-managed stream buffers exceed the modeled host memory");
-      return {(char *)cpu_mem.get_data() + fpga, fpga};
-    }
+    FPGAManagedStreams::HostBuffer allocate_to_cpu_buffer(size_t size) override;
 
     simif_emul_t &simif;
 
     /** Bump pointer for allocate_to_cpu_buffer. */
     uint64_t next_free_offset = 0;
+    mm_t *backing = nullptr;
 
     /**
      * @brief A model of FPGA-addressable CPU-host memory.

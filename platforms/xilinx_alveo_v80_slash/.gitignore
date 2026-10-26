@@ -1,0 +1,14 @@
+cl_*/
+!cl_firesim/
+__pycache__/
+*.pyc
+*.jou
+*.log
+cl_firesim/build-logs/
+cl_firesim/packaged_kernel/
+cl_firesim/tmp_kernel_pack_*/
+cl_firesim/.Xil/
+cl_firesim/.firesim-frequency-*
+cl_firesim/link.cfg
+cl_firesim/firesim.vbin*
+cl_firesim/design/FireSim-generated*

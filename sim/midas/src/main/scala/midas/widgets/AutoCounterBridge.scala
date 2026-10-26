@@ -96,7 +96,13 @@ class AutoCounterBridgeModule(key: AutoCounterParameters)(implicit p: Parameters
     val readrate      = Cat(readrate_high, readrate_low)
     val initDone      = RegInit(false.B)
 
-    val tFireHelper = DecoupledHelper(hPort.toHost.hValid, hPort.fromHost.hReady, initDone)
+    val doSample    = RegInit(false.B)
+    val btht_queue  = Module(new Queue(Vec(eventMetadata.size + 1, UInt(counterWidth.W)), 2))
+    // A pending sample belongs to the next accepted target token. Preserve
+    // both that token and the counter state until the host can accept it.
+    // Disabled triggers must still allow target progress with a full queue.
+    val sampleReady = !doSample || !trigger || btht_queue.io.enq.ready
+    val tFireHelper = DecoupledHelper(hPort.toHost.hValid, hPort.fromHost.hReady, initDone, sampleReady)
     val targetFire  = tFireHelper.fire()
     // We only sink tokens, so tie off the return channel
     hPort.fromHost.hValid := true.B
@@ -124,7 +130,6 @@ class AutoCounterBridgeModule(key: AutoCounterParameters)(implicit p: Parameters
     // Pipeline sample by one cycle, so that events on the final clock cycle of
     // the interval can be captured.  This has the effect of making a signal
     // that is always high read a multiple of N, where N is the sampling rate.
-    val doSample      = RegInit(false.B)
     when(targetFire && isSampleCycle) {
       periodcycles := 0.U
       doSample     := true.B
@@ -137,10 +142,7 @@ class AutoCounterBridgeModule(key: AutoCounterParameters)(implicit p: Parameters
     val allCounters      = cycles +: counters
 
     assert(allCounters.size == allEventMetadata.size)
-    val numCounters = allCounters.size
-    val labels      = allEventMetadata.map(_.label)
-
-    val btht_queue = Module(new Queue(Vec(numCounters, UInt(counterWidth.W)), 2))
+    val labels = allEventMetadata.map(_.label)
 
     btht_queue.io.enq.valid := doSample && targetFire && trigger
     btht_queue.io.enq.bits  := VecInit(allCounters)

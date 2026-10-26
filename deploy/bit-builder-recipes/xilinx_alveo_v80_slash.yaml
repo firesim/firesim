@@ -1,0 +1,11 @@
+# Host paths must name reviewed SLASH/Vivado installations and static checkpoints.
+# See platforms/xilinx_alveo_v80_slash/README.md for the acceptance stage.
+bit_builder_type: XilinxAlveoV80SlashBitBuilder
+args:
+    slash_dir: /opt/SLASH
+    vivado_prefix: /opt/amd/Vivado/2025.1
+    static_shell: /opt/SLASH/linker/slashkit/resources/static_shell/top_wrapper_routed_bb.dcp
+    static_baseline: /opt/firesim-accepted/clock-qualified.dcp
+    vrt_home: /opt/SLASH-install
+    build_timeout_seconds: 43200
+    qualification_timeout_seconds: 28800

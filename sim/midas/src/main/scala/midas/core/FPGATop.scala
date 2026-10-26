@@ -168,27 +168,35 @@ class FPGATop(implicit p: Parameters) extends LazyModule with HasWidgets {
     regionTuples.toSeq.sortBy(r => (BytesOfDRAMRequired(r._2), r._1.head.memoryRegionName)).reverse
 
   // Allocate memory regions using a base-and-bounds scheme
-  val dramOffsetsRev       = sortedRegionTuples.foldLeft(Seq(BigInt(0)))({ case (offsets, (_, addresses)) =>
+  val dramOffsetsRev        = sortedRegionTuples.foldLeft(Seq(BigInt(0)))({ case (offsets, (_, addresses)) =>
     val requestedCapacity = BytesOfDRAMRequired(addresses)
     val pageAligned4k     = ((requestedCapacity + 4095) >> 12) << 12
     (offsets.head + pageAligned4k) +: offsets
   })
-  val totalDRAMAllocated   = dramOffsetsRev.head
-  val dramOffsets          = dramOffsetsRev.tail.reverse
-  val dramBytesPerChannel  = p(HostMemChannelKey).size
-  val availableDRAM        = p(HostMemNumChannels) * dramBytesPerChannel
+  val hasDDRStreamTransport = p(CPUManagedDDRTransport) || p(FPGAManagedDDRTransport)
+  require(!(p(CPUManagedDDRTransport) && p(FPGAManagedDDRTransport)), "Select exactly one DDR stream transport")
+  require(
+    !p(CPUManagedMMIOTransport) || !hasDDRStreamTransport,
+    "MMIO and DDR stream transports are mutually exclusive",
+  )
+  val totalDRAMAllocated    =
+    if (hasDDRStreamTransport) dramOffsetsRev.head.max(BigInt(65536)) else dramOffsetsRev.head
+  val dramOffsets           = dramOffsetsRev.tail.reverse
+  val dramBytesPerChannel   = p(HostMemChannelKey).size
+  val availableDRAM         = p(HostMemNumChannels) * dramBytesPerChannel
   require(
     totalDRAMAllocated <= availableDRAM,
     s"Total requested DRAM of ${totalDRAMAllocated}B, exceeds host capacity of ${availableDRAM}B",
   )
-  val dramChannelsRequired = (totalDRAMAllocated + dramBytesPerChannel - 1) / dramBytesPerChannel
+  val dramChannelsRequired  = (totalDRAMAllocated + dramBytesPerChannel - 1) / dramBytesPerChannel
+  val streamDMAMemoryXbar   = if (hasDDRStreamTransport) Some(AXI4Xbar()) else None
 
   // If the target needs DRAM, build the required channels.
   val (targetMemoryRegions, memAXI4Nodes): (Map[String, BigInt], Seq[AXI4SlaveNode]) =
     if (dramChannelsRequired == 0) { (Map(), Seq()) }
     else {
       // In keeping with the Nasti implementation, we put all channels on a single XBar.
-      val xbar = AXI4Xbar()
+      val xbar = streamDMAMemoryXbar.getOrElse(AXI4Xbar())
 
       val memChannelParams = p(HostMemChannelKey)
 
@@ -348,30 +356,57 @@ class FPGATop(implicit p: Parameters) extends LazyModule with HasWidgets {
         "Selected StreamEngine uses the CPU-managed AXI4 interface, but it is not available on this platform.",
       )
 
+      if (p(FPGAManagedDDRTransport)) {
+        require(p(HostMemNumChannels) == 1, "DDR stream rings require one memory channel")
+        val dma = streamingEngine.fpgaManagedAXI4NodeOpt.getOrElse(
+          throw new IllegalArgumentException("DDR rings require an FPGA-managed memory master")
+        )
+        streamDMAMemoryXbar.get := AXI4Buffer() := dma
+      }
+
       // Only when the engine actually takes CPU-managed traffic. An engine that
       // DMAs everything over PCIM exposes no inward node, and creating a master
       // node with nothing to bind it to fails elaboration.
-      val cpuManagedAXI4NodeTuple = streamingEngine.cpuManagedAXI4NodeOpt.flatMap { engineNode =>
-        p(CPUManagedAXI4Key).map { params =>
-          val node = AXI4MasterNode(
-            Seq(
-              AXI4MasterPortParameters(
-                masters = Seq(
-                  AXI4MasterParameters(
-                    name      = "cpu-managed-axi4",
-                    id        = IdRange(0, 1 << params.idBits),
-                    aligned   = false,
-                    // None = infinite, else is a per-ID cap
-                    maxFlight = params.maxFlight,
+      val cpuManagedAXI4NodeTuple = if (p(CPUManagedDDRTransport)) {
+        require(
+          p(HostMemNumChannels) == 1 && p(HostMemChannelKey).beatBytes == 8,
+          "DDR CPU stream transport requires one 64-bit memory channel",
+        )
+        val transportParameters = p.alterPartial { case CPUStreamDMAReservedBytes => totalDRAMAllocated }
+        val transport           = addWidget(new SlashDDRStreamWidget()(transportParameters))
+        streamingEngine.cpuManagedAXI4NodeOpt.getOrElse(
+          throw new IllegalArgumentException("DDR transport requires a CPU-managed stream engine")
+        )                       := transport.streamNode
+        streamDMAMemoryXbar.get := AXI4Buffer() := transport.memoryNode
+        None
+      } else if (p(CPUManagedMMIOTransport)) {
+        val transport = addWidget(new MMIOStreamWidget)
+        streamingEngine.cpuManagedAXI4NodeOpt.getOrElse(
+          throw new IllegalArgumentException("MMIO transport requires a CPU-managed stream engine")
+        ) := transport.streamNode
+        None
+      } else
+        streamingEngine.cpuManagedAXI4NodeOpt.flatMap { engineNode =>
+          p(CPUManagedAXI4Key).map { params =>
+            val node = AXI4MasterNode(
+              Seq(
+                AXI4MasterPortParameters(
+                  masters = Seq(
+                    AXI4MasterParameters(
+                      name      = "cpu-managed-axi4",
+                      id        = IdRange(0, 1 << params.idBits),
+                      aligned   = false,
+                      // None = infinite, else is a per-ID cap
+                      maxFlight = params.maxFlight,
+                    )
                   )
                 )
               )
             )
-          )
-          engineNode := AXI4Buffer() := node
-          (node, params)
+            engineNode := AXI4Buffer() := node
+            (node, params)
+          }
         }
-      }
       (Some(streamingEngine), cpuManagedAXI4NodeTuple)
     }
 
@@ -387,7 +422,8 @@ class FPGATop(implicit p: Parameters) extends LazyModule with HasWidgets {
   // DMA'd into host memory, the peer one when partitioning. Collect whichever
   // are present and give them a single shared port.
   val fpgaManagedEngineNodes =
-    (streamingEngine.toSeq ++ fpgaStreamingEngine.toSeq).flatMap(_.fpgaManagedAXI4NodeOpt)
+    ((if (p(FPGAManagedDDRTransport)) Seq.empty else streamingEngine.toSeq) ++
+      fpgaStreamingEngine.toSeq).flatMap(_.fpgaManagedAXI4NodeOpt)
 
   val fpgaManagedAXI4NodeTuple =
     if (fpgaManagedEngineNodes.isEmpty) { None }
@@ -713,6 +749,9 @@ class FPGATopImp(outer: FPGATop)(implicit p: Parameters) extends LazyModuleImp(o
     printQSFPConfig(qsfpBitWidth)
 
     sb.append(s",\n.target_name = ${CStrLit(target).toC}")
+    if (p(FPGAManagedDDRTransport)) {
+      sb.append(s",\n.fpga_managed_ddr = true,\n.target_dram_bytes = ${outer.totalDRAMAllocated}ULL")
+    }
 
     sb.append("\n};\n")
 

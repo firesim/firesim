@@ -199,8 +199,9 @@ private[passes] object TriggerWiring extends firrtl.Transform {
 
       // Step 6) Synchronize and aggregate local counts into global counts in the base clock domain
       val refClockRT = wiredState.annotations
-        .collectFirst({ case FAMEChannelConnectionAnnotation(_, TargetClockChannel(_, _), _, _, Some(clock :: _)) =>
-          clock
+        .collectFirst({
+          case FAMEChannelConnectionAnnotation(_, TargetClockChannel(_, _), _, _, Some(clocks)) if clocks.nonEmpty =>
+            clocks.head
         })
         .get
 
@@ -244,9 +245,16 @@ private[passes] object TriggerWiring extends firrtl.Transform {
       val updatedCircuit    = wiredState.circuit.copy(modules = topModWithTrigger +: otherModules)
 
       // Step 8) Wire the generated trigger to all sinks using the WiringTranform
-      val sinkModuleMap        = sinkAnnos.groupBy(_.target.module).map { case (k, v) => k -> v.toSeq }
-      val wiringAnnos          = new mutable.ArrayBuffer[Annotation]
+      val sinkModuleMap = sinkAnnos.groupBy(_.target.module).map { case (k, v) => k -> v.toSeq }
+      val wiringAnnos   = new mutable.ArrayBuffer[Annotation]
       wiringAnnos += SourceAnnotation(triggerSourceRT.toNamed, sinkWiringKey)
+      val snapshot      = state.annotations
+        .collectFirst { case midas.stage.phases.ConfigParametersAnnotation(p) =>
+          p(midas.HostTriggerSnapshotEnabled)
+        }
+        .getOrElse(false)
+      if (snapshot) wiringAnnos += midas.HostTriggerSnapshotAnnotation(triggerSourceRT)
+
       val preSinkWiringCircuit = updatedCircuit.map(onModuleSink(sinkModuleMap, wiringAnnos))
       val preSinkWiringState   = CircuitState(preSinkWiringCircuit, HighForm, wiredState.annotations ++ wiringAnnos)
 

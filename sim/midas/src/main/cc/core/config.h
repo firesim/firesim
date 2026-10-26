@@ -70,6 +70,11 @@ struct TargetConfig {
   const FPGATopQSFPConfig qsfp;
 
   const char *target_name;
+
+  // Optional streams sharing the modeled target DDR instead of an external
+  // FPGA-managed AXI port. Old generated configurations keep their defaults.
+  const bool fpga_managed_ddr = false;
+  const uint64_t target_dram_bytes = 0;
 };
 
 #endif // __CORE_CONFIG_H

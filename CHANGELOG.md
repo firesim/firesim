@@ -2,6 +2,16 @@
 
 This changelog follows the format defined here: https://keepachangelog.com/en/1.0.0/
 
+## [Unreleased]
+
+### Fixed
+
+- Bound simulation initialization polling to 60 seconds and pace pending reads
+  at one millisecond intervals. `+init-timeout-ms=1..600000` overrides the
+  deadline. This cannot interrupt an individual stalled hardware transaction.
+- Report native driver exceptions with a failure exit code and allow normal
+  cleanup, rather than terminating through an uncaught exception.
+
 ## [1.21.0] - 2026-06-21
 
 FireSim 1.21.0 adds initial AWS F2 support, updates FPGA/local deployment infrastructure, refreshes key dependencies and documentation, and fixes several VCU118, XDMA, metasimulation, and workload issues. 

@@ -74,5 +74,37 @@ $(vitis): $(header) $(DRIVER_CC) $(DRIVER_H) $(midas_cc) $(midas_h)
 		OUT_DIR=$(OUTPUT_DIR) \
 		DRIVER="$(DRIVER_CC)"
 
+# AMD Alveo V80 driver, linked against the SLASH stack's VRT runtime
+# (https://github.com/Xilinx/SLASH). VRT_HOME points to a prefix holding
+# libvrt + headers (default: system install at /usr/local).
+VRT_HOME ?= /usr/local
+
+# Recompile when the selected SDK headers or shared libraries change.  Restrict
+# discovery to this platform so other drivers do not need a SLASH installation.
+ifeq ($(PLATFORM),xilinx_alveo_v80_slash)
+V80_SLASH_SDK_HEADERS := $(shell find "$(VRT_HOME)/include/vrt" "$(VRT_HOME)/include/vrtd" "$(VRT_HOME)/include/slash" -type f \( -name '*.hpp' -o -name '*.h' \) 2>/dev/null)
+V80_SLASH_SDK_LIBRARIES := $(wildcard $(VRT_HOME)/lib/libvrt.so* $(VRT_HOME)/lib/libvrtd*.so* $(VRT_HOME)/lib/libslash.so*)
+endif
+
+V80_SLASH_CXX ?= /usr/bin/g++
+$(xilinx_alveo_v80_slash): export CXX := $(V80_SLASH_CXX)
+$(xilinx_alveo_v80_slash): export CXXFLAGS := $(CXXFLAGS) $(common_cxx_flags) $(DRIVER_CXXOPTS) \
+	-idirafter ${CONDA_PREFIX}/include -idirafter ${CONDA_PREFIX}/include/libxml2 \
+	-idirafter /usr/include -idirafter $(VRT_HOME)/include
+$(xilinx_alveo_v80_slash): export LDFLAGS := $(LDFLAGS) $(common_ld_flags) -Wl,-rpath='$$$$ORIGIN' \
+	-L${CONDA_PREFIX}/lib -Wl,-rpath,${CONDA_PREFIX}/lib -Wl,-rpath-link=/usr/lib/x86_64-linux-gnu -L/usr/lib/x86_64-linux-gnu -L$(VRT_HOME)/lib -Wl,-rpath-link,$(VRT_HOME)/lib -Wl,-rpath,$(VRT_HOME)/lib \
+	-lvrt -lxml2 -lzmq -ljsoncpp -ldl -lz
+
+# Compile Driver
+$(xilinx_alveo_v80_slash): $(header) $(DRIVER_CC) $(DRIVER_H) $(midas_cc) $(midas_h) $(firesim_base_dir)/make/driver.mk $(V80_SLASH_SDK_HEADERS) $(V80_SLASH_SDK_LIBRARIES)
+	mkdir -p $(OUTPUT_DIR)/build
+	cp $(header) $(OUTPUT_DIR)/build/
+	$(MAKE) -C $(simif_dir) driver MAIN=$(PLATFORM) PLATFORM=$(PLATFORM) \
+		DRIVER_NAME=$(DESIGN) \
+		GEN_FILE_BASENAME=$(BASE_FILE_NAME) \
+		GEN_DIR=$(OUTPUT_DIR)/build \
+		OUT_DIR=$(OUTPUT_DIR) \
+		DRIVER="$(DRIVER_CC)"
+
 tags: $(header) $(DRIVER_CC) $(DRIVER_H) $(midas_cc) $(midas_h)
 	ctags -R --exclude=@.ctagsignore .

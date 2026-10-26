@@ -51,6 +51,8 @@ public:
   unsigned get_mem_data_chunk() const { return mem_data_chunk; }
 
 private:
+  void write_words(size_t addr, mpz_t &value, size_t num_beats);
+
   const LOADMEMWIDGET_struct mmio_addrs;
   const AXI4Config mem_conf;
   const unsigned mem_data_chunk;
