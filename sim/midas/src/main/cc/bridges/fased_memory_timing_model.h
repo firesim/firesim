@@ -133,6 +133,7 @@ public:
 
 private:
   const AddressMap addr_map;
+  const unsigned model_index;
 
   /**
    * User-provided configuration options.

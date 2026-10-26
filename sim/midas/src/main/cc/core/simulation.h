@@ -3,6 +3,7 @@
 #ifndef __SIMULATION_H
 #define __SIMULATION_H
 
+#include <chrono>
 #include <optional>
 #include <string>
 #include <vector>
@@ -89,7 +90,8 @@ private:
   /**
    * Waits until the hardware is initialised.
    *
-   * This method blocks and must be called before any MMIO is performed.
+   * Polls the initialization register before other MMIO. The deadline bounds
+   * returned pending responses; it cannot interrupt a blocked bus access.
    */
   void wait_for_init();
 
@@ -140,6 +142,8 @@ private:
    * If set, write the presence register and exit the simulation cleanly
    */
   std::optional<uint32_t> write_fingerprint_only;
+
+  std::chrono::milliseconds init_timeout{60000};
 
   midas_time_t start_time;
   midas_time_t end_time;

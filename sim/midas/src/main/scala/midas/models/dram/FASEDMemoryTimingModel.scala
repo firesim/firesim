@@ -404,7 +404,7 @@ class FASEDMemoryTimingModel(completeConfig: firesim.lib.bridges.CompleteConfig,
     if (cfg.params.localHCycleCount) {
       val hCycle = RegInit(0.U(32.W))
       hCycle := hCycle + 1.U
-      attach(hCycle, "hostCycle", ReadOnly)
+      attach(hCycle, "hostCycle", ReadOnly, substruct = false)
     }
 
     if (cfg.params.stallEventCounters) {
@@ -433,12 +433,12 @@ class FASEDMemoryTimingModel(completeConfig: firesim.lib.bridges.CompleteConfig,
         readEgressStalls  := 0.U
         tokenStalls       := 0.U
       }
-      attach(writeEgressStalls, "writeStalled", ReadOnly)
-      attach(readEgressStalls, "readStalled", ReadOnly)
-      attach(tokenStalls, "tokenStalled", ReadOnly)
-      attach(hostMemoryIdleCycles, "hostMemIdleCycles", ReadOnly)
-      attach(hOutstandingWrites.value, "hostWritesOutstanding", ReadOnly)
-      attach(hOutstandingReads.value, "hostReadsOutstanding", ReadOnly)
+      attach(writeEgressStalls, "writeStalled", ReadOnly, substruct                 = false)
+      attach(readEgressStalls, "readStalled", ReadOnly, substruct                   = false)
+      attach(tokenStalls, "tokenStalled", ReadOnly, substruct                       = false)
+      attach(hostMemoryIdleCycles, "hostMemIdleCycles", ReadOnly, substruct         = false)
+      attach(hOutstandingWrites.value, "hostWritesOutstanding", ReadOnly, substruct = false)
+      attach(hOutstandingReads.value, "hostReadsOutstanding", ReadOnly, substruct   = false)
     }
 
     if (cfg.params.detectAddressCollisions) {
@@ -462,8 +462,8 @@ class FASEDMemoryTimingModel(completeConfig: firesim.lib.bridges.CompleteConfig,
         num_collisions := num_collisions + 1.U
       }
 
-      attach(num_collisions, "addrCollision", ReadOnly)
-      attach(collision_addr, "collisionAddr", ReadOnly)
+      attach(num_collisions, "addrCollision", ReadOnly, substruct = false)
+      attach(collision_addr, "collisionAddr", ReadOnly, substruct = false)
     }
 
     if (cfg.params.latencyHistograms) {
@@ -574,11 +574,11 @@ class FASEDMemoryTimingModel(completeConfig: firesim.lib.bridges.CompleteConfig,
 
       attachIO(readRanges, "readRanges_")
       attachIO(writeRanges, "writeRanges_")
-      attach(numRanges, "numRanges", ReadOnly)
+      attach(numRanges, "numRanges", ReadOnly, substruct = false)
     }
 
     val rrespError = RegEnable(toHostDRAM.r.bits.resp, 0.U, toHostDRAM.r.bits.resp =/= 0.U && toHostDRAM.r.fire)
-    val brespError = RegEnable(toHostDRAM.r.bits.resp, 0.U, toHostDRAM.b.bits.resp =/= 0.U && toHostDRAM.b.fire)
+    val brespError = RegEnable(toHostDRAM.b.bits.resp, 0.U, toHostDRAM.b.bits.resp =/= 0.U && toHostDRAM.b.fire)
 
     // Generate the configuration registers and tie them to the ctrl bus
     attachIO(model.io.mmReg)

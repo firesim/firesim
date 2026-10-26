@@ -9,15 +9,33 @@
 #include "core/stream_engine.h"
 #include "core/timing.h"
 
+#include <algorithm>
 #include <cassert>
+#include <charconv>
 #include <cinttypes>
 #include <cstdio>
+#include <stdexcept>
+#include <thread>
 
 simulation_t::simulation_t(widget_registry_t &registry,
                            const std::vector<std::string> &args)
     : registry(registry), clock(registry.get_widget<clockmodule_t>()) {
   bool fastloadmem = false;
+  bool init_timeout_seen = false;
   for (auto &arg : args) {
+    const std::string prefix = "+init-timeout-ms=";
+    if (arg.compare(0, prefix.size(), prefix) == 0) {
+      const char *begin = arg.data() + prefix.size();
+      const char *end = arg.data() + arg.size();
+      uint32_t milliseconds = 0;
+      const auto parsed = std::from_chars(begin, end, milliseconds);
+      if (init_timeout_seen || parsed.ec != std::errc{} || parsed.ptr != end ||
+          milliseconds == 0 || milliseconds > 600000)
+        throw std::invalid_argument(
+            "+init-timeout-ms requires one integer in [1, 600000]");
+      init_timeout_seen = true;
+      init_timeout = std::chrono::milliseconds(milliseconds);
+    }
     if (arg.find("+fastloadmem") == 0) {
       fastloadmem = true;
     }
@@ -142,11 +160,22 @@ int simulation_t::execute_simulation_flow() {
 
   record_start_times();
   fprintf(stderr, "Commencing simulation.\n");
-  const int exit_code = simulation_run();
+  int exit_code = simulation_run();
   fprintf(stderr, "\nSimulation complete.\n");
   record_end_times();
 
   simulation_finish();
+
+  // Some bridges only discover failures while draining their final output.
+  // Preserve a failure already reported by simulation_run().
+  if (exit_code == 0) {
+    for (auto *bridge : registry.get_all_bridges()) {
+      if (bridge->terminate() && bridge->exit_code() != 0) {
+        exit_code = bridge->exit_code();
+        break;
+      }
+    }
+  }
 
   const bool timeout = simulation_timed_out();
 
@@ -170,8 +199,19 @@ int simulation_t::execute_simulation_flow() {
 
 void simulation_t::wait_for_init() {
   auto &master = registry.get_widget<master_t>();
-  while (!master.is_init_done())
-    ;
+  const auto deadline = std::chrono::steady_clock::now() + init_timeout;
+  while (true) {
+    const auto now = std::chrono::steady_clock::now();
+    if (now >= deadline)
+      throw std::runtime_error("Simulation master initialization timed out");
+    if (master.is_init_done())
+      return;
+    // Avoid a tight MMIO loop if the device keeps returning pending. This
+    // does not provide a timeout or isolation for an individual bus access.
+    std::this_thread::sleep_until(
+        std::min(deadline, std::chrono::steady_clock::now() +
+                               std::chrono::milliseconds(1)));
+  }
 }
 
 void simulation_t::init_dram() {

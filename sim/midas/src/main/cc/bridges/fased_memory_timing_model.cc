@@ -3,6 +3,7 @@
 #include <algorithm>
 #include <exception>
 #include <iostream>
+#include <limits>
 #include <stdio.h>
 
 #include "fased_memory_timing_model.h"
@@ -60,7 +61,7 @@ FASEDMemoryTimingModel::FASEDMemoryTimingModel(
     const std::string &stats_file_name,
     size_t mem_size)
     : bridge_driver_t(simif, &KIND), addr_map(std::move(addr_map)),
-      mem_size(mem_size) {
+      model_index(modelno), mem_size(mem_size) {
 
   std::string suffix = "_" + std::to_string(modelno);
   for (auto &arg : args) {
@@ -71,8 +72,14 @@ FASEDMemoryTimingModel::FASEDMemoryTimingModel(
 
     auto sub_arg = arg.substr(4);
     size_t delimit_idx = sub_arg.find("=");
-    size_t suffix_idx = sub_arg.find(suffix);
-    std::string key = sub_arg.substr(0, suffix_idx).c_str();
+    const std::string indexed_key = sub_arg.substr(0, delimit_idx);
+    if (indexed_key.size() <= suffix.size() ||
+        indexed_key.compare(
+            indexed_key.size() - suffix.size(), suffix.size(), suffix) != 0) {
+      continue;
+    }
+    const std::string key =
+        indexed_key.substr(0, indexed_key.size() - suffix.size());
 
     // This is the only nullary plusarg supported by fased
     if (key == std::string("useHardwareDefaultRuntimeSettings")) {
@@ -82,14 +89,28 @@ FASEDMemoryTimingModel::FASEDMemoryTimingModel(
 
     // All other plusargs are key-value pairs that will be written to the
     // bridge module
-    if (suffix_idx == std::string::npos) {
+    if (delimit_idx == std::string::npos) {
       throw std::runtime_error("[FASED] unknown nullary plusarg: " + key);
     }
     if (!addr_map.w_reg_exists(key)) {
       throw std::runtime_error("[FASED] unknown register: " + key);
     }
-    int value = std::stoi(sub_arg.substr(delimit_idx + 1).c_str());
-    user_configuration[key] = value;
+    const std::string value_text = sub_arg.substr(delimit_idx + 1);
+    if (value_text.empty() || value_text.front() == '-') {
+      throw std::runtime_error("[FASED] Invalid unsigned configuration: " +
+                               arg);
+    }
+    size_t consumed = 0;
+    const int base = value_text.size() > 2 && value_text[0] == '0' &&
+                             (value_text[1] == 'x' || value_text[1] == 'X')
+                         ? 16
+                         : 10;
+    const auto value = std::stoull(value_text, &consumed, base);
+    if (consumed != value_text.size() ||
+        value > std::numeric_limits<uint32_t>::max()) {
+      throw std::runtime_error("[FASED] Configuration out of range: " + arg);
+    }
+    user_configuration[key] = static_cast<uint32_t>(value);
   }
 
   stats_file.open(stats_file_name, std::ofstream::out);
@@ -116,19 +137,19 @@ FASEDMemoryTimingModel::FASEDMemoryTimingModel(
   stats_file << std::endl;
 
   if (addr_map.w_reg_exists("hostReadLatencyHist_enable")) {
-    histograms.emplace_back(&simif, addr_map, "hostReadLatency");
-    histograms.emplace_back(&simif, addr_map, "hostWriteLatency");
-    histograms.emplace_back(&simif, addr_map, "targetReadLatency");
-    histograms.emplace_back(&simif, addr_map, "targetWriteLatency");
-    histograms.emplace_back(&simif, addr_map, "ingressReadLatency");
-    histograms.emplace_back(&simif, addr_map, "ingressWriteLatency");
-    histograms.emplace_back(&simif, addr_map, "totalReadLatency");
-    histograms.emplace_back(&simif, addr_map, "totalWriteLatency");
+    histograms.emplace_back(&simif, this->addr_map, "hostReadLatency");
+    histograms.emplace_back(&simif, this->addr_map, "hostWriteLatency");
+    histograms.emplace_back(&simif, this->addr_map, "targetReadLatency");
+    histograms.emplace_back(&simif, this->addr_map, "targetWriteLatency");
+    histograms.emplace_back(&simif, this->addr_map, "ingressReadLatency");
+    histograms.emplace_back(&simif, this->addr_map, "ingressWriteLatency");
+    histograms.emplace_back(&simif, this->addr_map, "totalReadLatency");
+    histograms.emplace_back(&simif, this->addr_map, "totalWriteLatency");
   }
 
   if (addr_map.w_reg_exists("readRanges_enable")) {
-    rangectrs.emplace_back(&simif, addr_map, "read");
-    rangectrs.emplace_back(&simif, addr_map, "write");
+    rangectrs.emplace_back(&simif, this->addr_map, "read");
+    rangectrs.emplace_back(&simif, this->addr_map, "write");
   }
 }
 
@@ -201,7 +222,11 @@ void FASEDMemoryTimingModel::finish() {
   }
 
   std::ofstream histogram_file;
-  histogram_file.open("latency_histogram.csv", std::ofstream::out);
+  histogram_file.open(model_index == 0
+                          ? "latency_histogram.csv"
+                          : "latency_histogram" + std::to_string(model_index) +
+                                ".csv",
+                      std::ofstream::out);
   if (!histogram_file.is_open()) {
     throw std::runtime_error("Could not open histogram output file");
   }
@@ -224,7 +249,11 @@ void FASEDMemoryTimingModel::finish() {
     size_t nranges = rangectrs[0].nranges;
     std::ofstream rangectr_file;
 
-    rangectr_file.open("range_counters.csv", std::ofstream::out);
+    rangectr_file.open(model_index == 0
+                           ? "range_counters.csv"
+                           : "range_counters" + std::to_string(model_index) +
+                                 ".csv",
+                       std::ofstream::out);
     if (!rangectr_file.is_open()) {
       throw std::runtime_error("Could not open range counter file");
     }
