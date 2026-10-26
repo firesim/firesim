@@ -198,6 +198,43 @@ object ExcludeInstanceAsserts {
     }
 }
 
+/** AssertContext annotations. Do not emit the FIRRTL annotation directly; use the Chisel-side [[AssertContext]]
+  * object instead.
+  */
+case class AssertContextFirrtlAnnotation(
+  target: ReferenceTarget,
+  clock:  ReferenceTarget,
+  label:  String,
+) extends firrtl.annotations.Annotation {
+  def update(renames: RenameMap): Seq[firrtl.annotations.Annotation] = {
+    val renamer = new ReferenceTargetRenamer(renames)
+    Seq(this.copy(target = renamer.exactRename(target), clock = renamer.exactRename(clock)))
+  }
+}
+
+object AssertContext {
+
+  /** Labels a signal whose value the simulation driver reports when a synthesized assertion fires, and on the final
+    * PASSED / FAILED line (e.g., the number of instructions retired). The signal is wired to the assertion bridge of
+    * its clock domain, so it is only synthesized when assertion synthesis is enabled in the platform config
+    * (WithSynthAsserts); otherwise the annotation is dropped and costs no hardware.
+    *
+    * @param target
+    *   The value to report, at most 64 bits wide, synchronous to the module's implicit clock.
+    *
+    * @param label
+    *   A short name for the value, printed as <instance path>.<label>=<value>.
+    */
+  def apply(target: UInt, label: String): Unit = {
+    requireIsHardware(target, "Target passed to AssertContext:")
+    require(target.getWidth <= 64, s"AssertContext can only accept fields <= 64b wide; $label is ${target.getWidth}b.")
+    val clock = Module.clock
+    annotate(new ChiselAnnotation {
+      def toFirrtl = AssertContextFirrtlAnnotation(target.toTarget, clock.toTarget, label)
+    })
+  }
+}
+
 sealed trait PerfCounterOpType
 
 object PerfCounterOps {
