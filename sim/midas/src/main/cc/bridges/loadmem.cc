@@ -2,7 +2,11 @@
 
 #include "loadmem.h"
 
+#include <algorithm>
 #include <fstream>
+#include <limits>
+#include <stdexcept>
+#include <vector>
 
 #include "core/simif.h"
 
@@ -17,6 +21,8 @@ loadmem_t::loadmem_t(simif_t &simif,
     : widget_t(simif, &KIND), mmio_addrs(mmio_addrs), mem_conf(mem_conf),
       mem_data_chunk(mem_data_chunk) {
   assert(index == 0 && "only one loadmem widget is allowed");
+  if (mem_data_chunk == 0)
+    throw std::invalid_argument("loadmem beat must contain at least one word");
 }
 
 void loadmem_t::load_mem_from_file(const std::string &filename) {
@@ -44,10 +50,12 @@ void loadmem_t::load_mem_from_file(const std::string &filename) {
   }
   mpz_clear(data);
   file.close();
+  simif.flush_dram_writes();
   fprintf(stdout, "[loadmem] done\n");
 }
 
 void loadmem_t::read_mem(size_t addr, mpz_t &value) {
+  simif.flush_dram_writes();
   // NB: mpz_t variables may not export <size> <uint32_t> beats, if initialized
   // with an array of zeros.
   simif.write(mmio_addrs.R_ADDRESS_H, addr >> 32);
@@ -60,36 +68,43 @@ void loadmem_t::read_mem(size_t addr, mpz_t &value) {
 }
 
 void loadmem_t::write_mem(size_t addr, mpz_t &value) {
-  simif.write(mmio_addrs.W_ADDRESS_H, addr >> 32);
-  simif.write(mmio_addrs.W_ADDRESS_L, addr & ((1ULL << 32) - 1));
-  simif.write(mmio_addrs.W_LENGTH, 1);
-  size_t size;
-  uint32_t *data =
-      (uint32_t *)mpz_export(nullptr, &size, -1, sizeof(uint32_t), 0, 0, value);
-  for (size_t i = 0; i < mem_data_chunk; i++) {
-    simif.write(mmio_addrs.W_DATA, i < size ? data[i] : 0);
-  }
+  write_words(addr, value, 1);
 }
 
-static size_t ceil_div(size_t a, size_t b) { return ((a)-1) / (b) + 1; }
-
 void loadmem_t::write_mem_chunk(size_t addr, mpz_t &value, size_t bytes) {
-  const unsigned mem_data_chunk_bytes = mem_data_chunk * sizeof(uint32_t);
+  if (bytes == 0)
+    return;
+  const size_t beat_bytes = size_t(mem_data_chunk) * sizeof(uint32_t);
+  const size_t num_beats = bytes / beat_bytes + (bytes % beat_bytes != 0);
+  write_words(addr, value, num_beats);
+}
 
+void loadmem_t::write_words(size_t addr, mpz_t &value, size_t num_beats) {
+  if (num_beats >
+      std::numeric_limits<size_t>::max() / sizeof(uint32_t) / mem_data_chunk)
+    throw std::length_error("loadmem write length overflow");
+  const size_t words = num_beats * mem_data_chunk;
+  const size_t bits = mpz_sizeinbase(value, 2);
+  const size_t source_words = bits / 32 + (bits % 32 != 0);
+  // Export into owned storage, including room for a value wider than the
+  // requested span. Only the low requested words are written, as with MMIO.
+  std::vector<uint32_t> data(std::max(words, source_words), 0);
+  size_t exported;
+  mpz_export(data.data(), &exported, -1, sizeof(uint32_t), 0, 0, value);
+  if (simif.write_dram_bulk(addr, data.data(), words * sizeof(uint32_t)))
+    return;
+  // A backend may accept only some writes. Do not let this MMIO fallback
+  // overtake an earlier accepted write that is still buffered.
+  simif.flush_dram_writes();
   simif.write(mmio_addrs.W_ADDRESS_H, addr >> 32);
   simif.write(mmio_addrs.W_ADDRESS_L, addr & ((1ULL << 32) - 1));
-
-  size_t num_beats = ceil_div(bytes, mem_data_chunk_bytes);
   simif.write(mmio_addrs.W_LENGTH, num_beats);
-  size_t size;
-  uint32_t *data =
-      (uint32_t *)mpz_export(nullptr, &size, -1, sizeof(uint32_t), 0, 0, value);
-  for (size_t i = 0; i < num_beats * mem_data_chunk; i++) {
-    simif.write(mmio_addrs.W_DATA, i < size ? data[i] : 0);
-  }
+  for (size_t i = 0; i < words; i++)
+    simif.write(mmio_addrs.W_DATA, data[i]);
 }
 
 void loadmem_t::zero_out_dram() {
+  simif.flush_dram_writes();
   simif.write(mmio_addrs.ZERO_OUT_DRAM, 1);
   while (!simif.read(mmio_addrs.ZERO_FINISHED))
     ;

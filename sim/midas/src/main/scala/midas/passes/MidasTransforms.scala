@@ -22,7 +22,13 @@ private[midas] class MidasTransforms extends Transform {
     val p                        = internalState.annotations.collectFirst({ case midas.stage.phases.ConfigParametersAnnotation(p) => p }).get
     val optionalTargetTransforms =
       if (p(GenerateMultiCycleRamModels))
-        Seq(new fame.LabelSRAMModels, new ResolveAndCheck, new EmitFirrtl("post-wrap-sram-models.fir"))
+        Seq(
+          new fame.NormalizeSynchronousRAMs,
+          new ResolveAndCheck,
+          new fame.LabelSRAMModels,
+          new ResolveAndCheck,
+          new EmitFirrtl("post-wrap-sram-models.fir"),
+        )
       else Seq()
 
     val partition = p(FireAxePartitionGlobalInfo).isDefined

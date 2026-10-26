@@ -7,14 +7,29 @@
 #include <inttypes.h>
 #include <iostream>
 #include <sstream>
+#include <stdexcept>
 #include <stdio.h>
 #include <string>
 #include <vector>
+
+FPGAManagedStreams::FPGAToCPUDriver::FPGAToCPUDriver(
+    StreamParameters &&params,
+    void *buffer_base,
+    uint64_t buffer_base_fpga,
+    FPGAManagedStreamIO &io,
+    std::chrono::milliseconds timeout)
+    : timeout(timeout), params(std::move(params)), buffer_base(buffer_base),
+      buffer_base_fpga(buffer_base_fpga), io(io) {
+  if (timeout.count() <= 0)
+    throw std::invalid_argument(
+        "FPGA-managed output requires a positive timeout");
+}
 
 void FPGAManagedStreams::FPGAToCPUDriver::init() {
   fprintf(stdout, "PCIM Peer Base Addr: 0x%" PRIx64 "\n", buffer_base_fpga);
   mmio_write(params.toHostPhysAddrHighAddr, (uint32_t)(buffer_base_fpga >> 32));
   mmio_write(params.toHostPhysAddrLowAddr, (uint32_t)buffer_base_fpga);
+  mmio_write(params.toHostStreamDoneInitAddr, 1);
 }
 /**
  * @brief Dequeues as much as num_bytes of data from the associated bridge
@@ -45,8 +60,12 @@ size_t FPGAManagedStreams::FPGAToCPUDriver::pull(void *dest,
       ((buffer_offset + bytes_in_buffer) > params.buffer_capacity)
           ? params.buffer_capacity - buffer_offset
           : bytes_in_buffer;
+  if (first_copy_bytes)
+    io.sync_from_device(static_cast<char *>(src_addr), first_copy_bytes);
   std::memcpy(dest, src_addr, first_copy_bytes);
   if (first_copy_bytes < bytes_in_buffer) {
+    io.sync_from_device(static_cast<char *>(buffer_base),
+                        bytes_in_buffer - first_copy_bytes);
     std::memcpy((char *)dest + first_copy_bytes,
                 buffer_base,
                 bytes_in_buffer - first_copy_bytes);
@@ -57,15 +76,13 @@ size_t FPGAManagedStreams::FPGAToCPUDriver::pull(void *dest,
 }
 
 void FPGAManagedStreams::FPGAToCPUDriver::flush() {
+  const auto deadline = std::chrono::steady_clock::now() + timeout;
   mmio_write(params.toHostStreamFlushAddr, 1);
-  // TODO: Consider if this should be made non-blocking // alternate API
-  auto flush_done = false;
-  int attempts = 0;
-  while (!flush_done) {
-    flush_done = (mmio_read(params.toHostStreamFlushDoneAddr) & 1);
-    if (++attempts > 256) {
-      exit(1); // Bridge stream flush appears to deadlock
-    };
+  // The number of control reads needed to drain a burst depends on memory
+  // width and backpressure. A fixed poll count can reject a progressing DMA.
+  while (!(mmio_read(params.toHostStreamFlushDoneAddr) & 1)) {
+    if (std::chrono::steady_clock::now() >= deadline)
+      throw std::runtime_error("FPGA-managed output stream flush timed out");
   }
 }
 
@@ -235,4 +252,128 @@ uint64_t FPGAManagedStreamWidget::get_p2p_bar_address(const char *dir_name) {
   assert(physical_addr != 0 && "Unable to get valid physical_addr");
 
   return physical_addr;
+}
+
+FPGAManagedStreams::CPUToFPGADriver::CPUToFPGADriver(
+    FromCPUStreamParameters &&params,
+    void *buffer_base,
+    uint64_t buffer_base_fpga,
+    FPGAManagedStreamIO &io,
+    std::chrono::milliseconds timeout)
+    : timeout(timeout), params(std::move(params)), buffer_base(buffer_base),
+      buffer_base_fpga(buffer_base_fpga), io(io) {
+  const auto size = this->params.buffer_capacity;
+  if (!buffer_base || size < 64 || (size & (size - 1)) ||
+      (buffer_base_fpga % 4096) || timeout.count() <= 0)
+    throw std::invalid_argument("Invalid FPGA-managed input ring");
+}
+
+void FPGAManagedStreams::CPUToFPGADriver::check_ready() const {
+  if (failed)
+    throw std::runtime_error(
+        "FPGA-managed input ring failed; recreate before reuse");
+}
+
+void FPGAManagedStreams::CPUToFPGADriver::wait_until(
+    size_t address,
+    const std::function<bool(uint32_t)> &ready,
+    std::chrono::steady_clock::time_point deadline) {
+  while (!ready(mmio_read(address))) {
+    if (std::chrono::steady_clock::now() >= deadline) {
+      failed = true;
+      throw std::runtime_error("FPGA-managed input ring timed out");
+    }
+  }
+}
+
+void FPGAManagedStreams::CPUToFPGADriver::init() {
+  check_ready();
+  mmio_write(params.fromHostPhysAddrHighAddr, buffer_base_fpga >> 32);
+  mmio_write(params.fromHostPhysAddrLowAddr, buffer_base_fpga);
+  mmio_write(params.fromHostStreamDoneInitAddr, 1);
+}
+
+size_t FPGAManagedStreams::CPUToFPGADriver::push(void *src,
+                                                 size_t num_bytes,
+                                                 size_t required_bytes) {
+  check_ready();
+  if (num_bytes < required_bytes || num_bytes % 64 || required_bytes % 64 ||
+      (num_bytes && !src))
+    throw std::invalid_argument(
+        "FPGA-managed input requires complete 64-byte tokens");
+  if (!num_bytes)
+    return 0;
+  const uint32_t consumed = mmio_read(params.bytesConsumedAddr);
+  const uint32_t in_flight = pushed_total - consumed;
+  if (in_flight > params.buffer_capacity || in_flight % 64) {
+    failed = true;
+    throw std::runtime_error(
+        "FPGA-managed input ring has invalid consumption credit");
+  }
+  const size_t available = params.buffer_capacity - in_flight;
+  if (available < required_bytes || !available)
+    return 0;
+  const size_t count = std::min(num_bytes, available);
+  const size_t first = std::min(count, params.buffer_capacity - write_offset);
+  auto *ring = static_cast<char *>(buffer_base);
+  std::memcpy(ring + write_offset, src, first);
+  io.sync_to_device(ring + write_offset, first);
+  if (count > first) {
+    std::memcpy(ring, static_cast<char *>(src) + first, count - first);
+    io.sync_to_device(ring, count - first);
+  }
+  write_offset = (write_offset + count) % params.buffer_capacity;
+  pushed_total += count;
+  try {
+    mmio_write(params.bytesAvailableAddr, count);
+    wait_until(
+        params.bytesAvailableAddr,
+        [](uint32_t v) { return v == 0; },
+        std::chrono::steady_clock::now() + timeout);
+  } catch (...) {
+    failed = true;
+    throw;
+  }
+  return count;
+}
+
+void FPGAManagedStreams::CPUToFPGADriver::flush() {
+  check_ready();
+  // One deadline covers all outstanding copies and the final bridge drain.
+  const auto deadline = std::chrono::steady_clock::now() + timeout;
+  try {
+    wait_until(
+        params.bytesConsumedAddr,
+        [this](uint32_t v) { return v == pushed_total; },
+        deadline);
+    mmio_write(params.fromHostStreamFlushAddr, 1);
+    wait_until(
+        params.fromHostStreamFlushDoneAddr,
+        [](uint32_t v) { return v & 1; },
+        deadline);
+    mmio_write(params.fromHostStreamFlushAddr, 0);
+  } catch (...) {
+    failed = true;
+    throw;
+  }
+}
+
+FPGAManagedStreamWidget::FPGAManagedStreamWidget(
+    simif_t &simif,
+    unsigned index,
+    const std::vector<std::string> &args,
+    FPGAManagedStreams::Target target,
+    std::vector<FPGAManagedStreams::StreamParameters> &&to_cpu,
+    std::vector<FPGAManagedStreams::FromCPUStreamParameters> &&from_cpu)
+    : FPGAManagedStreamWidget(simif, index, args, target, std::move(to_cpu)) {
+  if (target != FPGAManagedStreams::Target::HostMemory)
+    throw std::invalid_argument(
+        "FPGA-managed input streams require host-memory rings");
+  auto &io = simif.get_fpga_managed_stream_io();
+  for (auto &&params : from_cpu) {
+    auto buffer = io.allocate_from_cpu_buffer(params.buffer_capacity);
+    cpu_to_fpga_streams.push_back(
+        std::make_unique<FPGAManagedStreams::CPUToFPGADriver>(
+            std::move(params), buffer.cpu, buffer.fpga, io));
+  }
 }

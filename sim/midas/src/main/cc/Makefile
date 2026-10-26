@@ -54,6 +54,10 @@ override CXXFLAGS += -std=c++20
 
 # Models of FPGA primitives that are used in host-level sim, but not in FPGATop
 sim_fpga_resource_models := $(v_dir)/BUFGCE.v
+ifeq ($(PLATFORM),xilinx_alveo_v80_slash)
+sim_fpga_resource_models += $(v_dir)/BUFG_FABRIC.v \
+  $(abspath $(midas_dir)/../../../../../platforms/xilinx_alveo_v80_slash/cl_firesim/design/V80SlashClockGate.v)
+endif
 
 emul_dir   := $(midas_dir)/emul
 emul_h     := $(driver_h) $(bridge_h) $(emul_dir)/simif_emul.h $(emul_dir)/mmio.h $(emul_dir)/mm.h $(midas_dir)/entry.h $(emul_dir)/qsfp.h
