@@ -3,6 +3,7 @@
 
 // See LICENSE for license details.
 
+#include <chrono>
 #include <functional>
 #include <string>
 
@@ -62,6 +63,17 @@ public:
    */
   virtual FPGAManagedStreams::HostBuffer
   allocate_to_cpu_buffer(size_t size) = 0;
+
+  /** Reserve an independent CPU-to-FPGA ring in the same observable memory. */
+  virtual FPGAManagedStreams::HostBuffer allocate_from_cpu_buffer(size_t size) {
+    return allocate_to_cpu_buffer(size);
+  }
+
+  /** Refresh a noncoherent buffer span before the driver reads it. */
+  virtual void sync_from_device(char *, size_t) {}
+
+  /** Publish a noncoherent buffer span after the driver writes it. */
+  virtual void sync_to_device(char *, size_t) {}
 };
 
 namespace FPGAManagedStreams {
@@ -110,6 +122,36 @@ struct StreamParameters {
         toHostStreamFlushDoneAddr(toHostStreamFlushDoneAddr) {}
 };
 
+struct FromCPUStreamParameters {
+  std::string stream_name;
+  uint32_t buffer_capacity;
+  uint64_t fromHostPhysAddrHighAddr;
+  uint64_t fromHostPhysAddrLowAddr;
+  uint64_t bytesAvailableAddr;
+  uint64_t bytesConsumedAddr;
+  uint64_t fromHostStreamDoneInitAddr;
+  uint64_t fromHostStreamFlushAddr;
+  uint64_t fromHostStreamFlushDoneAddr;
+
+  FromCPUStreamParameters(const std::string &stream_name,
+                          uint32_t buffer_capacity,
+                          uint64_t fromHostPhysAddrHighAddr,
+                          uint64_t fromHostPhysAddrLowAddr,
+                          uint64_t bytesAvailableAddr,
+                          uint64_t bytesConsumedAddr,
+                          uint64_t fromHostStreamDoneInitAddr,
+                          uint64_t fromHostStreamFlushAddr,
+                          uint64_t fromHostStreamFlushDoneAddr)
+      : stream_name(stream_name), buffer_capacity(buffer_capacity),
+        fromHostPhysAddrHighAddr(fromHostPhysAddrHighAddr),
+        fromHostPhysAddrLowAddr(fromHostPhysAddrLowAddr),
+        bytesAvailableAddr(bytesAvailableAddr),
+        bytesConsumedAddr(bytesConsumedAddr),
+        fromHostStreamDoneInitAddr(fromHostStreamDoneInitAddr),
+        fromHostStreamFlushAddr(fromHostStreamFlushAddr),
+        fromHostStreamFlushDoneAddr(fromHostStreamFlushDoneAddr) {}
+};
+
 /**
  * @brief Implements streams sunk by the driver (sourced by the FPGA)
  *
@@ -123,9 +165,8 @@ public:
   FPGAToCPUDriver(StreamParameters &&params,
                   void *buffer_base,
                   uint64_t buffer_base_fpga,
-                  FPGAManagedStreamIO &io)
-      : params(std::move(params)), buffer_base(buffer_base),
-        buffer_base_fpga(buffer_base_fpga), io(io) {}
+                  FPGAManagedStreamIO &io,
+                  std::chrono::milliseconds timeout = std::chrono::seconds(60));
 
   size_t pull(void *dest, size_t num_bytes, size_t required_bytes) override;
   void flush() override;
@@ -135,6 +176,7 @@ public:
   void mmio_write(size_t addr, uint32_t data) { io.mmio_write(addr, data); };
 
 private:
+  const std::chrono::milliseconds timeout;
   StreamParameters params;
   void *buffer_base;
   uint64_t buffer_base_fpga;
@@ -142,6 +184,39 @@ private:
 
   // A read pointer offset from the base, in bytes
   int buffer_offset = 0;
+};
+
+class CPUToFPGADriver : public CPUToFPGAStreamDriver {
+public:
+  CPUToFPGADriver(FromCPUStreamParameters &&params,
+                  void *buffer_base,
+                  uint64_t buffer_base_fpga,
+                  FPGAManagedStreamIO &io,
+                  std::chrono::milliseconds timeout = std::chrono::seconds(60));
+
+  void init() override;
+  size_t push(void *src, size_t num_bytes, size_t required_bytes) override;
+  void flush() override;
+
+  size_t mmio_read(size_t addr) { return io.mmio_read(addr); };
+  void mmio_write(size_t addr, uint32_t data) { io.mmio_write(addr, data); };
+
+private:
+  void check_ready() const;
+  void wait_until(size_t address,
+                  const std::function<bool(uint32_t)> &ready,
+                  std::chrono::steady_clock::time_point deadline);
+  const std::chrono::milliseconds timeout;
+  bool failed = false;
+  FromCPUStreamParameters params;
+  void *buffer_base;
+  uint64_t buffer_base_fpga;
+  FPGAManagedStreamIO &io;
+
+  // A write pointer offset from the base, in bytes, and the cumulative
+  // number of bytes pushed (both sides track mod-2^32 arithmetic).
+  size_t write_offset = 0;
+  uint32_t pushed_total = 0;
 };
 
 } // namespace FPGAManagedStreams
@@ -162,6 +237,16 @@ public:
       const std::vector<std::string> &args,
       FPGAManagedStreams::Target target,
       std::vector<FPGAManagedStreams::StreamParameters> &&to_cpu);
+
+  /** Bidirectional host-memory rings; peer-FPGA mode is intentionally separate.
+   */
+  FPGAManagedStreamWidget(
+      simif_t &simif,
+      unsigned index,
+      const std::vector<std::string> &args,
+      FPGAManagedStreams::Target target,
+      std::vector<FPGAManagedStreams::StreamParameters> &&to_cpu,
+      std::vector<FPGAManagedStreams::FromCPUStreamParameters> &&from_cpu);
 
 private:
   /** Streams land in host DRAM; the driver polls and drains them. */

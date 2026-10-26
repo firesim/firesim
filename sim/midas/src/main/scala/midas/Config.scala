@@ -23,15 +23,18 @@ case object F1ShimHasPCIMPorts        extends Field[Boolean](false)
 case object MetasimPrintfEnable       extends Field[Boolean](false)
 
 // Provides a function to elaborate the top-level platform shim
-case object Platform     extends Field[(Parameters) => PlatformShim]
+case object Platform                extends Field[(Parameters) => PlatformShim]
+// Platforms with a DFX-specific implementation can select a separate gate.
+case object HostClockGateModuleName extends Field[String]("BUFGCE")
 // Switches to synthesize prints and assertions
-case object SynthAsserts extends Field[Boolean]
-case object SynthPrints  extends Field[Boolean]
+case object SynthAsserts            extends Field[Boolean]
+case object SynthPrints             extends Field[Boolean]
 
 /** When set, [[targetutils.FPGADebugAnnotation]] s (signals labelled with FPGADebug()) are automatically wired out to
   * an ILA.
   */
-case object EnableAutoILA extends Field[Boolean](false)
+case object EnableAutoILA  extends Field[Boolean](false)
+case object AutoILAUseAXIS extends Field[Boolean](false)
 
 /** Sets a per-probe buffer depth on the ILA. A greater value permits capturing a longer waveform, at the expense of
   * FPGA reasources. See PG172 ([200~https://docs.xilinx.com/v/u/en-US/pg172-ila) for more info.

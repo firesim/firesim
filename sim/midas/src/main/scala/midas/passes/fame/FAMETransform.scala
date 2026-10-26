@@ -121,7 +121,14 @@ case class FAME1OutputChannel(
 // - Use to initialize isFired for all channels (with negation)
 // - Finishing is gated with clock channel valid
 object FAMEModuleTransformer {
-  def apply(m: Module, analysis: FAMEChannelAnalysis, addedAnnos: mutable.ArrayBuffer[Annotation]): Module = {
+  def apply(
+    m:                Module,
+    analysis:         FAMEChannelAnalysis,
+    addedAnnos:       mutable.ArrayBuffer[Annotation],
+    holdPayload:      Boolean     = false,
+    triggerSnapshots: Set[String] = Set.empty,
+    isolateOutputs:   Boolean     = false,
+  ): Module = {
     // Step 0: Bookkeeping for port structure conventions
     implicit val ns       = Namespace(m)
     val mTarget           = ModuleTarget(analysis.circuit.main, m.name)
@@ -322,17 +329,91 @@ object FAMEModuleTransformer {
     val transformedPorts =
       hostClock +: hostReset +: (clockChannel +: inChannels ++: outChannels).flatMap(_.asHostModelPort)
 
+    val payloadFallingClock   = DefNode(
+      NoInfo,
+      ns.newName("host_payload_falling_clock"),
+      DoPrim(
+        PrimOps.AsClock,
+        Seq(DoPrim(PrimOps.Not, Seq(DoPrim(PrimOps.AsUInt, Seq(WRef(hostClock)), Nil, BoolType)), Nil, BoolType)),
+        Nil,
+        ClockType,
+      ),
+    )
+    val heldInputRecords      = if (holdPayload) inChannels.flatMap { channel =>
+      channel.ports.map { port =>
+        val name = ns.newName("host_held_" + port.name)
+        val ref  = WRef(name, port.tpe, RegKind, SourceFlow)
+        val reg  = DefRegister(NoInfo, name, port.tpe, WRef(payloadFallingClock), UIntLiteral(0), ref)
+        addedAnnos += DontTouchAnnotation(mTarget.ref(name))
+        (port.name, reg, Connect(NoInfo, ref, channel.replacePortRef(WRef(port))))
+      }
+    }
+    else Seq.empty
+    val heldInputRefs         = heldInputRecords.map { case (name, reg, _) => name -> WRef(reg) }.toMap
+    // Isolate the host branch so its hold repair cannot share a long net
+    // with an internal cross-clock target consumer. The primitive is an
+    // identity function and adds no target-cycle state.
+    val isolatedOutputRecords = if (isolateOutputs && clockMetadata.size > 1) {
+      outChannels.flatMap { channel =>
+        channel.ports.map { port =>
+          val width   = port.tpe match {
+            case UIntType(IntWidth(w)) => w.toInt
+            case SIntType(IntWidth(w)) => w.toInt
+            case other                 => throw new IllegalArgumentException(s"Unsupported isolated output type $other")
+          }
+          require(width > 0)
+          val raw     = DefWire(NoInfo, ns.newName("host_raw_output_" + port.name), port.tpe)
+          val rawUInt = port.tpe match {
+            case _: SIntType => DoPrim(PrimOps.AsUInt, Seq(WRef(raw)), Nil, UIntType(IntWidth(width)))
+            case _           => WRef(raw)
+          }
+          val buffers = (0 until width).map { bit =>
+            val inst  =
+              WDefInstance(ns.newName(s"host_output_isolator_${port.name}_$bit"), HostTargetOutputIsolator.name)
+            val input = DoPrim(PrimOps.Bits, Seq(rawUInt), Seq(BigInt(bit), BigInt(bit)), BoolType)
+            (inst, Connect(NoInfo, WSubField(WRef(inst), "I"), input), WSubField(WRef(inst), "O", BoolType, SourceFlow))
+          }
+          val bits    = buffers.reverse.map(_._3)
+          val cat     = bits.tail.zipWithIndex.foldLeft[Expression](bits.head) { case (acc, (bit, i)) =>
+            DoPrim(PrimOps.Cat, Seq(acc, bit), Nil, UIntType(IntWidth(i + 2)))
+          }
+          val result  = port.tpe match {
+            case _: SIntType => DoPrim(PrimOps.AsSInt, Seq(cat), Nil, port.tpe)
+            case _           => cat
+          }
+          val output  = Connect(NoInfo, channel.replacePortRef(WRef(port)), result)
+          (port.name, raw, buffers.map(_._1), buffers.map(_._2) :+ output)
+        }
+      }
+    } else Seq.empty
+    val isolatedOutputRefs    = isolatedOutputRecords.map { case (name, raw, _, _) => name -> WRef(raw) }.toMap
+    // Snapshot only the compiler-annotated internal trigger. Its value is
+    // stable before the next gated target edge, including when target clocks
+    // have different insertion delays. No target-cycle register is added.
+    val heldTriggerRecords    = triggerSnapshots.toSeq.sorted.map { name =>
+      val heldName = ns.newName("host_held_trigger_" + name)
+      val ref      = WRef(heldName, BoolType, RegKind, SourceFlow)
+      val reg      = DefRegister(NoInfo, heldName, BoolType, WRef(payloadFallingClock), UIntLiteral(0), ref)
+      addedAnnos += DontTouchAnnotation(mTarget.ref(heldName))
+      (name, reg, Connect(NoInfo, ref, WRef(name, BoolType)))
+    }
+    val heldTriggerRefs       = heldTriggerRecords.map { case (name, reg, _) => name -> WRef(reg) }.toMap
+
     // LI-BDN transformation step 4: replace port and clock references and gate state updates
     val clockChannelPortNames = clockChannel.ports.map(_.name).toSet
     def onExpr(expr: Expression): Expression = expr.map(onExpr) match {
       case iWR @ WRef(name, tpe, PortKind, SourceFlow) if tpe != ClockType                               =>
         // Generally SourceFlow references to ports will be input channels, but RTL may use
         // an assignment to an output port as something akin to a wire, so check output ports too.
-        inChannelMap.getOrElse(name, outChannelMap(name)).replacePortRef(iWR)
+        isolatedOutputRefs.getOrElse(
+          name,
+          heldInputRefs.getOrElse(name, inChannelMap.getOrElse(name, outChannelMap(name)).replacePortRef(iWR)),
+        )
       case oWR @ WRef(name, tpe, PortKind, SinkFlow) if tpe != ClockType && outChannelMap.contains(name) =>
-        outChannelMap(name).replacePortRef(oWR)
+        isolatedOutputRefs.getOrElse(name, outChannelMap(name).replacePortRef(oWR))
       case cWR @ WRef(name, ClockType, PortKind, SourceFlow) if clockChannelPortNames(name)              =>
         replaceClocksMap(WrappedExpression.we(cWR))
+      case WRef(name, _, _, SourceFlow) if heldTriggerRefs.contains(name)                                => heldTriggerRefs(name)
       case e                                                                                             =>
         e
     }
@@ -368,9 +449,19 @@ object FAMEModuleTransformer {
     }
 
     // Statements have to be conservatively ordered to satisfy declaration order
-    val decls   =
-      finishing +: unusedOutputsAsWires ++: targetClockBufs.map(_.decl) ++: (inChannels ++ outChannels).map(_.firedReg)
-    val assigns = targetClockBufs.map(_.assigns) ++ channelStateRules ++ inputRules ++ outputRules ++ topRules
+    val payloadDecls: Seq[Statement] =
+      if (holdPayload || heldTriggerRecords.nonEmpty)
+        Seq(payloadFallingClock) ++ heldInputRecords.map(_._2) ++ heldTriggerRecords.map(_._2)
+      else Seq.empty
+    val decls                        =
+      finishing +: (isolatedOutputRecords.flatMap { case (_, raw, buffers, _) =>
+        raw +: buffers
+      } ++ payloadDecls) ++: unusedOutputsAsWires ++: targetClockBufs.map(_.decl) ++: (inChannels ++ outChannels).map(
+        _.firedReg
+      )
+    val assigns                      = isolatedOutputRecords.flatMap(_._4) ++ heldInputRecords.map(_._3) ++ heldTriggerRecords.map(
+      _._3
+    ) ++ targetClockBufs.map(_.assigns) ++ channelStateRules ++ inputRules ++ outputRules ++ topRules
     Module(m.info, m.name, transformedPorts, Block(decls ++: updatedBody +: assigns))
   }
 }
@@ -506,22 +597,59 @@ class FAMETransform extends Transform {
     // TODO: pick a value that does not collide
     implicit val triggerName = "finishing"
 
-    val addedAnnos = mutable.ArrayBuffer[Annotation]()
+    val addedAnnos  = mutable.ArrayBuffer[Annotation]()
+    val holdPayload = state.annotations
+      .collectFirst { case midas.stage.phases.ConfigParametersAnnotation(p) =>
+        p(midas.HostPayloadHoldEnabled)
+      }
+      .getOrElse(false)
 
-    val toTransform        = analysis.transformedModules
-    val transformedModules = c.modules.map {
+    val isolateOutputs = state.annotations
+      .collectFirst { case midas.stage.phases.ConfigParametersAnnotation(p) =>
+        p(midas.HostTargetOutputIsolationEnabled)
+      }
+      .getOrElse(false)
+
+    // SRAM wrappers are replaced wholesale by EmitAndWrapRAMModels; the
+    // emitted RAM model already uses host-clocked token interfaces.
+    val replacedMemoryModels = state.annotations.collect { case a: MemPortAnnotation => a.addr.moduleTarget }.toSet
+    val toTransform          = analysis.transformedModules
+    val transformedModules   = c.modules.map {
       case m: Module if (m.name == c.main)                                   => transformTop(m, analysis)
       case m: Module if (toTransform.contains(ModuleTarget(c.main, m.name))) =>
-        FAMEModuleTransformer(m, analysis, addedAnnos)
+        FAMEModuleTransformer(
+          m,
+          analysis,
+          addedAnnos,
+          holdPayload && !replacedMemoryModels.contains(ModuleTarget(c.main, m.name)),
+          state.annotations.collect {
+            case midas.HostTriggerSnapshotAnnotation(rt) if rt.module == m.name => rt.ref
+          }.toSet,
+          isolateOutputs,
+        )
       case m                                                                 => m // TODO (Albert): revisit this; currently, not transforming nested modules
     }
 
     val filteredAnnos = state.annotations.filter {
+      case _: midas.HostTriggerSnapshotAnnotation                           => false
       case DontTouchAnnotation(rt) if toTransform.contains(rt.moduleTarget) => false
       case _                                                                => true
     }
 
-    val newCircuit = c.copy(modules = transformedModules)
+    def usesOutputIsolator(stmt: Statement): Boolean = stmt match {
+      case inst: WDefInstance => inst.module == HostTargetOutputIsolator.name
+      case other              =>
+        var found = false
+        other.foreachStmt(child => if (usesOutputIsolator(child)) found = true)
+        found
+    }
+    val hasOutputBuffers = transformedModules.exists {
+      case m: Module => usesOutputIsolator(m.body)
+      case _         => false
+    }
+    val outputBuffers = if (hasOutputBuffers) Seq(HostTargetOutputIsolator.blackbox) else Seq.empty
+    if (hasOutputBuffers) addedAnnos += HostTargetOutputIsolator.inline(c.main)
+    val newCircuit = c.copy(modules = transformedModules ++ outputBuffers)
     CircuitState(newCircuit, outputForm, filteredAnnos ++ addedAnnos, Some(hostDecouplingRenames(analysis)))
   }
 }

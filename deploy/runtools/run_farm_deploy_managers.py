@@ -7,6 +7,7 @@ import logging
 import abc
 import json
 import shlex
+import tempfile
 from fabric.api import prefix, local, run, env, cd, warn_only, put, settings, hide  # type: ignore
 from fabric.contrib.project import rsync_project  # type: ignore
 from os.path import join as pjoin
@@ -1115,6 +1116,195 @@ class VitisInstanceDeployManager(InstanceDeployManager):
 
     def terminate_instance(self) -> None:
         """VitisInstanceDeployManager machines cannot be terminated."""
+        return
+
+
+class XilinxAlveoV80SlashInstanceDeployManager(InstanceDeployManager):
+    """Deploy exact board-accepted SLASH bundles on an explicitly mapped V80."""
+
+    PLATFORM_NAME = "xilinx_alveo_v80_slash"
+    NEED_ENUMERATION = False
+
+    def slot_entry(self, slotno: int) -> Dict[str, str]:
+        path = self.parent_node.get_fpga_db()
+        database = json.loads(run("cat " + shlex.quote(path)))
+        if not isinstance(database, list) or not 0 <= slotno < len(database):
+            raise ValueError(
+                "SLASH requires an explicit FPGA database entry for this slot"
+            )
+        entry = database[slotno]
+        if not isinstance(entry, dict) or not re.fullmatch(
+            r"[0-9a-fA-F]{4}:[0-9a-fA-F]{2}:[0-9a-fA-F]{2}(?:\.[0-7])?",
+            entry.get("bdf", ""),
+        ):
+            raise ValueError("Invalid SLASH card BDF")
+        return entry
+
+    def host_config(self, slotno: int) -> str:
+        entry = self.slot_entry(slotno)
+        value = entry.get("host_config")
+        if value is None:
+            code = "from pathlib import Path; print(Path.home() / '.config/firesim/v80-runtime.json')"
+            value = str(run("python3 -c " + shlex.quote(code))).strip()
+        if not Path(value).is_absolute():
+            raise ValueError("SLASH host_config must be an absolute run-host path")
+        return value
+
+    def clear_fpgas(self) -> None:
+        # Programming occurs only inside the qualified launcher's board lock.
+        return
+
+    def copy_bitstreams(self) -> None:
+        for slotno, server in enumerate(self.parent_node.sim_slots):
+            directory = self.get_remote_sim_dir_for_slot(slotno)
+            archive = (
+                server.get_resolved_server_hardware_config().get_bitstream_tar_filename()
+            )
+            tools = directory + "/.v80-slash-tools"
+            run("mkdir -p " + shlex.quote(tools))
+            source = Path(get_deploy_dir()).parent / "platforms" / self.PLATFORM_NAME
+            for name in ("deployment.py", "unpack-deployment.py"):
+                put(str(source / name), tools + "/" + name)
+            run(
+                shlex.join(
+                    [
+                        "python3",
+                        tools + "/unpack-deployment.py",
+                        "--archive",
+                        directory + "/" + archive,
+                        "--destination",
+                        directory,
+                    ]
+                )
+            )
+
+    def install_qualified_driver(self, slotno: int) -> None:
+        server = self.parent_node.sim_slots[slotno]
+        hwcfg = server.get_resolved_server_hardware_config()
+        name = hwcfg.get_local_driver_binaryname()
+        if not re.fullmatch(r"[A-Za-z0-9_.-]+", name):
+            raise ValueError("Invalid native driver name")
+        directory = self.get_remote_sim_dir_for_slot(slotno)
+        bundle = f"{directory}/{self.PLATFORM_NAME}"
+        bdf = self.slot_entry(slotno)["bdf"]
+        host_config = self.host_config(slotno)
+        native = f"{directory}/v80-native/{name}"
+        code = (
+            "from pathlib import Path; "
+            f"a=Path({(directory + '/FireSim-generated.const.h')!r}); "
+            f"b=Path({(bundle + '/FireSim-generated.const.h')!r}); "
+            "assert a.read_bytes() == b.read_bytes(), 'Manager register map differs from accepted hardware'"
+        )
+        run("python3 -c " + shlex.quote(code))
+        run("mkdir -p " + shlex.quote(directory + "/v80-native"))
+        run(shlex.join(["cp", bundle + "/qualified-driver", native]))
+        run(shlex.join(["chmod", "+x", native]))
+        command = [
+            "python3",
+            bundle + "/run-qualified.py",
+            "--bundle",
+            bundle,
+            "--bdf",
+            bdf,
+            "--host-config",
+            host_config,
+            "--driver",
+            native,
+        ]
+        run(shlex.join([*command, "--verify-only"]))
+        wrapper = "#!/usr/bin/env python3\nimport json, os, sys, uuid\nfrom pathlib import Path\n"
+        wrapper += f"directory = Path({directory!r})\n"
+        wrapper += "pointer = directory / '.v80-slash-active-run.json'\n"
+        wrapper += "if pointer.exists():\n"
+        wrapper += "    previous = Path(json.loads(pointer.read_text())['proof']) / 'controller.json'\n"
+        wrapper += "    if not previous.is_file() or json.loads(previous.read_text())['state'] != 'exited':\n"
+        wrapper += "        raise RuntimeError('Previous SLASH controller has not completed; inspect its proof')\n"
+        wrapper += "proof = directory / ('v80-runtime-proof-' + uuid.uuid4().hex)\n"
+        wrapper += "temporary = pointer.with_suffix('.tmp')\n"
+        wrapper += "temporary.write_text(json.dumps(dict(proof=str(proof))))\n"
+        wrapper += "temporary.replace(pointer)\n"
+        wrapper += (
+            f"command = {command!r} + ['--log-dir', str(proof), '--'] + sys.argv[1:]\n"
+        )
+        wrapper += "os.execvp(command[0], command)\n"
+        with tempfile.NamedTemporaryFile(
+            mode="w", suffix="-v80-slash-launch.py"
+        ) as stream:
+            stream.write(wrapper)
+            stream.flush()
+            put(stream.name, directory + "/" + name)
+        run(shlex.join(["chmod", "+x", directory + "/" + name]))
+
+    def infrasetup_instance(self, uridir: str) -> None:
+        if self.instance_assigned_simulations():
+            if (
+                not self.parent_node.metasimulation_enabled
+                and len(self.parent_node.sim_slots) != 1
+            ):
+                raise ValueError(
+                    "SLASH hardware acceptance currently covers one V80 per run host"
+                )
+            for slotno in range(len(self.parent_node.sim_slots)):
+                self.copy_sim_slot_infrastructure(slotno, uridir)
+                self.extract_driver_tarball(slotno)
+            if not self.parent_node.metasimulation_enabled:
+                self.copy_bitstreams()
+                for slotno in range(len(self.parent_node.sim_slots)):
+                    self.install_qualified_driver(slotno)
+        for slotno in range(len(self.parent_node.switch_slots)):
+            self.copy_switch_slot_infrastructure(slotno)
+        for slotno in range(len(self.parent_node.pipe_slots)):
+            self.copy_pipe_slot_infrastructure(slotno)
+
+    def start_sim_slot(self, slotno: int) -> None:
+        if not self.instance_assigned_simulations():
+            return
+        server = self.parent_node.sim_slots[slotno]
+        directory = self.get_remote_sim_dir_for_slot(slotno)
+        extra = None
+        if not self.parent_node.metasimulation_enabled:
+            bdf = self.slot_entry(slotno)["bdf"]
+            extra = f"+slotid={slotno} +bdf={shlex.quote(bdf)}"
+        server.mkdir_and_prep_local_job_results_dir()
+        put(server.write_sim_start_script(slotno, extra), directory)
+        with cd(directory):
+            run("chmod +x sim-run.sh")
+            run("./sim-run.sh")
+
+    def kill_sim_slot(self, slotno: int) -> None:
+        if self.parent_node.metasimulation_enabled:
+            return super().kill_sim_slot(slotno)
+        directory = self.get_remote_sim_dir_for_slot(slotno)
+        bundle = directory + "/" + self.PLATFORM_NAME
+        code = (
+            "import json; from pathlib import Path; "
+            f"root=Path({directory!r}); p=root/'.v80-slash-active-run.json'; "
+            "value=Path(json.loads(p.read_text())['proof']).resolve(); "
+            "assert value.parent == root.resolve() and value.name.startswith('v80-runtime-proof-'); "
+            "print(value)"
+        )
+        proof = str(run("python3 -c " + shlex.quote(code))).strip()
+        run(
+            shlex.join(
+                [
+                    "python3",
+                    bundle + "/stop-qualified.py",
+                    "--bundle",
+                    bundle,
+                    "--proof",
+                    proof,
+                    "--host-config",
+                    self.host_config(slotno),
+                    "--timeout-seconds",
+                    "30",
+                ]
+            )
+        )
+
+    def enumerate_fpgas(self, uridir: str) -> None:
+        return
+
+    def terminate_instance(self) -> None:
         return
 
 

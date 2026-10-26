@@ -8,7 +8,9 @@ import random
 import string
 import logging
 import os
-from fabric.api import prefix, local, run as remote_run, env, lcd, parallel, settings  # type: ignore
+import re
+import shlex
+from fabric.api import prefix, local, run as remote_run, env, lcd, parallel, settings, put  # type: ignore
 from fabric.contrib.console import confirm  # type: ignore
 from fabric.contrib.project import rsync_project as remote_rsync_project  # type: ignore
 
@@ -747,6 +749,173 @@ class VitisBitBuilder(BitBuilder):
         build_farm.release_build_host(self.build_config)
 
         return True
+
+
+class XilinxAlveoV80SlashBitBuilder(BitBuilder):
+    """Build and offline-qualify SLASH candidates; board promotion is explicit."""
+
+    def setup(self) -> None:
+        required = (
+            "slash_dir",
+            "vivado_prefix",
+            "static_shell",
+            "static_baseline",
+            "vrt_home",
+        )
+        if not isinstance(self.args, dict) or any(
+            key not in self.args for key in required
+        ):
+            raise ValueError("SLASH bitbuilder requires " + ", ".join(required))
+        for key in required:
+            if not isinstance(self.args[key], str) or not os.path.isabs(self.args[key]):
+                raise ValueError(f"{key} must be an absolute path")
+        for key, default in (
+            ("build_timeout_seconds", 43200),
+            ("qualification_timeout_seconds", 28800),
+        ):
+            self.args.setdefault(key, default)
+            if type(self.args[key]) is not int or self.args[key] <= 0:
+                raise ValueError(f"{key} must be a positive integer")
+
+    def replace_rtl(self) -> None:
+        self.setup()
+        with prefix("export VRT_HOME=" + shlex.quote(self.args["vrt_home"])):
+            super().replace_rtl()
+
+    def build_driver(self) -> None:
+        self.setup()
+        with prefix("export VRT_HOME=" + shlex.quote(self.args["vrt_home"])):
+            super().build_driver()
+
+    SOURCE_EXCLUDES = (
+        "__pycache__",
+        "*.pyc",
+        "build-logs",
+        "firesim.vbin*",
+        "packaged_kernel",
+        "tmp_kernel_pack_*",
+        ".Xil",
+        ".firesim-frequency-*",
+        "link.cfg",
+        "*.post-processed.sv",
+    )
+
+    def copy_files(self, source: str, destination: str, upload: bool = True) -> None:
+        if on_localhost():
+            command = ["timeout", "-k", "10", "600", "rsync", "-a"]
+            if upload:
+                command += ["--exclude=" + pattern for pattern in self.SOURCE_EXCLUDES]
+            local(shlex.join([*command, source, destination]))
+        else:
+            rsync_project(
+                local_dir=source if upload else destination,
+                remote_dir=destination if upload else source,
+                upload=upload,
+                exclude=self.SOURCE_EXCLUDES if upload else (),
+                extra_opts="-l --timeout=600",
+                capture=True,
+            )
+
+    def cl_dir_setup(self, chisel_quintuplet: str, dest_build_dir: str) -> str:
+        platform = "xilinx_alveo_v80_slash"
+        source = os.path.join(get_deploy_dir(), "..", "platforms", platform)
+        identity = self.build_config.get_build_dir_name()
+        if not re.fullmatch(r"[A-Za-z0-9_.-]+", identity) or not re.fullmatch(
+            r"[A-Za-z0-9_.-]+", chisel_quintuplet
+        ):
+            raise ValueError("Invalid SLASH build directory name")
+        snapshot = os.path.join(dest_build_dir, "platforms", platform, identity)
+        run(shlex.join(["test", "!", "-e", snapshot]))
+        run(shlex.join(["mkdir", "-p", snapshot]))
+        for name in ("build-bitstream.sh", "prepare-slash.py"):
+            if on_localhost():
+                local(
+                    shlex.join(
+                        ["cp", os.path.join(source, name), os.path.join(snapshot, name)]
+                    )
+                )
+            else:
+                put(os.path.join(source, name), os.path.join(snapshot, name))
+        for name in ("cl_firesim", "dependencies", "cl_" + chisel_quintuplet):
+            remote = os.path.join(snapshot, name)
+            run(shlex.join(["mkdir", "-p", remote]))
+            self.copy_files(os.path.join(source, name) + "/", remote + "/")
+        return os.path.join(snapshot, "cl_" + chisel_quintuplet)
+
+    def build_bitstream(self, bypass: bool = False) -> bool:
+        farm = self.build_config.build_config_file.build_farm
+        try:
+            if bypass:
+                return True
+            self.setup()
+            frequency = self.build_config.get_frequency()
+            if not 1 <= frequency <= 300 or int(frequency) != frequency:
+                raise ValueError(
+                    "SLASH requires an integer host frequency between 1 and 300 MHz"
+                )
+            frequency = int(frequency)
+            cl_dir = self.cl_dir_setup(
+                self.build_config.get_chisel_quintuplet(),
+                farm.get_build_host(self.build_config).dest_build_dir,
+            )
+            platform = os.path.dirname(cl_dir)
+            commands = [
+                ["python3", platform + "/prepare-slash.py", self.args["slash_dir"]],
+                [
+                    "env",
+                    "SLASH_DIR=" + self.args["slash_dir"],
+                    "XILINX_VIVADO=" + self.args["vivado_prefix"],
+                    "bash",
+                    platform + "/build-bitstream.sh",
+                    "--build-dir",
+                    cl_dir,
+                    "--frequency",
+                    str(frequency),
+                    "--timeout-seconds",
+                    str(self.args["build_timeout_seconds"]),
+                ],
+                [
+                    "python3",
+                    cl_dir + "/scripts/qualify-build.py",
+                    "--build-dir",
+                    cl_dir,
+                    "--frequency",
+                    str(frequency),
+                    "--shell",
+                    self.args["static_shell"],
+                    "--static-baseline",
+                    self.args["static_baseline"],
+                    "--vivado",
+                    self.args["vivado_prefix"] + "/bin/vivado",
+                    "--timeout-seconds",
+                    str(self.args["qualification_timeout_seconds"]),
+                    "--output",
+                    cl_dir + "/qualified",
+                ],
+            ]
+            success = True
+            with settings(warn_only=True):
+                for command in commands:
+                    if run(shlex.join(command)).return_code != 0:
+                        success = False
+                        break
+            results = os.path.join(
+                get_deploy_dir(),
+                "results-build",
+                self.build_config.get_build_dir_name(),
+            )
+            os.makedirs(results, exist_ok=True)
+            self.copy_files(cl_dir, results + "/", upload=False)
+            if success:
+                rootLogger.info(
+                    "SLASH candidate passed offline qualification: %s", results
+                )
+                rootLogger.info(
+                    "Run exact-driver board acceptance and export the accepted deployment before creating its hwdb entry."
+                )
+            return success
+        finally:
+            farm.release_build_host(self.build_config)
 
 
 class XilinxAlveoBitBuilder(BitBuilder):

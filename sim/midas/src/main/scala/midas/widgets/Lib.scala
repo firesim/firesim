@@ -315,18 +315,20 @@ class MCRFile(nastiParams: NastiParameters, numRegs: Int) extends NastiModule(na
   })
 
   //TODO: Just use a damn state machine.
-  val rValid    = RegInit(false.B)
-  val arFired   = RegInit(false.B)
-  val awFired   = RegInit(false.B)
-  val wFired    = RegInit(false.B)
-  val wCommited = RegInit(false.B)
-  val bId       = Reg(UInt(nastiParams.idBits.W))
-  val rId       = Reg(UInt(nastiParams.idBits.W))
-  val rData     = Reg(UInt(nastiXDataBits.W))
-  val wData     = Reg(UInt(nastiXDataBits.W))
-  val wIndex    = Reg(UInt(log2Up(numRegs).W))
-  val rIndex    = Reg(UInt(log2Up(numRegs).W))
-  val wStrb     = Reg(UInt(nastiWStrobeBits.W))
+  val rValid          = RegInit(false.B)
+  val arFired         = RegInit(false.B)
+  val awFired         = RegInit(false.B)
+  val wFired          = RegInit(false.B)
+  val wCommited       = RegInit(false.B)
+  val bId             = Reg(UInt(nastiParams.idBits.W))
+  val rId             = Reg(UInt(nastiParams.idBits.W))
+  val rData           = Reg(UInt(nastiXDataBits.W))
+  val wData           = Reg(UInt(nastiXDataBits.W))
+  val wIndex          = Reg(UInt(log2Up(numRegs).W))
+  val rIndex          = Reg(UInt(log2Up(numRegs).W))
+  val wStrb           = Reg(UInt(nastiWStrobeBits.W))
+  val readIndexValid  = rIndex < numRegs.U
+  val writeIndexValid = wIndex < numRegs.U
 
   when(io.nasti.aw.fire) {
     awFired := true.B
@@ -350,6 +352,7 @@ class MCRFile(nastiParams: NastiParameters, numRegs: Int) extends NastiModule(na
 
   when(io.nasti.r.fire) {
     arFired := false.B
+    rValid  := false.B
   }
 
   when(io.nasti.b.fire) {
@@ -358,20 +361,35 @@ class MCRFile(nastiParams: NastiParameters, numRegs: Int) extends NastiModule(na
     wCommited := false.B
   }
 
-  when(io.mcr.write(wIndex).fire) {
+  when(writeIndexValid && io.mcr.write(wIndex).fire) {
+    wCommited := true.B
+  }
+  // Widget regions round up to a power of two. Interconnect burst splitting
+  // can access the padding after the last register, even for a host narrow
+  // read. Complete those slots without consuming a real register/channel.
+  when(awFired && wFired && !wCommited && !writeIndexValid) {
     wCommited := true.B
   }
 
   io.mcr.write.foreach { w => w.valid := false.B; w.bits := wData }
-  io.mcr.write(wIndex).valid := awFired && wFired && ~wCommited
+  io.mcr.write(wIndex).valid := awFired && wFired && ~wCommited && writeIndexValid
   io.mcr.read.zipWithIndex.foreach { case (decoupled, idx: Int) =>
-    decoupled.ready := (rIndex === idx.U) && arFired && io.nasti.r.ready
+    decoupled.ready := (rIndex === idx.U) && arFired && !rValid
+  }
+  // Capture a source exactly once, independently of AXI response backpressure.
+  when(readIndexValid && io.mcr.read(rIndex).fire) {
+    rData  := io.mcr.read(rIndex).bits
+    rValid := true.B
+  }
+  when(arFired && !rValid && !readIndexValid) {
+    rData  := 0.U
+    rValid := true.B
   }
   // TODO: set to wStrb?
   io.mcr.wstrb               := 0.U
 
-  io.nasti.r.bits  := NastiReadDataChannel(nastiParams, rId, io.mcr.read(rIndex).bits)
-  io.nasti.r.valid := arFired && io.mcr.read(rIndex).valid
+  io.nasti.r.bits  := NastiReadDataChannel(nastiParams, rId, rData)
+  io.nasti.r.valid := rValid
 
   io.nasti.b.bits  := NastiWriteResponseChannel(nastiParams, bId)
   io.nasti.b.valid := awFired && wFired && wCommited

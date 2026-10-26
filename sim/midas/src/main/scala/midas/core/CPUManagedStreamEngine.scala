@@ -97,8 +97,10 @@ class CPUManagedStreamEngine(p: Parameters, val params: StreamEngineParameters) 
               resources     = (new MemoryDevice).reg,
               regionType    = RegionType.UNCACHED, // cacheable
               executable    = false,
-              supportsWrite = TransferSizes(axiBeatBytes, 4096),
-              supportsRead  = TransferSizes(axiBeatBytes, 4096),
+              // AXI4 bursts contain at most 256 beats. A 64-bit port cannot
+              // advertise the 4 KiB transfer supported by wider host ports.
+              supportsWrite = TransferSizes(axiBeatBytes, math.min(4096, 256 * axiBeatBytes)),
+              supportsRead  = TransferSizes(axiBeatBytes, math.min(4096, 256 * axiBeatBytes)),
               interleavedId = Some(0),
             )
           ), // slave does not interleave read responses

@@ -1,0 +1,13 @@
+# One explicitly mapped card running the SLASH shell, not the AVED platform.
+run_farm_type: ExternallyProvisioned
+args:
+    default_platform: XilinxAlveoV80SlashInstanceDeployManager
+    default_simulation_dir: /scratch/firesim-slash
+    default_fpga_db: /etc/firesim/v80-slash-fpga-db.json
+    run_farm_hosts_to_use:
+        - localhost: one_v80_slash
+    run_farm_host_specs:
+        - one_v80_slash:
+            num_fpgas: 1
+            num_metasims: 0
+            use_for_switch_only: false

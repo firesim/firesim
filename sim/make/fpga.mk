@@ -16,6 +16,8 @@ else ifeq ($(PLATFORM), xilinx_alveo_u200)
 board_dir          := $(platforms_dir)/xilinx_alveo_u200
 else ifeq ($(PLATFORM), corigine_mimicturbo_gt)
 board_dir          := $(platforms_dir)/corigine_mimicturbo_gt
+else ifeq ($(PLATFORM), xilinx_alveo_v80_slash)
+board_dir          := $(platforms_dir)/xilinx_alveo_v80_slash
 else ifeq ($(PLATFORM), xilinx_alveo_v80)
 board_dir          := $(platforms_dir)/xilinx_alveo_v80
 else ifeq ($(PLATFORM), xilinx_vcu118)
@@ -43,6 +45,10 @@ endif
 fpga_delivery_files = $(addprefix $(fpga_delivery_dir)/$(BASE_FILE_NAME), \
 	.sv .defines.vh \
 	.synthesis.xdc .implementation.xdc)
+
+ifeq ($(PLATFORM), xilinx_alveo_v80_slash)
+fpga_delivery_files += $(fpga_delivery_dir)/$(BASE_FILE_NAME).const.h $(repo_state)
+endif
 
 # Files used to run FPGA-level metasimulation
 fpga_sim_delivery_files = $(fpga_driver_dir)/$(DESIGN)-$(PLATFORM)

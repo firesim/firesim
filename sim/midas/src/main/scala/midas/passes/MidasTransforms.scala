@@ -22,7 +22,13 @@ private[midas] class MidasTransforms extends Transform {
     val p                        = internalState.annotations.collectFirst({ case midas.stage.phases.ConfigParametersAnnotation(p) => p }).get
     val optionalTargetTransforms =
       if (p(GenerateMultiCycleRamModels))
-        Seq(new fame.LabelSRAMModels, new ResolveAndCheck, new EmitFirrtl("post-wrap-sram-models.fir"))
+        Seq(
+          new fame.NormalizeSynchronousRAMs,
+          new ResolveAndCheck,
+          new fame.LabelSRAMModels,
+          new ResolveAndCheck,
+          new EmitFirrtl("post-wrap-sram-models.fir"),
+        )
       else Seq()
 
     val partition = p(FireAxePartitionGlobalInfo).isDefined
@@ -227,7 +233,7 @@ private[midas] class MidasTransforms extends Transform {
         new EmitFirrtl("post-gen-sram-models.fir"),
         new fame.EmitFAMEAnnotations("post-gen-sram-models.json"),
         new SimulationMapping(internalState.circuit.main),
-        xilinx.HostSpecialization,
+        new xilinx.ConfiguredHostSpecialization(p(midas.HostClockGateModuleName)),
         new ResolveAndCheck,
       )
     (xforms.foldLeft(internalState))((in, xform) => xform.runTransform(in)).copy(form = outputForm)

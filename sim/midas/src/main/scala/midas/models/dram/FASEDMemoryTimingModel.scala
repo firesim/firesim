@@ -363,7 +363,8 @@ class FASEDMemoryTimingModel(completeConfig: firesim.lib.bridges.CompleteConfig,
     gate.I  := clock
     gate.CE := targetFire
 
-    val model = withClock(gate.O)(cfg.elaborate())
+    val model   = withClock(gate.O)(cfg.elaborate())
+    val modelIO = if (p(HostPayloadHoldEnabled)) HostPayloadHold.proxy(model.io, clock) else model.io
     printGenerationConfig()
 
     // HACK: Feeding valid back on ready and ready back on valid until we figure out
@@ -372,8 +373,9 @@ class FASEDMemoryTimingModel(completeConfig: firesim.lib.bridges.CompleteConfig,
     hPort.fromHost.hValid         := tFireHelper.fire()
     ingress.io.nastiInputs.hValid := tFireHelper.fire(ingressReady)
 
-    model.tNasti                          <> tNasti
-    model.reset                           := tReset
+    modelIO.tNasti                        <> tNasti
+    model.reset                           := (if (p(HostPayloadHoldEnabled)) withClock(HostPayloadHold.falling(clock)) { RegNext(tReset) }
+                    else tReset)
     // Connect up aw to ingress and model
     ingress.io.nastiInputs.hBits.aw.valid := tNasti.aw.fire
     ingress.io.nastiInputs.hBits.aw.bits  := tNasti.aw.bits
@@ -387,15 +389,15 @@ class FASEDMemoryTimingModel(completeConfig: firesim.lib.bridges.CompleteConfig,
     ingress.io.nastiInputs.hBits.w.bits  := tNasti.w.bits
 
     // Connect target-level signals between egress and model
-    readEgress.io.req.t       := model.io.egressReq.r
+    readEgress.io.req.t       := modelIO.egressReq.r
     readEgress.io.req.hValid  := targetFire
-    readEgress.io.resp.tReady := model.io.egressResp.rReady
-    model.io.egressResp.rBits := readEgress.io.resp.tBits
+    readEgress.io.resp.tReady := modelIO.egressResp.rReady
+    modelIO.egressResp.rBits  := readEgress.io.resp.tBits
 
-    writeEgress.io.req.t       := model.io.egressReq.b
+    writeEgress.io.req.t       := modelIO.egressReq.b
     writeEgress.io.req.hValid  := targetFire
-    writeEgress.io.resp.tReady := model.io.egressResp.bReady
-    model.io.egressResp.bBits  := writeEgress.io.resp.tBits
+    writeEgress.io.resp.tReady := modelIO.egressResp.bReady
+    modelIO.egressResp.bBits   := writeEgress.io.resp.tBits
 
     ingress.reset     := reset.asBool || tReset && tFireHelper.fire(ingressReady)
     readEgress.reset  := reset.asBool || tReset && targetFire
@@ -404,7 +406,7 @@ class FASEDMemoryTimingModel(completeConfig: firesim.lib.bridges.CompleteConfig,
     if (cfg.params.localHCycleCount) {
       val hCycle = RegInit(0.U(32.W))
       hCycle := hCycle + 1.U
-      attach(hCycle, "hostCycle", ReadOnly)
+      attach(hCycle, "hostCycle", ReadOnly, substruct = false)
     }
 
     if (cfg.params.stallEventCounters) {
@@ -433,12 +435,12 @@ class FASEDMemoryTimingModel(completeConfig: firesim.lib.bridges.CompleteConfig,
         readEgressStalls  := 0.U
         tokenStalls       := 0.U
       }
-      attach(writeEgressStalls, "writeStalled", ReadOnly)
-      attach(readEgressStalls, "readStalled", ReadOnly)
-      attach(tokenStalls, "tokenStalled", ReadOnly)
-      attach(hostMemoryIdleCycles, "hostMemIdleCycles", ReadOnly)
-      attach(hOutstandingWrites.value, "hostWritesOutstanding", ReadOnly)
-      attach(hOutstandingReads.value, "hostReadsOutstanding", ReadOnly)
+      attach(writeEgressStalls, "writeStalled", ReadOnly, substruct                 = false)
+      attach(readEgressStalls, "readStalled", ReadOnly, substruct                   = false)
+      attach(tokenStalls, "tokenStalled", ReadOnly, substruct                       = false)
+      attach(hostMemoryIdleCycles, "hostMemIdleCycles", ReadOnly, substruct         = false)
+      attach(hOutstandingWrites.value, "hostWritesOutstanding", ReadOnly, substruct = false)
+      attach(hOutstandingReads.value, "hostReadsOutstanding", ReadOnly, substruct   = false)
     }
 
     if (cfg.params.detectAddressCollisions) {
@@ -462,8 +464,8 @@ class FASEDMemoryTimingModel(completeConfig: firesim.lib.bridges.CompleteConfig,
         num_collisions := num_collisions + 1.U
       }
 
-      attach(num_collisions, "addrCollision", ReadOnly)
-      attach(collision_addr, "collisionAddr", ReadOnly)
+      attach(num_collisions, "addrCollision", ReadOnly, substruct = false)
+      attach(collision_addr, "collisionAddr", ReadOnly, substruct = false)
     }
 
     if (cfg.params.latencyHistograms) {
@@ -500,28 +502,28 @@ class FASEDMemoryTimingModel(completeConfig: firesim.lib.bridges.CompleteConfig,
       // Measure latency from reception of first read data beat; need
       // some state to track when a beat corresponds to the start of a new xaction
       when(targetFire) {
-        when(model.tNasti.r.fire && model.tNasti.r.bits.last) {
+        when(modelIO.tNasti.r.fire && modelIO.tNasti.r.bits.last) {
           newTRead := true.B
-        }.elsewhen(model.tNasti.r.fire) {
+        }.elsewhen(modelIO.tNasti.r.fire) {
           newTRead := false.B
         }
       }
 
       val tReadLatencyHist = HostLatencyHistogram(
-        model.tNasti.ar.fire && targetFire,
-        model.tNasti.ar.bits.id,
-        model.tNasti.r.fire && targetFire && newTRead,
-        model.tNasti.r.bits.id,
+        modelIO.tNasti.ar.fire && targetFire,
+        modelIO.tNasti.ar.bits.id,
+        modelIO.tNasti.r.fire && targetFire && newTRead,
+        modelIO.tNasti.r.bits.id,
         maxFlight        = cfg.maxReadsPerID,
         cycleCountEnable = targetFire,
       )
       attachIO(tReadLatencyHist, "targetReadLatencyHist_")
 
       val tWriteLatencyHist = HostLatencyHistogram(
-        model.tNasti.aw.fire && targetFire,
-        model.tNasti.aw.bits.id,
-        model.tNasti.b.fire && targetFire,
-        model.tNasti.b.bits.id,
+        modelIO.tNasti.aw.fire && targetFire,
+        modelIO.tNasti.aw.bits.id,
+        modelIO.tNasti.b.fire && targetFire,
+        modelIO.tNasti.b.bits.id,
         maxFlight        = cfg.maxWritesPerID,
         cycleCountEnable = targetFire,
       )
@@ -529,19 +531,19 @@ class FASEDMemoryTimingModel(completeConfig: firesim.lib.bridges.CompleteConfig,
 
       // Total host-latency of transactions
       val totalReadLatencyHist = HostLatencyHistogram(
-        model.tNasti.ar.fire && targetFire,
-        model.tNasti.ar.bits.id,
-        model.tNasti.r.fire && targetFire && newTRead,
-        model.tNasti.r.bits.id,
+        modelIO.tNasti.ar.fire && targetFire,
+        modelIO.tNasti.ar.bits.id,
+        modelIO.tNasti.r.fire && targetFire && newTRead,
+        modelIO.tNasti.r.bits.id,
         maxFlight = cfg.maxReadsPerID,
       )
       attachIO(totalReadLatencyHist, "totalReadLatencyHist_")
 
       val totalWriteLatencyHist = HostLatencyHistogram(
-        model.tNasti.aw.fire && targetFire,
-        model.tNasti.aw.bits.id,
-        model.tNasti.b.fire && targetFire,
-        model.tNasti.b.bits.id,
+        modelIO.tNasti.aw.fire && targetFire,
+        modelIO.tNasti.aw.bits.id,
+        modelIO.tNasti.b.fire && targetFire,
+        modelIO.tNasti.b.bits.id,
         maxFlight = cfg.maxWritesPerID,
       )
       attachIO(totalWriteLatencyHist, "totalWriteLatencyHist_")
@@ -568,20 +570,20 @@ class FASEDMemoryTimingModel(completeConfig: firesim.lib.bridges.CompleteConfig,
 
     if (cfg.params.addrRangeCounters > 0) {
       val n           = cfg.params.addrRangeCounters
-      val readRanges  = AddressRangeCounter(p(NastiKey), n, model.tNasti.ar, targetFire)
-      val writeRanges = AddressRangeCounter(p(NastiKey), n, model.tNasti.aw, targetFire)
+      val readRanges  = AddressRangeCounter(p(NastiKey), n, modelIO.tNasti.ar, targetFire)
+      val writeRanges = AddressRangeCounter(p(NastiKey), n, modelIO.tNasti.aw, targetFire)
       val numRanges   = n.U(32.W)
 
       attachIO(readRanges, "readRanges_")
       attachIO(writeRanges, "writeRanges_")
-      attach(numRanges, "numRanges", ReadOnly)
+      attach(numRanges, "numRanges", ReadOnly, substruct = false)
     }
 
     val rrespError = RegEnable(toHostDRAM.r.bits.resp, 0.U, toHostDRAM.r.bits.resp =/= 0.U && toHostDRAM.r.fire)
-    val brespError = RegEnable(toHostDRAM.r.bits.resp, 0.U, toHostDRAM.b.bits.resp =/= 0.U && toHostDRAM.b.fire)
+    val brespError = RegEnable(toHostDRAM.b.bits.resp, 0.U, toHostDRAM.b.bits.resp =/= 0.U && toHostDRAM.b.fire)
 
     // Generate the configuration registers and tie them to the ctrl bus
-    attachIO(model.io.mmReg)
+    attachIO(modelIO.mmReg)
     attachIO(funcModelRegs)
     attach(rrespError, "rrespError", ReadOnly, substruct = false)
     attach(brespError, "brespError", ReadOnly, substruct = false)
@@ -621,7 +623,7 @@ class FASEDMemoryTimingModel(completeConfig: firesim.lib.bridges.CompleteConfig,
 
       println("\nDefault Settings")
       val functionalModelSettings = funcModelRegs.getDefaults()
-      val timingModelSettings     = model.io.mmReg.getDefaults()
+      val timingModelSettings     = modelIO.mmReg.getDefaults()
       for (setting <- settingsToString(functionalModelSettings ++ timingModelSettings)) {
         println(s"  ${setting}")
       }
@@ -640,7 +642,7 @@ class FASEDMemoryTimingModel(completeConfig: firesim.lib.bridges.CompleteConfig,
   def getSettings: String = {
     println("\nGenerating a Midas Memory Model Configuration File")
     val functionalModelSettings = module.funcModelRegs.getFuncModelSettings()
-    val timingModelSettings     = module.model.io.mmReg.getTimingModelSettings()
+    val timingModelSettings     = module.modelIO.mmReg.getTimingModelSettings()
     settingsToString(functionalModelSettings ++ timingModelSettings).mkString("\n")
   }
 }

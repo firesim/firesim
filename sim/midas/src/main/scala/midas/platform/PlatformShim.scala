@@ -15,7 +15,21 @@ import midas.{PostLinkCircuitPath, PreLinkCircuitPath}
   */
 private[midas] object PlatformShim {
   def apply(config: SimWrapperConfig)(implicit p: Parameters): PlatformShim = {
-    p(Platform)(p.alterPartial({ case SimWrapperKey => config }))
+    // Field defaults are singleton objects. A mutable allocator must belong to
+    // this elaboration, rather than retain stream indices from an earlier one.
+    val toCPU    = new StreamAllocator
+    val fromCPU  = new StreamAllocator
+    val toQSFP   = new StreamAllocator
+    val fromQSFP = new StreamAllocator
+    val toPeer   = new StreamAllocator
+    p(Platform)(p.alterPartial {
+      case SimWrapperKey                => config
+      case ToCPUStreamAllocatorKey      => toCPU
+      case FromCPUStreamAllocatorKey    => fromCPU
+      case ToQSFPStreamAllocatorKey     => toQSFP
+      case FromQSFPStreamAllocatorKey   => fromQSFP
+      case ToPeerFPGAStreamAllocatorKey => toPeer
+    })
   }
 }
 
