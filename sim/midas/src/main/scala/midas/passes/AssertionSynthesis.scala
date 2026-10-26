@@ -10,9 +10,9 @@ import firrtl.Mappers._
 import firrtl.WrappedExpression._
 import firrtl.Utils.{zero, BoolType}
 
-import midas.InternalGlobalResetConditionSink
+import midas.{InternalAssertContextAnnotation, InternalGlobalResetConditionSink}
 import midas.passes.Utils.cat
-import midas.widgets.{AssertBridgeModule, AssertBridgeParameters}
+import midas.widgets.{AssertBridgeModule, AssertBridgeParameters, AssertContextField}
 import midas.passes.fame.{FAMEChannelConnectionAnnotation, WireChannel}
 import midas.stage.phases.ConfigParametersAnnotation
 import midas.targetutils.ExcludeInstanceAssertsAnnotation
@@ -159,7 +159,61 @@ private[passes] class AssertionSynthesis extends firrtl.Transform {
     formattedMessages.toSeq
   }
 
-  def synthesizeAsserts(state: CircuitState): CircuitState = {
+  // A wired AssertContext signal: its instance-qualified label, the top-level port it was wired to, and its width
+  private case class WiredContext(label: String, portName: String, width: Int)
+
+  /** Wires every AssertContext signal to its own top-level port, and returns the wired state with the wired signals
+    * grouped by the name of their root clock. The assertion bridge of that clock carries them, on its own clock port,
+    * so the loopback clock ports BridgeTopWiring adds are removed.
+    */
+  private def wireAssertContext(
+    state:        CircuitState,
+    contextAnnos: Seq[InternalAssertContextAnnotation],
+  ): (CircuitState, Map[String, Seq[WiredContext]]) = {
+    if (contextAnnos.isEmpty) return (state, Map())
+
+    val labels      = contextAnnos.map(a => a.target -> a.label).toMap
+    val wiringAnnos = contextAnnos.map(a => BridgeTopWiringAnnotation(a.target, a.clock))
+    val wiredState  = new BridgeTopWiring("assertContext_").execute(
+      state.copy(annotations = state.annotations.filterNot(contextAnnos.toSet) ++ wiringAnnos)
+    )
+    val outputAnnos = wiredState.annotations.collect({ case a: BridgeTopWiringOutputAnnotation => a })
+
+    val c            = wiredState.circuit
+    val topModule    = c.modules.collectFirst({ case m: Module if m.name == c.main => m }).get
+    val portWidths   = topModule.ports.collect({ case Port(_, name, _, UIntType(IntWidth(w))) => name -> w.toInt }).toMap
+    val loopbackClks = outputAnnos.map(_.sinkClockPort.ref).toSet
+    def dropLoopbackClks(s: Statement): Statement = s match {
+      case Connect(_, Reference(name, _, _, _), _) if loopbackClks(name) => EmptyStmt
+      case s                                                           => s.map(dropLoopbackClks)
+    }
+    val prunedTop = topModule.copy(
+      ports = topModule.ports.filterNot(p => loopbackClks(p.name)),
+      body  = dropLoopbackClks(topModule.body),
+    )
+
+    val contexts = outputAnnos
+      .map({ a =>
+        val instPath = a.absoluteSource.asPath.map(_._1.value)
+        a.srcClockPort.ref -> WiredContext(
+          (instPath :+ labels(a.pathlessSource)).mkString("."),
+          a.topSink.ref,
+          portWidths(a.topSink.ref),
+        )
+      })
+      .groupBy(_._1)
+      .map({ case (clock, cs) => clock -> cs.map(_._2).sortBy(_.label) })
+    println(s"[Golden Gate] total # of assertion context signals synthesized: ${outputAnnos.size}")
+
+    val wiredCircuit = c.copy(modules = c.modules.map(m => if (m.name == c.main) prunedTop else m))
+    (wiredState.copy(circuit = wiredCircuit, annotations = wiredState.annotations.filterNot(outputAnnos.toSet)), contexts)
+  }
+
+  def synthesizeAsserts(unwiredState: CircuitState): CircuitState = {
+
+    // Step 0: Wire AssertContext signals to the top-level
+    val contextAnnos          = unwiredState.annotations.collect({ case a: InternalAssertContextAnnotation => a })
+    val (state, contextPorts) = wireAssertContext(unwiredState, contextAnnos)
 
     // Step 1: Grab module-based exclusions
     state.annotations.collect { case a @ (_: ExcludeInstanceAssertsAnnotation) =>
@@ -180,8 +234,10 @@ private[passes] class AssertionSynthesis extends firrtl.Transform {
     val mInfo = new ModuleAssertInfo(topModule, meta, topMT)
     println(s"[Golden Gate] total # of assertions synthesized: ${mInfo.assertWidth}")
 
-    if (!mInfo.hasAsserts()) state
-    else {
+    if (!mInfo.hasAsserts()) {
+      if (contextAnnos.nonEmpty) println("[Golden Gate] WARNING: no assertions to carry AssertContext signals; dropping them")
+      unwiredState
+    } else {
       // Step 4: Associate each assertion with a source clock
       val postWiredState = state.copy(circuit = c.copy(modules = mods), form = MidForm)
       val loweredState   =
@@ -199,6 +255,9 @@ private[passes] class AssertionSynthesis extends firrtl.Transform {
 
       // Group assertion indices by their clocks
       val groupedAsserts = rootClocks.groupBy(_._1).mapValues(values => values.map(_._2))
+      contextPorts.keySet.diff(rootClocks.map(_._1.ref).toSet).foreach { clock =>
+        println(s"[Golden Gate] WARNING: no assertions in clock domain ${clock}; dropping its AssertContext signals")
+      }
 
       // Step 5: Re-wire the top-level module
       val ports       = collection.mutable.ArrayBuffer[Port]()
@@ -229,6 +288,15 @@ private[passes] class AssertionSynthesis extends firrtl.Transform {
 
         stmts ++= Seq(connectClock, connectAsserts, connectReset)
 
+        // All AssertContext signals of this clock domain, packed into one channel (the first in the LSBs)
+        val contexts        = contextPorts.getOrElse(clockRT.ref, Seq())
+        val contextPortName = Option.when(contexts.nonEmpty)(namespace.newName(s"midasAsserts_${clockRT.ref}_context"))
+        val contextFCCA     = contextPortName.map { name =>
+          ports += Port(NoInfo, name, Output, UIntType(IntWidth(contexts.map(_.width).sum)))
+          stmts += Connect(NoInfo, WRef(name), cat(contexts.map(c => WRef(c.portName)).reverse))
+          FAMEChannelConnectionAnnotation.source(name, WireChannel, Some(topMT.ref(clockPortName)), Seq(topMT.ref(name)))
+        }
+
         // Generate the bridge Annotation
         val portRT      = topMT.ref(assertPortName)
         val clockPortRT = topMT.ref(clockPortName)
@@ -243,11 +311,17 @@ private[passes] class AssertionSynthesis extends firrtl.Transform {
         val assertMessages = asserts.map(formattedMessages(_))
         val bridgeAnno     = BridgeIOAnnotation(
           target               = portRT,
-          channelNames         = Seq(resetPortName, assertPortName),
+          channelNames         = Seq(resetPortName, assertPortName) ++ contextPortName,
           widgetClass          = classOf[AssertBridgeModule].getName,
-          widgetConstructorKey = AssertBridgeParameters(assertPortName, resetPortName, assertMessages),
+          widgetConstructorKey = AssertBridgeParameters(
+            assertPortName,
+            resetPortName,
+            assertMessages,
+            contextPortName,
+            contexts.map(c => AssertContextField(c.label, c.width)),
+          ),
         )
-        assertAnnos ++= Seq(resetConditionAnno, assertFCCA, resetFCCA, bridgeAnno)
+        assertAnnos ++= Seq(resetConditionAnno, assertFCCA, resetFCCA, bridgeAnno) ++ contextFCCA
       }
       val wiredTopModule = topModule.copy(ports = topModule.ports ++ ports, body = Block(topModule.body +: stmts.toSeq))
 
@@ -261,6 +335,8 @@ private[passes] class AssertionSynthesis extends firrtl.Transform {
 
   def execute(state: CircuitState): CircuitState = {
     val p = state.annotations.collectFirst({ case ConfigParametersAnnotation(p) => p }).get
-    if (p(SynthAsserts)) synthesizeAsserts(state) else state
+    val updatedState = if (p(SynthAsserts)) synthesizeAsserts(state) else state
+    // Without assertion synthesis, AssertContext signals are not wired; drop the annotations so they cost nothing
+    updatedState.copy(annotations = updatedState.annotations.filterNot(_.isInstanceOf[InternalAssertContextAnnotation]))
   }
 }

@@ -6,6 +6,8 @@
 #include "core/simif.h"
 #include "core/stream_engine.h"
 
+#include <string>
+
 /**
  * Utility to create static buffers aligned to and a multiple of the page-size
  */
@@ -66,6 +68,14 @@ public:
    * 0 = PASS. All other codes are bridge-implementation defined
    */
   virtual int exit_code() { return 0; }
+
+  /**
+   * A short summary of the target's final state (e.g., "instret=123"),
+   * appended to the final PASSED / FAILED line. Called after finish().
+   *
+   * Empty = nothing to report.
+   */
+  virtual std::string exit_summary() { return ""; }
 
 protected:
   void write(size_t addr, uint32_t data);

@@ -129,6 +129,23 @@ object InternalAutoCounterFirrtlAnnotation {
   }
 }
 
+case class InternalAssertContextAnnotation(
+  target: ReferenceTarget,
+  clock:  ReferenceTarget,
+  label:  String,
+) extends Annotation
+    with DontTouchAllTargets {
+  def update(renames: RenameMap): Seq[Annotation] = {
+    val renamer = new ReferenceTargetRenamer(renames)
+    Seq(this.copy(target = renamer.exactRename(target), clock = renamer.exactRename(clock)))
+  }
+}
+object InternalAssertContextAnnotation {
+  def apply(a: AssertContextFirrtlAnnotation): InternalAssertContextAnnotation = {
+    InternalAssertContextAnnotation(a.target, a.clock, a.label)
+  }
+}
+
 case class InternalTriggerSourceAnnotation(
   target:     ReferenceTarget,
   clock:      ReferenceTarget,
@@ -202,6 +219,7 @@ object ConvertExternalToInternalAnnotations {
         case grcs: GlobalResetConditionSink   => InternalGlobalResetConditionSink(grcs)
         case ffda: FirrtlFpgaDebugAnnotation  => InternalFirrtlFpgaDebugAnnotation(ffda)
         case afa: AutoCounterFirrtlAnnotation => InternalAutoCounterFirrtlAnnotation(afa)
+        case aca: AssertContextFirrtlAnnotation => InternalAssertContextAnnotation(aca)
         case tsrca: TriggerSourceAnnotation   => InternalTriggerSourceAnnotation(tsrca)
         case tsa: TriggerSinkAnnotation       => InternalTriggerSinkAnnotation(tsa)
         case xa: XDCAnnotation                => InternalXDCAnnotation(xa)

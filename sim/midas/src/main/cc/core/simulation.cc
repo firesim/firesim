@@ -150,17 +150,29 @@ int simulation_t::execute_simulation_flow() {
 
   const bool timeout = simulation_timed_out();
 
+  std::string summary;
+  for (auto *bridge : registry.get_all_bridges()) {
+    const std::string bridge_summary = bridge->exit_summary();
+    if (!bridge_summary.empty())
+      summary += ", " + bridge_summary;
+  }
+
   if (exit_code != 0) {
     fprintf(stderr,
-            "*** FAILED *** (code = %d) after %" PRIu64 " cycles\n",
+            "*** FAILED *** (code = %d) after %" PRIu64 " cycles%s\n",
             exit_code,
-            end_tcycle);
+            end_tcycle,
+            summary.c_str());
   } else if (timeout) {
     fprintf(stderr,
-            "*** FAILED *** simulation timed out after %" PRIu64 " cycles\n",
-            end_tcycle);
+            "*** FAILED *** simulation timed out after %" PRIu64 " cycles%s\n",
+            end_tcycle,
+            summary.c_str());
   } else {
-    fprintf(stderr, "*** PASSED *** after %" PRIu64 " cycles\n", end_tcycle);
+    fprintf(stderr,
+            "*** PASSED *** after %" PRIu64 " cycles%s\n",
+            end_tcycle,
+            summary.c_str());
   }
 
   print_simulation_performance_summary();
