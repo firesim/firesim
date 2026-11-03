@@ -1,0 +1,9 @@
+{
+  "benchmark_name": "radiance-4sm-gputest",
+  "common_bootbinary": "gpu_test.hashed.riscv",
+  "common_rootfs": null,
+  "common_outputs": [],
+  "common_simulation_outputs": [
+    "uartlog"
+  ]
+}

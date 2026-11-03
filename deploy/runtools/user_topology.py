@@ -695,6 +695,69 @@ class UserTopologies:
 
     # DOC include end: user_topology.py fireaxe_ring_noc_config
 
+    def fireaxe_radiance_4sm_xb10_config(self) -> None:
+        """Radiance 4-SM HBM target (FireSimE4M3MxGemminiFourClusterHBMRadianceConfig) split
+        across two Corigine MimicTurbo GT (XB-10) FPGAs with FireAxe in fast mode.
+
+        Partition 0 (SMs 2 and 3, hwdb xb10_radiance_4sm_hbm_split_sm23) runs in sim slot 0 and
+        the base partition (SMs 0 and 1, Rocket, split L2, DRAM; hwdb
+        xb10_radiance_4sm_hbm_split_base) in sim slot 1. The base partition must have the highest
+        partition index (PartitionConfig.is_base). The two boards are joined by one QSFP cable,
+        QSFP port 0 to QSFP port 0, which is cut-bridge index 0 on both sides.
+        Platform configs: generators/firechip/goldengateimplementations/src/main/scala/RadianceFireAxeConfigs.scala
+        """
+        hwdb_entries = {
+            0: "xb10_radiance_4sm_hbm_split_sm23",
+            1: "xb10_radiance_4sm_hbm_split_base",
+        }
+        slotid_to_pidx = [0, 1]
+        edges = [FireAxeEdge(FireAxeNodeBridgePair(0, 0), FireAxeNodeBridgePair(1, 0))]
+        mode = PartitionMode.FAST_MODE
+        self.fireaxe_topology_config(hwdb_entries, edges, slotid_to_pidx, mode)
+
+    def fireaxe_radiance_2sm_xb10_config(self) -> None:
+        """Bring-up variant of fireaxe_radiance_4sm_xb10_config: the 2-SM HBM target with SM 1
+        (hwdb xb10_radiance_2sm_hbm_split_sm1) in sim slot 0 and the base partition (SM 0,
+        Rocket, split L2, DRAM; hwdb xb10_radiance_2sm_hbm_split_base) in sim slot 1, one QSFP
+        cable port 0 to port 0, FireAxe fast mode."""
+        hwdb_entries = {
+            0: "xb10_radiance_2sm_hbm_split_sm1",
+            1: "xb10_radiance_2sm_hbm_split_base",
+        }
+        slotid_to_pidx = [0, 1]
+        edges = [FireAxeEdge(FireAxeNodeBridgePair(0, 0), FireAxeNodeBridgePair(1, 0))]
+        mode = PartitionMode.FAST_MODE
+        self.fireaxe_topology_config(hwdb_entries, edges, slotid_to_pidx, mode)
+
+    def fireaxe_radiance_2sm_memcompute_xb10_config(self) -> None:
+        """Memory / compute split of the 2-SM HBM target: both SMs (hwdb
+        xb10_radiance_2sm_memcompute_sms) in sim slot 0, the memory system (Rocket, split L2,
+        DRAM; hwdb xb10_radiance_2sm_memcompute_base) in sim slot 1, one QSFP cable port 0 to
+        port 0, FireAxe fast mode."""
+        hwdb_entries = {
+            0: "xb10_radiance_2sm_memcompute_sms",
+            1: "xb10_radiance_2sm_memcompute_base",
+        }
+        slotid_to_pidx = [0, 1]
+        edges = [FireAxeEdge(FireAxeNodeBridgePair(0, 0), FireAxeNodeBridgePair(1, 0))]
+        mode = PartitionMode.FAST_MODE
+        self.fireaxe_topology_config(hwdb_entries, edges, slotid_to_pidx, mode)
+
+
+    def fireaxe_radiance_4sm_memcompute_xb10_config(self) -> None:
+        """Memory / compute split of the 4-SM HBM target (FireSimRadianceHBMConfig): all four SMs (hwdb
+        xb10_radiance_4sm_memcompute_sms) in sim slot 0, the memory system (Rocket, split L2,
+        DRAM; hwdb xb10_radiance_4sm_memcompute_base) in sim slot 1, one QSFP cable port 0 to
+        port 0, FireAxe fast mode."""
+        hwdb_entries = {
+            0: "xb10_radiance_4sm_memcompute_sms",
+            1: "xb10_radiance_4sm_memcompute_base",
+        }
+        slotid_to_pidx = [0, 1]
+        edges = [FireAxeEdge(FireAxeNodeBridgePair(0, 0), FireAxeNodeBridgePair(1, 0))]
+        mode = PartitionMode.FAST_MODE
+        self.fireaxe_topology_config(hwdb_entries, edges, slotid_to_pidx, mode)
+
 
 #    ######Used only for tutorial purposes####################
 #    def example_sha3hetero_2config(self):

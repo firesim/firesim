@@ -30,15 +30,16 @@ object Utils {
       case Some(dir) => new File(dir, name)
       case None      => new File(name)
     }
-    val writer  = new java.io.FileWriter(file)
-    val emitter = state.form match {
-      case LowForm  => new LowFirrtlEmitter
-      case MidForm  => new MiddleFirrtlEmitter
-      case HighForm => new HighFirrtlEmitter
-      case _        => throw new RuntimeException("Cannot select emitter for unrecognized form.")
+    // Stream the circuit to the file. The form-specific emitters build the whole circuit as one
+    // String (Circuit.serialize), which for very large designs (the 4-SM Radiance SoC is ~2 GB of
+    // FIRRTL) exceeds the JVM's 2 GiB array limit: "Required array length 2147483639 + N is too large".
+    val writer = new java.io.BufferedWriter(new java.io.FileWriter(file), 1 << 20)
+    try {
+      firrtl.ir.Serializer.lazily(state.circuit).foreach(writer.write)
+      writer.write("\n")
+    } finally {
+      writer.close()
     }
-    emitter.emit(state, writer)
-    writer.close
   }
 }
 

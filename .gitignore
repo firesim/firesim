@@ -16,3 +16,5 @@ scala-doc-env.sh
 vivado*.log
 vivado*.jou
 __pycache__
+# per-site build-host environment for platforms/*/build-bitstream.sh (license server, Vivado path)
+platforms/*/build-env.sh

@@ -70,6 +70,38 @@ if [ -z "$BOARD" ] ; then
     usage 1
 fi
 
+# The manager runs this script over ssh in a non-interactive login shell on the build host. An
+# optional build-env.sh in this platform directory (rsynced to the build host with the rest of the
+# platform directory; git-ignored) is sourced first, for anything that shell lacks: a Vivado
+# settings64.sh, XILINXD_LICENSE_FILE, etc. The manager copies this script into the cl_* build
+# directory one level below the platform directory, so look in both places.
+for envscript in "$(dirname "$0")/build-env.sh" "$(dirname "$0")/../build-env.sh"; do
+    if [ -f "$envscript" ]; then
+        echo "sourcing $envscript"
+        source "$envscript"
+        break
+    fi
+done
+# If vivado is still not on PATH, source a settings64.sh ourselves: VIVADO_SETTINGS64 if set,
+# otherwise the newest Vivado found in the usual install roots.
+if ! command -v vivado >/dev/null 2>&1; then
+    if [ -n "$VIVADO_SETTINGS64" ] && [ -f "$VIVADO_SETTINGS64" ]; then
+        source "$VIVADO_SETTINGS64"
+    else
+        for s in $(ls -d /tools/xilinx/Vivado/*/settings64.sh /tools/Xilinx/Vivado/*/settings64.sh /opt/Xilinx/Vivado/*/settings64.sh 2>/dev/null | sort -V); do
+            VIVADO_SETTINGS64_FOUND=$s
+        done
+        if [ -n "$VIVADO_SETTINGS64_FOUND" ]; then
+            echo "vivado not on PATH, sourcing $VIVADO_SETTINGS64_FOUND"
+            source "$VIVADO_SETTINGS64_FOUND"
+        fi
+    fi
+fi
+if ! command -v vivado >/dev/null 2>&1; then
+    echo "vivado not found on PATH and no settings64.sh located; set VIVADO_SETTINGS64 or source Vivado in the build host's login shell"
+    exit 1
+fi
+
 # run build
 cd $CL_DIR
 # -stack 2000: bump per-thread Tcl interpreter stack from the default ~256 KB

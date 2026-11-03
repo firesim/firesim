@@ -460,6 +460,9 @@ def main(args: argparse.Namespace) -> None:
     # we elastically spin instances up/down. we can easily get re-used IPs with
     # different keys. also, probably won't get MITM'd
     env.disable_known_hosts = True
+    # Honor ~/.ssh/config (HostName, User, ProxyCommand) for build/run farm hosts, so hosts that
+    # are only reachable through a jump host (e.g. BWRC build machines) can be named by alias.
+    env.use_ssh_config = True
     # Send SSH keepalives so long silent remote phases (e.g. Vivado synthesis)
     # do not leave the manager blocked on a half-open connection.
     env.keepalive = 30

@@ -17,6 +17,7 @@ class GoldenGateStage extends Stage with PreservesAll[Phase] {
       new midas.stage.phases.CreateParametersInstancePhase,
       new firrtl.stage.phases.AddDefaults,
       new firrtl.stage.phases.Checks,
+      new midas.stage.phases.ChunkedFirrtlParse, // large .fir inputs: parse per module chunk (ANTLR ~2 GB limit)
       new firrtl.stage.phases.AddCircuit,
       new midas.stage.GoldenGateCompilerPhase,
     )

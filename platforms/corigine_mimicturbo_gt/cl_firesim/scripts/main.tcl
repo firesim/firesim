@@ -57,6 +57,15 @@ foreach addFile [list \
   }
 }
 
+# Verilog headers delivered next to FireSim-generated.sv (e.g. common_cells/registers.svh, which
+# the CVFPU SystemVerilog appended to the generated design `includes). Register them as headers
+# and make design/ an include directory so `include "x.svh" resolves during synthesis.
+foreach hdrFile [glob -nocomplain ${root_dir}/design/*.svh] {
+  add_files $hdrFile
+  set_property file_type {Verilog Header} [get_files $hdrFile]
+}
+set_property include_dirs ${root_dir}/design [current_fileset]
+
 set desired_host_frequency $ifrequency
 set strategy $istrategy
 
