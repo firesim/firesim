@@ -15,7 +15,7 @@
 class FASEDMemoryTimingModel;
 class bridge_driver_t;
 class widget_t;
-class StreamEngine;
+class HostStreamEngine;
 
 /**
  * Unique class responsible for the creating and ownership of all bridges.
@@ -86,34 +86,26 @@ public:
     return all_bridges;
   }
 
-  /**
-   * Returns a pointer to the stream engine widget, if one exists.
-   */
-  StreamEngine *get_stream_engine() { return stream_engine.get(); }
+  /** Returns the main bridge-stream host driver, if one exists. */
+  HostStreamEngine *get_stream_engine() { return stream_engine.get(); }
 
-  /**
-   * Returns a pointer to the fpga stream engine widget, if one exists.
-   */
-  StreamEngine *get_fpga_stream_engine() { return fpga_stream_engine.get(); }
+  /** Returns the peer-FPGA stream host driver, if one exists. */
+  HostStreamEngine *get_fpga_stream_engine() { return fpga_stream_engine.get(); }
 
   void add_widget(widget_t *widget);
   void add_widget(bridge_driver_t *widget);
-  void add_widget(StreamEngine *widget);
+  void add_widget(HostStreamEngine *widget);
 
 private:
   // Mapping from bridge kinds to the list of bridges of that kind.
   using widget_list_t = std::vector<std::unique_ptr<widget_t>>;
   std::unordered_map<const void *, widget_list_t> widgets;
 
-  /**
-   * Widget implementing CPU-managed streams.
-   */
-  std::unique_ptr<StreamEngine> stream_engine;
+  /** Host driver for the main bridge-stream engine; it may use PCIS and PCIM. */
+  std::unique_ptr<HostStreamEngine> stream_engine;
 
-  /**
-   * Widget implementing FPGA-managed streams
-   */
-  std::unique_ptr<StreamEngine> fpga_stream_engine;
+  /** Host driver for the optional peer-FPGA stream engine. */
+  std::unique_ptr<HostStreamEngine> fpga_stream_engine;
 
   /**
    * List of all bridges, maintained in a deterministic order.

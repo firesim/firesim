@@ -16,7 +16,7 @@
 #include "core/timing.h"
 #include "core/widget_registry.h"
 
-class StreamEngine;
+class HostStreamEngine;
 class simulation_t;
 class CPUManagedStreamIO;
 class FPGAManagedStreamIO;

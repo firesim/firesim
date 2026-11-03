@@ -319,8 +319,9 @@ class WithPCIMPorts
             size               = BigInt(1) << 64,        // full 64-bit bus address space (PCIM targets physical addresses)
             dataBits           = 512,                    // 512 bits set by FireSim default
             idBits             = 6,                      // 6 is a guess; based upon CPUManagedAXI4Params
-            writeTransferSizes = TransferSizes(512 / 8), // Default for Firesim
-            readTransferSizes  = TransferSizes(512 / 8), // Default for Firesim
+            // Host-memory stream DMA issues bursts up to one 4 KiB page.
+            writeTransferSizes = TransferSizes(512 / 8, 4096),
+            readTransferSizes  = TransferSizes(512 / 8, 4096),
             interleavedId      = Some(0),                // Interleaved not currentlky supported therefore 0
           )
         )
@@ -332,23 +333,22 @@ class EC2F1Config
         new F1Config
     )
 
-/** Route to-host bridge streams over PCIM into host DRAM, rather than having the CPU drain them across the CPU-managed
-  * AXI4 interface.
+/** Route bridge-stream payloads over PCIM into/from host DRAM.
   *
-  * Limitation: FPGAManagedStreamEngine cannot serve FPGA-sunk (from-host) streams, so this supports to-host streams
-  * only.
+  * H2C movers accept stream-tagged descriptors on PCIS and fetch payloads on
+  * PCIM alongside the existing C2H writers.
   *
-  * CPUManagedAXI4Key is deliberately left populated. Nothing binds it -- the engine exposes no inward node, so FPGATop
-  * creates no master for it and the shim ties the port off -- but the key still sizes the PCIS port, which the CL wires
-  * unconditionally.
+  * CPUManagedAXI4Key also sizes the PCIS port. Without an H2C stream the engine
+  * exposes no inward node, and the shim ties that port off.
   */
 class WithFPGAManagedBridgeStreams
     extends Config((_, _, _) => { case StreamEngineInstantiatorKey =>
       (e: StreamEngineParameters, p: Parameters) => new FPGAManagedStreamEngine(p, e, HostMemoryTarget)
     })
 
-/** F2Config with to-host bridge streams DMA'd into host memory over PCIM. The F2 small shell has no DMA engine, so
-  * the CPU-managed path drains streams with 4-byte reads over BAR4; this is much faster for streaming-heavy bridges.
+/** F2Config with FPGA-managed bridge-stream DMA over PCIM. The F2 small shell
+  * has no built-in DMA engine; H2C descriptors use BAR4/PCIS while PCIM moves
+  * payload data in both directions.
   */
 class EC2F2PCIMConfig
     extends Config(

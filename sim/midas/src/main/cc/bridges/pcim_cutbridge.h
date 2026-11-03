@@ -30,7 +30,7 @@ public:
   static char KIND;
 
   pcim_cutbridge_t(simif_t &sim,
-                   StreamEngine &stream,
+                   HostStreamEngine &stream,
                    const PCIMCUTBOUNDARYBRIDGEMODULE_struct &mmio_addrs,
                    int idx,
                    const std::vector<std::string> &args);

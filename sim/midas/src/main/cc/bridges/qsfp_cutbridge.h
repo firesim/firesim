@@ -30,7 +30,7 @@ public:
   static char KIND;
 
   qsfp_cutbridge_t(simif_t &simif,
-                   StreamEngine &stream,
+                   HostStreamEngine &stream,
                    const QSFPCUTBOUNDARYBRIDGEMODULE_struct &mmio_addrs,
                    int idx,
                    const std::vector<std::string> &args);

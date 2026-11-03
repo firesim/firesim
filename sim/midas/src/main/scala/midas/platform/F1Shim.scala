@@ -53,7 +53,7 @@ class F1Shim(implicit p: Parameters) extends PlatformShim {
 
     top.module.ctrl <> io_master
 
-    // Connect the CPU-managed stream engine if the target has one. Otherwise, cap off the connection. (PCIS)
+    // Connect PCIS when the selected stream engine exposes an inward AXI port.
     top.module.cpu_managed_axi4 match {
       case None       =>
         io_pcis.aw.ready := false.B
@@ -74,7 +74,7 @@ class F1Shim(implicit p: Parameters) extends PlatformShim {
         AXI4Printf(io_pcim, "pcim")
       }
 
-      // Connect the FPGA-managed stream engine if the target has one. Otherwise, cap off the connection. (PCIM)
+      // Connect PCIM when a stream engine exposes an outward AXI port.
       top.module.fpga_managed_axi4 match {
         case None       =>
           io_pcim.aw.valid := false.B

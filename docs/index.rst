@@ -55,6 +55,7 @@ New to FireSim? Jump to the :doc:`/FireSim-Basics` page for more info.
     Golden-Gate/Overview
     Golden-Gate/LI-BDN
     Golden-Gate/Bridges
+    Golden-Gate/Bridge-Stream-DMA
     Golden-Gate/Bridge-Walkthrough
     Golden-Gate/Triggers
     Golden-Gate/Resource-Optimizations

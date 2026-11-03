@@ -20,8 +20,8 @@ void widget_registry_t::add_widget(bridge_driver_t *widget) {
   all_bridges.push_back(widget);
 }
 
-void widget_registry_t::add_widget(StreamEngine *widget) {
-  fprintf(stdout, "widget_registry_t::add_widget(StreamEngine)\n");
+void widget_registry_t::add_widget(HostStreamEngine *widget) {
+  fprintf(stdout, "widget_registry_t::add_widget(HostStreamEngine)\n");
   fprintf(stdout,
           "cpu2fpga: %d, fpga2cpu: %d\n",
           widget->cpu_to_fpga_cnt(),
@@ -29,7 +29,7 @@ void widget_registry_t::add_widget(StreamEngine *widget) {
 
   if (get_stream_engine() == nullptr) {
     if (get_fpga_stream_engine() != nullptr) {
-      fprintf(stdout, "PCIM stream engine driver registered before PCIS\n");
+      fprintf(stdout, "peer-FPGA stream driver registered before main bridge-stream driver\n");
       assert(false);
     }
     stream_engine.reset(widget);

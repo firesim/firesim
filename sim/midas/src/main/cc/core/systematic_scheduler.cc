@@ -3,12 +3,13 @@
 #include "systematic_scheduler.h"
 
 #include <cassert>
+#include <cstdlib>
 
 systematic_scheduler_t::systematic_scheduler_t(
     const std::vector<std::string> &args) {
   for (const auto &arg : args) {
     if (arg.find("+max-cycles=") == 0) {
-      max_cycles = atoi(arg.c_str() + 12);
+      max_cycles = std::strtoull(arg.c_str() + 12, nullptr, 10);
     }
   }
 }

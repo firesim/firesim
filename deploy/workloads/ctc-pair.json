@@ -1,0 +1,9 @@
+{
+  "benchmark_name": "ctc-pair",
+  "common_rootfs": null,
+  "common_simulation_outputs": ["uartlog", "memory_stats*.csv"],
+  "workloads": [
+    {"name": "chip0", "bootbinary": "chip0.elf"},
+    {"name": "chip1", "bootbinary": "chip1.elf"}
+  ]
+}

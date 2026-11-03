@@ -159,7 +159,7 @@ public:
 /**
  * Widget handling CPU-managed streams.
  */
-class CPUManagedStreamWidget final : public StreamEngine {
+class CPUManagedStreamWidget final : public HostStreamEngine {
 public:
   /**
    * Creates a new CPU-managed stream widget.

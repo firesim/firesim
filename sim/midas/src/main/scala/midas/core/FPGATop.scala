@@ -339,7 +339,7 @@ class FPGATop(implicit p: Parameters) extends LazyModule with HasWidgets {
   val (streamingEngine, cpuManagedAXI4NodeTuple) =
     if (toCPUStreamParams.isEmpty && fromCPUStreamParams.isEmpty) { (None, None) }
     else {
-      // CPU Streaming Engine (AWS PCIS)
+      // Main bridge-stream engine. Its transport may use PCIS, PCIM, or both.
       val streamEngineParams = StreamEngineParameters(toCPUStreamParams.toSeq, fromCPUStreamParams.toSeq)
       val streamingEngine    = addWidget(p(StreamEngineInstantiatorKey)(streamEngineParams, p))
 
@@ -348,9 +348,8 @@ class FPGATop(implicit p: Parameters) extends LazyModule with HasWidgets {
         "Selected StreamEngine uses the CPU-managed AXI4 interface, but it is not available on this platform.",
       )
 
-      // Only when the engine actually takes CPU-managed traffic. An engine that
-      // DMAs everything over PCIM exposes no inward node, and creating a master
-      // node with nothing to bind it to fails elaboration.
+      // Bind PCIS only when the selected engine exposes an inward AXI node.
+      // A C2H-only PCIM engine has no such node.
       val cpuManagedAXI4NodeTuple = streamingEngine.cpuManagedAXI4NodeOpt.flatMap { engineNode =>
         p(CPUManagedAXI4Key).map { params =>
           val node = AXI4MasterNode(

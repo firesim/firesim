@@ -9,6 +9,7 @@
 #include "emul/mmio.h"
 #include <cassert>
 #include <memory>
+#include <stdexcept>
 #include <string.h>
 #include <unistd.h>
 
@@ -133,14 +134,13 @@ simif_emul_t::simif_emul_t(const TargetConfig &config,
     (*slave.rbegin())->init(memsize, 64);
   }
 
-  // Set up the managed stream.
+  // Model the physical AXI ports independently of the selected stream engine.
   if (std::optional<AXI4Config> conf = config.cpu_managed) {
-    assert(!config.fpga_managed && "stream should be CPU or FPGA managed");
-    cpu_managed_stream_io.reset(new CPUManagedStreamIOImpl(*this, *conf));
+    pcis_axi4 = std::make_unique<mmio_t>(*conf);
+    cpu_managed_stream_io.reset(new CPUManagedStreamIOImpl(*this, *pcis_axi4));
   }
 
   if (std::optional<AXI4Config> conf = config.fpga_managed) {
-    assert(!config.cpu_managed && "stream should be CPU or FPGA managed");
     fpga_managed_stream_io.reset(new FPGAManagedStreamIOImpl(*this, *conf));
   }
 
@@ -220,14 +220,14 @@ uint32_t simif_emul_t::read(size_t addr) {
 
 size_t simif_emul_t::CPUManagedStreamIOImpl::cpu_managed_axi4_read(
     size_t addr, char *data, size_t size) {
-  const uint64_t beat_bytes = cpu_managed_axi4.get_config().beat_bytes();
+  const uint64_t beat_bytes = pcis_axi4.get_config().beat_bytes();
   ssize_t len = (size - 1) / beat_bytes;
 
   while (len >= 0) {
     size_t part_len = len % (MAX_LEN + 1);
 
-    cpu_managed_axi4.read_req(addr, log2(beat_bytes), part_len);
-    simif.wait_read(cpu_managed_axi4, data);
+    pcis_axi4.read_req(addr, log2(beat_bytes), part_len);
+    simif.wait_read(pcis_axi4, data);
 
     len -= (part_len + 1);
     addr += (part_len + 1) * beat_bytes;
@@ -238,7 +238,7 @@ size_t simif_emul_t::CPUManagedStreamIOImpl::cpu_managed_axi4_read(
 
 size_t simif_emul_t::CPUManagedStreamIOImpl::cpu_managed_axi4_write(
     size_t addr, const char *data, size_t size) {
-  const uint64_t beat_bytes = cpu_managed_axi4.get_config().beat_bytes();
+  const uint64_t beat_bytes = pcis_axi4.get_config().beat_bytes();
   ssize_t len = (size - 1) / beat_bytes;
   const size_t remaining = size - len * beat_bytes;
   size_t strb[len + 1];
@@ -258,9 +258,9 @@ size_t simif_emul_t::CPUManagedStreamIOImpl::cpu_managed_axi4_write(
   while (len >= 0) {
     const size_t part_len = len % (MAX_LEN + 1);
 
-    cpu_managed_axi4.write_req(
+    pcis_axi4.write_req(
         addr, log2(beat_bytes), part_len, data, strb_ptr);
-    simif.wait_write(cpu_managed_axi4);
+    simif.wait_write(pcis_axi4);
 
     len -= (part_len + 1);
     addr += (part_len + 1) * beat_bytes;
@@ -283,6 +283,23 @@ simif_emul_t::FPGAManagedStreamIOImpl::FPGAManagedStreamIOImpl(
   const uint64_t modeled_bytes =
       (addr_bits >= 30) ? max_modeled_bytes : (1ULL << addr_bits);
   cpu_mem.init(modeled_bytes, 512);
+}
+
+void simif_emul_t::FPGAManagedStreamIOImpl::pcis_write32(
+    uint64_t offset, uint32_t value) {
+  if (!simif.pcis_axi4) {
+    throw std::runtime_error("H2C descriptors need a PCIS port");
+  }
+  auto &pcis = *simif.pcis_axi4;
+  const size_t beat_bytes = pcis.get_config().beat_bytes();
+  const size_t lane = offset % beat_bytes;
+  assert((offset % 4) == 0 && lane + 4 <= beat_bytes);
+  assert(beat_bytes <= 64 && "metasim uses a 64-bit byte strobe mask");
+  std::vector<char> beat(beat_bytes, 0);
+  memcpy(beat.data() + lane, &value, sizeof(value));
+  size_t strobe = size_t(15) << lane;
+  pcis.write_req(offset, 2, 0, beat.data(), &strobe);
+  simif.wait_write(pcis);
 }
 
 void simif_emul_t::load_mems(const char *fname) {

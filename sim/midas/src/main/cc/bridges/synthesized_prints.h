@@ -41,7 +41,7 @@ public:
   };
 
   synthesized_prints_t(simif_t &sim,
-                       StreamEngine &stream,
+                       HostStreamEngine &stream,
                        const PRINTBRIDGEMODULE_struct &mmio_addrs,
                        unsigned printno,
                        const std::vector<std::string> &args,

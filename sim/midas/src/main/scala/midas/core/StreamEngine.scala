@@ -44,7 +44,8 @@ case class StreamEngineParameters(
   fromCPUParams: Seq[StreamSinkParameters],
 )
 
-/** Base class for StreamEngine implementations. StreamEngines collect all streams from bridges, which drive two
+/** FPGA-side transport widget; the host-side push/pull API is HostStreamEngine in C++.
+  * StreamEngines collect all streams from bridges, which drive two
   * Vec[Decoupled[UInt]], and implement the transport using an AXI4 slave and / or AXI4 master port, which is presented
   * by the host platform.
   *

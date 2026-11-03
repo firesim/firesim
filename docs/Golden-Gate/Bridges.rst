@@ -127,10 +127,11 @@ transport:
    ``simif_t::write()``. Bridge modules register memory mapped registers using methods
    defined in ``midas.widgets.Widget``, addresses for these registers are passed to the
    drivers in a generated C++ header.
-2. **DMA**: In the module this is implemented with a wide (e.g., 512-bit) AXI4 bus, that
-   is mastered by the CPU. Bridge drivers initiate bulk transactions by passing buffers
-   to ``simif_t::push()`` and ``simif_t::pull()`` (DMA from the FPGA). DMA is typically
-   used to stream tokens into and out of out of large FIFOs in the BridgeModule.
+2. **DMA**: Bridge drivers pass buffers to ``simif_t::push()`` and
+   ``simif_t::pull()``. The platform's stream engine moves payloads between
+   host memory and FPGA FIFOs. XDMA-based platforms use host-initiated
+   transfers; the F2 PCIM mode uses FPGA-initiated transfers. See
+   :doc:`/Golden-Gate/Bridge-Stream-DMA` for both paths.
 
 Compile-Time (Parameterization) vs Runtime Configuration
 --------------------------------------------------------

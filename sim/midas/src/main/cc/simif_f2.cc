@@ -26,7 +26,7 @@ public:
   uint32_t read(size_t addr) override;
 
   uint32_t is_write_ready();
-  void check_rc(int rc, char *infostr);
+  void check_rc(int rc, const char *infostr);
   void fpga_shutdown();
   void fpga_setup(int slot_id, const std::string &agfi);
 
@@ -49,6 +49,10 @@ private:
     return config.cpu_managed->beat_bytes();
   }
   FPGAManagedStreams::HostBuffer allocate_to_cpu_buffer(size_t size) override;
+  void pcis_write32(uint64_t offset, uint32_t value) override {
+    int rc = fpga_pci_poke(pci_bar4_handle, offset, value);
+    check_rc(rc, "H2C descriptor PCIS write FAILED");
+  }
 
   /** Hugepages mapped for FPGA-managed streams, unmapped on teardown. */
   std::vector<std::pair<uint64_t, size_t>> dma_buffers;
@@ -87,7 +91,7 @@ simif_f2_t::simif_f2_t(const TargetConfig &config,
   fpga_setup(slot_id, agfi);
 }
 
-void simif_f2_t::check_rc(int rc, char *infostr) {
+void simif_f2_t::check_rc(int rc, const char *infostr) {
   if (rc) {
     if (infostr) {
       fprintf(stderr, "%s\n", infostr);
@@ -223,15 +227,18 @@ void simif_f2_t::fpga_setup(int slot_id, const std::string &agfi) {
   check_rc(rc, "fpga_pci_attach BAR0 FAILED");
   printf("Attached to BAR0 (OCL)\n");
 
-  /* rh: attach to BAR4 (for now to do a PCIS cuz no XDMA)*/
+  /* Descriptor registers need ordered, uncached 32-bit stores. The legacy
+   * CPU-managed payload path still uses write combining on BAR4. */
   pci_bar4_handle = PCI_BAR_HANDLE_INIT;
-  rc = fpga_pci_attach(slot_id, FPGA_APP_PF, APP_PF_BAR4, BURST_CAPABLE, &pci_bar4_handle);
+  const int bar4_flags =
+      (config.fpga_managed && config.cpu_managed) ? 0 : BURST_CAPABLE;
+  rc = fpga_pci_attach(slot_id, FPGA_APP_PF, APP_PF_BAR4, bar4_flags, &pci_bar4_handle);
   check_rc(rc, "fpga_pci_attach BAR4 FAILED");
   printf("Attached to BAR4 (PCIS)\n");
 }
 
 /**
- * The FPGA masters PCIM writes with *physical* addresses, so a stream buffer
+ * The FPGA masters PCIM reads and writes with *physical* addresses, so a stream buffer
  * has to be physically contiguous for its whole length. Userspace can only get
  * that guarantee from a hugepage -- an ordinary anonymous mapping is contiguous
  * in virtual address space and arbitrarily scattered in physical.

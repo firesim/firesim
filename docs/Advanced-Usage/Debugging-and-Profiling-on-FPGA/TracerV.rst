@@ -44,10 +44,10 @@ into host memory over PCIM instead, build with ``BaseF2PCIMConfig`` in place of
 
 Things to know about this mode:
 
-- Only FPGA-to-host streams are supported. Designs with bridges that also stream from
-  the host to the FPGA, such as a NIC or block device, must keep using ``BaseF2Config``.
-- Each stream is backed by one 2 MiB hugepage, so a stream's FPGA-side buffer can be at
-  most 2 MiB. The manager reserves hugepages on F2 run farm hosts during ``infrasetup``.
+- Host-to-FPGA streams are also supported: BAR4/PCIS submits descriptors and the FPGA
+  fetches their payloads from host memory over PCIM.
+- Each C2H ring or H2C staging buffer uses one 2 MiB hugepage. The manager reserves
+  hugepages on F2 run farm hosts during ``infrasetup``.
 - The driver resolves the physical addresses of these buffers and enables PCIe bus
   mastering on the FPGA, so it must run as root. The manager already runs drivers with
   ``sudo`` on EC2.

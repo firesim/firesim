@@ -3,13 +3,105 @@
 
 #include <algorithm>
 #include <assert.h>
+#include <atomic>
+#include <chrono>
 #include <cstring>
 #include <inttypes.h>
 #include <iostream>
+#include <mutex>
 #include <sstream>
 #include <stdio.h>
 #include <string>
+#include <thread>
 #include <vector>
+
+namespace {
+// All H2C streams share four BAR4 descriptor registers.
+std::mutex h2c_descriptor_mutex;
+constexpr size_t h2c_beat_bytes = 64;
+constexpr size_t h2c_max_slot_bytes = 1024 * 1024;
+size_t h2c_slot_bytes(uint32_t depth) {
+  return std::min(h2c_max_slot_bytes,
+                  std::max<size_t>(1, depth) * h2c_beat_bytes);
+}
+} // namespace
+
+void FPGAManagedStreams::CPUToFPGADriver::init() {
+  std::lock_guard<std::mutex> state_lock(state_mutex);
+  last_completed = io.mmio_read(params.descriptor_done_addr);
+  completion_initialized = true;
+}
+
+void FPGAManagedStreams::CPUToFPGADriver::reclaim() {
+  if (!completion_initialized) {
+    last_completed = io.mmio_read(params.descriptor_done_addr);
+    completion_initialized = true;
+  }
+  const uint32_t completed = io.mmio_read(params.descriptor_done_addr);
+  const uint32_t finished = completed - last_completed;
+  if (finished > in_flight.size()) {
+    throw std::runtime_error("H2C completion count exceeded submitted descriptors");
+  }
+  for (uint32_t i = 0; i < finished; ++i) {
+    outstanding_bytes -= in_flight.front();
+    in_flight.pop_front();
+  }
+  last_completed = completed;
+  if (io.mmio_read(params.descriptor_error_addr) != 0) {
+    throw std::runtime_error("H2C PCIM read returned an AXI error");
+  }
+}
+
+size_t FPGAManagedStreams::CPUToFPGADriver::push(void *src,
+                                                 size_t num_bytes,
+                                                 size_t required_bytes) {
+  std::lock_guard<std::mutex> state_lock(state_mutex);
+  assert(num_bytes >= required_bytes);
+  assert(num_bytes % h2c_beat_bytes == 0);
+  assert(required_bytes % h2c_beat_bytes == 0);
+  reclaim();
+  if (in_flight.size() == 2) return 0;
+
+  const auto queued_beats = io.mmio_read(params.fifo_count_addr);
+  assert(queued_beats <= params.fpga_buffer_depth);
+  const size_t unreserved =
+      (params.fpga_buffer_depth - queued_beats) * h2c_beat_bytes;
+  const size_t available =
+      unreserved > outstanding_bytes ? unreserved - outstanding_bytes : 0;
+  const size_t slot_bytes = h2c_slot_bytes(params.fpga_buffer_depth);
+  const size_t bytes = std::min({num_bytes, available, slot_bytes});
+  if (bytes < required_bytes || bytes == 0) {
+    return 0;
+  }
+
+  const size_t slot_offset = (submitted % 2) * slot_bytes;
+  std::memcpy(static_cast<char *>(buffer.cpu) + slot_offset, src, bytes);
+  std::atomic_thread_fence(std::memory_order_seq_cst);
+  const uint64_t address = buffer.fpga + slot_offset;
+  {
+    std::lock_guard<std::mutex> descriptor_lock(h2c_descriptor_mutex);
+    io.pcis_write32(0, static_cast<uint32_t>(address));
+    io.pcis_write32(4, static_cast<uint32_t>(address >> 32));
+    io.pcis_write32(8, static_cast<uint32_t>(bytes));
+    io.pcis_write32(12, params.stream_id);
+  }
+  ++submitted;
+  in_flight.push_back(bytes);
+  outstanding_bytes += bytes;
+  return bytes;
+}
+
+void FPGAManagedStreams::CPUToFPGADriver::flush() {
+  std::lock_guard<std::mutex> state_lock(state_mutex);
+  const auto deadline = std::chrono::steady_clock::now() + std::chrono::seconds(10);
+  while (!in_flight.empty()) {
+    reclaim();
+    if (std::chrono::steady_clock::now() >= deadline) {
+      throw std::runtime_error("H2C PCIM read did not complete");
+    }
+    std::this_thread::yield();
+  }
+}
 
 void FPGAManagedStreams::FPGAToCPUDriver::init() {
   fprintf(stdout, "PCIM Peer Base Addr: 0x%" PRIx64 "\n", buffer_base_fpga);
@@ -74,16 +166,18 @@ FPGAManagedStreamWidget::FPGAManagedStreamWidget(
     unsigned index,
     const std::vector<std::string> &args,
     FPGAManagedStreams::Target target,
-    std::vector<FPGAManagedStreams::StreamParameters> &&to_cpu) {
+    std::vector<FPGAManagedStreams::StreamParameters> &&to_cpu,
+    std::vector<FPGAManagedStreams::H2CStreamParameters> &&from_cpu) {
   assert(index == 0 && "only one managed stream engine is allowed");
 
   auto &io = simif.get_fpga_managed_stream_io();
 
   switch (target) {
   case FPGAManagedStreams::Target::HostMemory:
-    init_host_memory_streams(io, std::move(to_cpu));
+    init_host_memory_streams(io, std::move(to_cpu), std::move(from_cpu));
     break;
   case FPGAManagedStreams::Target::PeerFPGA:
+    assert(from_cpu.empty());
     init_peer_fpga_streams(io, args, std::move(to_cpu));
     break;
   }
@@ -92,12 +186,20 @@ FPGAManagedStreamWidget::FPGAManagedStreamWidget(
 /** Give each stream its own host-memory region; see allocate_to_cpu_buffer. */
 void FPGAManagedStreamWidget::init_host_memory_streams(
     FPGAManagedStreamIO &io,
-    std::vector<FPGAManagedStreams::StreamParameters> &&to_cpu) {
+    std::vector<FPGAManagedStreams::StreamParameters> &&to_cpu,
+    std::vector<FPGAManagedStreams::H2CStreamParameters> &&from_cpu) {
   for (auto &&params : to_cpu) {
     auto buffer = io.allocate_to_cpu_buffer(params.buffer_capacity);
     fpga_to_cpu_streams.push_back(
         std::make_unique<FPGAManagedStreams::FPGAToCPUDriver>(
             std::move(params), buffer.cpu, buffer.fpga, io));
+  }
+  for (auto &&params : from_cpu) {
+    const size_t bytes = 2 * h2c_slot_bytes(params.fpga_buffer_depth);
+    auto buffer = io.allocate_to_cpu_buffer(bytes);
+    cpu_to_fpga_streams.push_back(
+        std::make_unique<FPGAManagedStreams::CPUToFPGADriver>(
+            std::move(params), buffer, io));
   }
 }
 

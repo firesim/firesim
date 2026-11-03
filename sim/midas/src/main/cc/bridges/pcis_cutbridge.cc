@@ -24,7 +24,7 @@ char pcis_cutbridge_t::KIND;
 
 pcis_cutbridge_t::pcis_cutbridge_t(
     simif_t &sim,
-    StreamEngine &stream,
+    HostStreamEngine &stream,
     const PCISCUTBOUNDARYBRIDGEMODULE_struct &mmio_addrs,
     int dma_no,
     const std::vector<std::string> &args,

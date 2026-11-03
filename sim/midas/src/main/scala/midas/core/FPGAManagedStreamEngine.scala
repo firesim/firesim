@@ -11,6 +11,7 @@ import freechips.rocketchip.diplomacy._
 
 import midas.widgets._
 import midas.targetutils.FireSimQueueHelper
+import midas.targetutils.xdc
 
 import firesim.lib.bridgeutils._
 
@@ -42,7 +43,8 @@ class FPGAManagedStreamEngine(
   val params: StreamEngineParameters,
   val target: FPGAManagedStreamTarget = HostMemoryTarget,
 ) extends StreamEngine(p) {
-  require(sinkParams.isEmpty, "FPGAManagedStreamEngine does not currently support FPGA-sunk streams.")
+  require(target == HostMemoryTarget || sinkParams.isEmpty, "Peer FPGA streams cannot have host-to-FPGA sinks.")
+  require(sinkParams.isEmpty || p(CPUManagedAXI4Key).nonEmpty, "H2C descriptors require a CPU-managed AXI4 port.")
 
   // Beats refers to 512b words moving over a stream
   val beatBytes = BridgeStreamConstants.streamWidthBits / 8
@@ -58,7 +60,34 @@ class FPGAManagedStreamEngine(
   def maxFlightForStream(params: StreamSourceParameters): Int =
     (params.fpgaBufferDepth * beatBytes) / pageBytes
 
-  val cpuManagedAXI4NodeOpt = None
+  // BAR4 carries only H2C descriptors. The payload is fetched over PCIM.
+  val h2cPCISNodeOpt: Option[AXI4SlaveNode] = if (sinkParams.nonEmpty) {
+    val pcisParams = p(CPUManagedAXI4Key).get
+    Some(
+      AXI4SlaveNode(
+        Seq(
+          AXI4SlavePortParameters(
+            slaves = Seq(
+              AXI4SlaveParameters(
+                address       = Seq(AddressSet(0, (BigInt(1) << pcisParams.addrBits) - 1)),
+                resources     = (new MemoryDevice).reg,
+                regionType    = RegionType.UNCACHED,
+                executable    = false,
+                // Diplomacy requires maxTransfer >= the 64-byte PCIS bus
+                // width, even though the descriptor register protocol uses
+                // narrow 4-byte writes and rejects larger accesses.
+                supportsWrite = TransferSizes(4, pcisParams.dataBits / 8),
+                supportsRead  = TransferSizes.none,
+                interleavedId = Some(0),
+              )
+            ),
+            beatBytes = pcisParams.dataBits / 8,
+          )
+        )
+      )
+    )
+  } else None
+  val cpuManagedAXI4NodeOpt = h2cPCISNodeOpt
 
   val (fpgaManagedAXI4NodeOpt, toCPUNode) = if (hasStreams) {
     // The implicit val defined in StreamEngine is not accessible here; Make a
@@ -68,6 +97,8 @@ class FPGAManagedStreamEngine(
     val toCPUNode        = AXI4MasterNode(
       sourceParams.map { p =>
         AXI4MasterPortParameters(Seq(AXI4MasterParameters(name = p.name, maxFlight = Some(maxFlightForStream(p)))))
+      } ++ sinkParams.map { p =>
+        AXI4MasterPortParameters(Seq(AXI4MasterParameters(name = p.name, maxFlight = Some(1))))
       }
     )
     xbar :=* AXI4Buffer() :=* toCPUNode
@@ -258,7 +289,7 @@ class FPGAManagedStreamEngine(
       inflightBeatCounts.io.deq.ready := axi4.b.fire
       assert(!axi4.b.valid || inflightBeatCounts.io.deq.valid)
 
-      // We only use the write channels to implement FPGA-to-CPU streams
+      // The H2C mover uses a separate AXI master on the same PCIM crossbar.
       axi4.ar.valid := false.B
       axi4.r.ready  := false.B
 
@@ -277,7 +308,7 @@ class FPGAManagedStreamEngine(
     }
 
     val sourceDriverParameters = if (hasStreams) {
-      val axi4Bundles = toCPUNode.get.out.map(_._1)
+      val axi4Bundles = toCPUNode.get.out.take(sourceParams.size).map(_._1)
       (for (((axi4IF, streamIF), params) <- axi4Bundles.zip(streamsToHostCPU).zip(sourceParams)) yield {
         chisel3.experimental.prefix(params.name) {
           elaborateToHostCPUStream(streamIF, axi4IF, params)
@@ -286,6 +317,188 @@ class FPGAManagedStreamEngine(
     } else {
       Seq()
     }
+
+    case class FromCPUStreamDriverParameters(
+      name:               String,
+      streamId:           Int,
+      fpgaBufferDepth:    Int,
+      fifoCountAddr:      Int,
+      descriptorDoneAddr: Int,
+      descriptorErrorAddr: Int,
+    )
+
+    // PCIS carries one ordered descriptor at a time. The doorbell selects a
+    // stream; each selected mover then runs independently on the PCIM xbar.
+    val h2cStarts = Wire(Vec(sinkParams.size, Bool()))
+    val h2cReady = Wire(Vec(sinkParams.size, Bool()))
+    h2cStarts.foreach(_ := false.B)
+    val hostAddrLow  = RegInit(0.U(32.W))
+    val hostAddrHigh = RegInit(0.U(32.W))
+    val lengthBytes  = RegInit(0.U(32.W))
+    if (sinkParams.nonEmpty) {
+      val pcis = h2cPCISNodeOpt.get.in.head._1
+
+      val writeIdle :: writeData :: writeResponse :: Nil = Enum(3)
+      val writeState = RegInit(writeIdle)
+      val writeAddr  = Reg(UInt(pcis.aw.bits.addr.getWidth.W))
+      val writeID    = Reg(UInt(pcis.aw.bits.id.getWidth.W))
+      val writeBad   = RegInit(false.B)
+      pcis.aw.ready := writeState === writeIdle
+      when(pcis.aw.fire) {
+        writeAddr  := pcis.aw.bits.addr
+        writeID    := pcis.aw.bits.id
+        writeBad   := pcis.aw.bits.len =/= 0.U || pcis.aw.bits.size =/= 2.U ||
+          pcis.aw.bits.addr(1, 0) =/= 0.U || pcis.aw.bits.addr >= 16.U
+        writeState := writeData
+      }
+      pcis.w.ready := writeState === writeData
+      val lane     = writeAddr(5, 2)
+      val word     = (pcis.w.bits.data >> (lane << 5))(31, 0)
+      val strobe   = (pcis.w.bits.strb >> (lane << 2))(3, 0)
+      when(pcis.w.fire) {
+        when(!pcis.w.bits.last || strobe =/= 15.U) { writeBad := true.B }
+        when(!writeBad && pcis.w.bits.last && strobe === 15.U) {
+          switch(writeAddr(3, 2)) {
+            is(0.U) { hostAddrLow := word }
+            is(1.U) { hostAddrHigh := word }
+            is(2.U) { lengthBytes := word }
+            is(3.U) {
+              val validLength = lengthBytes =/= 0.U && lengthBytes(5, 0) === 0.U && hostAddrLow(5, 0) === 0.U
+              val selectedReady = sinkParams.indices.map(i => (word === i.U) && h2cReady(i)).reduce(_ || _)
+              when(validLength && selectedReady) {
+                sinkParams.indices.foreach { i =>
+                  when(word === i.U) { h2cStarts(i) := true.B }
+                }
+              }.otherwise { writeBad := true.B }
+            }
+          }
+        }
+        when(pcis.w.bits.last) { writeState := writeResponse }
+      }
+      pcis.b.valid     := writeState === writeResponse
+      pcis.b.bits.id   := writeID
+      pcis.b.bits.resp := Mux(writeBad, 2.U, 0.U)
+      pcis.b.bits.user := DontCare
+      when(pcis.b.fire) { writeState := writeIdle }
+
+      // Invalid reads complete with an error rather than timing out PCIS.
+      val readValid = RegInit(false.B)
+      val readID    = Reg(UInt(pcis.ar.bits.id.getWidth.W))
+      val readLeft  = Reg(UInt(pcis.ar.bits.len.getWidth.W))
+      pcis.ar.ready := !readValid
+      when(pcis.ar.fire) {
+        readID    := pcis.ar.bits.id
+        readLeft  := pcis.ar.bits.len
+        readValid := true.B
+      }
+      pcis.r.valid     := readValid
+      pcis.r.bits.id   := readID
+      pcis.r.bits.data := 0.U
+      pcis.r.bits.resp := 2.U
+      pcis.r.bits.last := readLeft === 0.U
+      pcis.r.bits.user := DontCare
+      when(pcis.r.fire) {
+        when(readLeft === 0.U) { readValid := false.B }
+        .otherwise { readLeft := readLeft - 1.U }
+      }
+    }
+
+    val sinkDriverParameters = sinkParams.zipWithIndex.map { case (chParams, streamId) =>
+      val axi4 = toCPUNode.get.out(sourceParams.size + streamId)._1
+      val depth = chParams.fpgaBufferDepth
+      require(depth > 0)
+      require(axi4.params.dataBits == BridgeStreamConstants.streamWidthBits)
+
+      val incomingQueueIO = FireSimQueueHelper.makeIO(
+        UInt(BridgeStreamConstants.streamWidthBits.W),
+        depth,
+        isFireSim = true,
+        overrideStyle = Some(xdc.RAMStyles.ULTRA),
+      )
+      streamsFromHostCPU(streamId) <> incomingQueueIO.deq
+
+      // Four ordered 32-bit BAR4 stores form a descriptor. The last store at
+      // offset 0xC is the doorbell; its value selects this stream.
+      val descriptor = Module(new Queue(new Bundle {
+        val address = UInt(64.W)
+        val length = UInt(32.W)
+      }, 2))
+      descriptor.io.enq.valid := h2cStarts(streamId)
+      descriptor.io.enq.bits.address := Cat(hostAddrHigh, hostAddrLow)
+      descriptor.io.enq.bits.length := lengthBytes
+      h2cReady(streamId) := descriptor.io.enq.ready
+      val busy         = RegInit(false.B)
+      val completed    = RegInit(0.U(32.W))
+      val error        = RegInit(false.B)
+      val idle :: sendAddress :: receiveData :: Nil = Enum(3)
+      val state          = RegInit(idle)
+      val nextAddr       = Reg(UInt(64.W))
+      val remainingBeats = Reg(UInt(32.W))
+      val burstBeats     = Reg(UInt(7.W))
+      val beatsToReceive = Reg(UInt(7.W))
+      descriptor.io.deq.ready := state === idle && !busy
+      when(descriptor.io.deq.fire) {
+        nextAddr       := descriptor.io.deq.bits.address
+        remainingBeats := descriptor.io.deq.bits.length >> 6
+        busy           := true.B
+      }
+
+      val freeBeats = depth.U - incomingQueueIO.count
+      val toPageEnd = 64.U - nextAddr(11, 6)
+      val bounds    = Seq(remainingBeats, freeBeats, toPageEnd, 64.U)
+      val canRead   = bounds.reduce((a, b) => Mux(a < b, a, b))
+      when(state === idle && busy && canRead =/= 0.U) {
+        burstBeats := canRead
+        state      := sendAddress
+      }
+      axi4.ar.valid      := state === sendAddress
+      axi4.ar.bits.id    := 0.U
+      axi4.ar.bits.addr  := nextAddr
+      axi4.ar.bits.len   := burstBeats - 1.U
+      axi4.ar.bits.size  := 6.U // 512 bits
+      axi4.ar.bits.burst := AXI4Parameters.BURST_INCR
+      axi4.ar.bits.cache := AXI4Parameters.CACHE_MODIFIABLE
+      axi4.ar.bits.prot  := 0.U
+      axi4.ar.bits.qos   := 0.U
+      axi4.ar.bits.lock  := 0.U
+      when(axi4.ar.fire) {
+        beatsToReceive := burstBeats
+        state          := receiveData
+      }
+
+      axi4.r.ready                := state === receiveData && incomingQueueIO.enq.ready
+      incomingQueueIO.enq.valid := state === receiveData && axi4.r.valid
+      incomingQueueIO.enq.bits  := axi4.r.bits.data
+      when(axi4.r.fire) {
+        when(axi4.r.bits.resp =/= 0.U || axi4.r.bits.last =/= (beatsToReceive === 1.U)) {
+          error := true.B
+        }
+        beatsToReceive := beatsToReceive - 1.U
+        when(axi4.r.bits.last) {
+          nextAddr       := nextAddr + (burstBeats << 6)
+          remainingBeats := remainingBeats - burstBeats
+          state          := idle
+          when(remainingBeats === burstBeats) {
+            busy      := false.B
+            completed := completed + 1.U
+          }
+        }
+      }
+      axi4.aw.valid := false.B
+      axi4.aw.bits  := DontCare
+      axi4.w.valid  := false.B
+      axi4.w.bits   := DontCare
+      axi4.b.ready  := true.B
+
+      FromCPUStreamDriverParameters(
+        chParams.name,
+        streamId,
+        depth,
+        attach(incomingQueueIO.count, s"${chParams.name}_h2cCount", ReadOnly, substruct = false),
+        attach(completed, s"${chParams.name}_h2cCompleted", ReadOnly, substruct = false),
+        attach(error, s"${chParams.name}_h2cError", ReadOnly, substruct = false),
+      )
+    }.toSeq
 
     genCRFile()
 
@@ -307,6 +520,20 @@ class FPGAManagedStreamEngine(
         )
       }
 
+      def serializeH2CParameters(params: Seq[FromCPUStreamDriverParameters]): StdVector = {
+        StdVector(
+          "FPGAManagedStreams::H2CStreamParameters",
+          params.map(p => Verbatim(s"""|FPGAManagedStreams::H2CStreamParameters(
+                                       |  std::string(${CStrLit(p.name).toC}),
+                                       |  ${UInt32(p.streamId).toC},
+                                       |  ${UInt32(p.fpgaBufferDepth).toC},
+                                       |  ${UInt64(base + p.fifoCountAddr).toC},
+                                       |  ${UInt64(base + p.descriptorDoneAddr).toC},
+                                       |  ${UInt64(base + p.descriptorErrorAddr).toC}
+                                       |)""".stripMargin)),
+        )
+      }
+
       val targetLiteral = target match {
         case HostMemoryTarget => "FPGAManagedStreams::Target::HostMemory"
         case PeerFPGATarget   => "FPGAManagedStreams::Target::PeerFPGA"
@@ -317,7 +544,7 @@ class FPGAManagedStreamEngine(
         sb,
         "FPGAManagedStreamWidget",
         "fpga_managed_stream",
-        Seq(Verbatim(targetLiteral), serializeStreamParameters(sourceDriverParameters)),
+        Seq(Verbatim(targetLiteral), serializeStreamParameters(sourceDriverParameters), serializeH2CParameters(sinkDriverParameters)),
         "GET_MANAGED_STREAM_CONSTRUCTOR",
       )
 

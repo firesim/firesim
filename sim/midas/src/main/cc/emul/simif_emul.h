@@ -76,17 +76,8 @@ public:
 
   // void sync_sockets() override;
 
-  /**
-   * Returns a pointer to the CPU-managed AXI4 IF at the metasimulation
-   * boundary.
-   *
-   * This is used by the harness to bridge the driver and the simulation.
-   */
-  mmio_t *get_cpu_managed_axi4() {
-    if (cpu_managed_stream_io)
-      return &cpu_managed_stream_io->cpu_managed_axi4;
-    return nullptr;
-  }
+  /** Returns the host-initiated PCIS port model, when present. */
+  mmio_t *get_cpu_managed_axi4() { return pcis_axi4.get(); }
 
   /**
    * Returns a pointer to a mm_t instance written to by FPGA-managed AXI4
@@ -105,6 +96,9 @@ public:
    * AXI4 transaction channels
    */
   std::unique_ptr<mmio_t> master;
+
+  /** Host-initiated PCIS port, used for legacy stream payloads or H2C descriptors. */
+  std::unique_ptr<mmio_t> pcis_axi4;
 
   /**
    * @brief Host DRAM models shared across the RTL simulator and driver
@@ -172,8 +166,8 @@ protected:
 private:
   class CPUManagedStreamIOImpl final : public CPUManagedStreamIO {
   public:
-    CPUManagedStreamIOImpl(simif_emul_t &simif, const AXI4Config &config)
-        : simif(simif), cpu_managed_axi4(config) {}
+    CPUManagedStreamIOImpl(simif_emul_t &simif, mmio_t &pcis_axi4)
+        : simif(simif), pcis_axi4(pcis_axi4) {}
 
     uint32_t mmio_read(size_t addr) override { return simif.read(addr); }
 
@@ -183,11 +177,11 @@ private:
     size_t cpu_managed_axi4_read(size_t addr, char *data, size_t size) override;
 
     uint64_t get_beat_bytes() const override {
-      return cpu_managed_axi4.get_config().beat_bytes();
+      return pcis_axi4.get_config().beat_bytes();
     }
 
     simif_emul_t &simif;
-    mmio_t cpu_managed_axi4;
+    mmio_t &pcis_axi4;
   };
 
   std::unique_ptr<CPUManagedStreamIOImpl> cpu_managed_stream_io;
@@ -214,6 +208,8 @@ private:
              "FPGA-managed stream buffers exceed the modeled host memory");
       return {(char *)cpu_mem.get_data() + fpga, fpga};
     }
+
+    void pcis_write32(uint64_t offset, uint32_t value) override;
 
     simif_emul_t &simif;
 

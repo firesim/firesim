@@ -24,8 +24,12 @@ public:
   virtual void flush() = 0;
 };
 
-class StreamEngine {
+/** Host-side push/pull interface for bridge streams. The FPGA-side transport
+ * widget is midas.core.StreamEngine in Scala. */
+class HostStreamEngine {
 public:
+  virtual ~HostStreamEngine() = default;
+
   /**
    * @brief Initialiases MMIO-related structures.
    */

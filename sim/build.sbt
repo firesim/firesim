@@ -121,7 +121,8 @@ lazy val firesimRef = ProjectRef(file("."), "firesim")
 lazy val midas = (project in file("midas"))
   .dependsOn(rocketchip, targetutils, firesimLib)
   .settings(libraryDependencies ++= Seq(
-    "org.scalatestplus" %% "scalacheck-1-14" % "3.1.3.0" % "test"))
+    "org.scalatestplus" %% "scalacheck-1-14" % "3.1.3.0" % "test",
+    "edu.berkeley.cs" %% "chiseltest" % "0.6.2" % "test"))
   .settings(commonSettings)
 
 // Contains example targets, like the MIDAS examples, and FASED tests

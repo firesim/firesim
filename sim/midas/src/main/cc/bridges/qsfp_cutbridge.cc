@@ -24,7 +24,7 @@ char qsfp_cutbridge_t::KIND;
 
 qsfp_cutbridge_t::qsfp_cutbridge_t(
     simif_t &simif,
-    StreamEngine &stream,
+    HostStreamEngine &stream,
     const QSFPCUTBOUNDARYBRIDGEMODULE_struct &mmio_addrs,
     const int idx,
     const std::vector<std::string> &args)

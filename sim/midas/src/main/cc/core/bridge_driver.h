@@ -81,7 +81,7 @@ protected:
  */
 class streaming_bridge_driver_t : public bridge_driver_t {
 public:
-  streaming_bridge_driver_t(simif_t &s, StreamEngine &stream, const void *kind)
+  streaming_bridge_driver_t(simif_t &s, HostStreamEngine &stream, const void *kind)
       : bridge_driver_t(s, kind), stream(stream) {}
 
   /**
@@ -104,7 +104,7 @@ protected:
   void pull_flush(unsigned stream_idx);
 
 private:
-  StreamEngine &stream;
+  HostStreamEngine &stream;
 };
 
 #endif // __BRIDGE_DRIVER_H

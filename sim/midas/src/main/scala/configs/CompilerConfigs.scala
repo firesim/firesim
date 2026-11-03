@@ -99,9 +99,8 @@ class BaseF2Config
         new midas.F2Config
     )
 
-/** BaseF2Config, but with to-host bridge streams DMA'd into host memory over PCIM instead of drained by the CPU over
-  * BAR4. See WithFPGAManagedBridgeStreams. Supports to-host streams only, so it suits trace-oriented targets (e.g.
-  * TracerV) but not ones with a NIC or block device.
+/** BaseF2Config with bidirectional bridge-stream payloads DMA'd over PCIM. BAR4/PCIS carries H2C descriptors;
+  * C2H streams continue to write host-memory rings. See WithFPGAManagedBridgeStreams.
   */
 class BaseF2PCIMConfig
     extends Config(
