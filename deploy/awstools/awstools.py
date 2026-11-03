@@ -220,7 +220,7 @@ def aws_resource_names() -> Dict[str, Any]:
         "securitygroupname": "for-farms-only-firesim",
         "securitygroupname-manager": "firesim",
         # regular users are instructed to create a key named `firesim` in the wiki
-        "keyname": "firesim",
+        "keyname": os.environ.get("FIRESIM_AWS_KEY_NAME", "firesim"),
         "s3bucketname": None,
         "snsname": "FireSim",
         "runfarmprefix": None,
@@ -283,7 +283,11 @@ def farm_security_group_setup() -> None:
         f"The {securitygroupname} security group does not exist. Creating it for you."
     )
 
-    vpcfilter: Sequence[FilterTypeDef] = [{"Name": "tag:Name", "Values": [vpcname]}]
+    vpc_id = os.environ.get("FIRESIM_AWS_VPC_ID")
+    vpcfilter: Sequence[FilterTypeDef] = [
+        {"Name": "vpc-id", "Values": [vpc_id]}
+        if vpc_id else {"Name": "tag:Name", "Values": [vpcname]}
+    ]
     # docs show 'NextToken' / 'MaxResults' which suggests pagination, but
     # the boto3 source says collections handle pagination automatically,
     # so assume this is fine
@@ -498,7 +502,11 @@ def launch_instances(
     ec2 = boto3.resource("ec2")
     client = boto3.client("ec2")
 
-    vpcfilter: Sequence[FilterTypeDef] = [{"Name": "tag:Name", "Values": [vpcname]}]
+    vpc_id = os.environ.get("FIRESIM_AWS_VPC_ID")
+    vpcfilter: Sequence[FilterTypeDef] = [
+        {"Name": "vpc-id", "Values": [vpc_id]}
+        if vpc_id else {"Name": "tag:Name", "Values": [vpcname]}
+    ]
     # docs show 'NextToken' / 'MaxResults' which suggests pagination, but
     # the boto3 source says collections handle pagination automatically,
     # so assume this is fine
