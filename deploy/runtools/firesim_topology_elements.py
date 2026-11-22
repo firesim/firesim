@@ -5,6 +5,7 @@ from __future__ import annotations
 import logging
 import abc
 import sys
+import copy
 from fabric.contrib.project import rsync_project  # type: ignore
 from fabric.api import run, local, warn_only, get, put, cd, hide  # type: ignore
 from fabric.exceptions import CommandTimeout  # type: ignore
@@ -261,7 +262,8 @@ class FireSimServerNode(FireSimNode):
         rootLogger.info(
             f"set_server_hardware_config {self.server_id_internal} {self.server_hardware_config}"
         )
-        self.server_hardware_config = server_hardware_config
+        # copy instead of referencing s.t. a unique server_hardware_config is created
+        self.server_hardware_config = copy.deepcopy(server_hardware_config)
 
     def get_server_hardware_config(self) -> Optional[Union[RuntimeHWConfig, str]]:
         return self.server_hardware_config
