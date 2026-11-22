@@ -585,6 +585,41 @@ class UserTopologies:
             FireSimServerNode(hwdb_entries[x]) for x in range(self.no_net_num_nodes)
         ]
 
+    # create a N switch x M machine/server cluster that all resides on 1 machine
+    def grpc_NsxMn_cluster(self, num_switches, num_nodes_per_switch) -> None:
+        self.roots = [FireSimSwitchNode() for y in range(num_switches)]
+        for i in range(num_switches):
+            self.roots[i].add_downlinks([FireSimServerNode() for y in range(num_nodes_per_switch)])
+
+        def custom_mapper(fsim_topol_with_passes: FireSimTopologyWithPasses) -> None:
+            switches = fsim_topol_with_passes.firesimtopol.get_dfs_order_switches()
+
+            total_sims = 0
+            for switch in switches:
+                alldownlinknodes = list(
+                    map(lambda x: x.get_downlink_side(),[downlink for downlink in switch.downlinks])
+                )
+                downlinknodes = cast(List[FireSimServerNode], alldownlinknodes)
+                total_sims = total_sims + len(downlinknodes)
+
+            # get instance that supports the overall number of nodes wanted
+            inst_handle = fsim_topol_with_passes.run_farm.get_smallest_sim_host_handle(num_sims=total_sims)
+            inst = fsim_topol_with_passes.run_farm.allocate_sim_host(inst_handle)
+
+            for switch in switches:
+                alldownlinknodes = list(
+                    map(lambda x: x.get_downlink_side(),[downlink for downlink in switch.downlinks])
+                )
+                inst.add_switch(switch)
+                for server in cast(List[FireSimServerNode], alldownlinknodes):
+                    inst.add_simulation(server)
+
+        self.custom_mapper = custom_mapper
+
+    # create 2 clusters of simulations to run on a single runfarm machine, where each has 1 switch and 2 server nodes.
+    def grpc_2sx2n(self) -> None:
+        self.grpc_NsxMn_cluster(2, 2)
+
     ########################################################################
 
     # DOC include start: user_topology.py fireaxe_topology_config
