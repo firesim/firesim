@@ -1,0 +1,53 @@
+{
+  "directory":"data",
+  "experiments":[
+    {
+      "plotfile":"dram_fidelity_rate_slowdown.pdf",
+      "suite":"rate",
+      "features":[
+        {
+          "name":"Magic",
+          "directory":"2018-03-19--01-35-08-spec17-intrate-quadcore-LBP-8W1C-8R1C"
+        },
+        {
+          "name":"Simple DRAM",
+          "directory":"intrate-4-idealized"
+        },
+        {
+          "name":"No ACT Limits",
+          "directory":"2018-04-01--04-29-53-spec17-intrate-no-refresh-tfaw-trrd"
+        },
+        {
+          "name":"No Refresh",
+          "directory":"2018-04-01--04-22-36-spec17-intrate-no-refresh"
+        },
+        {
+          "name":"Full Model",
+          "directory":"2018-03-22--04-58-53-spec17-intrate-4-rate-frfcfs" 
+        }
+      ]
+    },
+    {
+      "plotfile":"dram_fidelity_speed_slowdown.pdf",
+      "suite":"speed",
+      "features":[
+        {
+          "name":"Magic",
+          "directory":"2018-03-19--00-21-41-spec17-intspeed-singlecore-LBP-8W1C-8R1C"
+        },
+        {
+          "name":"Simple DRAM",
+          "directory":"intspeed-1-idealized"
+        },
+        {
+          "name":"No Refresh",
+          "directory":"intspeed-1-no-refresh"
+        },
+        {
+          "name":"Full Model",
+          "directory":"2018-03-22--22-46-43-spec17-intspeed-working-set-experiment-config-64K"
+        }
+      ]
+    }
+  ]
+}

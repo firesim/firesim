@@ -1,0 +1,55 @@
+<!DOCTYPE memspec SYSTEM "memspec.dtd">
+<memspec>
+
+  <parameter id="memoryId" type="string" value="MICRON_2Gb_DDR3-2133_8bit_D" />
+  <parameter id="memoryType" type="string" value="DDR3" />
+  <memarchitecturespec>
+    <parameter id="width" type="uint" value="8" />
+    <parameter id="nbrOfBanks" type="uint" value="8" />
+    <parameter id="nbrOfRanks" type="uint" value="1" />
+    <parameter id="nbrOfColumns" type="uint" value="1024" />
+    <parameter id="nbrOfRows" type="uint" value="32768" />
+    <parameter id="dataRate" type="uint" value="2" />
+    <parameter id="burstLength" type="uint" value="8" />
+  </memarchitecturespec>
+  <memtimingspec>
+      <parameter id="clkMhz" type="double" value="1066" />
+      <parameter id="RC" type="uint" value="47" />
+      <parameter id="RCD" type="uint" value="14" />
+      <parameter id="RL" type="uint" value="14" />
+      <parameter id="RP" type="uint" value="14" />
+      <parameter id="RFC" type="uint" value="160" />
+      <parameter id="RAS" type="uint" value="33" />
+      <parameter id="WL" type="uint" value="10" />
+      <parameter id="AL" type="uint" value="0" />
+      <parameter id="DQSCK" type="uint" value="1" />
+      <parameter id="RTP" type="uint" value="8" />
+      <parameter id="WR" type="uint" value="15" />
+      <parameter id="XP" type="uint" value="6" />
+      <parameter id="XPDLL" type="uint" value="240" />
+      <parameter id="XS" type="uint" value="170" />
+      <parameter id="XSDLL" type="uint" value="512" />
+      <parameter id="REFI" type="uint" value="7800" />
+      <parameter id="CL" type="uint" value="14" />
+      <parameter id="FAW" type="uint" value="25" />
+      <parameter id="RRD" type="uint" value="8" />
+      <parameter id="CCD" type="uint" value="4" />
+      <parameter id="WTR" type="uint" value="8" />
+      <parameter id="CKE" type="uint" value="5" />
+      <parameter id="CKESR" type="uint" value="4" />
+  </memtimingspec>
+  <mempowerspec>
+      <parameter id="idd0" type="double" value="46.0" />
+      <parameter id="idd2p0" type="double" value="12.0" />
+      <parameter id="idd2p1" type="double" value="15.0" />
+      <parameter id="idd2n" type="double" value="23.0" />
+      <parameter id="idd3p0" type="double" value="22.0" />
+      <parameter id="idd3p1" type="double" value="22.0" />
+      <parameter id="idd3n" type="double" value="40.0" />
+      <parameter id="idd4w" type="double" value="126.0" />
+      <parameter id="idd4r" type="double" value="125.0" />
+      <parameter id="idd5" type="double" value="190.0" />
+      <parameter id="idd6" type="double" value="12.0" /> <!-- I made this up, taken from MICRON_2Gb_DDR3-1066_8bit_D.xml -->
+      <parameter id="vdd" type="double" value="1.5" />
+  </mempowerspec>
+</memspec>
