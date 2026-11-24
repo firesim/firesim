@@ -58,7 +58,8 @@ public:
   struct qsfp_data_t {
     std::vector<uint64_t> bits;
     qsfp_data_t(const std::vector<uint64_t> &bits_) {
-      for (unsigned int bit : bits_) {
+      // uint64_t, not unsigned int: a 32-bit loop variable dropped the upper half of every 64-bit word
+      for (uint64_t bit : bits_) {
         bits.push_back(bit);
       }
     }
