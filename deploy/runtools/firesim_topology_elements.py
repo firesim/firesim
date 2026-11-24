@@ -362,7 +362,10 @@ class FireSimServerNode(FireSimNode):
         assert self.partition_config is not None
         assert self.plusarg_passthrough is not None
 
-        all_macs = [self.get_mac_address()]
+        # Leaf (non-base) FireAxe partitions are not MAC-assignable (see
+        # PartitionConfig.mac_address_assignable), so their mac_address stays None;
+        # array_to_plusargs skips None entries, which is what we want (no NIC there).
+        all_macs = [self.mac_address]
         all_rootfses = self.process_qcow2_rootfses([self.get_rootfs_name()])
         all_linklatencies = [self.server_link_latency]
         all_maxbws = [self.server_bw_max]
