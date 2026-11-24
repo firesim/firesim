@@ -56,6 +56,19 @@ class GenerateFireSimWrapper extends Transform with DependencyAPIMigration with 
     es.map(unpackPortExpr(_, base))
   }
 
+  // Clock-typed ports other than the implicit "clock" are not carried by the cut bridge. Modules
+  // that take clocks through their diplomatic IO (rocket-chip Clusters receive the subsystem's
+  // clock groups as auto_all_clock_groups_in_*_clock inputs) would leave those inputs undriven in
+  // the extracted partition. Each partition is a single clock domain, so drive them all with the
+  // partition's clock; the module's clock outputs (e.g. csbus_fixedClockNode_anon_out_clock) are
+  // simply left unobserved here. The base-side counterpart is in RemoveModulePartitionPass.
+  def clockInputPortConns(m: DefModule, extractedModule: DefInstance, buildtopClock: DefWire): Seq[Connect] = {
+    m.ports.collect {
+      case Port(_, name, Input, ClockType) if (name != "clock") =>
+        Connect(NoInfo, WSubField(WRef(extractedModule.name), name), WRef(buildtopClock.name))
+    }
+  }
+
   def genDefaultBridges(): (DefInstance, DefInstance, DefInstance) = {
     val peekPokeBridge = genBridgeModuleAndInstance(
       instanceName = "extractPeekPokeBridge",
@@ -303,7 +316,8 @@ class GenerateFireSimWrapper extends Transform with DependencyAPIMigration with 
       rhsCutBridgeResetConnection,
     ) ++
       lhsInBridgeConnections ++
-      rhsInBridgeConnections
+      rhsInBridgeConnections ++
+      clockInputPortConns(m, extractedModule, buildtopClock)
 
     val statements = instances ++ connections
     val body       = new Block(statements)
@@ -383,7 +397,8 @@ class GenerateFireSimWrapper extends Transform with DependencyAPIMigration with 
       cutBridgeClockConnection,
       cutBridgeResetConnection,
     ) ++
-      inBridgeConnections
+      inBridgeConnections ++
+      clockInputPortConns(m, extractedModule, buildtopClock)
 
     val instances = Seq(
       peekPokeBridge,
