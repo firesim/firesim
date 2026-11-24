@@ -217,7 +217,8 @@ class GenerateCutBridgeInGroupedWrapper extends Transform with DependencyAPIMigr
     }.flatten
 
     // Construct a new body containing the bridge
-    val connectionsToAdd = bridgeClockResetConnection ++ Seq(inBridgeConnection) ++ outBridgeConnections
+    val connectionsToAdd =
+      bridgeClockResetConnection ++ Seq(inBridgeConnection) ++ outBridgeConnections ++ clockOutputPortConns(m)
     val nodesToAdd       = inPortsCat
     val newStatements    = (bridgeInstance +: (nodesToAdd +: connectionsToAdd))
     val newBody          = new Block(newStatements)
@@ -323,9 +324,38 @@ class GenerateCutBridgeInGroupedWrapper extends Transform with DependencyAPIMigr
       Seq()
     }
 
-    val stmts = srcStmts ++ sinkStmts
+    val stmts = srcStmts ++ sinkStmts ++ clockOutputPortConns(m)
     val body  = new Block(stmts)
     m.copy(body = body)
+  }
+
+  // Clock-typed ports are not carried by the cut bridge (collectDirectionIO only collects UInt and
+  // Reset). Modules that re-export a clock, such as rocket-chip Clusters (ClusterPRCIDomain wires
+  // clockNode := element.csbus.fixedClockNode, so the cluster has clock *outputs* next to its
+  // clock-group *inputs*), would otherwise leave the wrapper's clock output undriven
+  // ("Reference p0_auto_..._fixedClockNode_anon_out_clock is not fully initialized").
+  // Drive each clock output from the clock-group input it was derived from: the cluster's
+  // <bus>_fixedClockNode_anon_out_clock is the clock of bus <bus>, which arrives as
+  // all_clock_groups_in_*_member_<bus>_*_clock. It must NOT be driven from the wrapper's own
+  // "clock": ClusterPRCIDomain feeds the exported clock back as the element's implicit clock
+  // (element_reset_domain.clockNode := ... := domain.clockNode), so that would be a
+  // combinational loop through the clock network. Any clock input works in a single-clock FireSim
+  // target, so fall back to the first clock input, and only then to "clock".
+  private def clockOutputPortConns(m: Module): Seq[Connect] = {
+    val clockInputs = m.ports.collect { case Port(_, name, Input, ClockType) if (name != "clock") => name }
+    val busOfOutput = "_([A-Za-z0-9]+)_fixedClockNode_".r
+    def sourceFor(outName: String): String = {
+      val byBus = busOfOutput
+        .findFirstMatchIn(outName)
+        .flatMap(mm => clockInputs.find(_.contains("member_" + mm.group(1) + "_")))
+      byBus.orElse(clockInputs.headOption).getOrElse("clock")
+    }
+    m.ports.collect {
+      case Port(_, name, Output, ClockType) if (name != "clock") =>
+        val src = sourceFor(name)
+        println(s"clock output port ${name} driven from ${src}")
+        Connect(NoInfo, WRef(name), WRef(src))
+    }
   }
 
   private def removeModule(

@@ -27,7 +27,7 @@ public:
   };
   uint32_t w_addr(const std::string &name) const {
     auto it = w_registers.find(name);
-    assert(it != r_registers.end() && "missing register");
+    assert(it != w_registers.end() && "missing register");
     return it->second;
   };
 

@@ -44,6 +44,12 @@ fpga_delivery_files = $(addprefix $(fpga_delivery_dir)/$(BASE_FILE_NAME), \
 	.sv .defines.vh \
 	.synthesis.xdc .implementation.xdc)
 
+# Verilog headers emitted next to the generated Verilog (black-box resources such as CVFPU's
+# common_cells registers.svh, which the appended SystemVerilog `includes). They must sit next to
+# $(BASE_FILE_NAME).sv in the delivery directory for the FPGA tools to resolve the include.
+fpga_header_delivery_stamp := $(fpga_delivery_dir)/.headers-delivered
+fpga_delivery_files += $(fpga_header_delivery_stamp)
+
 # Files used to run FPGA-level metasimulation
 fpga_sim_delivery_files = $(fpga_driver_dir)/$(DESIGN)-$(PLATFORM)
 
@@ -62,6 +68,11 @@ $(repo_state): $(simulator_verilog) $(fpga_work_dir)/stamp
 $(fpga_delivery_dir)/$(BASE_FILE_NAME)%: $(simulator_verilog) $(fpga_work_dir)/stamp
 	cp -f $(GENERATED_DIR)/*.ipgen.tcl $(@D) || true
 	cp -f $(GENERATED_DIR)/$(@F) $@
+
+$(fpga_header_delivery_stamp): $(simulator_verilog) $(fpga_work_dir)/stamp
+	mkdir -p $(@D)
+	cp -f $(GENERATED_DIR)/*.svh $(@D) 2>/dev/null || true
+	touch $@
 
 $(fpga_driver_dir)/$(BASE_FILE_NAME)%: $(simulator_verilog) $(fpga_work_dir)/stamp
 	mkdir -p $(@D)

@@ -32,8 +32,17 @@ $(simulator_verilog) $(simulator_xdc) $(header) $(fame_annos) &: $(FIRRTL_FILE) 
 		--output-filename-base $(BASE_FILE_NAME) \
 		--allow-unrecognized-annotations \
 		--no-dedup)
-	grep -sh ^ $(GENERATED_DIR)/firrtl_black_box_resource_files.f | \
-		xargs cat >> $(simulator_verilog) # Append blackboxes to FPGA wrapper, if any
+	# Append blackboxes to FPGA wrapper, if any. The .f list order is not
+	# deterministic, so emit files that declare a SystemVerilog package first:
+	# Vivado requires a package to be compiled before any file that imports it.
+	# Terminate each file with a newline: some blackbox sources end without one,
+	# and e.g. "`endif" + "module" would fuse into an undefined macro.
+	bb_files="$$(grep -sh ^ $(GENERATED_DIR)/firrtl_black_box_resource_files.f)"; \
+	if [ -n "$$bb_files" ]; then \
+		{ grep -l -E '^[[:space:]]*package[[:space:]]' $$bb_files; \
+		  grep -L -E '^[[:space:]]*package[[:space:]]' $$bb_files; } | \
+		while read -r f; do cat "$$f"; echo; done >> $(simulator_verilog); \
+	fi
 
 ####################################
 # Runtime-Configuration Generation #
