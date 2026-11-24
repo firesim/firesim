@@ -255,7 +255,7 @@ abstract class CutBoundaryBridgeModule(
     when(hPort.toHost.hValid && hPort.toHost.hReady) {
       toHostFireCnt := toHostFireCnt + 1.U
     }
-    when(hPort.fromHost.hValid && hPort.fromHost.hValid) {
+    when(hPort.fromHost.hValid && hPort.fromHost.hReady) {
       fromHostFireCnt := fromHostFireCnt + 1.U
     }
 
